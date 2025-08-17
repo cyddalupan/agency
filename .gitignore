@@ -51,3 +51,6 @@ error_log
 /reports/dbconfig.php
 
 /bluemaxph.com
+/vendor/
+/composer.lock
+/.env
