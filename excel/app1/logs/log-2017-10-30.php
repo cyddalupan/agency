@@ -1,0 +1,21 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2017-10-30 10:08:42 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 10:08:56 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 10:45:47 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:47:11 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:47:19 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:47:25 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:47:36 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:48:15 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:52:10 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:52:27 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 10:54:27 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 13:23:33 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 13:59:33 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2314
+ERROR - 2017-10-30 15:23:57 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 16:25:43 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 16:25:51 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 16:27:07 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 16:32:28 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-10-30 16:37:21 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439

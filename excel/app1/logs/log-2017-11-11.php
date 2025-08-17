@@ -1,0 +1,6 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2017-11-11 09:50:31 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-11-11 10:53:18 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-11-11 10:55:51 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2017-11-11 11:01:56 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439

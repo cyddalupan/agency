@@ -1,0 +1,21 @@
+1473062579TS---><!--Beyond styles-->
+<link id="beyond-link" href="http://localhost/landbase/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div id="applicant-statistic" class="chart chart-lg table-responsive"></div>
+</div>
+<style type="text/css">
+    body{
+        margin: 0px;
+    }
+</style>
+
+<script>siteUrl = 'http://localhost/landbase/';</script>
+<script src="http://localhost/landbase/assets/scripts/admin/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/plugins/charts/morris/raphael-2.0.2.min.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/plugins/charts/morris/morris.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/plugins/charts/flot/jquery.flot.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/plugins/charts/sparkline/jquery.sparkline.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/plugins/charts/sparkline/sparkline-init.js"></script>
+<script type="text/javascript" src="http://localhost/landbase/assets/scripts/admin/pages/dashboard.js"></script>
+<script src="http://localhost/landbase/assets/scripts/admin/beyond.min.js"></script>

@@ -1,0 +1,723 @@
+<?php
+session_start();
+if(!isset($_SESSION['admin']['user'])){
+header("location:noaccess.php");
+}
+include'db1.php';
+?>
+<?php
+
+
+if(isset($_POST['delete_orders'])){
+foreach ($_POST['delall'] as $delall) {
+$app11 = mysql_query("delete  FROM subject1 where SUBJ_ID= ".$delall)
+
+or die ("cannot Update data");
+}
+echo"<p style='color:Red'>Succesfully Deleted</p>";
+}
+
+if(isset($_POST['add_agree']))
+{
+    
+ 
+
+
+
+ $app = mysql_query("UPDATE subject
+SET app_name='".$_POST['app_name']."'
+
+,app_status='".$_POST['app_status']."'
+,app_remarks='".$_POST['app_remarks']."'
+,app_country='".$_POST['app_country']."'
+
+,app_deployed='".$_POST['app_deployed']."'
+,app_last='".$_POST['app_last']."'
+,app_fb='".$_POST['app_fb']."'
+,fra_name='".$_POST['fra_name']."'
+,app_position='".$_POST['app_position']."'
+
+,w1=".$_POST['subjecttype']."
+,w2=".$_POST['subjectname']."
+,agent_id=".$_POST['agent_id']."
+,app_remarks1='".$_POST['app_remarks1']."'
+,app_action='".$_POST['app_action']."'
+,app_source='".$_POST['app_source']."'
+,app_arrival='".$_POST['app_arrival']."'
+,app_arrival1='".$_POST['app_arrival1']."'
+WHERE SUBJ_ID=".$_GET['idme']." ");  
+
+
+
+
+
+
+$insert=mysql_query("insert into subject1 (app_last,app_deployed,app_remarks,app_status,ids,w1,w2,agent_id,app_remarks1,app_source,app_action) values
+('".$_POST['app_last']."','".$_POST['app_deployed']."','".$_POST['app_remarks']."','".$_POST['app_status']."',".$_GET['idme']."
+,".$_POST['subjecttype']."
+,".$_POST['subjectname']."
+,".$_POST['agent_id']."
+,'".$_POST['app_remarks1']."'
+,'".$_POST['app_source']."'
+,'".$_POST['app_action']."')");
+
+
+
+
+    
+echo"<P STYLE='COLOR:RED;FONT-SIZE:18PX'>DATA Updated....</P>";
+
+}
+$app = mysql_query("SELECT * FROM subject where SUBJ_ID=".$_GET['idme']." ");
+$row=mysql_fetch_array($app);
+
+
+
+
+
+?>
+
+
+<style>
+body{
+font-family:calibri;	
+font-size:12px;
+}
+input[type=text], select {
+  width: 100%;
+  padding: 8px;
+  margin: 2px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width:300px;
+  box-sizing: border-box;
+}
+select{
+  width: 100%;
+  padding: 8px;
+  margin: 2px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width:280px;
+  box-sizing: border-box;
+  flot:right;
+}
+
+input[type=submit] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 4px;
+  margin: 1px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+form {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+
+<div style="width:100%;min-height:800px;padding:10px">
+
+
+
+<form action="" method="post"   style="width:45%;float:Left;min-height:700px;margin:5px">
+
+<H2 style="color:#DC143C">STATUS APPLCIANT</H2>
+
+
+ 
+ <script>
+function showapplicant(str) {
+
+var xhttp;    
+if (str == "") {
+document.getElementById("showapp").innerHTML = "";
+return;
+}
+xhttp = new XMLHttpRequest();
+xhttp.onreadystatechange = function() {
+if (this.readyState == 4 && this.status == 200) {
+document.getElementById("showapp").innerHTML = this.responseText;
+}
+};
+xhttp.open("GET", "showapp.php?q="+str, true);
+xhttp.send();
+}
+
+</script>
+ 
+
+    
+<table>
+
+<tr>
+		<td><label for="fname"> APPLCIANT NAME</label>
+		<input type="text" id="app_name" name="app_name" value="<?=$row['app_name']?>" >
+		</td>
+		
+		<td><label for="fname"> FRA</label>
+		<input type="text" id="fra_name" name="fra_name" value="<?=$row['fra_name']?>"  ></td>
+</tr>
+
+
+
+
+
+<tr>
+		<td><label for="fname"> FRA CONTACT</label>
+<input type="text" id="fra_contact" name="fra_contact" value="<?=$row['fra_contact']?>"  >
+		</td>
+		
+		<td> <label for="fname"> COUNTRY</label>
+<input type="text" id="app_country" name="app_country" value="<?=$row['app_country']?>">
+ </td>
+</tr>
+
+
+<tr>
+		<td><label for="fname"> FACEBOOK</label>
+<input type="text" id="app_fb" name="app_fb" value="<?=$row['app_fb']?>">
+		</td>
+		
+		<td><label for="fname"> POSITION</label>
+<input type="text" id="app_position" name="app_position" value="<?=$row['app_position']?>">
+</tr>
+
+
+
+
+
+<tr>
+			<td> <label for="fname"> DEPLOYED DATE</label>
+			<input type="text" id="app_deployed" name="app_deployed" value="<?=$row['app_deployed']?>">
+			</td>
+
+		<td>
+		
+ 
+ <label for="fname">Agent/Source</label>
+<?php
+echo'<select class="form-control" name="agent_id"  >
+<option vaue="'.$row["agent_id"].'">'.$row["agent_id"].'</option>
+<option vaue="0">N/A</option>
+';
+
+$usertype1 = mysql_query("SELECT * FROM recruitment_agent  
+ORDER BY agent_first asc");
+while($rows1=mysql_fetch_array($usertype1))
+{
+echo'<option value="'.$rows1["agent_id"].'"> '.$rows1["agent_first"].' '.$rows1["agent_last"].' - '.$rows1["agent_id"].'</option>';
+}
+ECHO'</select>';
+?>
+ 
+		</td>
+</tr>
+
+
+
+
+
+
+
+
+<tr>
+
+
+		<td>
+		<label for="fname">Type</label>
+		<?php
+		echo'<select class="form-control" name="subjecttype" required onchange="showapplicant(this.value)" >
+		<option vaue="'.$row["w1"].'">'.$row["w1"].'</option>
+
+		';
+
+		$usertype = mysql_query("SELECT * FROM subject_type  
+		ORDER BY wel_id asc");
+		while($rows=mysql_fetch_array($usertype))
+		{
+		echo'<option value="'.$rows["wel_id"].'">  '.$rows["wel_type"].'</option>';
+		}
+		ECHO'</select>';
+		?>
+		</td>
+
+		<td><label for="fname">Type Name</label>
+		<?php
+		echo'<select class="form-control" name="subjectname"  id="showapp" required>
+		<option vaue="'.$row["w2"].'">'.$row["w2"].'</option>
+		<option  value="0">-----</option>';
+
+		//$applicant = mysql_query("SELECT * FROM applicant ORDER BY applicant_date_applied asc");
+		//while($rows1=mysql_fetch_array($applicant))
+		//{
+		//echo'<option value="'.$rows1["applicant_id"].'">  '.$rows1["applicant_last"].' '.$rows1["applicant_first"].'-'.$rows1["applicant_id"].'</option>';
+		//}
+		ECHO'</select>';
+		?>
+
+
+		</td>
+
+		</tr>
+
+
+
+<tr>
+		<td>
+		<label for="fname">SOURCE</label>
+		<select class="form-control"   name="app_source">
+		<option value="<?=$row['app_source']?>"><?=$row['app_source']?></option>
+		<option value="">----</option>
+		<?php include'optctype.php';?>
+		</select>
+		</td>
+
+		<td><label for="fname">STATUS</label>
+        <select id="app_status" name="app_status">
+        <option value="<?=$row['app_status']?>"><?=$row['app_status']?></option>
+       
+        <option value="WAITING RESPONSE">WAITING RESPONSE</option>
+        <option value="NC">NC</option>
+        <option value="DONE">DONE</option>
+        <option value="SAME STATUS">SAME STATUS</option>
+        </select>
+		</td>
+</tr>
+
+
+<tr>
+		<td> <label for="fname"> WELFARE REMARKS</label>
+	 <div style="clea:both"></div>
+ <textarea name="app_remarks" style="width:280px;height:50px" ><?=$row['app_remarks']?></textarea>
+  
+		</td>
+
+		<td>
+ <label for="fname"> MESSAGE OFFICE </label>
+	 <div style="clea:both"></div>
+ <textarea name="app_remarks1" style="width:280px;height:50px" ><?=$row['app_remarks1']?></textarea>
+  
+		</td>
+</tr>
+
+
+
+<tr>
+		<td colspan="2"><B STYLE="font-size:18px;color:#DC143C;">ARRIVAL INFORMATION<B></td>
+</tr>
+
+
+<tr>
+		<td> <label for="fname">ARRIVAL DATE</label>
+<input type="date" id="app_arrival" name="app_arrival" value="<?=$row['app_arrival']?>" style="padding:4px;font-size:14px;border:1px solid red" >
+		</td>
+
+		<td>
+ <label for="fname"> ARRIVAL REMARKS </label>
+	 <div style="clea:both"></div>
+ <textarea name="app_arrival1" style="width:280px;height:50px" ><?=$row['app_arrival1']?></textarea>
+  
+		</td>
+</tr>
+
+
+
+<tr>
+		<td colspan="2"><B STYLE="font-size:18px;color:#DC143C;">ACTION DATE INFORMATION<B></td>
+</tr>
+
+<tr>
+		<td>   <label for="fname">ACTION DATE (if with incident report)</label>
+<input type="date" id="app_action" name="app_action" value="<?=$row['app_action']?>" style="padding:4px;font-size:14px;border:1px solid red" >
+  
+
+  
+		</td>
+
+		<td>  <label for="fname">DATE LAST UPDATE (POEA) </label>
+<input type="date" id="app_last" name="app_last" value="<?=$row['app_last']?>" style="padding:4px;font-size:14px;border:1px solid red" required>
+  </td>
+</tr>
+
+
+
+
+
+
+
+</table>	
+	
+	
+	
+
+
+
+
+
+
+  
+  
+  <div style="clea:both"></div>
+  
+<button type="submit" class="btn btn-danger pull-right"  name="add_agree" style="padding:8px;font-size:18px;background:lightblue">Save</button>
+  </form>
+  
+  
+  
+  
+  <form action="" method="post"   style="width:45%;float:Left;min-height:700px;margin:5px">
+ <H2>STATUS HISTORY</H2>
+
+
+
+
+
+
+<style>
+#customers {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+  font-size:11px;
+}
+
+#customers td, #customers th {
+  border: 1px solid #ddd;
+  padding: 2px;
+}
+
+#customers tr:nth-child(even){background-color: #f2f2f2;}
+
+#customers tr:hover {background-color: #ddd;}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #04AA6D;
+  color: white;
+}
+</style>
+
+
+</br></br><h2>HISTORY</h2>
+
+<form action="" method="post" style="width:500px;FLOat:left">	
+
+
+
+
+<table  cellspacing="0" id="customers">
+<thead>
+<tr>
+<th></th>
+<th>Status</th>
+<th>Source</th>
+<th>Type</th>
+<th>Type Name</th>
+
+<th>Welfare R</th>
+<th>Office R</th>
+<th>Date Deployed</th>
+<th>Agent</th>
+<th>Last Update</th>
+<th>Action Date</th>
+
+
+
+
+</tr>
+</thead>
+<tbody>
+<?php	
+
+
+
+$myrow = mysql_query("SELECT * FROM subject1 
+
+LEFT JOIN subject_type
+ON subject1.w1 = subject_type.wel_id
+
+LEFT JOIN subject_name
+ON subject1.w2 = subject_name.well_id
+
+LEFT JOIN recruitment_agent
+ON subject1.agent_id = recruitment_agent.agent_id
+
+where ids=".$_GET['idme']." order by SUBJ_ID desc");
+
+
+while($myrow1=mysql_fetch_array($myrow))
+{
+
+
+echo'<tr>';
+echo "<td><input type='checkbox' name='delall[]' value='".$myrow1['SUBJ_ID']."' ></td> ";
+echo'<td>'.$myrow1["app_status"].'</td>';
+echo'<td>'.$myrow1["app_source"].'</td>';
+echo'<td>'.$myrow1["wel_type"].'</td>';
+echo'<td>'.$myrow1["well_name"].'</td>';
+echo'<td>'.$myrow1["app_remarks"].'</td>';
+echo'<td>'.$myrow1["app_remarks1"].'</td>';
+echo'<td>'.$myrow1["app_deployed"].'</td>';
+echo'<td>'.$myrow1["agent_first"].' '.$myrow1["agent_last"].'</td>';
+echo'<td>'.$myrow1["app_last"].'</td>';
+echo'<td>'.$myrow1["app_action"].'</td>';
+echo'</tr>';
+}
+?>
+</tbody>
+</table>
+
+</br>
+<div class="row">
+<div class="col-5" style="width:100%,float:right">		
+<input type="submit" value="Delete" name="delete_orders" style="width:130px;background:Red;padding:5px;margin-left:20px;margin-top:-1px;color:white">
+
+</div>
+</div>
+
+</form>	
+
+
+
+
+
+
+
+
+
+<?php
+@set_time_limit(3600); //1 hour
+@ini_set('max_execution_time', 3600); //1 hour
+?>
+  
+    <div style="clear:both;height:10px"></div>
+
+
+  <div style="clear:both;height:10px"></div>
+
+<?php
+
+  include 'functions.php';
+ $obj = new SimpleImage;
+ define ("MAX_SIZE","1400");
+$extensions='jpg';
+ $errors=0;
+  function getExtension($str) {
+         $i = strrpos($str,".");
+         if (!$i) { return ""; }
+         $l = strlen($str) - $i;
+         $ext = substr($str,$i+1,$l);
+         return $ext;
+ }
+ 
+
+ if(isset($_POST['uploadphoto']))
+ {
+  while(list($key,$value) = each($_FILES['file']['name']))
+		{
+        $image =$_FILES["file"]["name"][$key];
+		
+ $uploadedfile = $_FILES['file']['tmp_name'][$key];
+ $obj->load($uploadedfile);
+ 
+
+
+  if ($image) 
+  {
+  $filename = stripslashes($_FILES['file']['name'][$key]);
+        $extension = getExtension($filename);
+  $extension = strtolower($extension);
+ if (($extension != "jpg") && ($extension != "jpeg") 
+
+&& ($extension != "png") && ($extension != "gif")) 
+  {
+echo ' Unknown Image extension ';
+$errors=1;
+  }
+ else
+{
+   $size=filesize($_FILES['file']['tmp_name'][$key]);
+ 
+if ($size > MAX_SIZE*11024)
+{
+ //echo "You have exceeded the size limit";
+ //$errors=1;
+}
+ 
+if($extension=="jpg" || $extension=="jpeg" )
+{
+$uploadedfile = $_FILES['file']['tmp_name'][$key];
+$src = imagecreatefromjpeg($uploadedfile);
+}
+else if($extension=="png")
+{
+$uploadedfile = $_FILES['file']['tmp_name'][$key];
+$src = imagecreatefrompng($uploadedfile);
+}
+else 
+{
+$src = imagecreatefromgif($uploadedfile);
+}
+ 
+list($width,$height)=getimagesize($uploadedfile);
+
+
+ if($obj->getWidth()>=701){
+  $newwidths=700;
+ }else{
+ $newwidths=$width;
+ }
+$newwidth=$newwidths;
+
+
+
+$newheight=($height/$width)*$newwidth;
+$tmp=imagecreatetruecolor($newwidth,$newheight);
+
+$newwidth1=700;
+
+$newheight1=($height/$width)*$newwidth1;
+$tmp1=imagecreatetruecolor($newwidth1,$newheight1);
+
+imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,
+
+ $width,$height);
+
+imagecopyresampled($tmp1,$src,0,0,0,0,$newwidth1,$newheight1, 
+
+$width,$height);
+$datenow=strtotime("now");
+$filename = "photos/".$datenow."".$_FILES['file']['name'][$key];
+$filename1 = $filename;
+
+
+
+
+$insert=mysql_query("INSERT INTO resibo1 (resibo_connect,resibo_path,file_type)
+VALUES (".$_GET['idme'].",'".$filename1."','".$_POST['file_type']."' )");
+echo'Added';
+
+imagejpeg($tmp1,$filename1,100);
+
+imagedestroy($src);
+imagedestroy($tmp);
+imagedestroy($tmp1);
+}
+}
+} 
+}if(isset($_POST['uploadphoto']) && !$errors) 
+ {
+ }
+  ?>  
+<form name="frmupload" method="post" action="" enctype="multipart/form-data" id='imagesForm'>
+<label style="color:red">Upload Receipt (JPG,PNG ONLY)</label>
+<input type="hidden" name="p_id"  value="<?=$datenow?>" style="width:300px;">
+
+
+<DIV style="clear:both;height:30px"></DIV>
+
+<input type="text" name="file_type"   style="width:300px;" placeholder="File Type">
+
+
+
+<input type="file" name="file[]" id="input1"><input type="submit" name="uploadphoto" value="Upload Photo" style="padding:5px;background:orange;color:white;margin-top:25px">
+	
+ </form>
+ </br>
+ 
+<?php
+
+if(isset($_POST['delete_orders111'])){
+foreach ($_POST['delall'] as $delall) {
+$app11 = mysql_query("delete  FROM resibo where resibo_id= ".$delall)
+
+or die ("cannot Update data");
+}
+echo"<p style='color:Red'>Succesfully Deleted</p>";
+}
+?> 
+ 
+<form action="" method="post">
+ <table  cellspacing="0" id="customers">
+<thead>
+<tr>
+
+<th STYLE="width:2%">Ref #</th>
+<th STYLE="width:12%">Ref #</th>
+<th STYLE="width:30%">Path</th>
+<th STYLE="width:30%">File Type</th>
+</tr>
+</thead>
+<tbody>
+<?php	
+
+
+
+
+
+
+
+
+$app11111 = mysql_query("SELECT * FROM resibo1 where resibo_connect=".$_GET['idme']."
+order by resibo_id desc");
+
+while($row111=mysql_fetch_array($app11111))
+{
+
+
+
+echo'<tr>';
+echo "<td><input type='checkbox' name='delall[]' value='".$row111['resibo_id']."' ></td> ";
+echo'<td>000'.$row111["resibo_connect"].'   </td>';
+echo'<td><a  href="'.$row111["resibo_path"].'" target="_blank"><img src="'.$row111["resibo_path"].'" style="width:50px">'.$row111["resibo_path"].'</a></td>';
+echo'<td>'.$row111["file_type"].'   </td>';
+echo'</tr>';
+}
+$tot1 = number_format($total1, 2);
+?>
+
+
+
+</tbody>
+</table>
+ 
+ </br></br>
+<div class="row">
+<div class="col-5" style="width:100%,float:right">		
+<input type="submit" value="Delete" name="delete_orders111" style="width:130px;background:blue;padding:5px;margin-left:20px;margin-top:-1px;color:white">
+
+</div>
+</div>
+</form>	
+
+
+
+
+
+
+
+
+
+<div style="clea:both"></div>
+
+</div>
+
+
+
+
+
+

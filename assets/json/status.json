@@ -1,0 +1,15 @@
+{  
+   "0":"Available",
+   "1":"Cancelled",
+   "2":"Reserved",
+   "3":"Pre-Selected",
+   "4":"Selected",
+   "5":"Line Up",
+   "6":"Qualified",
+   "7":"Not Qualified",
+   "8":"For Deployment",
+   "9":"Deployed",
+   "10":"For Review",
+   "11":"For Interview",
+   "12":"For Booking"
+}

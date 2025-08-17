@@ -1,0 +1,307 @@
+1534407755TS---><link href="http://www.alphatomo.com/alphaadmin/assets/styles/admin/bootstrap.min.css" rel="stylesheet" />
+<link href="http://www.alphatomo.com/alphaadmin/assets/styles/admin/font-awesome.min.css" rel="stylesheet" />
+<link id="beyond-link" href="http://www.alphatomo.com/alphaadmin/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div class="widget-main no-padding">
+        <div class="tickets-container">
+                        <ul class="tickets-list">
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1507106841-1472.jpg" alt="Edelyn  . Bo" class="user-avatar" />
+                                                        <span class="user-name">Edelyn  . Bo</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/22" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Kawasama Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-02-02T15:04:09+08:00">
+                                <span class="time">02.02.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001472/Edelyn+Bo?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1513310845-1510.jpg" alt="Raquel B. Posugac" class="user-avatar" />
+                                                        <span class="user-name">Raquel B. Posugac</span>
+                                                        <span class="user-at">is available.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-19T14:28:48+08:00">
+                                <span class="time">01.19.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001510/Raquel+B+Posugac?ref_form=status#history" title="View profile">
+                                <span class="type">Available</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1510563239-1497.JPG" alt="Kathlyn  C. Palpallatoc" class="user-avatar" />
+                                                        <span class="user-name">Kathlyn  C. Palpallatoc</span>
+                                                        <span class="user-at">is available.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-16T17:03:15+08:00">
+                                <span class="time">01.16.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001497/Kathlyn+C+Palpallatoc?ref_form=status#history" title="View profile">
+                                <span class="type">Available</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1510563239-1497.JPG" alt="Kathlyn  C. Palpallatoc" class="user-avatar" />
+                                                        <span class="user-name">Kathlyn  C. Palpallatoc</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/9" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. MaidPro Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-16T17:02:56+08:00">
+                                <span class="time">01.16.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001497/Kathlyn+C+Palpallatoc?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1504495155-1432.jpg" alt="Analyn B. Laurente" class="user-avatar" />
+                                                        <span class="user-name">Analyn B. Laurente</span>
+                                                        <span class="user-at">Deployed to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/22" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Kawasama Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2017-12-28T13:11:05+08:00">
+                                <span class="time">12.28.2017</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001432/Analyn+B+Laurente?ref_form=status#history" title="View profile">
+                                <span class="type">Deployed</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-palegreen">
+                            <i class="fa fa-check"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1497509330-1336.jpg" alt="Marjorie Collado Galla" class="user-avatar" />
+                                                        <span class="user-name">Marjorie Collado Galla</span>
+                                                        <span class="user-at">Deployed to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/6" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A. P. IS Holdings Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2017-12-14T17:25:15+08:00">
+                                <span class="time">12.14.2017</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001336/Marjorie+Collado+Galla?ref_form=status#history" title="View profile">
+                                <span class="type">Deployed</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-palegreen">
+                            <i class="fa fa-check"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1495593548-1314.jpg" alt="Marilyn Alcordo Orencia" class="user-avatar" />
+                                                        <span class="user-name">Marilyn Alcordo Orencia</span>
+                                                        <span class="user-at">is available.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-11T09:23:53+08:00">
+                                <span class="time">01.11.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001314/Marilyn+Alcordo+Orencia?ref_form=status#history" title="View profile">
+                                <span class="type">Available</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1502865494-1405.jpg" alt="Yolanda  De Pablo Abad" class="user-avatar" />
+                                                        <span class="user-name">Yolanda  De Pablo Abad</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/9" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. MaidPro Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-10T17:17:51+08:00">
+                                <span class="time">01.10.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001405/Yolanda+De+Pablo+Abad?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1515209406-98.JPG" alt="Suzette Lumaueg Jallorina" class="user-avatar" />
+                                                        <span class="user-name">Suzette Lumaueg Jallorina</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/17" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Maidpro Sdn Bhd (AlphaTomo Global)                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-09T12:15:09+08:00">
+                                <span class="time">01.09.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000000098/Suzette+Lumaueg+Jallorina?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://www.alphatomo.com/alphaadmin/files/applicant/1502865494-1405.jpg" alt="Yolanda  De Pablo Abad" class="user-avatar" />
+                                                        <span class="user-name">Yolanda  De Pablo Abad</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://www.alphatomo.com/alphaadmin/admin/employers/preview/9" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. MaidPro Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-01-08T16:55:08+08:00">
+                                <span class="time">01.08.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://www.alphatomo.com/alphaadmin/admin/applicants/review/000001405/Yolanda+De+Pablo+Abad?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                            </ul>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+    body,.widget-body,{
+        margin: 0px;
+        padding: 0px;
+    }
+    .tickets-container{
+        padding: 1px;
+    }
+</style>

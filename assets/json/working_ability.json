@@ -1,0 +1,88 @@
+{
+	"working_ability":[
+		{
+			"name"	:"Newborn baby",
+			"exp":"newborn_baby_exp",
+			"will":"newborn_baby_will",
+			"id":"47"
+		}, 
+		{
+			"name"	:"Toddler",
+			"exp":"toddles_exp",
+			"will":"toddles_will",
+			"id":"48"
+		}, 
+		{
+			"name"	:"Baby care",
+			"exp":"baby_care_exp",
+			"will":"baby_care_will",
+			"id":"49"
+		}, 
+		{
+			"name"	:"Child care",
+			"exp":"child_care_exp",
+			"will":"child_care_will",
+			"id":"50"
+		}, 
+		{
+			"name"	:"Care of special child",
+			"exp":"special_child_exp",
+			"will":"special_child_will",
+			"id":"51"
+		}, 
+		{
+			"name"	:"Care of disable",
+			"exp":"care_of_disable_exp",
+			"will":"care_of_disable_will",
+			"id":"52"
+		}, 
+		{
+			"name"	:"Care of Bedridden",
+			"exp":"care_of_bedridden_exp",
+			"will":"care_of_bedridden_will",
+			"id":"53"
+		}, 
+		{
+			"name"	:"Elderly care",
+			"exp":"elderly_care_exp",
+			"will":"elderly_care_will",
+			"id":"54"
+		}, 
+		{
+			"name"	:"Cooking",
+			"exp":"cooking_exp",
+			"will":"cooking_will",
+			"id":"55"
+		}, 
+		{
+			"name"	:"Laundry-hand wash",
+			"exp":"laundry_exp",
+			"will":"laundry_will",
+			"id":"56"
+		}, 
+		{
+			"name"	:"Ironing",
+			"exp":"ironing_exp",
+			"will":"ironing_will",
+			"id":"57"
+		}, 
+		{
+			"name"	:"Care of pets (dog/cat)",
+			"exp":"care_of_pets_exp",
+			"will":"care_of_pets_will",
+			"id":"58"
+		}, 
+		{
+			"name"	:"Car wash with extra cost",
+			"exp":"car_wash_exp",
+			"will":"car_wash_will",
+			"id":"59"
+		}, 
+		{
+			"name"	:"Gardening - watering the flower pot (mini garden at the balcony)",
+			"exp":"gardening_exp",
+			"will":"gardening_will",
+			"id":"60"
+		}
+	]
+}

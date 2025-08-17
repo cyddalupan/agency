@@ -1,0 +1,9 @@
+.cyd-cell-2 td{ width: 50%;}
+.bold{font-weight: bold;}
+
+#cyd-calculator h2,h4{ color:skyblue;}
+#cyd-calculator table{width: 100%; text-align: left;}
+#cyd-calculator td{padding: 5px 10px;}
+#cyd-calculator input,select{width: 100%;}
+
+.cyd-basic-fee{}

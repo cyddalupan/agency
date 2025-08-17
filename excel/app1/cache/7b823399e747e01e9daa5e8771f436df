@@ -1,0 +1,322 @@
+1473062340TS---><link href="http://localhost/landbase/assets/styles/admin/bootstrap.min.css" rel="stylesheet" />
+<link href="http://localhost/landbase/assets/styles/admin/font-awesome.min.css" rel="stylesheet" />
+<link id="beyond-link" href="http://localhost/landbase/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div class="widget-main no-padding">
+        <div class="tickets-container">
+                        <ul class="tickets-list">
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_v7Yhr middle_XVlxs last_Wsfpe" class="user-avatar" />
+                                                        <span class="user-name">first_v7Yhr middle_XVlxs last_Wsfpe</span>
+                                                        <span class="user-at">Qualified to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-10T00:45:40+08:00">
+                                <span class="time">08.10.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000345/First+v7Yhr+Middle+XVlxs+Last+Wsfpe?ref_form=status#history" title="View profile">
+                                <span class="type">Qualified</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="first_Y8Uya middle_hw7a0 last_Rz5Nv">
+                                                        <span class="user-name">first_Y8Uya middle_hw7a0 last_Rz5Nv</span>
+                                                        <span class="user-at">For Interview to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-18T03:17:39+08:00">
+                                <span class="time">08.18.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000309/First+Y8Uya+Middle+hw7a0+Last+Rz5Nv?ref_form=status#history" title="View profile">
+                                <span class="type">For Interview</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_4eaxQ middle_dBhQK last_vNGdd" class="user-avatar" />
+                                                        <span class="user-name">first_4eaxQ middle_dBhQK last_vNGdd</span>
+                                                        <span class="user-at">Enrolled to training to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview/27" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                name_9G4fUT9GUm                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-24T03:09:08+08:00">
+                                <span class="time">08.24.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000001/First+4eaxQ+Middle+dBhQK+Last+vNGdd?ref_form=status#history" title="View profile">
+                                <span class="type">Enrolled to training</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_4eaxQ middle_dBhQK last_vNGdd" class="user-avatar" />
+                                                        <span class="user-name">first_4eaxQ middle_dBhQK last_vNGdd</span>
+                                                        <span class="user-at">Enrolled to training to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview/27" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                name_9G4fUT9GUm                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-12T05:39:59+08:00">
+                                <span class="time">08.12.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000001/First+4eaxQ+Middle+dBhQK+Last+vNGdd?ref_form=status#history" title="View profile">
+                                <span class="type">Enrolled to training</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_4eaxQ middle_dBhQK last_vNGdd" class="user-avatar" />
+                                                        <span class="user-name">first_4eaxQ middle_dBhQK last_vNGdd</span>
+                                                        <span class="user-at">Enrolled to training to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview/27" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                name_9G4fUT9GUm                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-12T05:37:19+08:00">
+                                <span class="time">08.12.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000001/First+4eaxQ+Middle+dBhQK+Last+vNGdd?ref_form=status#history" title="View profile">
+                                <span class="type">Enrolled to training</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_4eaxQ middle_dBhQK last_vNGdd" class="user-avatar" />
+                                                        <span class="user-name">first_4eaxQ middle_dBhQK last_vNGdd</span>
+                                                        <span class="user-at">Passporting to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview/10" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                name_7S1e7ggNBa                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-06T05:36:58+08:00">
+                                <span class="time">08.06.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000001/First+4eaxQ+Middle+dBhQK+Last+vNGdd?ref_form=status#history" title="View profile">
+                                <span class="type">Passporting</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_4eaxQ middle_dBhQK last_vNGdd" class="user-avatar" />
+                                                        <span class="user-name">first_4eaxQ middle_dBhQK last_vNGdd</span>
+                                                        <span class="user-at">Active File to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview/8" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                name_1hp1lQOHzj                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-12T04:56:15+08:00">
+                                <span class="time">08.12.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000001/First+4eaxQ+Middle+dBhQK+Last+vNGdd?ref_form=status#history" title="View profile">
+                                <span class="type">Active File</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_0TNkR middle_1Nz2h last_1tk0c" class="user-avatar" />
+                                                        <span class="user-name">first_0TNkR middle_1Nz2h last_1tk0c</span>
+                                                        <span class="user-at">Deployed to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-19T02:31:01+08:00">
+                                <span class="time">08.19.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000036/First+0TNkR+Middle+1Nz2h+Last+1tk0c?ref_form=status#history" title="View profile">
+                                <span class="type">Deployed</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-palegreen">
+                            <i class="fa fa-check"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_0TNkR middle_1Nz2h last_1tk0c" class="user-avatar" />
+                                                        <span class="user-name">first_0TNkR middle_1Nz2h last_1tk0c</span>
+                                                        <span class="user-at">Deployed to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-19T02:29:19+08:00">
+                                <span class="time">08.19.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000036/First+0TNkR+Middle+1Nz2h+Last+1tk0c?ref_form=status#history" title="View profile">
+                                <span class="type">Deployed</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-palegreen">
+                            <i class="fa fa-check"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://localhost/landbase/files/applicant/../../assets/images/sample/profile-3.png" alt="first_0TNkR middle_1Nz2h last_1tk0c" class="user-avatar" />
+                                                        <span class="user-name">first_0TNkR middle_1Nz2h last_1tk0c</span>
+                                                        <span class="user-at">Deployed to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://localhost/landbase/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-08-19T02:29:03+08:00">
+                                <span class="time">08.19.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://localhost/landbase/admin/applicants/review/000000036/First+0TNkR+Middle+1Nz2h+Last+1tk0c?ref_form=status#history" title="View profile">
+                                <span class="type">Deployed</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-palegreen">
+                            <i class="fa fa-check"></i>
+                        </div>
+                                            </div>
+                </li>
+                            </ul>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+    body,.widget-body,{
+        margin: 0px;
+        padding: 0px;
+    }
+    .tickets-container{
+        padding: 1px;
+    }
+</style>

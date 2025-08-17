@@ -1,0 +1,460 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2016-05-20 10:27:46 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 11:04:21 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 11:04:54 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 11:35:06 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:37:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:37:23 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:37:23 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:39:01 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:39:02 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:39:02 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:42:39 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 11:42:40 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 11:42:40 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:14:49 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:15:19 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:22:49 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 12:23:02 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:30 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 12:23:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 13:35:10 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 13:35:11 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:35:11 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:38:27 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:39:30 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:40:08 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:42:38 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 13:43:50 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 13:48:40 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:48:46 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:49:20 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:49:47 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:49:52 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:50:05 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:50:11 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:51:32 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:51:37 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:51:40 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:53:18 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:53:25 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:53:39 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:53:43 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:54:13 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:54:31 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:54:40 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:54:47 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:55:18 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:55:23 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:55:31 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:55:41 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:55:52 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:56:00 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:59:30 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 13:59:48 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:00:06 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:00:26 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:00:50 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:11:44 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:12:37 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 14:12:57 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 15:39:48 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 15:40:59 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:00 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:41:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:41:23 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:23 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:41:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:42:40 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:42:41 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:42:41 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:46:01 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:50:23 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:50:24 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:51:21 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:51:21 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:51:21 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:51:21 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:51:21 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:51:22 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 15:54:18 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 15:54:19 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:54:19 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:55:27 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 15:55:27 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 15:55:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 15:58:15 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 15:58:37 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 15:59:23 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index:  /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: nr /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18940
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1174
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18944
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: nc /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18990
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 18992
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: va /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19050
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: txta /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19051
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/classes/cssmgr.php 1303
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: direction /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19150
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: cellLineHeight /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19159
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: cellLineStackingStrategy /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19162
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: cellLineStackingShift /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19165
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined index: borders_separate /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19234
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19293
+ERROR - 2016-05-20 16:01:28 --> Severity: Notice  --> Undefined offset: 0 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 19294
+ERROR - 2016-05-20 16:01:29 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:01:29 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:22:23 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 16:26:32 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:05:11 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 17:09:11 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 17:10:13 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 248
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 298
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:37 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2016-05-20 17:10:38 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193

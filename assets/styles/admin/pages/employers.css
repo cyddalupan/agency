@@ -1,0 +1,7 @@
+/* Stylesheet */
+.table tr th {
+	white-space:nowrap !important;
+}
+.table tr td {
+	white-space:nowrap !important;
+}

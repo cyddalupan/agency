@@ -1,0 +1,57 @@
+/* Stylesheet */
+.result-item {
+	background: url("../../../../images/employer/header-back.png") repeat scroll 0 0 #eee;
+    border: 1px solid #eee;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    font-size:12px;
+	line-height:95%;
+	
+    margin-top: 0px;
+    margin-bottom: 20px;
+	margin-right:-15px;
+}
+
+.result-item img {
+	border:3px solid #fff;
+	outline:#ccc 2px solid;
+	width:70% !important;
+	margin-bottom:10px;
+	margin-left:auto;
+	margin-right:auto;
+}
+.result-item h5 {
+	text-align: center;
+	border-bottom: 1px solid #666;
+	margin-bottom:10px;
+}
+
+.result-item div.well {
+    margin-bottom:5px !important;
+    padding-bottom:0px !important;
+}
+
+.result-item .result-buttons {
+	text-align: center;
+	margin:-10px;
+	margin-top:5px;
+	padding-top:5px;
+	padding-bottom:5px;
+	border-top:2px dashed #EDEDED;
+	background-color:#FAFAFA !important;
+}
+
+.result-item .result-buttons .btn {
+	margin-bottom:1px; 
+	font-size:90%
+}
+
+.result-item .result-buttons .btn:hover {
+    font-weight:bold;
+    text-decoration:underline;
+}
+
+.page-applicants-search h2 {
+	color:#30add1;
+}

@@ -1,0 +1,68 @@
+{
+	"survey":[
+		{
+			"name"	:"Do you have any experience of taking care of pets?",
+			"id":"6"
+		}, 
+		{
+			"name"	:"Are you willing to work in a house where there are pets?",
+			"id":"7"
+		}, 
+		{
+			"name"	:"Are you willing to work without any day off during the whole duration of contract?",
+			"id":"8"
+		},
+		{
+			"name"	:"Are you willing to work with muslim family?",
+			"id":"9"
+		},
+		{
+			"name"	:"Are you willing to work with non muslim family?",
+			"id":"10"
+		},
+		{
+			"name"	:"Are you willing not to use mobile during working hours?",
+			"id":"11"
+		},
+		{
+			"name"	:"Do you drink alcohol or smoke?",
+			"id":"12"
+		},
+		{
+			"name"	:"Have you ever suffered from any serious illness?",
+			"id":"13"
+		},
+		{
+			"name"	:"Will you be honest and loyal to your employer?",
+			"id":"14"
+		},
+		{
+			"name"	:"Do you promise not to use mobile without permission?",
+			"id":"15"
+		},
+		{
+			"name"	:"Are you aware of 2 years employment contract with your employer?",
+			"id":"16"
+		},
+		{
+			"name"	:"Do you promise not to answer back to your employer when points out your mistake?",
+			"id":"17"
+		},
+		{
+			"name"	:"Do you promise not to bring/invite friends or relatives to the house of your employer without permission?",
+			"id":"18"
+		},
+		{
+			"name"	:"Are your parent/husband allowed you to work as a Housemaid in Malaysia?",
+			"id":"19"
+		},
+		{
+			"name"	:"Are you ready to be separated from your family during your employment in Malaysia?",
+			"id":"20"
+		},
+		{
+			"name"	:"Are you physically and Mentally ready to work as a Housemaid in Malaysia?",
+			"id":"21"
+		}
+	]
+}

@@ -1,0 +1,16 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2015-08-21 10:58:03 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:11:35 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:13:27 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 185
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-08-21 15:13:55 --> Severity: Notice  --> Undefined offset: 4 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-08-21 15:16:13 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:17:17 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:17:18 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-08-21 15:19:26 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439

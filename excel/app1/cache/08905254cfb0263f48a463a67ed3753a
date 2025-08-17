@@ -1,0 +1,21 @@
+1542696825TS---><!--Beyond styles-->
+<link id="beyond-link" href="http://iwebframework.com/alphatomo.com/alphaadmin/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div id="applicant-statistic" class="chart chart-lg table-responsive"></div>
+</div>
+<style type="text/css">
+    body{
+        margin: 0px;
+    }
+</style>
+
+<script>siteUrl = 'http://iwebframework.com/alphatomo.com/alphaadmin/';</script>
+<script src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/scripts/admin/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/plugins/charts/morris/raphael-2.0.2.min.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/plugins/charts/morris/morris.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/plugins/charts/flot/jquery.flot.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/plugins/charts/sparkline/jquery.sparkline.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/plugins/charts/sparkline/sparkline-init.js"></script>
+<script type="text/javascript" src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/scripts/admin/pages/dashboard.js"></script>
+<script src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/scripts/admin/beyond.min.js"></script>

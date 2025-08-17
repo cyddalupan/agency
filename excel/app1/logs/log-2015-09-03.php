@@ -1,0 +1,121 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 224
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 272
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 272
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 272
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 12:05:54 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 12:07:05 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 13:37:31 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 13:37:34 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 224
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 272
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 13:47:55 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 13:47:56 --> Severity: Notice  --> Undefined index: css_set_width /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 16969
+ERROR - 2015-09-03 13:47:56 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 13:47:56 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 13:51:40 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 13:53:10 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 13:53:10 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 13:53:10 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 13:53:10 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 13:53:11 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 13:53:11 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 13:53:11 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 13:53:11 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 13:53:44 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 13:55:20 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 13:55:36 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 13:55:41 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 14:38:55 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 14:38:55 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 14:38:55 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 14:38:55 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 14:38:56 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 14:38:56 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 14:38:56 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 14:38:56 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 15:08:35 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:09:24 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:09:28 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:09:36 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:09:50 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:10:02 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:10:25 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:10:39 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:11:05 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:11:16 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:11:32 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:11:38 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:12:31 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 224
+ERROR - 2015-09-03 15:12:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 15:12:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 15:12:31 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 15:12:31 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 15:13:08 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:13:13 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:13:38 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:15:06 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:15:31 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:18:47 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:19:35 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:22:56 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:23:05 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:23:42 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:25:55 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:26:49 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:26:55 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:26:56 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:27:07 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:28:35 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:28:58 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:31:41 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:32:11 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:32:19 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:32:20 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:32:53 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 15:32:53 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 15:32:53 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 15:32:53 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 15:32:53 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 15:32:53 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 15:32:53 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 15:32:53 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 15:35:31 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:36:47 --> Query error: Unknown column 'sub_status' in 'field list'
+ERROR - 2015-09-03 15:37:28 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-09-03 15:57:22 --> Severity: Notice  --> Undefined index: type /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/models/m_applicant.php 2017
+ERROR - 2015-09-03 16:09:44 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 224
+ERROR - 2015-09-03 16:09:44 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 16:09:44 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 16:09:44 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 16:09:44 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 16:20:16 --> Severity: Notice  --> Undefined variable: wabl_html /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 224
+ERROR - 2015-09-03 16:20:16 --> Severity: Notice  --> Array to string conversion /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/public/applicants.php 272
+ERROR - 2015-09-03 16:20:16 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 16:20:16 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 16:20:17 --> Severity: Notice  --> Undefined offset: 16 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21162
+ERROR - 2015-09-03 16:20:17 --> Severity: Notice  --> Undefined offset: 1 /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/third_party/mpdf60/mpdf.php 21193
+ERROR - 2015-09-03 17:40:49 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:49 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:49 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:49 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:50 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:50 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:50 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:50 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:58 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:58 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:58 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:58 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:58 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:58 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 118
+ERROR - 2015-09-03 17:40:58 --> Severity: Notice  --> Undefined variable: employers /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:40:58 --> Severity: Warning  --> Invalid argument supplied for foreach() /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/views/admin/applicants.php 465
+ERROR - 2015-09-03 17:41:12 --> Query error: Unknown column 'sub_status' in 'field list'

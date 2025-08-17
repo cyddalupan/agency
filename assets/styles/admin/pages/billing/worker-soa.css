@@ -1,0 +1,7 @@
+/* Stylesheet */
+.table td p.fee-text {
+
+}
+.table td p.fee-text, .table td p.fee-amount {
+	font-family:Consolas, "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", Monaco, "Courier New", monospace;
+}

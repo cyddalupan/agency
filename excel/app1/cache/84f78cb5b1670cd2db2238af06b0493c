@@ -1,0 +1,312 @@
+1542696586TS---><link href="http://iwebframework.com/alphatomo.com/alphaadmin/assets/styles/admin/bootstrap.min.css" rel="stylesheet" />
+<link href="http://iwebframework.com/alphatomo.com/alphaadmin/assets/styles/admin/font-awesome.min.css" rel="stylesheet" />
+<link id="beyond-link" href="http://iwebframework.com/alphatomo.com/alphaadmin/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div class="widget-main no-padding">
+        <div class="tickets-container">
+                        <ul class="tickets-list">
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1542695389-1519.jpg" alt="Ruffa S Santos" class="user-avatar" />
+                                                        <span class="user-name">Ruffa S Santos</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-11-20T14:48:41+08:00">
+                                <span class="time">11.20.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001519/Ruffa+S+Santos?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Chirstian GATILTAN GEMIN">
+                                                        <span class="user-name">Chirstian GATILTAN GEMIN</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-11-20T14:48:41+08:00">
+                                <span class="time">11.20.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001518/Chirstian+GATILTAN+GEMIN?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Joan Cumarat Verson">
+                                                        <span class="user-name">Joan Cumarat Verson</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-11-20T14:48:41+08:00">
+                                <span class="time">11.20.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001517/Joan+Cumarat+Verson?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1542695389-1519.jpg" alt="Ruffa S Santos" class="user-avatar" />
+                                                        <span class="user-name">Ruffa S Santos</span>
+                                                        <span class="user-at">is available.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-11-20T14:27:18+08:00">
+                                <span class="time">11.20.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001519/Ruffa+S+Santos?ref_form=status#history" title="View profile">
+                                <span class="type">Available</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Chirstian GATILTAN GEMIN">
+                                                        <span class="user-name">Chirstian GATILTAN GEMIN</span>
+                                                        <span class="user-at">is available.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-10-11T16:40:03+08:00">
+                                <span class="time">10.11.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001518/Chirstian+GATILTAN+GEMIN?ref_form=status#history" title="View profile">
+                                <span class="type">Available</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1513588571-1511.jpg" alt="Fatima Oliveras Cargo" class="user-avatar" />
+                                                        <span class="user-name">Fatima Oliveras Cargo</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-09-18T16:03:05+08:00">
+                                <span class="time">09.18.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001511/Fatima+Oliveras+Cargo?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1513310845-1510.jpg" alt="Raquel B. Posugac" class="user-avatar" />
+                                                        <span class="user-name">Raquel B. Posugac</span>
+                                                        <span class="user-at">Selected to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-09-17T10:11:47+08:00">
+                                <span class="time">09.17.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001510/Raquel+B+Posugac?ref_form=status#history" title="View profile">
+                                <span class="type">Selected</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1513310845-1510.jpg" alt="Raquel B. Posugac" class="user-avatar" />
+                                                        <span class="user-name">Raquel B. Posugac</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-09-17T10:09:20+08:00">
+                                <span class="time">09.17.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001510/Raquel+B+Posugac?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1513587915-1513.jpg" alt="Arlene C. Bartolome" class="user-avatar" />
+                                                        <span class="user-name">Arlene C. Bartolome</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-09-17T10:06:58+08:00">
+                                <span class="time">09.17.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001513/Arlene+C+Bartolome?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://iwebframework.com/alphatomo.com/alphaadmin/files/applicant/1513588571-1511.jpg" alt="Fatima Oliveras Cargo" class="user-avatar" />
+                                                        <span class="user-name">Fatima Oliveras Cargo</span>
+                                                        <span class="user-at">Line Up to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/employers/preview/18" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Top Management Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2018-09-17T10:06:58+08:00">
+                                <span class="time">09.17.2018</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://iwebframework.com/alphatomo.com/alphaadmin/admin/applicants/review/000001511/Fatima+Oliveras+Cargo?ref_form=status#history" title="View profile">
+                                <span class="type">Line Up</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                            </ul>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+    body,.widget-body,{
+        margin: 0px;
+        padding: 0px;
+    }
+    .tickets-container{
+        padding: 1px;
+    }
+</style>

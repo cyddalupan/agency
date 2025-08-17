@@ -1,0 +1,317 @@
+1473949059TS---><link href="http://alphatomo.com/alpha_test/assets/styles/admin/bootstrap.min.css" rel="stylesheet" />
+<link href="http://alphatomo.com/alpha_test/assets/styles/admin/font-awesome.min.css" rel="stylesheet" />
+<link id="beyond-link" href="http://alphatomo.com/alpha_test/assets/styles/admin/beyond.min.css" rel="stylesheet" type="text/css" />
+
+<div class="widget-body">
+    <div class="widget-main no-padding">
+        <div class="tickets-container">
+                        <ul class="tickets-list">
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Janice Molos Sajol">
+                                                        <span class="user-name">Janice Molos Sajol</span>
+                                                        <span class="user-at">For Review to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-15T16:22:58+08:00">
+                                <span class="time">09.15.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000906/Janice+Molos+Sajol?ref_form=status#history" title="View profile">
+                                <span class="type">For Review</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Daisy Del Moro Dinglasan">
+                                                        <span class="user-name">Daisy Del Moro Dinglasan</span>
+                                                        <span class="user-at">For Review to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-15T15:45:16+08:00">
+                                <span class="time">09.15.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000905/Daisy+Del+Moro+Dinglasan?ref_form=status#history" title="View profile">
+                                <span class="type">For Review</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1473476797-904.jpg" alt="Rose Comilang Pascua" class="user-avatar" />
+                                                        <span class="user-name">Rose Comilang Pascua</span>
+                                                        <span class="user-at">was cancelled.</span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-13T15:23:44+08:00">
+                                <span class="time">09.13.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000904/Rose+Comilang+Pascua?ref_form=status#history" title="View profile">
+                                <span class="type">Cancelled</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-darkorange">
+                            <i class="fa fa-times"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Cecile Mustera Onrubia">
+                                                        <span class="user-name">Cecile Mustera Onrubia</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/9" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. MaidPro Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-15T15:12:42+08:00">
+                                <span class="time">09.15.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000886/Cecile+Mustera+Onrubia?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/assets/images/admin/avatars/no-picture.jpg" class="user-avatar" alt="Ma. Lourdes Riezel Caroche Ticson">
+                                                        <span class="user-name">Ma. Lourdes Riezel Caroche Ticson</span>
+                                                        <span class="user-at">Reserved to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/9" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. MaidPro Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-15T15:12:30+08:00">
+                                <span class="time">09.15.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000887/Ma+Lourdes+Riezel+Caroche+Ticson?ref_form=status#history" title="View profile">
+                                <span class="type">Reserved</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-info">
+                            <i class="fa fa-check-square"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1467626537-768.jpg" alt="Rosa   Benavidez" class="user-avatar" />
+                                                        <span class="user-name">Rosa   Benavidez</span>
+                                                        <span class="user-at">For Deployment to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/17" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Maidpro Sdn Bhd (AlphaTomo Global)                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-14T11:29:56+08:00">
+                                <span class="time">09.14.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000768/Rosa+Benavidez?ref_form=status#history" title="View profile">
+                                <span class="type">For Deployment</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-yellow">
+                            <i class="fa fa-info"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1470218226-825.JPG" alt="Cheryll Meral  Sartillo" class="user-avatar" />
+                                                        <span class="user-name">Cheryll Meral  Sartillo</span>
+                                                        <span class="user-at">For Deployment to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/22" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Kawasama Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-14T11:25:47+08:00">
+                                <span class="time">09.14.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000825/Cheryll+Meral+Sartillo?ref_form=status#history" title="View profile">
+                                <span class="type">For Deployment</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-yellow">
+                            <i class="fa fa-info"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1470713589-851.jpg" alt="Cecil Panong Barcoma" class="user-avatar" />
+                                                        <span class="user-name">Cecil Panong Barcoma</span>
+                                                        <span class="user-at">For Deployment to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/22" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Kawasama Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-14T11:22:00+08:00">
+                                <span class="time">09.14.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000851/Cecil+Panong+Barcoma?ref_form=status#history" title="View profile">
+                                <span class="type">For Deployment</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-yellow">
+                            <i class="fa fa-info"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1467597069-504.jpg" alt="Ana Jean B. Fulledo" class="user-avatar" />
+                                                        <span class="user-name">Ana Jean B. Fulledo</span>
+                                                        <span class="user-at">For Deployment to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/22" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Kawasama Sdn Bhd                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-14T11:19:19+08:00">
+                                <span class="time">09.14.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000504/Ana+Jean+B+Fulledo?ref_form=status#history" title="View profile">
+                                <span class="type">For Deployment</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-yellow">
+                            <i class="fa fa-info"></i>
+                        </div>
+                                            </div>
+                </li>
+                                <li class="ticket-item">
+                    <div class="row">
+                        <div class="ticket-user col-sm-7 col-sm-12">
+                                                            <img src="http://alphatomo.com/alpha_test/files/applicant/1465294338-713.jpg" alt="Nely Grace Hallasgo Ramirez" class="user-avatar" />
+                                                        <span class="user-name">Nely Grace Hallasgo Ramirez</span>
+                                                        <span class="user-at">For Deployment to</span>
+                            
+                            <span class="user-company">
+                                <a href="http://alphatomo.com/alpha_test/admin/employers/preview/17" class="" role="button" data-toggle="modal" data-target="#modalReports" >
+                                A.P. Maidpro Sdn Bhd (AlphaTomo Global)                                </a>
+                            </span>
+                                                    </div>
+                        <div class="ticket-time  col-sm-3 col-sm-6 col-xs-12">
+                            <div class="divider hidden-md hidden-sm hidden-xs"></div>
+                            <i class="fa fa-clock-o"></i>
+                            <a href="javascript:;" class="timeago" title="2016-09-14T11:15:52+08:00">
+                                <span class="time">09.14.2016</span>
+                            </a>
+                        </div>
+                        <div class="ticket-type  col-sm-2 col-sm-6 col-xs-12">
+                            <span class="divider hidden-xs"></span>
+                            <a href="http://alphatomo.com/alpha_test/admin/applicants/review/000000713/Nely+Grace+Hallasgo+Ramirez?ref_form=status#history" title="View profile">
+                                <span class="type">For Deployment</span>
+                            </a>
+                        </div>
+                                                <div class="ticket-state bg-yellow">
+                            <i class="fa fa-info"></i>
+                        </div>
+                                            </div>
+                </li>
+                            </ul>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+    body,.widget-body,{
+        margin: 0px;
+        padding: 0px;
+    }
+    .tickets-container{
+        padding: 1px;
+    }
+</style>

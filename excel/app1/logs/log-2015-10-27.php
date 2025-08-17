@@ -1,0 +1,7 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2015-10-27 10:37:28 --> Severity: Warning  --> number_format() expects parameter 1 to be double, string given /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/admin/applicants.php 371
+ERROR - 2015-10-27 10:37:28 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Exceptions.php:185) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/helpers/url_helper.php 542
+ERROR - 2015-10-27 12:18:29 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-10-27 18:11:57 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439
+ERROR - 2015-10-27 18:12:16 --> Severity: Warning  --> Cannot modify header information - headers already sent by (output started at /home2/iwebframe/public_html/alphatomo.com/alphaadmin/app/controllers/error.php:20) /home2/iwebframe/public_html/alphatomo.com/alphaadmin/sys/core/Common.php 439

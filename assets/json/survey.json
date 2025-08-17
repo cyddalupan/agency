@@ -1,0 +1,68 @@
+{
+	"survey":[
+		{
+			"name"	:"Do you have any experience of taking care of pets?",
+			"string":"do_you_have_any_experience_of_taking_care_of_pets"
+		}, 
+		{
+			"name"	:"Are you willing to work in a house where there are pets?",
+			"string":"are_you_willing_to_work_in_a_house_where_there_are_pets"
+		}, 
+		{
+			"name"	:"Are you willing to work without any day off during the whole duration of contract?",
+			"string":"work_without_any_day_off"
+		},
+		{
+			"name"	:"Are you willing to work with muslim family?",
+			"string":"are_you_willing_to_work_with_muslim_family"
+		},
+		{
+			"name"	:"Are you willing to work with non muslim family?",
+			"string":"are_you_willing_to_work_with_non_muslim_family"
+		},
+		{
+			"name"	:"Are you willing not to use mobile during working hours?",
+			"string":"are_you_willing_not_to_use_mobile_during_working_hours"
+		},
+		{
+			"name"	:"Do you drink alcohol or smoke?",
+			"string":"do_you_drink_alcohol_or_smoke"
+		},
+		{
+			"name"	:"Have you ever suffered from any serious illness?",
+			"string":"have_you_ever_suffered_from_any_serious_illness"
+		},
+		{
+			"name"	:"Will you be honest and loyal to your employer?",
+			"string":"will_you_be_honest_and_loyal_to_your_employer"
+		},
+		{
+			"name"	:"Do you promise not to use mobile without permission?",
+			"string":"do_you_promise_not_to_use_mobile_without_permission"
+		},
+		{
+			"name"	:"Are you aware of 2 years employment contract with your employer?",
+			"string":"are_you_aware_of_2_years_employment_contract_with_your_employer"
+		},
+		{
+			"name"	:"Do you promise not to answer back to your employer when points out your mistake?",
+			"string":"promise_not_to_answer_back_to_employer"
+		},
+		{
+			"name"	:"Do you promise not to bring/invite friends or relatives to the house of your employer without permission?",
+			"string":"promise_not_invite_friends"
+		},
+		{
+			"name"	:"Are your parent/husband allowed you to work as a Housemaid in Malaysia?",
+			"string":"are_your_fam_allowerd_you_to_work_as_housemaid_in_malaysia"
+		},
+		{
+			"name"	:"Are you ready to be separated from your family during your employment in Malaysia?",
+			"string":"ready_to_be_separated_from_family_in_malaysia"
+		},
+		{
+			"name"	:"Are you physically and Mentally ready to work as a Housemaid in Malaysia?",
+			"string":"physically_and_mentally_as_housemaid_in_malaysia"
+		}
+	]
+}

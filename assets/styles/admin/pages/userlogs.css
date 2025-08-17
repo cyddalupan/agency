@@ -1,0 +1,91 @@
+* {
+	font-family:Tahoma, Geneva, sans-serif;
+	font-size:12px;
+}
+
+h1  {
+	font-size:1.5em;
+}
+
+h2 {
+	font-size:1.2em;
+}
+
+#wrapper {
+	width:1024px;
+	max-width:1024px;
+	margin:0 auto;
+	border:1px solid #999;
+	box-shadow:1px 1px #ccc;
+}
+
+#header {
+	text-align:center;
+	border:0px solid #998;
+}
+
+#header2 {
+	padding:10px;
+	border:0px solid #997;
+	font-size:1em;
+}
+
+#header2 .employer {
+	color:blue;
+	font-weight: bold;
+}
+
+#header2 .date-filter {
+	color:#f03;
+	font-weight: bold;
+}
+
+#content {
+	padding:10px;
+	border:0px solid #996;
+}
+
+table {
+	border:1px solid #ccc;
+	width:100%;
+	background-color: #fff;
+		margin-bottom: 0;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+table thead tr {
+	background-color: #eee;
+	background-image: linear-gradient(to bottom, #f2f2f2 0px, #fafafa 100%);
+	font-size: 12px;
+}
+
+table tr th {
+	padding:5px;
+	border-bottom: 2px solid #ddd;
+	font-size:11px;
+	font-weight:normal;
+	vertical-align: bottom;
+	text-align: left;
+} 
+
+table tr td {
+	padding:5px;
+	font-size:11px;
+	white-space: nowrap;
+	border: 1px solid #ddd;
+}
+
+table tr:first-child > td {
+	border-top: 0 none;
+}
+
+table#applicants {
+	
+}
+
+table span.employer {
+	font-weight: bold;
+	font-size:16px;
+	color:blue;
+}
