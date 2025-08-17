@@ -1,0 +1,69 @@
+<div>
+    <!-- Page Breadcrumb -->
+    <div class="page-breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="fa fa-home"></i>
+                <a href="{{base_url}}admin">Home</a>
+            </li>
+        </ul>
+    </div>
+    <!-- /Page Breadcrumb -->
+    <div class="page-header position-relative">
+        <div class="header-title">
+            <h1>
+                Change Status List
+            </h1>
+        </div>
+    </div>
+    <!-- /Page Header -->
+    <!-- Page Body -->
+    <div class="page-body">
+        <div class="text-center text-info dashboardstats-loading" ng-show="show_notification_loading">
+            <h1><i class="fa fa-circle-o-notch fa-spin"></i></h1>
+        </div>
+        <table class="table">
+          <tr>
+            <th>review</th>
+            <th>Applicant Name</th>
+            <th>Image</th>
+            <th>Type</th>
+            <th>date Upated</th>
+            <th>Upated By</th>
+          </tr>
+          <!--UnRead Notifications-->
+          <tr class="alert alert-danger" ng-repeat="media in media_list.unread">
+            <td>
+              <a class="btn btn-default" href="{{base_url}}admin/applicants/review_single/{{media.applicant.applicant_id}}" target="_blank" role="button">Review</a>
+            </td>
+            <td>
+              {{media.applicant.applicant_first}} {{media.applicant.applicant_last}}
+            </td>
+            <td>
+              <img ng-src="{{base_url}}{{media.file_path}}" class="img-thumbnail notif-media-thumb">
+            </td>
+            <td>{{media.file_type}}</td>
+            <td>{{media.file_created}}</td>
+            <td>{{media.user.user_name}}</td>
+          </tr>
+          <!--Read Notifications-->
+          <tr ng-repeat="media in media_list.read">
+            <td>
+              <a class="btn btn-default" href="{{base_url}}admin/applicants/review_single/{{media.applicant.applicant_id}}" target="_blank" role="button">Review</a>
+            </td>
+            <td>
+              {{media.applicant.applicant_first}} {{media.applicant.applicant_last}}
+            </td>
+            <td>
+              <img ng-src="{{base_url}}{{media.file_path}}" class="img-thumbnail notif-media-thumb">
+            </td>
+            <td>{{media.file_type}}</td>
+            <td>{{media.file_created}}</td>
+            <td>{{media.user.user_name}}</td>
+          </tr>
+       </table>
+      
+
+    </div>
+    <!-- /Page Body -->
+</div>

@@ -1,0 +1,103 @@
+<div>
+    <!-- Page Breadcrumb -->
+    <div class="page-breadcrumbs">
+        <ul class="breadcrumb">
+            <li>
+                <i class="fa fa-home"></i>
+                <a href="{{base_url}}admin">Home</a>
+            </li>
+        </ul>
+    </div>
+    <!-- /Page Breadcrumb -->
+    <div class="page-header position-relative">
+        <div class="header-title">
+            <h1>
+                Change Status List
+            </h1>
+        </div>
+    </div>
+    <!-- /Page Header -->
+    <!-- Page Body -->
+    <div class="page-body">
+        <div class="text-center text-info dashboardstats-loading" ng-show="show_notification_loading">
+            <h1><i class="fa fa-circle-o-notch fa-spin"></i></h1>
+        </div>
+        <div class="widget-body">
+          <div class="table-responsive" style="overflow:scroll; padding-bottom:20px;">
+            <table class="table status-table">
+                <tr>
+                  <th>Review</th>
+                  <th>Applicant Name</th>
+                  <th>New Status</th>
+                  <th>Sub Status</th>
+                  <th>Employer</th>
+                  <th>repat date</th>
+                  <th>Remarks</th>
+                  <th>Upated By</th>
+                  <th>Updated at</th>
+                </tr>
+                <!--UnRead Notifications-->
+                <tr class="alert alert-danger" ng-repeat="log in log_list.unread">
+                  <td>
+                    <a class="btn btn-default" href="{{base_url}}admin/applicants/review_single/{{log.applicant.applicant_id}}" target="_blank" role="button">Review</a>
+                  </td>
+                  <td>
+                    {{log.applicant.applicant_first}} {{log.applicant.applicant_last}} 
+                  </td>
+                  <td>
+                    {{log.status.status}}
+                  </td>
+                  <td>
+                    {{log.applicant.sub_status}}
+                  </td>
+                  <td>
+                    {{log.employer.employer_name}}
+                  </td>
+                  <td>
+                    <p ng-show="is_show_repat_date(log.repat_date)">{{log.repat_date}}</p>
+                  </td>
+                  <td>
+                    {{log.log_remarks}}
+                  </td>
+                  <td>
+                    {{log.user_system.user_fullname}}
+                  </td>
+                  <td>
+                    {{log.log_created}}
+                  </td>
+                </tr>
+                 <!--Read Notifications-->
+                <tr ng-repeat="log in log_list.read">
+                  <td>
+                    <a class="btn btn-default" href="{{base_url}}admin/applicants/review_single/{{log.applicant.applicant_id}}" target="_blank" role="button">Review</a>
+                  </td>
+                  <td>
+                    {{log.applicant.applicant_first}} {{log.applicant.applicant_last}} 
+                  </td>
+                  <td>
+                    {{log.status.status}}
+                  </td>
+                  <td>
+                    {{log.applicant.sub_status}}
+                  </td>
+                  <td>
+                    {{log.employer.employer_name}}
+                  </td>
+                  <td>
+                    <p ng-show="is_show_repat_date(log.repat_date)">{{log.repat_date}}</p>
+                  </td>
+                  <td>
+                    {{log.log_remarks}}
+                  </td>
+                  <td>
+                    {{log.user_system.user_fullname}}
+                  </td>
+                  <td>{{log.log_created}}</td>
+                </tr>
+            </table>
+          </div>
+        
+        </div>
+    </div>
+    <!-- /Page Body -->
+</div>
