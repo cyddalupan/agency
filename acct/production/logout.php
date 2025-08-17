@@ -1,0 +1,16 @@
+<?php
+session_start();
+$_SESSION['admin']=NULL; 
+$_SESSION['staff']=NULL; 
+$_SESSION['lab']=NULL; 
+$_SESSION['cashier']=NULL; 
+$_SESSION['psycho']=NULL; 
+unset($_SESSION['admin']); 
+unset($_SESSION['staff']); 
+unset($_SESSION['lab']); 
+unset($_SESSION['cashier']); 
+unset($_SESSION['psycho']); 
+session_destroy();
+header("location:xxxp.php");
+ exit;
+?>

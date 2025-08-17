@@ -1,0 +1,684 @@
+'<?php include'inc/header.php';
+include'inc/expenses.php';
+include'styles.php';
+include'tracking.php';
+?>
+<style>
+input[type="checkbox"] {
+width: 20px;
+height: 20px;
+}
+</style>
+
+
+<body class="nav-md">
+<div class="container body">
+<div class="main_container">
+<div class="col-md-3 left_col">
+<div class="left_col scroll-view">
+<div class="navbar nav_title" style="border: 0;">
+<a href="index.html" class="site_title"> <span><?php include'title.php';?></span></a>
+</div>
+
+<div class="clearfix"></div>
+
+<!-- menu profile quick info -->
+<div class="profile clearfix">
+<div class="profile_pic">
+<img src="images/img.jpg" alt="..." class="img-circle profile_img">
+</div>
+<div class="profile_info">
+<span>Welcome,</span>
+<h2><?=$_SESSION['user_fullname']?></h2>
+</div>
+</div>
+<!-- /menu profile quick info -->
+
+<br />
+
+<!-- sidebar menu -->
+<div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+
+<div class="menu_section">
+<?php include'inc/menu.php';?>	
+</div>
+</div>
+<!-- /sidebar menu -->
+
+<!-- /menu footer buttons -->
+<div class="sidebar-footer hidden-small">
+<a data-toggle="tooltip" data-placement="top" title="Settings">
+<span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+</a>
+<a data-toggle="tooltip" data-placement="top" title="FullScreen">
+<span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span>
+</a>
+<a data-toggle="tooltip" data-placement="top" title="Lock">
+<span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
+</a>
+<a data-toggle="tooltip" data-placement="top" title="Logout" href="login.html">
+<span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+</a>
+</div>
+<!-- /menu footer buttons -->
+</div>
+</div>
+
+<!-- top navigation -->
+<div class="top_nav">
+<div class="nav_menu">
+<nav>
+<div class="nav toggle">
+<a id="menu_toggle"><i class="fa fa-bars"></i></a>
+</div>
+<ul class="nav navbar-nav navbar-right">
+<li class="">
+<a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+<img src="images/img.jpg" alt="">
+<span class=" fa fa-angle-down"></span>
+</a>
+<ul class="dropdown-menu dropdown-usermenu pull-right">
+
+</li>
+<li><a href="logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
+</ul>
+</li>
+
+
+</ul>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+<!-- /top navigation -->
+
+<!-- page content -->
+<div class="right_col" role="main">
+<form id="demo-form2" data-parsley-validate class="form-horizontal form-label-left" method="post">
+<div class="form-group">
+
+
+<div class="form-group">
+<div class="col-md-3 col-sm-4 col-xs-4 form-group">
+<?php
+echo'<select class="form-control" name="agent_id" required>
+<option VALUE="999999">-All Agents-</option>';
+
+$usertype = mysql_query("SELECT * FROM recruitment_agent where agent_type='Agent'  AND agent_first!='0' ORDER BY agent_first asc");
+echo'<optgroup label="Agent">';
+while($rows=mysql_fetch_array($usertype))
+
+{
+echo'<option value="'.$rows["agent_id"].'"> '.$rows["agent_first"].' '.$rows["agent_last"].'</option>';
+}
+echo'</optgroup>';
+
+
+
+ECHO'</select>';
+?>
+
+</div>
+
+<div class="col-md-6 col-sm-12 col-xs-12 form-group">
+<button type="submit" class="btn btn-success"  name="searchme" >Search Agent</button>
+
+</div>
+
+
+</form>  
+
+
+
+
+<form id="demo-form2" data-parsley-validate class="form-horizontal form-label-left" method="post" action="multiple/index.php?me=2">
+<button type="submit" class="btn btn-info btn-sm pull-right"  style="border:BORDER 2PX SOLID white;color:black">Multiple REQUEST</button>
+ 
+</form> 
+
+
+<div class="row">
+
+<div class="col-md-12 col-xs-12">
+<div class="x_panel">
+
+<div class="x_content">
+
+
+<form action="" method="post">
+<?php
+if($_SESSION['user_type']==4 || $_SESSION['user_type']==2 ){
+?>
+ <select name="mystatus" style="padding:5px" required>
+     <option value="">-Select-</option>
+     <option value="0">For Approval</option>
+     <option value="1">Approved</option>
+      <option value="3">Released</option>
+   
+ </select>
+ 
+<a href="delete_methode_link" onclick="return confirm('Are you sure you want to Save?');">		
+<button type="submit" class="btn btn-warning btn-sm"  name="updateapproval" style="border:BORDER 2PX SOLID black;color:white">Save "Approved"</button>
+</a>
+
+<?PHP } ?> 
+<a href="<?=$actual_link;?>" style="color:Red;text-align:right">Refresh</a>
+</br></br>
+
+<h2>Agent Commission</h2>
+</br></br>
+
+
+<table  cellspacing="0" id="example-checkbox">
+<thead>
+<tr>
+<th STYLE="width:1%"></th>
+
+
+<th>Encoded</th>
+<th STYLE="">ACTION</th>
+<th > DATE </th>
+<th>RED NO.</th>
+<th>APPROVED BY</th>
+<th>BRANCH</th>
+<th>COUNTRY</th>
+
+<th style="text-align:right">Request</th>
+<th > Date</th>
+<th >CURRENCY</th>
+<th>AMOUNT</th>
+<th>AGENT</th>
+<th>APPLICANT</th>
+<th>SUPPLIER</th>
+<th>Bank (CASHOUT)</th>
+<th>Type</th>
+<th >Account</th>
+<th >DESCRIPTION</th>
+
+</tr>
+</thead>
+<tbody>
+<?php	
+$count=1;
+
+if(isset($_POST['updateapproval'])){
+foreach ($_POST['delall'] as $delall) {
+$app = mysql_query("UPDATE email_address
+SET  request_payment =".$_POST['mystatus']." 
+
+where e_id= ".$delall)
+
+or die ("cannot Update data");
+}
+echo"<p style='color:white;BACKGROUND:#DC143C;padding:10px;FONT-SIZE:14PX;WIDTH:400px'>Succesfully UPDATE..</p>";
+}
+
+
+
+$app = mysql_query("SELECT email_address.*
+,applicant.applicant_first
+,applicant.applicant_middle
+,applicant.applicant_last
+
+FROM email_address
+LEFT JOIN  	applicant
+ON email_address.app_id = applicant.applicant_id
+
+where account  IN ('Full Agent','Cash Advance agent','FTW','CS','DEPLOYED','PARTIAL AGENT')
+AND request_payment!=4
+order by e_id desc limit 150");
+
+
+
+if(isset($_POST['searchme']))
+{
+
+
+$app = mysql_query("SELECT email_address.*
+,applicant.applicant_first
+,applicant.applicant_middle
+,applicant.applicant_last
+
+FROM email_address
+LEFT JOIN  	applicant
+ON email_address.app_id = applicant.applicant_id
+
+where  agent_id= ".$_POST['agent_id']."
+AND account  IN ('Full Agent','Cash Advance agent','FTW','CS','DEPLOYED','PARTIAL AGENT')
+AND request_payment!=4
+order by e_id desc ");
+
+		
+		
+}
+
+
+
+while($row=mysql_fetch_array($app))
+{
+
+
+$app1 = mysql_query("SELECT * FROM recruitment_agent where agent_id=".$row['agent_id']." ");
+$row1=mysql_fetch_array($app1);
+
+$applicant = mysql_query("SELECT * FROM applicant where applicant_id=".$row['app_id']." ");
+$rowp=mysql_fetch_array($applicant);
+
+$USER = mysql_query("SELECT * FROM  user where user_id=".$row['staff_id']." ");
+$rowu=mysql_fetch_array($USER);
+
+
+
+$sup = mysql_query("SELECT * FROM  suppliers where sup_id=".$row['sup_id']." ");
+$sup1=mysql_fetch_array($sup);
+
+
+$LIQ = mysql_query("SELECT sum(l_amount) as cashfund FROM  e_liq 
+where l_status=0 AND l_e_d=".$row['e_id']."");
+$cashliq=mysql_fetch_array($LIQ);
+$total_liqq=$cashliq['cashfund']+$row['cash_refund'];
+$total_reim=$row['amount']+$row['reimbursement'];
+
+
+if($row["request_payment"]==0){$request='Pending';$rcolor='black';}
+if($row["request_payment"]==1){$request='Approved';$rcolor='blue';}
+if($row["request_payment"]==2){$request='For Release';$rcolor='orange';}
+if($row["request_payment"]==3){$request='Released';$rcolor='green';}
+if($row["request_payment"]==4){$request='Decline';$rcolor='red';}
+if($row["request_payment"]==5){$request='Return to maker';$rcolor='red';}
+
+
+$bank = mysql_query("SELECT * FROM  bank_accounts where bank_id=".$row['fund_source_id']." ");
+$bank1=mysql_fetch_array($bank);
+$bank2 = mysql_query("SELECT * FROM  bank_accounts where bank_id=".$row['account_expense']." ");
+$bank22=mysql_fetch_array($bank2);
+
+$source = mysql_query("SELECT * FROM  source_payment where s_id=".$row['fund_source_id']." ");
+$source1=mysql_fetch_array($source);
+
+
+
+$expense = mysql_query("SELECT SUM(amount) as amount_total ,email_address.* FROM email_address
+WHERE account='".$row["account"]."' and currency='PHP' AND request_paymenT IN (3)");
+$expense1=mysql_fetch_array($expense);
+
+
+if	($expense1["amount_total"]==0) {$expnes88="";}
+if	($expense1["amount_total"]!=0) {$expnes88=$expense1["amount_total"];}	
+
+if($row['branch_type']==0){$branchme="N/A";}
+if($row['branch_type']==7){$branchme="ILO ILO BRANCH";}
+if($row['branch_type']==8){$branchme="CDO BRANCH";}
+if($row['branch_type']==9){$branchme="DAVAO BRANCH";}
+if($row['branch_type']==10){$branchme="BINANGON BRANCH";}
+if($row['branch_type']==11){$branchme="CAVITE BRANCH";}
+if($row['branch_type']==14){$branchme="MAIN MANILA BRANCH";}
+if($row['branch_type']==15){$branchme="TACLOBAN BRANCH";}
+if($row['branch_type']==13){$branchme="CEBU BRANCH";}
+
+
+
+if($row['country']==5){$countryme="KUW";}
+if($row['country']==7){$countryme="KSA";}
+if($row['country']==11){$countryme="QATAR";}
+if($row['country']==12){$countryme="DUBAI";}
+
+if($row['tm1']==1){$approved1="Approved Officer";}
+if($row['tm2']==1){$approved2="Superadmin";}
+
+
+if($row['tm2']==2){$approved2="Declined";}
+if($row['tm1']==2){$approved1="Declined";}
+if($row['tm1']==0){$approved1="Not Approve";}
+if($row['tm1']==0){$approved2="";}
+
+
+echo'<tr>';
+echo'<td><input type="checkbox" name="delall[]" value="'.$row['e_id'].'" ></td>';
+
+echo'<td style="color:">'.$row["requestby"].' </td>';
+echo'<td><button type="button" class="btn btn-danger" btn-xs" style="font-size:11px">
+<a href="expenses-agent.php?e_id='.$row["e_id"].'" target="_blank"  STYLE="color:white">Review</button></a>
+</td>';
+
+IF($row['date_ad']=='1970-01-01' || $row['date_ad']=='0000-00-00' ) { echo"<td></td>"; }
+else{ echo"<td>".$row['date_ad']."</td>"; }
+echo'<td>'.$row["ref"].'</td>';
+echo'<td><p style="border:1px solid lightgray;padding:2px">'.$approved1.'<p>
+<p style="border:1px solid lightblue;padding:2px">'.$approved2.'<p></td>';
+
+echo'<td>'.$branchme.'</td>';
+echo'<td>'.$countryme.'</td>';
+echo'<td style="font-size:12px;color:white;">
+<i style="background:'.$rcolor.';padding:2px;margin:2px">'.$request.'</i>
+</td>';
+echo'<td>'; echo date('Y-M-d', strtotime($row['date_ad']));echo'</td>';
+echo'<td>'.$row["currency"].'</td>';
+echo'<td  style="color:red"> '.number_format($total_reim, 2).'</td>';
+echo'<td STYLE="Color:black;font-weight:bold;font-size:14px">'.$row1["agent_first"].' '.$row1["agent_last"].'</td>';
+
+echo'<td STYLE="Color:black;font-weight:bold;font-size:14px">'.$row["applicant_first"].' '.$row["applicant_last"].'</td>';
+
+echo'<td>'.$sup1["codes"].'-'.$sup1["name"].' <br><i style="color:RED;backgroun:lightgray;FONT-SIZE:10PX">'.$sup1["sup_type"].'</si></td>';
+echo'<td>BankName:'.$bank1["bank_name"].' <br> BankAccount:'.$bank1["bank_number"].' </td>';
+echo'<td>'.$row["method"].'</td>';
+echo'<td>'.$row["account"].'</td>';
+
+echo'<td>'.$row["description"].'</td>';
+
+
+
+echo'</tr>';
+}
+?>
+</tbody>
+</table>
+</form>	
+
+
+<div class="ln_solid"></div>
+
+</div>
+</div>
+</div>  
+
+</div>			
+
+
+<!-- /footer content -->
+</div>
+</div>
+<!-- jQuery -->
+<script src="../vendors/jquery/dist/jquery.min.js"></script>
+<!-- Bootstrap -->
+<script src="../vendors/bootstrap/dist/js/bootstrap.min.js"></script>
+<!-- Skycons -->
+<script src="../vendors/skycons/skycons.js"></script>
+
+<!-- Custom Theme Scripts -->
+<script src="../build/js/custom.min.js"></script>
+
+</body>
+
+
+
+
+
+
+<!-- Propeller Data table js-->
+<script type="text/javascript" language="javascript" src="jsdatatables.js"></script>
+<script>
+//Propeller Customised Javascript code 
+$(document).ready(function() {
+$('#example-checkbox').DataTable({
+responsive: false,
+columnDefs: [ {
+orderable: false,
+className: 'select-checkbox',
+targets:0,
+} ],
+select: {
+style: 'multi',
+selector: 'td:first-child'
+},
+order: [ 1, 'desc' ],
+bFilter: true,
+bLengthChange: true,
+pagingType: "simple",
+"paging": true,
+"searching": true,
+"language": {
+"info": " _START_ - _END_ of _TOTAL_ ",
+"sLengthMenu": "<span class='custom-select-title'>Rows per page:</span> <span class='custom-select'> _MENU_ </span>",
+"sSearch": "",
+"sSearchPlaceholder": "Search",
+"paginate": {
+"sNext": " ",
+"sPrevious": " "
+},
+},
+dom:
+"<'row'<'col-sm-12'><'search-paper pmd-textfield'f>>" +
+"<'custom-select-info'<'custom-select-item'><'custom-select-action'>>" +
+"<'row'<'col-sm-12'tr>>" +
+"<'pmd-card-footer' <'pmd-datatable-pagination' l i p>>",
+});
+
+/// Select value
+$('.custom-select-info').hide();
+
+$('#example-checkbox tbody').on( 'click', 'tr', function () {
+if ( $(this).hasClass('selected') ) {
+var rowinfo = $(this).closest('.dataTables_wrapper').find('.select-info').text();
+$(this).closest('.dataTables_wrapper').find('.custom-select-info .custom-select-item').text(rowinfo);
+if ($(this).closest('.dataTables_wrapper').find('.custom-select-info .custom-select-item').text() != null){
+$(this).closest('.dataTables_wrapper').find('.custom-select-info').show();
+//show delet button
+} else{
+$(this).closest('.dataTables_wrapper').find('.custom-select-info').hide();
+}
+}
+else {
+var rowinfo = $(this).closest('.dataTables_wrapper').find('.select-info').text();
+$(this).closest('.dataTables_wrapper').find('.custom-select-info .custom-select-item').text(rowinfo);
+}
+if($('#example-checkbox').find('.selected').length == 0){
+$(this).closest('.dataTables_wrapper').find('.custom-select-info').hide();
+}
+} );
+$("div.data-table-title").html('');
+$(".custom-select-action").html('<button class="btn btn-sm pmd-btn-fab pmd-btn-flat pmd-ripple-effect btn-primary" type="button"><i class="material-icons pmd-sm">delete</i></button><button class="btn btn-sm pmd-btn-fab pmd-btn-flat pmd-ripple-effect btn-primary" type="button"><i class="material-icons pmd-sm">more_vert</button>');
+
+} );
+</script>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" role="dialog">
+<div class="modal-dialog">
+
+<!-- Modal content-->
+<div class="modal-content">
+<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal">&times;</button>
+<h4 class="modal-title">New  Transaction</h4>
+</div>
+<div class="modal-body">
+
+<form class="form-horizontal form-label-left input_mask" method="post" action="">	
+
+
+
+
+<?php
+if($_SESSION['user_type']==4 || $_SESSION['user_type']==2 ){
+$mydisable='';
+}
+else{
+ $mydisable='readonly';   
+}
+?>
+
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">DATE Transaction</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<input type="date" class="form-control" name="date_ad" value="<?=$date1?>" required>
+</div>
+</div>
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">REF #</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<input type="TEXT" class="form-control" name="ref"   >
+</div>
+</div>
+
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Type Of Expenses</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<?php echo'
+<select class="form-control" name="account" required>';
+
+echo'<option>FTW</option>';
+echo'<option>CS</option>';
+echo'<option>DEPLOYED</option>';
+echo'<option>PARTIAL AGENT</option>';
+echo'<option>FULL AGENT</option>';
+echo'</select>';
+?>
+</div>
+</div>
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Currency</label>
+<div class="col-md-9 col-sm-9 col-xs-12" required>
+<select class="form-control" name="currency"   >
+<option>PHP</option>
+<option>USD</option>
+</select>
+</div>
+</div>
+
+
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Amount</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<input type="number" class="form-control" name="amount" step="any"  required>
+</div>
+</div>
+
+
+
+
+
+<div class="form-group" STYLE="">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Description</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<input type="text" class="form-control" name="description" >
+</div>
+</div>
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Branch</label>
+<div class="col-md-9 col-sm-9 col-xs-12" required>
+<select class="form-control" name="branch_type" >
+<option></option>
+<option VALUE="14">MAIN  MANILA  BRANCH</option>
+<option VALUE="12">Pangasinan</option>
+
+</select>
+</div>
+</div>
+
+
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Country</label>
+<div class="col-md-9 col-sm-9 col-xs-12" required>
+<select class="form-control" name="country" >
+<option VALUE="0">N/A</option>
+<option VALUE="5">KUW</option>
+<option VALUE="7">KSA</option>
+<option VALUE="11">QAT</option>
+<option VALUE="12">DUBAI</option>
+</select>
+</div>
+</div>
+
+
+
+<script>
+function showapplicant(str) {
+
+var xhttp;    
+if (str == "") {
+document.getElementById("showapp").innerHTML = "";
+return;
+}
+xhttp = new XMLHttpRequest();
+xhttp.onreadystatechange = function() {
+if (this.readyState == 4 && this.status == 200) {
+document.getElementById("showapp").innerHTML = this.responseText;
+}
+};
+xhttp.open("GET", "showapp.php?q="+str, true);
+xhttp.send();
+}
+
+</script>
+
+
+
+<div class="form-group" STYLE="">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Agent</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<?php
+echo'<select class="form-control" name="agent_id" required onchange="showapplicant(this.value)" >
+
+<option vaue="">N/A</option>
+';
+
+$usertype = mysql_query("SELECT * FROM recruitment_agent  
+ ORDER BY agent_first asc");
+while($rows=mysql_fetch_array($usertype))
+{
+echo'<option value="'.$rows["agent_id"].'"> '.$rows["agent_first"].' '.$rows["agent_last"].'</option>';
+}
+ECHO'</select>';
+?>
+</div>
+</div>
+
+<div class="form-group">
+<label class="control-label col-md-3 col-sm-3 col-xs-12">Applicant</label>
+<div class="col-md-9 col-sm-9 col-xs-12">
+<?php
+echo'<select class="form-control" name="app_id"  id="showapp" required>
+<option  value="">--</option>
+<option  value="0">OTHER</option>';
+
+//$applicant = mysql_query("SELECT * FROM applicant ORDER BY applicant_date_applied asc");
+//while($rows1=mysql_fetch_array($applicant))
+//{
+//echo'<option value="'.$rows1["applicant_id"].'">  '.$rows1["applicant_last"].' '.$rows1["applicant_first"].'-'.$rows1["applicant_id"].'</option>';
+//}
+//ECHO'</select>';
+?>
+
+</div>
+</div>
+
+
+
+
+
+<input type="hidden" class="form-control" name="requestby" VALUE="<?=$_SESSION['admin']['user']['user_name']?>">
+
+<div class="form-group">
+<div class="col-md-12 col-sm-9 col-xs-12">	
+<button type="submit" class="btn btn-danger pull-right"  name="add_exp">Save</button>
+</div>
+</div>
+
+
+</form>		  
+
+
+
+</div>
+
+</div>
+
+</div>
+</div>

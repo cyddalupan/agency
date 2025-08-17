@@ -1,0 +1,742 @@
+<?php include'inc/header.php';
+include'inc/expenses.php';
+include'tracking.php';
+include'styles.php';
+?>
+  <body class="nav-md">
+    <div class="container body">
+      <div class="main_container">
+        <div class="col-md-3 left_col">
+          <div class="left_col scroll-view">
+            <div class="navbar nav_title" style="border: 0;">
+              <a href="index.html" class="site_title"> <span><?php include'title.php';?></span></a>
+            </div>
+
+            <div class="clearfix"></div>
+
+            <!-- menu profile quick info -->
+            <div class="profile clearfix">
+              <div class="profile_pic">
+                <img src="images/img.jpg" alt="..." class="img-circle profile_img">
+              </div>
+              <div class="profile_info">
+                <span>Welcome,</span>
+                <h2><?=$_SESSION['user_fullname']?></h2>
+              </div>
+            </div>
+            <!-- /menu profile quick info -->
+
+            <br />
+
+            <!-- sidebar menu -->
+            <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+            
+              <div class="menu_section">
+               <?php include'inc/menu.php';?>	
+              </div>
+
+            </div>
+            <!-- /sidebar menu -->
+
+            <!-- /menu footer buttons -->
+            <div class="sidebar-footer hidden-small">
+              <a data-toggle="tooltip" data-placement="top" title="Settings">
+                <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="FullScreen">
+                <span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="Lock">
+                <span class="glyphicon glyphicon-eye-close" aria-hidden="true"></span>
+              </a>
+              <a data-toggle="tooltip" data-placement="top" title="Logout" href="login.html">
+                <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+              </a>
+            </div>
+            <!-- /menu footer buttons -->
+          </div>
+        </div>
+
+        <!-- top navigation -->
+        <div class="top_nav">
+          <div class="nav_menu">
+            <nav>
+              <div class="nav toggle">
+                <a id="menu_toggle"><i class="fa fa-bars"></i></a>
+              </div>
+
+              <ul class="nav navbar-nav navbar-right">
+                <li class="">
+                  <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                    <img src="images/img.jpg" alt="">
+                    <span class=" fa fa-angle-down"></span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-usermenu pull-right">
+                   
+                    </li>
+                    <li><a href="logout.php"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
+                  </ul>
+                </li>
+
+              
+                  </ul>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        <!-- /top navigation -->
+
+        <!-- page content -->
+        <div class="right_col" role="main">
+ 
+
+         
+              
+
+
+
+<div class="row">
+
+
+
+<div class="row">
+<div class="col-md-12 col-xs-12">
+<div class="x_panel">
+<div class="x_content">
+</br>
+<h3>Summary Reports</h3>
+
+<?php
+$cash = mysql_query("SELECT sum(fund_amount) as cashfund FROM  fund 
+where fund_date_status=0 ");
+$cashrow=mysql_fetch_array($cash);
+$cashrow1 = number_format($cashrow['cashfund'], 2);
+
+
+$expp = mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'");
+$expprow=mysql_fetch_array($expp);
+
+
+$expp2 = mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'");
+$expprow2=mysql_fetch_array($expp2);
+
+//get expenses
+$LIQ = mysql_query("SELECT sum(e_liq.l_amount) as cashfund,email_address.*,e_liq.* FROM  email_address
+LEFT JOIN e_liq
+ON email_address.e_id=e_liq.l_e_d 
+where 
+email_address.account='SALARY'
+AND e_liq.l_status=0 
+AND e_liq.l_type  IN ('Deduction','Absences')
+");
+$cashliqdeduction=mysql_fetch_array($LIQ);
+
+$LIQ1 = mysql_query("SELECT sum(e_liq.l_amount) as cashfund,email_address.*,e_liq.* FROM  email_address
+LEFT JOIN e_liq
+ON email_address.e_id=e_liq.l_e_d 
+where 
+email_address.account='SALARY'
+AND e_liq.l_status=0 
+AND e_liq.l_type  IN ('Incentive','Allowance')
+");
+
+
+$cashliqexp=mysql_fetch_array($LIQ1);
+
+$reimburse = mysql_query("SELECT sum(reimbursement) as cashfund FROM email_address");
+$reimburse1=mysql_fetch_array($reimburse);
+
+$totalexpenses=($expprow['cashfund']-$cashliqdeduction['cashfund']) +($expprow2['cashfund']+$cashliqexp['cashfund']);
+
+$expprow1 = number_format($totalexpenses, 2);
+
+
+$expu = mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='USD'");
+$expurow=mysql_fetch_array($expu);
+$expurow1 = number_format($expurow['cashfund'], 2);
+
+
+
+$collection = mysql_query("SELECT sum(amount) as cashfund FROM   email_address6 
+where currency='USD'");
+$collection1=mysql_fetch_array($collection);
+$collection11 = number_format($collection1['cashfund'], 2);
+
+
+
+$liq = mysql_query("SELECT sum(l_amount) as cashfund  FROM   e_liq 
+where l_status=0
+AND   l_type  IN ('Applicant Expense','Liquidation')
+");
+$liqrow=mysql_fetch_array($liq);
+$liqrow1 = number_format($liqrow['cashfund'], 2);
+
+
+
+$rr = mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND staff_id NOT IN(10014,0)
+AND account!='SALARY'
+");
+$rrrow=mysql_fetch_array($rr);
+$rrrow1 = number_format($rrrow['cashfund'], 2);
+?>
+<style>
+h3{
+font-size:16px;	
+}
+</style>
+
+
+<div style="float:left;width:100%">
+<?php
+if($_SESSION['user_type']==4 || $_SESSION['user_type']==2 ){
+?>
+
+	<div style="padding:20px;width:%;height:180px;border:1px solid lightgray;margin:35px;float:left">
+			<h3 style="color:green">Total Cash Fund</h3>
+			<h3 style="color:gray"><?=$cashrow1?> PHP</h3>
+	</div>
+	
+	<div style="padding:20px;width:%;%;height:180px;border:1px solid lightgray;margin:35px;float:left">
+			<h3 style="color:orange">Total Expense</h3>
+			<h3 style="color:gray"><?=$expprow1?> PHP</h3>
+	</div>
+	
+	<div style="padding:20px;width:%;%;height:180px;border:1px solid lightgray;margin:35px;float:left">
+			<h3 style="color:blue">Total Expense</h3>
+			<h3 style="color:gray"><?=$expurow1?> $</h3>
+	</div>
+	
+	<div style="padding:20px;width:%;%;height:180px;border:1px solid lightgray;margin:35px;float:left">
+			<h3 style="color:red">Total Collection</h3>
+			<h3 style="color:gray"><?=$collection11?> $</h3>
+	</div>
+	
+	
+	<?php
+$grandtot111 = $cashrow['cashfund'] -$totalexpenses;
+$final = number_format($grandtot111, 2);
+?>	
+	
+		<div style="padding:20px;width:%;%;height:180px;border:1px solid lightgray;margin:35px;float:left">
+			<h3 style="color:black;font-weight:bold">Remaining Fund</h3>
+			<h3 style="color:gray;font-weight:bold"><?=$final?> PHP</h3>
+	</div>
+	
+
+
+
+<div style="clear:both;height:20px"></div>
+</div>
+
+
+
+
+
+
+</div>
+
+<h3  style="display:none" >Summary Reports Income</h3>
+</br>
+
+
+
+<table id="customers" style="width:50%;display:none" >
+<tr>
+<th>Month 2019</th>
+<th>Expenses</th>
+<th>Collection</th>
+<th>Income</th>
+</tr>
+
+<?php
+$app = mysql_query("SELECT * FROM   months
+order by month_id asc  ");
+
+
+while($row=mysql_fetch_array($app))
+{
+
+if($row["month_id"]==1){ $start='2019-01-01'; $end='2019-01-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+
+$expensesm1= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+
+$expensesm11= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm1=mysql_fetch_array($expenses1);
+$expensesm11=mysql_fetch_array($expenses11);
+$expensesm=$expensesm1['cashfund']+$expensesm11['cashfund']+$approw['cashfund'];
+
+
+
+
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+}
+
+
+if($row["month_id"]==2){ $start='2019-02-01'; $end='2019-02-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+
+$expensesm2= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm22= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+
+$expensesm2=mysql_fetch_array($expensesm2);
+$expensesm22=mysql_fetch_array($expensesm22);
+$expensesm=$expensesm2['cashfund']+$expensesm22['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+
+if($row["month_id"]==3){ $start='2019-03-01'; $end='2019-03-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+
+$expensesm3= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm33= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm3=mysql_fetch_array($expensesm3);
+$expensesm33=mysql_fetch_array($expensesm33);
+$expensesm=$expensesm3['cashfund']+$expensesm33['cashfund']+$approw['cashfund'];
+
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+}
+
+if($row["month_id"]==4){ $start='2019-04-01'; $end='2019-04-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm4= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm44= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm4=mysql_fetch_array($expensesm4);
+$expensesm44=mysql_fetch_array($expensesm44);
+$expensesm=$expensesm4['cashfund']+$expensesm44['cashfund']+$approw['cashfund'];
+
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+if($row["month_id"]==5){ $start='2019-05-01'; $end='2019-05-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+
+$expensesm5= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+
+$expensesm55= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm5=mysql_fetch_array($expensesm5);
+$expensesm55=mysql_fetch_array($expensesm55);
+$expensesm=$expensesm5['cashfund']+$expensesm55['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+
+if($row["month_id"]==6){ $start='2019-06-01'; $end='2019-06-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm6= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm66= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm6=mysql_fetch_array($expensesm6);
+$expensesm66=mysql_fetch_array($expensesm66);
+$expensesm=$expensesm6['cashfund']+$expensesm66['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+
+
+if($row["month_id"]==7){ $start='2019-07-01'; $end='2019-07-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm7= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm77= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm7=mysql_fetch_array($expensesm7);
+$expensesm77=mysql_fetch_array($expensesm77);
+$expensesm=$expensesm7['cashfund']+$expensesm77['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+
+if($row["month_id"]==8){ $start='2019-08-01'; $end='2019-08-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm8= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm88= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+
+$expensesm8=mysql_fetch_array($expensesm8);
+$expensesm88=mysql_fetch_array($expensesm88);
+$expensesm=$expensesm8['cashfund']+$expensesm88['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+
+}
+
+
+if($row["month_id"]==9){ $start='2019-09-01'; $end='2019-09-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm9= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm99= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm9=mysql_fetch_array($expensesm9);
+$expensesm99=mysql_fetch_array($expensesm99);
+$expensesm=$expensesm9['cashfund']+$expensesm99['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+}
+
+
+
+if($row["month_id"]==10){ $start='2019-10-01'; $end='2019-10-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm10= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm101= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm10=mysql_fetch_array($expensesm10);
+$expensesm101=mysql_fetch_array($expensesm101);
+$expensesm=$expensesm10['cashfund']+$expensesm101['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+}
+
+if($row["month_id"]==11){ $start='2019-11-01'; $end='2019-11-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+$expensesm11= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm111= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm11=mysql_fetch_array($expensesm11);
+$expensesm111=mysql_fetch_array($expensesm111);
+$expensesm=$expensesm11['cashfund']+$expensesm111['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+
+}
+
+
+if($row["month_id"]==12){ $start='2019-12-01'; $end='2019-12-31';
+$appli= mysql_query("SELECT sum(receivable) as cashfund FROM  email_address4 
+where currency='PHP'
+AND type_status!='Repat'
+AND date_transaction BETWEEN '".$start."' AND '".$end."'
+");
+$approw=mysql_fetch_array($appli);
+
+
+$expensesm12= mysql_query("SELECT sum(amount) as cashfund FROM  email_address 
+where currency='PHP'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+
+
+
+$expensesm122= mysql_query("SELECT sum(amount*50) as cashfund FROM  email_address 
+where currency='USD'
+AND date_ad BETWEEN '".$start."' AND '".$end."'
+");
+$expensesm12=mysql_fetch_array($expensesm12);
+$expensesm122=mysql_fetch_array($expensesm122);
+$expensesm=$expensesm12['cashfund']+$expensesm122['cashfund']+$approw['cashfund'];
+
+$col = mysql_query("SELECT SUM(amount) as amountusd ,emp_id,amount FROM email_address6
+WHERE  currency='USD'
+AND date BETWEEN '".$start."' AND '".$end."'
+");
+$colusd=mysql_fetch_array($col);
+$totalusd=$colusd["amountusd"]*50;
+}
+
+$income=$totalusd-$expensesm;
+
+
+echo'<tr>';
+echo'<td>'.$row["mont"].'</td>';
+echo'<td style="color:gray">'.number_format($expensesm1=$expensesm,2).'</td>';
+echo'<td style="color:gray">'.number_format($totalusd1=$totalusd,2).'</td>';
+echo'<td style="color:red">'.number_format($income1=$income,2).'</td>';
+echo'</tr>';
+}
+?>
+</table>
+
+
+<form action="printdaily.php" method="post" target="_blank" >
+<input type="date" class="form-control" name="start" value="<?=$date2;?>" style="display:none"></div>
+<input type="date" class="form-control" name="end"  value="<?=$date2;?>" style="display:none"></div>
+<select class="form-control" required name="currency" style="display:none">
+<option>PHP</option>
+</select>
+
+
+<input type="submit" name="submitsearch" value="Print Daily Reports" style="width:220px;float:right" >
+</form>
+
+
+
+<?php
+}
+?>
+
+
+
+
+
+
+</br></br></br></br>
+
+
+</div>
+</div>
+</div>  
+</div>	
+
+
+
+
+
+
+</div>
+
+    <!-- jQuery -->
+    <script src="../vendors/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="../vendors/bootstrap/dist/js/bootstrap.min.js"></script>
+    <!-- FastClick -->
+    <script src="../vendors/fastclick/lib/fastclick.js"></script>
+    <!-- NProgress -->
+    <script src="../vendors/nprogress/nprogress.js"></script>
+    <!-- Chart.js -->
+    <script src="../vendors/Chart.js/dist/Chart.min.js"></script>
+    <!-- gauge.js -->
+    <script src="../vendors/gauge.js/dist/gauge.min.js"></script>
+    <!-- bootstrap-progressbar -->
+    <script src="../vendors/bootstrap-progressbar/bootstrap-progressbar.min.js"></script>
+    <!-- iCheck -->
+    <script src="../vendors/iCheck/icheck.min.js"></script>
+    <!-- Skycons -->
+    <script src="../vendors/skycons/skycons.js"></script>
+    <!-- Flot -->
+    <script src="../vendors/Flot/jquery.flot.js"></script>
+    <script src="../vendors/Flot/jquery.flot.pie.js"></script>
+    <script src="../vendors/Flot/jquery.flot.time.js"></script>
+    <script src="../vendors/Flot/jquery.flot.stack.js"></script>
+    <script src="../vendors/Flot/jquery.flot.resize.js"></script>
+    <!-- Flot plugins -->
+    <script src="../vendors/flot.orderbars/js/jquery.flot.orderBars.js"></script>
+    <script src="../vendors/flot-spline/js/jquery.flot.spline.min.js"></script>
+    <script src="../vendors/flot.curvedlines/curvedLines.js"></script>
+    <!-- DateJS -->
+    <script src="../vendors/DateJS/build/date.js"></script>
+    <!-- JQVMap -->
+    <script src="../vendors/jqvmap/dist/jquery.vmap.js"></script>
+    <script src="../vendors/jqvmap/dist/maps/jquery.vmap.world.js"></script>
+    <script src="../vendors/jqvmap/examples/js/jquery.vmap.sampledata.js"></script>
+    <!-- bootstrap-daterangepicker -->
+    <script src="../vendors/moment/min/moment.min.js"></script>
+    <script src="../vendors/bootstrap-daterangepicker/daterangepicker.js"></script>
+
+    <!-- Custom Theme Scripts -->
+    <script src="../build/js/custom.min.js"></script>
+	
+  </body>
+</html>
+
+
+
+

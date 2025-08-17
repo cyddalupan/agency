@@ -1,0 +1,9 @@
+<?php
+if($_POST['type']=='DETAILED'){
+include'detailexp.php';
+}
+if($_POST['type']=='SUMMARY'){
+include'detaileexp.php';
+}
+include'detaileexp.php';
+?>
