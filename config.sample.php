@@ -1,10 +1,13 @@
 <?php
 
+// Site URL
+define('SITE_URL', 'http://localhost/');
+
 // Database credentials
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', ''); // No password
-define('DB_NAME', 'iwebphil_everlast');
+define('DB_PASS', '');
+define('DB_NAME', 'database_name');
 
 // Create a new PDO instance
 try {
