@@ -26,7 +26,7 @@ class Signin extends Admin_Controller {
 		parent::__construct();
 
 		//make sure page has a settings
-		if(!isset($_SESSION["settings"])){
+		if(!$this->session->userdata('settings')){
 			$this->session->set_flashdata('prev_url', current_url());
 			redirect('add_settings');
 		}
@@ -83,10 +83,13 @@ class Signin extends Admin_Controller {
 
 		$this->styles[] = $this->getPath()['styles'] . 'pages/signin.css';
 		
+		$settings = $this->session->userdata('settings');
+
 		$this->setVariables([
 			'adminnote'	    => $retult[0]->value,
+			'settings'		=> $settings
 		])
-			->setTitle('Sign in to '.$_SESSION["settings"]['client_full'].'Control Panel', false)
+			->setTitle('Sign in to '.$settings['client_full'].'Control Panel', false)
 			->renderPage('signin', true); //Full Page
 	}
 

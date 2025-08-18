@@ -7,7 +7,7 @@
  * @package		CodeIgniter
  * @author		ExpressionEngine Dev Team
  * @copyright	Copyright (c) 2008 - 2014, EllisLab, Inc.
- * @license		http://codeigniter.com/user_guide/license.html
+ * @license	http://codeigniter.com/user_guide/license.html
  * @link		http://codeigniter.com
  * @since		Version 1.0
  * @filesource
@@ -30,7 +30,7 @@ class CI_Log {
 	protected $_threshold	= 1;
 	protected $_date_fmt	= 'Y-m-d H:i:s';
 	protected $_enabled	= TRUE;
-	protected $_levels	= array('ERROR' => '1', 'DEBUG' => '2',  'INFO' => '3', 'ALL' => '4');
+	protected $_levels	= array('ERROR' => '1', 'DEBUG' => '2',	 'INFO' => '3', 'ALL' => '4');
 
 	/**
 	 * Constructor
@@ -64,9 +64,9 @@ class CI_Log {
 	 *
 	 * Generally this function will be called using the global log_message() function
 	 *
-	 * @param	string	the error level
-	 * @param	string	the error message
-	 * @param	bool	whether the error is a native PHP error
+	 * @param	string		the error level
+	 * @param	string		the error message
+	 * @param	bool		whether the error is a native PHP error
 	 * @return	bool
 	 */
 	public function write_log($level = 'error', $msg, $php_error = FALSE)
@@ -88,7 +88,7 @@ class CI_Log {
 
 		if ( ! file_exists($filepath))
 		{
-			$message .= "<"."?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?".">\n\n";
+			$message .= "<\?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?\>\n\n";
 		}
 
 		if ( ! $fp = @fopen($filepath, FOPEN_WRITE_CREATE))

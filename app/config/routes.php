@@ -40,6 +40,7 @@
 
 $route['default_controller'] = "landing";
 $route['404_override'] = 'error';
+$route['admin/signin'] = 'admin/signin';
 
 
 /* End of file routes.php */

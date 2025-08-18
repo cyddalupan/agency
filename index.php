@@ -6,13 +6,13 @@ if (phpversion() < 5.4) {
 }
 
 spl_autoload_register( function( $class ) {
-    $path = __DIR__.'/lib/' . $class . '.php';
+    $path = __DIR__.'/lib/' . str_replace('\\', '/', $class) . '.php';
     if ( is_readable( $path ) ) {
         include_once $path;
     }
 } );
 
-include_once __DIR__.'/lib/Application.php';
+// include_once __DIR__.'/lib/Application.php';
 
 session_start();
 date_default_timezone_set('Asia/Manila');
@@ -217,7 +217,7 @@ if (defined('ENVIRONMENT'))
  * And away we go...
  *
  */
-require_once BASEPATH.'core/CodeIgniter.php';
+	require_once BASEPATH.'core/CodeIgniter.php';
 
 /* End of file index.php */
 /* Location: ./index.php */

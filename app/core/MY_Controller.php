@@ -61,10 +61,17 @@ class MY_Controller extends CI_Controller {
 		$system = rtrim( $directories[0] , '/'); 
 
 		//make sure page has a settings
-		if(!isset($_SESSION["settings"])){
-			$this->session->set_flashdata('prev_url', current_url());
-			redirect('add_settings');
+		if(!$this->session->userdata('settings')){
+			$settings = array();
+			$query = $this->db->get('settings');
+			foreach ($query->result() as $row)
+			{
+			    $settings[$row->key] = $row->value;
+			}
+			$this->session->set_userdata('settings', $settings);
 		}
+		
+		$settings = $this->session->userdata('settings');
 
 		if ( $system == 'admin' && count( $directories ) == 1 ) {
 			if ( !isset( $_SESSION['admin']['user'] ) ) {
@@ -93,8 +100,8 @@ class MY_Controller extends CI_Controller {
 		
 		//Truncate system info
 		$this->info = [
-			'applicationName'          => $_SESSION["settings"]['client_full'],
-			'applicationDescription'   => $_SESSION["settings"]['client_full'],
+			'applicationName'          => $settings['client_full'],
+			'applicationDescription'   => $settings['client_full'],
 			'author'                   => '',
 			'email'                    => '',
 		];

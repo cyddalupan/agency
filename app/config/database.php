@@ -45,29 +45,29 @@
 | the active record class
 */
 
-$dbConfig = include(__DIR__.'/../../lib/dbconfig.php');
+require_once(__DIR__.'/../../config.php');
 
-//error_reporting( $dbConfig['environment'] );
-
-$active_group = 'ics-ipac';
+$active_group = 'default';
 $active_record = TRUE;
 
-$db['ics-ipac']['hostname'] = $dbConfig['host'];
-$db['ics-ipac']['username'] = $dbConfig['user'];
-$db['ics-ipac']['password'] = $dbConfig['pass'];
-$db['ics-ipac']['database'] = $dbConfig['dbname'];
-$db['ics-ipac']['dbdriver'] = 'mysqli';
-$db['ics-ipac']['dbprefix'] = '';
-$db['ics-ipac']['pconnect'] = TRUE;
-$db['ics-ipac']['db_debug'] = $dbConfig['debug'] ? true : false ;
-//$db['ics-ipac']['db_debug'] = true ;
-$db['ics-ipac']['cache_on'] = true;
-$db['ics-ipac']['cachedir'] = __DIR__.'/../../tmp/';
-$db['ics-ipac']['char_set'] = 'utf8';
-$db['ics-ipac']['dbcollat'] = 'utf8_general_ci';
-$db['ics-ipac']['swap_pre'] = '';
-$db['ics-ipac']['autoinit'] = TRUE;
-$db['ics-ipac']['stricton'] = FALSE;
+$db['default']['hostname'] = DB_HOST;
+$db['default']['username'] = DB_USER;
+$db['default']['password'] = DB_PASS;
+$db['default']['database'] = DB_NAME;
+$db['default']['dbdriver'] = 'mysqli';
+$db['default']['dbprefix'] = '';
+$db['default']['pconnect'] = FALSE; // Persistent connections are generally not recommended
+$db['default']['db_debug'] = (ENVIRONMENT === 'development');
+$db['default']['cache_on'] = FALSE;
+$db['default']['cachedir'] = '';
+$db['default']['char_set'] = 'utf8';
+$db['default']['dbcollat'] = 'utf8_general_ci';
+$db['default']['swap_pre'] = '';
+$db['default']['autoinit'] = TRUE;
+$db['default']['stricton'] = FALSE;
+
+/* End of file database.php */
+/* Location: ./application/config/database.php */
 
 
 

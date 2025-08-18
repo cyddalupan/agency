@@ -3,7 +3,7 @@
 <!--Head-->
 <head>
     <meta charset="utf-8" />
-    <title><?php echo $_SESSION["settings"]['client_full']; ?></title>
+    <title><?php echo $settings['client_full']; ?></title>
 
     <meta name="description" content="login page" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -41,7 +41,7 @@
             }
         ?>
     <div class="logreg-page animated fadeInDown">
-        <h3>Sign In to <strong><span class="color"><?php echo $_SESSION["settings"]['client']; ?> </span></strong></h3>                        
+        <h3>Sign In to <strong><span class="color"><?php echo $settings['client']; ?> </span></strong></h3>                        
         <hr>
         <div class="form">
             <!-- Login form (not working)-->
