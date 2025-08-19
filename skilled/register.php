@@ -104,7 +104,10 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$remarks, $firstName, $middleName, $lastName, $password, $birthdate, $age, $contactNumber, $email, $resume_path]); // Bind the variables
     
-    echo "Registration successful! A new applicant has been created.";
+    if (!defined('TESTING_MODE')) {
+        header("Location: login.php");
+        exit;
+    }
 
 } catch (PDOException $e) {
     die("Database operation failed: " . $e->getMessage());
