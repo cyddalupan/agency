@@ -55,4 +55,3 @@ error_log
 /composer.lock
 /.env
 /config.php
-GEMINI.md
