@@ -14,7 +14,8 @@
 | path to your installation.
 |
 */
-$config['base_url'] = 'https://helloworld.welfareph.com/';
+require_once(BASEPATH . '../config.php');
+$config['base_url'] = SITE_URL;
 
 /*
 |--------------------------------------------------------------------------

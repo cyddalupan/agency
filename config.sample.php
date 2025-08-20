@@ -1,10 +1,10 @@
 <?php
 
 // Site URL
-define('SITE_URL', 'http://localhost/');
+define('SITE_URL', 'https://upgraded-engine-rjg6pprp4vf54xq-8080.app.github.dev/');
 
 // Database credentials
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'db');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'database_name');

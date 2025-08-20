@@ -1,9 +1,5 @@
 <?php
-// Database credentials
-define('DB_HOST', '127.0.0.1');
-define('DB_USER', 'helloworld_user');
-define('DB_PASS', 'p@ssw0rd_H3ll0W0rld!');
-define('DB_NAME', 'iwebphil_everlast');
+require_once(__DIR__ . '/config.php');
 
 // Create a new PDO instance
 try {

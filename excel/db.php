@@ -1,5 +1,6 @@
 <?php
+require_once(__DIR__ . '/../config.php');
 
-$conn=mysqli_connect("localhost","abbaphil_jinhel","67PtE01S4KL4hKIqUQyoP2aKhDwud7BV") or die("Could not connect");
-mysqli_select_db($conn,"abbaphil_maanyag") or die("could not connect database");
+$conn=mysqli_connect(DB_HOST,DB_USER,DB_PASS) or die("Could not connect");
+mysqli_select_db($conn,DB_NAME) or die("could not connect database");
 ?>

@@ -1,5 +1,7 @@
 <?php
 
+require_once(__DIR__ . '/../../config.php');
+
 return [
 
 	/*
@@ -26,7 +28,7 @@ return [
 	|
 	*/
 
-	'url' => 'http://localhost',
+	'url' => SITE_URL . 'page',
 
 	/*
 	|--------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 <?php
-$con=mysql_connect('localhost','abbaphil_jinhel','67PtE01S4KL4hKIqUQyoP2aKhDwud7BV')or die ('cannot connect');
-mysql_select_db('abbaphil_maanyag',$con);
+require_once(__DIR__ . '/../config.php');
+$con=mysql_connect(DB_HOST,DB_USER,DB_PASS)or die ('cannot connect');
+mysql_select_db(DB_NAME,$con);
 ?>

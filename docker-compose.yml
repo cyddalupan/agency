@@ -19,9 +19,8 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: 'iwebphil_everlast'
-      MYSQL_USER: 'helloworld_user'
-      MYSQL_PASSWORD: 'p@ssw0rd_H3ll0W0rld!'
-      MYSQL_ROOT_PASSWORD: 'root_password_change_me'
+      MYSQL_ROOT_PASSWORD: ''
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
     volumes:
       - db-data:/var/lib/mysql
     networks:
