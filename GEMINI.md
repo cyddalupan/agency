@@ -42,25 +42,21 @@ Run the following commands from your host machine's terminal:
 
 ```bash
 # Import the main database structure and data
-docker exec -i helloworld_db_1 mysql -u root -proot_password_change_me iwebphil_everlast < /var/www/helloworld/iwebphil_everlast.sql
+docker exec -i agency-db-1 mysql -u root iwebphil_everlast < /var/www/html/iwebphil_everlast.sql
 
 # Import the secondary file (this may produce an error if tables already exist, which is safe to ignore)
-docker exec -i helloworld_db_1 mysql -u root -proot_password_change_me iwebphil_everlast < /var/www/helloworld/empty.sql
+docker exec -i agency-db-1 mysql -u root iwebphil_everlast < /var/www/html/empty.sql
 ```
 
 ## 4. Database Credentials
 
-The database credentials are set in two places:
+The database credentials are now primarily managed through the `config.php` file in the root directory. The `docker-compose.yml` file is configured to use the `root` MySQL user with an empty password for development purposes.
 
-1.  **`docker-compose.yml`:** This file sets the environment variables for the `db` container, which are used to initialize the MySQL server.
-2.  **`config.php`:** This file is used by the PHP application to connect to the database.
-
-The credentials are:
 *   **Host:** `db` (this is the service name within the Docker network)
 *   **Database:** `iwebphil_everlast`
-*   **User:** `helloworld_user`
-*   **Password:** `p@ssw0rd_H3ll0W0rld!`
-*   **Root Password (for the container):** `root_password_change_me`
+*   **User:** `root`
+*   **Password:** `(empty)`
+*   **Root Password (for the container):** `(empty)`
 
 The full database schema is available in the `database.md` file.
 
@@ -144,6 +140,32 @@ This method is useful for adding simple, static pages to the application.
 
 ## 9. Important Notes & Learnings
 
+### Configuration Centralization
+
+To improve maintainability and consistency, the application's configuration has been centralized using the `config.php` file in the root directory. This file now serves as the single source of truth for database credentials and the site URL.
+
+The following files were updated to reference `config.php`:
+
+*   `app/config/config.php`: Updated `base_url` to use `SITE_URL` from `config.php`.
+*   `config.sample.php`: Updated `SITE_URL` and `DB_HOST` to match the centralized configuration.
+*   `page/config/app.php`: Updated `url` to use `SITE_URL` from `config.php`.
+*   `page/config/database.php`: Updated database credentials (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`) to use constants from `config.php`.
+*   `app/config/database.php`: Confirmed it already correctly uses constants from `config.php`.
+*   `page/.env.example`: Updated database credentials (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) to reflect the centralized configuration.
+*   `acct/.env`: Updated `DB_HOST` to `db` and synchronized database credentials with `config.php`.
+*   `dbdb/dbconfig.php`: Confirmed it already correctly includes `config.php`.
+*   `lib/dbconfig.php`: Confirmed it already correctly includes `config.php`.
+*   `excel/db.php`: Updated hardcoded database credentials to use constants from `config.php`.
+*   `excel/db1.php`: Updated hardcoded database credentials to use constants from `config.php`.
+*   `db_test.php`: Updated hardcoded database credentials to use constants from `config.php`.
+*   `test_db_connection.php`: Confirmed it already correctly includes `config.php`.
+*   `skilled/test_register_integration.php`: Confirmed it already correctly includes `config.php`.
+*   `skilled/test_login_integration.php`: Confirmed it already correctly includes `config.php`.
+*   `skilled/login_process.php`: Confirmed it already correctly includes `config.php`.
+*   `skilled/register.php`: Confirmed it already correctly includes `config.php`.
+
+This centralization simplifies configuration management, reduces redundancy, and ensures that changes to core settings are applied consistently across the entire application.
+
 ### `register.php` and Dynamic Data Handling
 
 The `skilled/register.php` script is responsible for handling new applicant registrations. Initially, this script contained a hardcoded `INSERT` statement that ignored user input from the form. Through an iterative process, we have refactored this script to dynamically insert data provided by the user.
@@ -174,14 +196,6 @@ Setting up XDebug for PHP 5.6 in a Dockerized Codespace environment required spe
     *   `"request": "launch"`: Initiates a debug session.
     *   `"port": 9000`: The default XDebug port.
     *   `"pathMappings"`: Crucial for mapping paths between the Docker container (`/var/www/html`) and the Codespace workspace (`${workspaceFolder}`). This ensures breakpoints are hit correctly.
-
-### Database Credential Configuration
-
-For development purposes, the database credentials were changed to use the `root` MySQL user with an empty password.
-
-1.  **MySQL Root Password:** The `root` user's password in the `db` Docker container was set to an empty string using a `mysql` command.
-2.  **Granting Remote Access:** To allow the `web` container to connect to the `db` container using the `root` user with an empty password, the `root` user was granted `ALL PRIVILEGES` from any host (`%`) in MySQL.
-3.  **`config.php` Update:** The `DB_USER` was set to `root` and `DB_PASS` to an empty string in `/workspaces/agency/config.php`. The conditional `DB_HOST` logic was removed to ensure `db` is always used as the hostname for database connections within the Docker network.
 
 ### General Debugging Principles Applied:
 
