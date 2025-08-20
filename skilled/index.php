@@ -7,7 +7,7 @@
                 <h3 class="card-title"><i class="fas fa-user-plus"></i> Skilled Worker Registration</h3>
             </div>
             <div class="card-body">
-                <form action="skilled/register.php" method="post" enctype="multipart/form-data">
+                <form action="/skilled/register.php" method="post" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="firstName" class="form-label">First Name</label>
@@ -107,7 +107,7 @@
                 </form>
             </div>
             <div class="card-footer text-center">
-                <p class="mb-0">Already have an account? <a href="skilled/login.php">Skilled Login</a></p>
+                <p class="mb-0">Already have an account? <a href="/skilled/login.php">Skilled Login</a></p>
             </div>
         </div>
     </div>

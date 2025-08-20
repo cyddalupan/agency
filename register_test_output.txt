@@ -1,0 +1,13 @@
+time="2025-08-20T03:52:41Z" level=warning msg="/workspaces/agency/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Cannot load Xdebug - extension already loaded
+Running test for skilled/register.php...
+Executing register.php...
+register.php executed.
+--- register.php output ---
+--- End register.php output ---
+Database connection for verification successful.
+
+--- RESULT ---
+✅ Test PASSED: All verified fields are correct.
+Cleaning up test data...
+Test record deleted successfully.
