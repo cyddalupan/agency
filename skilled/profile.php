@@ -407,6 +407,32 @@ include_once('header.php');
                                     <label for="policeClearanceStatus" class="form-label">Police Clearance Status</label>
                                     <input type="text" class="form-control" id="policeClearanceStatus" name="policeClearanceStatus" value="<?php echo htmlspecialchars($user_data['applicant_police_clearance_status']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="policeClearanceRemarks" class="form-label">Police Clearance Remarks</label>
+                                    <textarea class="form-control" id="policeClearanceRemarks" name="policeClearanceRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_police_clearance_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nbiExpiry" class="form-label">NBI Expiry</label>
+                                    <input type="date" class="form-control" id="nbiExpiry" name="nbiExpiry" value="<?php echo htmlspecialchars($user_data['applicant_nbi_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nbiStatus" class="form-label">NBI Status</label>
+                                    <input type="text" class="form-control" id="nbiStatus" name="nbiStatus" value="<?php echo htmlspecialchars($user_data['applicant_nbi_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="nbiRemarks" class="form-label">NBI Remarks</label>
+                                    <textarea class="form-control" id="nbiRemarks" name="nbiRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_nbi_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prcLicenseExpiry" class="form-label">PRC License Expiry</label>
+                                    <input type="date" class="form-control" id="prcLicenseExpiry" name="prcLicenseExpiry" value="<?php echo htmlspecialchars($user_data['applicant_prc_license_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prcLicenseStatus" class="form-label">PRC License Status</label>
+                                    <input type="text" class="form-control" id="prcLicenseStatus" name="prcLicenseStatus" value="<?php echo htmlspecialchars($user_data['applicant_prc_license_status']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>

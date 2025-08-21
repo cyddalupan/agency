@@ -104,6 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $medicalRemarks = isset($_POST['medicalRemarks']) ? $_POST['medicalRemarks'] : null;
     $policeClearanceExpiry = isset($_POST['policeClearanceExpiry']) ? $_POST['policeClearanceExpiry'] : null;
     $policeClearanceStatus = isset($_POST['policeClearanceStatus']) ? $_POST['policeClearanceStatus'] : null;
+    $policeClearanceRemarks = isset($_POST['policeClearanceRemarks']) ? $_POST['policeClearanceRemarks'] : null;
+    $nbiExpiry = isset($_POST['nbiExpiry']) ? $_POST['nbiExpiry'] : null;
+    $nbiStatus = isset($_POST['nbiStatus']) ? $_POST['nbiStatus'] : null;
+    $nbiRemarks = isset($_POST['nbiRemarks']) ? $_POST['nbiRemarks'] : null;
+    $prcLicenseExpiry = isset($_POST['prcLicenseExpiry']) ? $_POST['prcLicenseExpiry'] : null;
+    $prcLicenseStatus = isset($_POST['prcLicenseStatus']) ? $_POST['prcLicenseStatus'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -166,6 +172,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         passport_expiration = :passportExpiration, applicant_visa_number = :visaNumber, applicant_visa_expiry = :visaExpiry,
                         cyd_visa_duration = :visaDuration, applicant_medical_expiry = :medicalExpiry, applicant_medical_status = :medicalStatus,
                         applicant_medical_remarks = :medicalRemarks, applicant_police_clearance_expiry = :policeClearanceExpiry, applicant_police_clearance_status = :policeClearanceStatus,
+                        applicant_police_clearance_remarks = :policeClearanceRemarks, applicant_nbi_expiry = :nbiExpiry, applicant_nbi_status = :nbiStatus,
+                        applicant_nbi_remarks = :nbiRemarks, applicant_prc_license_expiry = :prcLicenseExpiry, applicant_prc_license_status = :prcLicenseStatus,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -259,6 +267,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':medicalRemarks' => $medicalRemarks,
                 ':policeClearanceExpiry' => $policeClearanceExpiry,
                 ':policeClearanceStatus' => $policeClearanceStatus,
+                ':policeClearanceRemarks' => $policeClearanceRemarks,
+                ':nbiExpiry' => $nbiExpiry,
+                ':nbiStatus' => $nbiStatus,
+                ':nbiRemarks' => $nbiRemarks,
+                ':prcLicenseExpiry' => $prcLicenseExpiry,
+                ':prcLicenseStatus' => $prcLicenseStatus,
                 ':birthdate' => $birthdate
             ];
 
