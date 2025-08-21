@@ -425,6 +425,25 @@ include_once('header.php');
                                         Do you have Diabetes?
                                     </label>
                                 </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasHighBlood" name="hasHighBlood" value="1" <?php echo ($user_data['t4'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasHighBlood">
+                                        Do you have High Blood?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasHeartProblem" name="hasHeartProblem" value="1" <?php echo ($user_data['t5'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasHeartProblem">
+                                        Do you have Heart Problem?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasAllergies" name="hasAllergies" value="1" <?php echo ($user_data['t6'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasAllergies">
+                                        Do you have Allergies?
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>

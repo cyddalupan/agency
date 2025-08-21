@@ -1,7 +1,7 @@
 ## Health and Records
-- [ ] Do you have tattoo? (applicant[basic][t1])
-- [ ] Do you have Hemmorhoids? (applicant[basic][t2])
-- [ ] Do you have Diabetes? (applicant[basic][t3])
+- [x] Do you have tattoo? (applicant[basic][t1])
+- [x] Do you have Hemmorhoids? (applicant[basic][t2])
+- [x] Do you have Diabetes? (applicant[basic][t3])
 - [ ] Do you have High Blood? (applicant[basic][t4])
 - [ ] Do you have Heart Problem? (applicant[basic][t5])
 - [ ] Do you have Allergies? (applicant[basic][t6])

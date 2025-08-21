@@ -66,6 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergencyContactName = isset($_POST['emergencyContactName']) ? $_POST['emergencyContactName'] : null;
     $emergencyContactRelationship = isset($_POST['emergencyContactRelationship']) ? $_POST['emergencyContactRelationship'] : null;
     $emergencyContactNumber = isset($_POST['emergencyContactNumber']) ? $_POST['emergencyContactNumber'] : null;
+    $emergencyContactAddress = isset($_POST['emergencyContactAddress']) ? $_POST['emergencyContactAddress'] : null;
+    $hasTattoo = isset($_POST['hasTattoo']) ? $_POST['hasTattoo'] : 0;
+    $hasHemorrhoids = isset($_POST['hasHemorrhoids']) ? $_POST['hasHemorrhoids'] : 0;
+    $hasDiabetes = isset($_POST['hasDiabetes']) ? $_POST['hasDiabetes'] : 0;
+    $hasHighBlood = isset($_POST['hasHighBlood']) ? $_POST['hasHighBlood'] : 0;
+    $hasHeartProblem = isset($_POST['hasHeartProblem']) ? $_POST['hasHeartProblem'] : 0;
+    $hasAllergies = isset($_POST['hasAllergies']) ? $_POST['hasAllergies'] : 0;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -114,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         occ_of_fat = :fatherOccupation, pos_in_fam = :positionInFamily, no_of_bro = :numBrothers,
                         no_of_sis = :numSisters, relative_name = :relativeName, relative_mobile = :relativeMobile,
                         applicant_incase_name = :emergencyContactName, applicant_incase_relation = :emergencyContactRelationship, applicant_incase_contact = :emergencyContactNumber,
+                        applicant_incase_address = :emergencyContactAddress, t1 = :hasTattoo, t2 = :hasHemorrhoids, t3 = :hasDiabetes,
+                        t4 = :hasHighBlood, t5 = :hasHeartProblem, t6 = :hasAllergies,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -169,6 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':emergencyContactName' => $emergencyContactName,
                 ':emergencyContactRelationship' => $emergencyContactRelationship,
                 ':emergencyContactNumber' => $emergencyContactNumber,
+                ':emergencyContactAddress' => $emergencyContactAddress,
+                ':hasTattoo' => $hasTattoo,
+                ':hasHemorrhoids' => $hasHemorrhoids,
+                ':hasDiabetes' => $hasDiabetes,
+                ':hasHighBlood' => $hasHighBlood,
+                ':hasHeartProblem' => $hasHeartProblem,
+                ':hasAllergies' => $hasAllergies,
                 ':birthdate' => $birthdate
             ];
 
