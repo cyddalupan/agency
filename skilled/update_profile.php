@@ -73,6 +73,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hasHighBlood = isset($_POST['hasHighBlood']) ? $_POST['hasHighBlood'] : 0;
     $hasHeartProblem = isset($_POST['hasHeartProblem']) ? $_POST['hasHeartProblem'] : 0;
     $hasAllergies = isset($_POST['hasAllergies']) ? $_POST['hasAllergies'] : 0;
+    $hasCyst = isset($_POST['hasCyst']) ? $_POST['hasCyst'] : 0;
+    $hasAsthma = isset($_POST['hasAsthma']) ? $_POST['hasAsthma'] : 0;
+    $tattooNeck = isset($_POST['tattooNeck']) ? $_POST['tattooNeck'] : null;
+    $tattooBack = isset($_POST['tattooBack']) ? $_POST['tattooBack'] : null;
+    $tattooHands = isset($_POST['tattooHands']) ? $_POST['tattooHands'] : null;
+    $tattooThigh = isset($_POST['tattooThigh']) ? $_POST['tattooThigh'] : null;
+    $tattooLegs = isset($_POST['tattooLegs']) ? $_POST['tattooLegs'] : null;
+    $tattooFoot = isset($_POST['tattooFoot']) ? $_POST['tattooFoot'] : null;
+    $medicalHistoryOthers = isset($_POST['medicalHistoryOthers']) ? $_POST['medicalHistoryOthers'] : null;
+    $covidVaccin = isset($_POST['covidVaccin']) ? $_POST['covidVaccin'] : 0;
+    $vaccineName = isset($_POST['vaccineName']) ? $_POST['vaccineName'] : null;
+    $firstDose = isset($_POST['firstDose']) ? $_POST['firstDose'] : null;
+    $secondDose = isset($_POST['secondDose']) ? $_POST['secondDose'] : null;
+    $vaccineLocation = isset($_POST['vaccineLocation']) ? $_POST['vaccineLocation'] : null;
+    $boqCard = isset($_POST['boqCard']) ? $_POST['boqCard'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -123,6 +138,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_incase_name = :emergencyContactName, applicant_incase_relation = :emergencyContactRelationship, applicant_incase_contact = :emergencyContactNumber,
                         applicant_incase_address = :emergencyContactAddress, t1 = :hasTattoo, t2 = :hasHemorrhoids, t3 = :hasDiabetes,
                         t4 = :hasHighBlood, t5 = :hasHeartProblem, t6 = :hasAllergies,
+                        t7 = :hasCyst, t8 = :hasAsthma,
+                        is_manicure = :tattooNeck, is_massage = :tattooBack, is_blower = :tattooHands,
+                        is_coloring = :tattooThigh, is_sewing = :tattooLegs, is_computer = :tattooFoot,
+                        applicant_jobs = :medicalHistoryOthers,
+                        covidme = :covidVaccin, covid_name = :vaccineName, covid_date = :firstDose,
+                        covid_date2 = :secondDose, covid_loc = :vaccineLocation, covid_yellow = :boqCard,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -185,6 +206,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':hasHighBlood' => $hasHighBlood,
                 ':hasHeartProblem' => $hasHeartProblem,
                 ':hasAllergies' => $hasAllergies,
+                ':hasCyst' => $hasCyst,
+                ':hasAsthma' => $hasAsthma,
+                ':tattooNeck' => $tattooNeck,
+                ':tattooBack' => $tattooBack,
+                ':tattooHands' => $tattooHands,
+                ':tattooThigh' => $tattooThigh,
+                ':tattooLegs' => $tattooLegs,
+                ':tattooFoot' => $tattooFoot,
+                ':medicalHistoryOthers' => $medicalHistoryOthers,
+                ':covidVaccin' => $covidVaccin,
+                ':vaccineName' => $vaccineName,
+                ':firstDose' => $firstDose,
+                ':secondDose' => $secondDose,
+                ':vaccineLocation' => $vaccineLocation,
+                ':boqCard' => $boqCard,
                 ':birthdate' => $birthdate
             ];
 

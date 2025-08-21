@@ -444,6 +444,78 @@ include_once('header.php');
                                         Do you have Allergies?
                                     </label>
                                 </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasCyst" name="hasCyst" value="1" <?php echo ($user_data['t7'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasCyst">
+                                        Do you have Cyst?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasAsthma" name="hasAsthma" value="1" <?php echo ($user_data['t8'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasAsthma">
+                                        Do you have Asthma?
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tattooNeck" class="form-label">Tattoo Location: NECK</label>
+                                    <input type="text" class="form-control" id="tattooNeck" name="tattooNeck" value="<?php echo htmlspecialchars($user_data['is_manicure']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooBack" class="form-label">Tattoo Location: BACK</label>
+                                    <input type="text" class="form-control" id="tattooBack" name="tattooBack" value="<?php echo htmlspecialchars($user_data['is_massage']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooHands" class="form-label">Tattoo Location: HANDS</label>
+                                    <input type="text" class="form-control" id="tattooHands" name="tattooHands" value="<?php echo htmlspecialchars($user_data['is_blower']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tattooThigh" class="form-label">Tattoo Location: THIGH</label>
+                                    <input type="text" class="form-control" id="tattooThigh" name="tattooThigh" value="<?php echo htmlspecialchars($user_data['is_coloring']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooLegs" class="form-label">Tattoo Location: LEGS</label>
+                                    <input type="text" class="form-control" id="tattooLegs" name="tattooLegs" value="<?php echo htmlspecialchars($user_data['is_sewing']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooFoot" class="form-label">Tattoo Location: FOOT</label>
+                                    <input type="text" class="form-control" id="tattooFoot" name="tattooFoot" value="<?php echo htmlspecialchars($user_data['is_computer']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="medicalHistoryOthers" class="form-label">Others (Medical History)</label>
+                                    <textarea class="form-control" id="medicalHistoryOthers" name="medicalHistoryOthers" rows="3"><?php echo htmlspecialchars($user_data['applicant_jobs']); ?></textarea>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="covidVaccin" name="covidVaccin" value="1" <?php echo ($user_data['covidme'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="covidVaccin">
+                                        COVID VACCIN
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vaccineName" class="form-label">Vaccine name</label>
+                                    <input type="text" class="form-control" id="vaccineName" name="vaccineName" value="<?php echo htmlspecialchars($user_data['covid_name']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="firstDose" class="form-label">1st Dose</label>
+                                    <input type="date" class="form-control" id="firstDose" name="firstDose" value="<?php echo htmlspecialchars($user_data['covid_date']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="secondDose" class="form-label">2nd Dose</label>
+                                    <input type="date" class="form-control" id="secondDose" name="secondDose" value="<?php echo htmlspecialchars($user_data['covid_date2']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vaccineLocation" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="vaccineLocation" name="vaccineLocation" value="<?php echo htmlspecialchars($user_data['covid_loc']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="boqCard" class="form-label">BOQ card</label>
+                                    <input type="text" class="form-control" id="boqCard" name="boqCard" value="<?php echo htmlspecialchars($user_data['covid_yellow']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
