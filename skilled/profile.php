@@ -103,9 +103,16 @@ include_once('header.php');
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
+                                        <label for="birthdate" class="form-label">Birthdate</label>
+                                        <input type="date" class="form-control" id="birthdate" name="birthdate" value="<?php echo htmlspecialchars($user_data['applicant_birthdate']); ?>" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
                                         <label for="age" class="form-label">Age</label>
                                         <input type="number" class="form-control" id="age" name="age" value="<?php echo htmlspecialchars($user_data['applicant_age']); ?>" required>
                                     </div>
+                                </div>
+
+                                <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="contactNumber" class="form-label">Contact Number</label>
                                         <input type="tel" class="form-control" id="contactNumber" name="contactNumber" value="<?php echo htmlspecialchars($user_data['applicant_contacts']); ?>" required>
@@ -203,7 +210,7 @@ include_once('header.php');
                             <div class="accordion-body">
                                 <div class="mb-3">
                                     <label for="positionType" class="form-label">Position Type</label>
-                                    <input type="text" class="form-control" id="positionType" name="positionType" value="<?php echo htmlspecialchars($user_data['applicant_position_type']); ?>">
+                                    <input type="text" class="form-control" id="positionType" name="applicant_position_type" value="<?php echo htmlspecialchars($user_data['applicant_position_type']); ?>">
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
@@ -212,7 +219,7 @@ include_once('header.php');
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="expectedSalary" class="form-label">Expected Salary</label>
-                                        <input type="number" class="form-control" id="expectedSalary" name="expectedSalary" value="<?php echo htmlspecialchars($user_data['applicant_expected_salary']); ?>">
+                                        <input type="number" class="form-control" id="expectedSalary" name="applicant_expected_salary" value="<?php echo htmlspecialchars($user_data['applicant_expected_salary']); ?>">
                                     </div>
                                 </div>
                                 <div class="mb-3">

@@ -71,14 +71,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_contacts = ?, applicant_email = ?, fra_remarks = ?, applicant_gender = ?,
                         applicant_nationality = ?, applicant_civil_status = ?, applicant_address = ?,
                         applicant_height = ?, applicant_weight = ?, applicant_religion = ?, applicant_languages = ?,
-                        applicant_position_type = ?, currency = ?, applicant_expected_salary = ?,
-                        applicant_preferred_country = ?, applicant_other_skills = ?, personalAbilities = ?,
+                        applicant_position_type = :applicant_position_type, currency = :currency, applicant_expected_salary = :applicant_expected_salary,
+                        applicant_preferred_country = :applicant_preferred_country, applicant_other_skills = :applicant_other_skills, personalAbilities = :personalAbilities,
                         applicant_birthdate = ?";
             
             $params = [
                 $firstName, $middleName, $lastName, $age, $contactNumber, $email, $remarks, $gender,
                 $nationality, $civilStatus, $address, $height, $weight, $religion, $languages,
-                $positionType, $currency, $expectedSalary, $preferredCountry, $otherSkills, $personalAbilities,
+                ':applicant_position_type' => $positionType,
+                ':currency' => $currency,
+                ':applicant_expected_salary' => $expectedSalary,
+                ':applicant_preferred_country' => $preferredCountry,
+                ':applicant_other_skills' => $otherSkills,
+                ':personalAbilities' => $personalAbilities,
                 $birthdate
             ];
 
