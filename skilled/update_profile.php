@@ -41,6 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dateApplied = isset($_POST['dateApplied']) ? $_POST['dateApplied'] : null;
     $trainingBranch = isset($_POST['trainingBranch']) ? $_POST['trainingBranch'] : null;
     $source = isset($_POST['source']) ? $_POST['source'] : null;
+    $recruitmentAgent = isset($_POST['recruitmentAgent']) ? $_POST['recruitmentAgent'] : null;
+    $repatriated = isset($_POST['repatriated']) ? $_POST['repatriated'] : 0;
+    $repatriationDate = isset($_POST['repatriationDate']) ? $_POST['repatriationDate'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -80,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_position_type = :positionType, currency = :currency, applicant_expected_salary = :expectedSalary,
                         applicant_preferred_country = :preferredCountry, applicant_other_skills = :otherSkills, personalAbilities = :personalAbilities,
                         date_applied = :dateApplied, applicant_training_branch = :trainingBranch, applicant_source = :source,
+                        applicant_recruitment_agent = :recruitmentAgent, repat_checkbox = :repatriated, repat_date = :repatriationDate,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -110,6 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':dateApplied' => $dateApplied,
                 ':trainingBranch' => $trainingBranch,
                 ':source' => $source,
+                ':recruitmentAgent' => $recruitmentAgent,
+                ':repatriated' => $repatriated,
+                ':repatriationDate' => $repatriationDate,
                 ':birthdate' => $birthdate
             ];
 

@@ -182,6 +182,38 @@ include_once('header.php');
                                     <label for="source" class="form-label">Source</label>
                                     <input type="text" class="form-control" id="source" name="source" value="<?php echo htmlspecialchars($user_data['applicant_source']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="recruitmentAgent" class="form-label">Recruitment Agent</label>
+                                    <input type="text" class="form-control" id="recruitmentAgent" name="recruitmentAgent" value="<?php echo htmlspecialchars($user_data['applicant_recruitment_agent']); ?>">
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="repatriated" name="repatriated" value="1" <?php echo ($user_data['repat_checkbox'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="repatriated">
+                                        Repatriated
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="repatriationDate" class="form-label">Repatriation Date</label>
+                                    <input type="date" class="form-control" id="repatriationDate" name="repatriationDate" value="<?php echo htmlspecialchars($user_data['repat_date']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="applicantEx" class="form-label">Applicant Firstimer / Ex Abroad</label>
+                                    <input type="text" class="form-control" id="applicantEx" name="applicantEx" value="<?php echo htmlspecialchars($user_data['applicant_ex']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="branch" class="form-label">Branch</label>
+                                    <input type="text" class="form-control" id="branch" name="branch" value="<?php echo htmlspecialchars($user_data['typess']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="transferBranch" class="form-label">Transfer Branch</label>
+                                    <input type="text" class="form-control" id="transferBranch" name="transferBranch" value="<?php echo htmlspecialchars($user_data['typess1']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
