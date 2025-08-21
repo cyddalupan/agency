@@ -355,6 +355,45 @@ include_once('header.php');
                                         <small class="form-text text-muted">No resume attached.</small>
                                     <?php endif; ?>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="passportNumber" class="form-label">Passport Number</label>
+                                    <input type="text" class="form-control" id="passportNumber" name="passportNumber" value="<?php echo htmlspecialchars($user_data['passport_number']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="passportDateIssued" class="form-label">Passport Date issued</label>
+                                    <input type="date" class="form-control" id="passportDateIssued" name="passportDateIssued" value="<?php echo htmlspecialchars($user_data['passport_issue']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="passportPlaceIssue" class="form-label">Passport place Issue</label>
+                                    <input type="text" class="form-control" id="passportPlaceIssue" name="passportPlaceIssue" value="<?php echo htmlspecialchars($user_data['passport_issue_place']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="passportExpiration" class="form-label">Passport Expiration</label>
+                                    <input type="date" class="form-control" id="passportExpiration" name="passportExpiration" value="<?php echo htmlspecialchars($user_data['passport_expiration']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="visaNumber" class="form-label">Visa Number</label>
+                                    <input type="text" class="form-control" id="visaNumber" name="visaNumber" value="<?php echo htmlspecialchars($user_data['applicant_visa_number']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="visaExpiry" class="form-label">Visa Expiry</label>
+                                    <input type="date" class="form-control" id="visaExpiry" name="visaExpiry" value="<?php echo htmlspecialchars($user_data['applicant_visa_expiry']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="visaDuration" class="form-label">Visa Duration</label>
+                                    <input type="text" class="form-control" id="visaDuration" name="visaDuration" value="<?php echo htmlspecialchars($user_data['cyd_visa_duration']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="medicalExpiry" class="form-label">Medical Expiry</label>
+                                    <input type="date" class="form-control" id="medicalExpiry" name="medicalExpiry" value="<?php echo htmlspecialchars($user_data['applicant_medical_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="medicalStatus" class="form-label">Medical Status</label>
+                                    <input type="text" class="form-control" id="medicalStatus" name="medicalStatus" value="<?php echo htmlspecialchars($user_data['applicant_medical_status']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>

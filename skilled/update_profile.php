@@ -92,6 +92,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $booster = isset($_POST['booster']) ? $_POST['booster'] : 0;
     $boosterName = isset($_POST['boosterName']) ? $_POST['boosterName'] : null;
     $boosterDate = isset($_POST['boosterDate']) ? $_POST['boosterDate'] : null;
+    $passportNumber = isset($_POST['passportNumber']) ? $_POST['passportNumber'] : null;
+    $passportDateIssued = isset($_POST['passportDateIssued']) ? $_POST['passportDateIssued'] : null;
+    $passportPlaceIssue = isset($_POST['passportPlaceIssue']) ? $_POST['passportPlaceIssue'] : null;
+    $passportExpiration = isset($_POST['passportExpiration']) ? $_POST['passportExpiration'] : null;
+    $visaNumber = isset($_POST['visaNumber']) ? $_POST['visaNumber'] : null;
+    $visaExpiry = isset($_POST['visaExpiry']) ? $_POST['visaExpiry'] : null;
+    $visaDuration = isset($_POST['visaDuration']) ? $_POST['visaDuration'] : null;
+    $medicalExpiry = isset($_POST['medicalExpiry']) ? $_POST['medicalExpiry'] : null;
+    $medicalStatus = isset($_POST['medicalStatus']) ? $_POST['medicalStatus'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -150,6 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         covid_date2 = :secondDose, covid_loc = :vaccineLocation, covid_yellow = :boqCard,
                         covid_cert = :vaccineCert, covidb1 = :booster, covidb2 = :boosterName,
                         covidb3 = :boosterDate,
+                        passport_number = :passportNumber, passport_issue = :passportDateIssued, passport_issue_place = :passportPlaceIssue,
+                        passport_expiration = :passportExpiration, applicant_visa_number = :visaNumber, applicant_visa_expiry = :visaExpiry,
+                        cyd_visa_duration = :visaDuration, applicant_medical_expiry = :medicalExpiry, applicant_medical_status = :medicalStatus,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -231,6 +243,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':booster' => $booster,
                 ':boosterName' => $boosterName,
                 ':boosterDate' => $boosterDate,
+                ':passportNumber' => $passportNumber,
+                ':passportDateIssued' => $passportDateIssued,
+                ':passportPlaceIssue' => $passportPlaceIssue,
+                ':passportExpiration' => $passportExpiration,
+                ':visaNumber' => $visaNumber,
+                ':visaExpiry' => $visaExpiry,
+                ':visaDuration' => $visaDuration,
+                ':medicalExpiry' => $medicalExpiry,
+                ':medicalStatus' => $medicalStatus,
                 ':birthdate' => $birthdate
             ];
 
