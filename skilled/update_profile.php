@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = isset($_POST['lastName']) ? $_POST['lastName'] : null;
     $age = isset($_POST['age']) ? $_POST['age'] : null;
     $contactNumber = isset($_POST['contactNumber']) ? $_POST['contactNumber'] : null;
+    $otherContactNumber = isset($_POST['otherContactNumber']) ? $_POST['otherContactNumber'] : null;
+    $anotherContactNumber = isset($_POST['anotherContactNumber']) ? $_POST['anotherContactNumber'] : null;
+    $placeOfBirth = isset($_POST['placeOfBirth']) ? $_POST['placeOfBirth'] : null;
     $email = isset($_POST['email']) ? $_POST['email'] : null;
     $password = isset($_POST['password']) ? $_POST['password'] : null;
     $remarks = isset($_POST['remarks']) ? $_POST['remarks'] : null;
@@ -35,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $preferredCountry = isset($_POST['preferredCountry']) ? $_POST['preferredCountry'] : null;
     $otherSkills = isset($_POST['otherSkills']) ? $_POST['otherSkills'] : null;
     $personalAbilities = isset($_POST['personalAbilities']) ? $_POST['personalAbilities'] : null;
+    $dateApplied = isset($_POST['dateApplied']) ? $_POST['dateApplied'] : null;
+    $trainingBranch = isset($_POST['trainingBranch']) ? $_POST['trainingBranch'] : null;
+    $source = isset($_POST['source']) ? $_POST['source'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -68,11 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 3. Build the full UPDATE query
             $sql = "UPDATE applicant SET 
                         applicant_first = :firstName, applicant_middle = :middleName, applicant_last = :lastName, applicant_age = :age,
-                        applicant_contacts = :contactNumber, applicant_email = :email, fra_remarks = :remarks, applicant_gender = :gender,
-                        applicant_nationality = :nationality, applicant_civil_status = :civilStatus, applicant_address = :address,
+                        applicant_contacts = :contactNumber, contacts2 = :otherContactNumber, contacts3 = :anotherContactNumber, applicant_email = :email, fra_remarks = :remarks, applicant_gender = :gender,
+                        applicant_nationality = :nationality, applicant_civil_status = :civilStatus, applicant_address = :address, contacts4 = :placeOfBirth,
                         applicant_height = :height, applicant_weight = :weight, applicant_religion = :religion, applicant_languages = :languages,
                         applicant_position_type = :positionType, currency = :currency, applicant_expected_salary = :expectedSalary,
                         applicant_preferred_country = :preferredCountry, applicant_other_skills = :otherSkills, personalAbilities = :personalAbilities,
+                        date_applied = :dateApplied, applicant_training_branch = :trainingBranch, applicant_source = :source,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -81,12 +88,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':lastName' => $lastName,
                 ':age' => $age,
                 ':contactNumber' => $contactNumber,
+                ':otherContactNumber' => $otherContactNumber,
+                ':anotherContactNumber' => $anotherContactNumber,
                 ':email' => $email,
                 ':remarks' => $remarks,
                 ':gender' => $gender,
                 ':nationality' => $nationality,
                 ':civilStatus' => $civilStatus,
                 ':address' => $address,
+                ':placeOfBirth' => $placeOfBirth,
                 ':height' => $height,
                 ':weight' => $weight,
                 ':religion' => $religion,
@@ -97,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':preferredCountry' => $preferredCountry,
                 ':otherSkills' => $otherSkills,
                 ':personalAbilities' => $personalAbilities,
+                ':dateApplied' => $dateApplied,
+                ':trainingBranch' => $trainingBranch,
+                ':source' => $source,
                 ':birthdate' => $birthdate
             ];
 

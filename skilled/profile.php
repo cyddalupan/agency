@@ -112,10 +112,23 @@ include_once('header.php');
                                     </div>
                                 </div>
 
+                                <div class="mb-3">
+                                    <label for="placeOfBirth" class="form-label">Place of Birth</label>
+                                    <input type="text" class="form-control" id="placeOfBirth" name="placeOfBirth" value="<?php echo htmlspecialchars($user_data['contacts4']); ?>">
+                                </div>
+
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label for="contactNumber" class="form-label">Contact Number</label>
                                         <input type="tel" class="form-control" id="contactNumber" name="contactNumber" value="<?php echo htmlspecialchars($user_data['applicant_contacts']); ?>" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="otherContactNumber" class="form-label">Other Contact Number</label>
+                                        <input type="tel" class="form-control" id="otherContactNumber" name="otherContactNumber" value="<?php echo htmlspecialchars($user_data['contacts2']); ?>">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="anotherContactNumber" class="form-label">Another Contact Number</label>
+                                        <input type="tel" class="form-control" id="anotherContactNumber" name="anotherContactNumber" value="<?php echo htmlspecialchars($user_data['contacts3']); ?>">
                                     </div>
                                 </div>
 
@@ -153,6 +166,21 @@ include_once('header.php');
                                 <div class="mb-3">
                                     <label for="password" class="form-label">Password</label>
                                     <input type="password" class="form-control" id="password" name="password" value="" placeholder="Leave blank to keep current password">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="dateApplied" class="form-label">Date Applied</label>
+                                    <input type="date" class="form-control" id="dateApplied" name="dateApplied" value="<?php echo htmlspecialchars($user_data['date_applied']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="trainingBranch" class="form-label">Training Branch</label>
+                                    <input type="text" class="form-control" id="trainingBranch" name="trainingBranch" value="<?php echo htmlspecialchars($user_data['applicant_training_branch']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="source" class="form-label">Source</label>
+                                    <input type="text" class="form-control" id="source" name="source" value="<?php echo htmlspecialchars($user_data['applicant_source']); ?>">
                                 </div>
                             </div>
                         </div>
