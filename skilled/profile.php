@@ -516,6 +516,21 @@ include_once('header.php');
                                     <label for="boqCard" class="form-label">BOQ card</label>
                                     <input type="text" class="form-control" id="boqCard" name="boqCard" value="<?php echo htmlspecialchars($user_data['covid_yellow']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="vaccineCert" class="form-label">Vaccine Cert</label>
+                                    <input type="text" class="form-control" id="vaccineCert" name="vaccineCert" value="<?php echo htmlspecialchars($user_data['covid_cert']); ?>">
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="booster" name="booster" value="1" <?php echo ($user_data['covidb1'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="booster">
+                                        Booster
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="boosterName" class="form-label">Booster Name</label>
+                                    <input type="text" class="form-control" id="boosterName" name="boosterName" value="<?php echo htmlspecialchars($user_data['covidb2']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
