@@ -91,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $vaccineCert = isset($_POST['vaccineCert']) ? $_POST['vaccineCert'] : null;
     $booster = isset($_POST['booster']) ? $_POST['booster'] : 0;
     $boosterName = isset($_POST['boosterName']) ? $_POST['boosterName'] : null;
+    $boosterDate = isset($_POST['boosterDate']) ? $_POST['boosterDate'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -148,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         covidme = :covidVaccin, covid_name = :vaccineName, covid_date = :firstDose,
                         covid_date2 = :secondDose, covid_loc = :vaccineLocation, covid_yellow = :boqCard,
                         covid_cert = :vaccineCert, covidb1 = :booster, covidb2 = :boosterName,
+                        covidb3 = :boosterDate,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -228,6 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':vaccineCert' => $vaccineCert,
                 ':booster' => $booster,
                 ':boosterName' => $boosterName,
+                ':boosterDate' => $boosterDate,
                 ':birthdate' => $birthdate
             ];
 

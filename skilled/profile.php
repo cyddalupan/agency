@@ -531,6 +531,11 @@ include_once('header.php');
                                     <label for="boosterName" class="form-label">Booster Name</label>
                                     <input type="text" class="form-control" id="boosterName" name="boosterName" value="<?php echo htmlspecialchars($user_data['covidb2']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="boosterDate" class="form-label">Booster Date</label>
+                                    <input type="date" class="form-control" id="boosterDate" name="boosterDate" value="<?php echo htmlspecialchars($user_data['covidb3']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>

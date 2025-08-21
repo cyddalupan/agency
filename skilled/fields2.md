@@ -23,4 +23,4 @@
 - [x] Vaccine Cert (applicant[requirement][covid_cert])
 - [x] Booster (applicant[requirement][covidb1])
 - [x] Booster Name (applicant[requirement][covidb2])
-- [ ] Booster Date (applicant[requirement][covidb3])
+- [x] Booster Date (applicant[requirement][covidb3])
