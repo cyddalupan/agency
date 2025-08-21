@@ -110,6 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nbiRemarks = isset($_POST['nbiRemarks']) ? $_POST['nbiRemarks'] : null;
     $prcLicenseExpiry = isset($_POST['prcLicenseExpiry']) ? $_POST['prcLicenseExpiry'] : null;
     $prcLicenseStatus = isset($_POST['prcLicenseStatus']) ? $_POST['prcLicenseStatus'] : null;
+    $prcLicenseRemarks = isset($_POST['prcLicenseRemarks']) ? $_POST['prcLicenseRemarks'] : null;
+    $tesdaCertificateExpiry = isset($_POST['tesdaCertificateExpiry']) ? $_POST['tesdaCertificateExpiry'] : null;
+    $tesdaCertificateStatus = isset($_POST['tesdaCertificateStatus']) ? $_POST['tesdaCertificateStatus'] : null;
+    $tesdaCertificateRemarks = isset($_POST['tesdaCertificateRemarks']) ? $_POST['tesdaCertificateRemarks'] : null;
+    $otherCertificateExpiry = isset($_POST['otherCertificateExpiry']) ? $_POST['otherCertificateExpiry'] : null;
+    $otherCertificateStatus = isset($_POST['otherCertificateStatus']) ? $_POST['otherCertificateStatus'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -174,6 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_medical_remarks = :medicalRemarks, applicant_police_clearance_expiry = :policeClearanceExpiry, applicant_police_clearance_status = :policeClearanceStatus,
                         applicant_police_clearance_remarks = :policeClearanceRemarks, applicant_nbi_expiry = :nbiExpiry, applicant_nbi_status = :nbiStatus,
                         applicant_nbi_remarks = :nbiRemarks, applicant_prc_license_expiry = :prcLicenseExpiry, applicant_prc_license_status = :prcLicenseStatus,
+                        applicant_prc_license_remarks = :prcLicenseRemarks, applicant_tesda_certificate_expiry = :tesdaCertificateExpiry, applicant_tesda_certificate_status = :tesdaCertificateStatus,
+                        applicant_tesda_certificate_remarks = :tesdaCertificateRemarks, applicant_other_certificate_expiry = :otherCertificateExpiry, applicant_other_certificate_status = :otherCertificateStatus,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -273,6 +281,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':nbiRemarks' => $nbiRemarks,
                 ':prcLicenseExpiry' => $prcLicenseExpiry,
                 ':prcLicenseStatus' => $prcLicenseStatus,
+                ':prcLicenseRemarks' => $prcLicenseRemarks,
+                ':tesdaCertificateExpiry' => $tesdaCertificateExpiry,
+                ':tesdaCertificateStatus' => $tesdaCertificateStatus,
+                ':tesdaCertificateRemarks' => $tesdaCertificateRemarks,
+                ':otherCertificateExpiry' => $otherCertificateExpiry,
+                ':otherCertificateStatus' => $otherCertificateStatus,
                 ':birthdate' => $birthdate
             ];
 

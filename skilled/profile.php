@@ -433,6 +433,32 @@ include_once('header.php');
                                     <label for="prcLicenseStatus" class="form-label">PRC License Status</label>
                                     <input type="text" class="form-control" id="prcLicenseStatus" name="prcLicenseStatus" value="<?php echo htmlspecialchars($user_data['applicant_prc_license_status']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="prcLicenseRemarks" class="form-label">PRC License Remarks</label>
+                                    <textarea class="form-control" id="prcLicenseRemarks" name="prcLicenseRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_prc_license_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateExpiry" class="form-label">TESDA Certificate Expiry</label>
+                                    <input type="date" class="form-control" id="tesdaCertificateExpiry" name="tesdaCertificateExpiry" value="<?php echo htmlspecialchars($user_data['applicant_tesda_certificate_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateStatus" class="form-label">TESDA Certificate Status</label>
+                                    <input type="text" class="form-control" id="tesdaCertificateStatus" name="tesdaCertificateStatus" value="<?php echo htmlspecialchars($user_data['applicant_tesda_certificate_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateRemarks" class="form-label">TESDA Certificate Remarks</label>
+                                    <textarea class="form-control" id="tesdaCertificateRemarks" name="tesdaCertificateRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_tesda_certificate_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="otherCertificateExpiry" class="form-label">Other Certificate Expiry</label>
+                                    <input type="date" class="form-control" id="otherCertificateExpiry" name="otherCertificateExpiry" value="<?php echo htmlspecialchars($user_data['applicant_other_certificate_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="otherCertificateStatus" class="form-label">Other Certificate Status</label>
+                                    <input type="text" class="form-control" id="otherCertificateStatus" name="otherCertificateStatus" value="<?php echo htmlspecialchars($user_data['applicant_other_certificate_status']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
