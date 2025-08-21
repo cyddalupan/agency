@@ -67,46 +67,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // 3. Build the full UPDATE query
             $sql = "UPDATE applicant SET 
-                        applicant_first = ?, applicant_middle = ?, applicant_last = ?, applicant_age = ?,
-                        applicant_contacts = ?, applicant_email = ?, fra_remarks = ?, applicant_gender = ?,
-                        applicant_nationality = ?, applicant_civil_status = ?, applicant_address = ?,
-                        applicant_height = ?, applicant_weight = ?, applicant_religion = ?, applicant_languages = ?,
-                        applicant_position_type = :applicant_position_type, currency = :currency, applicant_expected_salary = :applicant_expected_salary,
-                        applicant_preferred_country = :applicant_preferred_country, applicant_other_skills = :applicant_other_skills, personalAbilities = :personalAbilities,
-                        applicant_birthdate = ?";
+                        applicant_first = :firstName, applicant_middle = :middleName, applicant_last = :lastName, applicant_age = :age,
+                        applicant_contacts = :contactNumber, applicant_email = :email, fra_remarks = :remarks, applicant_gender = :gender,
+                        applicant_nationality = :nationality, applicant_civil_status = :civilStatus, applicant_address = :address,
+                        applicant_height = :height, applicant_weight = :weight, applicant_religion = :religion, applicant_languages = :languages,
+                        applicant_position_type = :positionType, currency = :currency, applicant_expected_salary = :expectedSalary,
+                        applicant_preferred_country = :preferredCountry, applicant_other_skills = :otherSkills, personalAbilities = :personalAbilities,
+                        applicant_birthdate = :birthdate";
             
             $params = [
-                $firstName, $middleName, $lastName, $age, $contactNumber, $email, $remarks, $gender,
-                $nationality, $civilStatus, $address, $height, $weight, $religion, $languages,
-                ':applicant_position_type' => $positionType,
+                ':firstName' => $firstName,
+                ':middleName' => $middleName,
+                ':lastName' => $lastName,
+                ':age' => $age,
+                ':contactNumber' => $contactNumber,
+                ':email' => $email,
+                ':remarks' => $remarks,
+                ':gender' => $gender,
+                ':nationality' => $nationality,
+                ':civilStatus' => $civilStatus,
+                ':address' => $address,
+                ':height' => $height,
+                ':weight' => $weight,
+                ':religion' => $religion,
+                ':languages' => $languages,
+                ':positionType' => $positionType,
                 ':currency' => $currency,
-                ':applicant_expected_salary' => $expectedSalary,
-                ':applicant_preferred_country' => $preferredCountry,
-                ':applicant_other_skills' => $otherSkills,
+                ':expectedSalary' => $expectedSalary,
+                ':preferredCountry' => $preferredCountry,
+                ':otherSkills' => $otherSkills,
                 ':personalAbilities' => $personalAbilities,
-                $birthdate
+                ':birthdate' => $birthdate
             ];
 
             if ($password) {
-                $sql .= ", password = ?";
-                $params[] = $password;
+                $sql .= ", password = :password";
+                $params[':password'] = $password;
             }
 
             if ($resume_path) {
-                $sql .= ", applicant_cv = ?";
-                $params[] = $resume_path;
+                $sql .= ", applicant_cv = :resume_path";
+                $params[':resume_path'] = $resume_path;
             }
 
-            $sql .= " WHERE applicant_id = ?";
-            $params[] = $user_id;
+            $sql .= " WHERE applicant_id = :user_id";
+            $params[':user_id'] = $user_id;
 
             // 4. Execute the query
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-
-            echo "--- DEBUG: Affected rows ---
-";
-            var_dump($stmt->rowCount());
 
             $_SESSION['message'] = 'Profile updated successfully!';
             if (!defined('TESTING_MODE')) {

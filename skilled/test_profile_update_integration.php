@@ -33,9 +33,13 @@ try {
 
     // 3. Define static POST data to simulate a form submission.
     $_POST['applicant_id'] = $user_id;
-    $_POST['applicant_position_type'] = 'Skilled';
+    $_POST['firstName'] = 'Test';
+    $_POST['lastName'] = 'User';
+    $_POST['positionType'] = 'Skilled';
+    $_POST['remarks'] = 'Test remarks';
+    $_POST['personalAbilities'] = 'Test personal abilities';
     $_POST['currency'] = 'USD';
-    $_POST['applicant_expected_salary'] = 5000;
+    $_POST['expectedSalary'] = 5000;
 
 } catch (PDOException $e) {
     die("Test setup failed: " . $e->getMessage());
@@ -64,9 +68,9 @@ try {
         $error_messages = [];
 
         // Test 1: applicant_position_type
-        if ($user['applicant_position_type'] !== $_POST['applicant_position_type']) {
+        if ($user['applicant_position_type'] !== $_POST['positionType']) {
             $tests_passed = false;
-            $error_messages[] = "    - 'applicant_position_type' is incorrect. Expected: '{$_POST['applicant_position_type']}', Actual: '{$user['applicant_position_type']}'";
+            $error_messages[] = "    - 'applicant_position_type' is incorrect. Expected: '{$_POST['positionType']}', Actual: '{$user['applicant_position_type']}'";
         }
 
         // Test 2: currency
@@ -76,9 +80,9 @@ try {
         }
 
         // Test 3: applicant_expected_salary
-        if ($user['applicant_expected_salary'] != $_POST['applicant_expected_salary']) { // Use != for type flexibility with numbers
+        if ($user['applicant_expected_salary'] != $_POST['expectedSalary']) { // Use != for type flexibility with numbers
             $tests_passed = false;
-            $error_messages[] = "    - 'applicant_expected_salary' is incorrect. Expected: '{$_POST['applicant_expected_salary']}', Actual: '{$user['applicant_expected_salary']}'";
+            $error_messages[] = "    - 'applicant_expected_salary' is incorrect. Expected: '{$_POST['expectedSalary']}', Actual: '{$user['applicant_expected_salary']}'";
         }
 
         if ($tests_passed) {

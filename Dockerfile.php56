@@ -7,6 +7,8 @@ RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources
 # Update the package list and install the MySQL client, allowing for unauthenticated packages
 RUN apt-get update && apt-get install -y --allow-unauthenticated default-mysql-client
 
+
+
 # Install the mysql extensions. pdo_mysql will ensure the mysqlnd driver is used.
 RUN docker-php-ext-install mysql mysqli pdo_mysql \
     && pecl install xdebug-2.5.5 \
