@@ -55,3 +55,4 @@ error_log
 /composer.lock
 /.env
 /config.php
+uploads/
