@@ -40,9 +40,9 @@ This list is compiled based on the analysis of `app/controllers/admin/applicants
 - [x] Remarks (applicant_remarks / fra_remarks)
 
 ## Family Background
-- [ ] Name of Partner (applicant[basic][partner_husband])
-- [ ] Occupation of Partner (applicant[basic][partner_occupation])
-- [ ] Children(s) (applicant[basic][children])
+- [x] Name of Partner (applicant[basic][partner_husband])
+- [x] Occupation of Partner (applicant[basic][partner_occupation])
+- [x] Children(s) (applicant[basic][children])
 - [ ] Name of Mother (applicant[basic][applicant_mothers])
 - [ ] Occupation of Mother (applicant[basic][occ_of_mom])
 - [ ] Name of Father (applicant[basic][nam_of_fat])

@@ -256,6 +256,31 @@ include_once('header.php');
                         </div>
                     </div>
 
+                    <!-- Family Background Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="familyBackgroundHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#familyBackgroundCollapse" aria-expanded="false" aria-controls="familyBackgroundCollapse">
+                                Family Background
+                            </button>
+                        </h2>
+                        <div id="familyBackgroundCollapse" class="accordion-collapse collapse" aria-labelledby="familyBackgroundHeading" data-bs-parent="#profileAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="partnerName" class="form-label">Name of Partner</label>
+                                    <input type="text" class="form-control" id="partnerName" name="partnerName" value="<?php echo htmlspecialchars($user_data['partner_husband']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="partnerOccupation" class="form-label">Occupation of Partner</label>
+                                    <input type="text" class="form-control" id="partnerOccupation" name="partnerOccupation" value="<?php echo htmlspecialchars($user_data['partner_occupation']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="children" class="form-label">Children(s)</label>
+                                    <input type="text" class="form-control" id="children" name="children" value="<?php echo htmlspecialchars($user_data['children']); ?>">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Documents Accordion Item -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="documentsHeading">

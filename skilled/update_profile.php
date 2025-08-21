@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $waitlist = isset($_POST['waitlist']) ? $_POST['waitlist'] : null;
     $otherSource = isset($_POST['otherSource']) ? $_POST['otherSource'] : null;
     $interviewBy = isset($_POST['interviewBy']) ? $_POST['interviewBy'] : null;
+    $remarksForResume = isset($_POST['remarksForResume']) ? $_POST['remarksForResume'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -92,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_recruitment_agent = :recruitmentAgent, repat_checkbox = :repatriated, repat_date = :repatriationDate,
                         applicant_ex = :applicantEx, typess = :branch, typess1 = :transferBranch,
                         applicant_ppt_pay = :waitlist, other_source = :otherSource, date_by = :interviewBy,
+                        remarks_3 = :remarksForResume,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -131,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':waitlist' => $waitlist,
                 ':otherSource' => $otherSource,
                 ':interviewBy' => $interviewBy,
+                ':remarksForResume' => $remarksForResume,
                 ':birthdate' => $birthdate
             ];
 
