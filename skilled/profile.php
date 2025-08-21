@@ -214,6 +214,21 @@ include_once('header.php');
                                     <label for="transferBranch" class="form-label">Transfer Branch</label>
                                     <input type="text" class="form-control" id="transferBranch" name="transferBranch" value="<?php echo htmlspecialchars($user_data['typess1']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="waitlist" class="form-label">Waitlist</label>
+                                    <input type="text" class="form-control" id="waitlist" name="waitlist" value="<?php echo htmlspecialchars($user_data['applicant_ppt_pay']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="otherSource" class="form-label">Other Source</label>
+                                    <input type="text" class="form-control" id="otherSource" name="otherSource" value="<?php echo htmlspecialchars($user_data['other_source']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="interviewBy" class="form-label">Interview By</label>
+                                    <input type="text" class="form-control" id="interviewBy" name="interviewBy" value="<?php echo htmlspecialchars($user_data['date-by']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -229,6 +244,10 @@ include_once('header.php');
                         </h2>
                         <div id="remarksCollapse" class="accordion-collapse collapse" aria-labelledby="remarksHeading" data-bs-parent="#profileAccordion">
                             <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="remarksForResume" class="form-label">Remarks For Resume</label>
+                                    <textarea class="form-control" id="remarksForResume" name="remarksForResume" rows="3"><?php echo htmlspecialchars($user_data['remarks_3']); ?></textarea>
+                                </div>
                                 <div class="mb-3">
                                     <label for="remarks" class="form-label">Remarks</label>
                                     <textarea class="form-control" id="remarks" name="remarks" rows="3"><?php echo htmlspecialchars($user_data['fra_remarks']); ?></textarea>

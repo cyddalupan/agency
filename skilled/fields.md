@@ -31,12 +31,12 @@ This list is compiled based on the analysis of `app/controllers/admin/applicants
 - [x] Applicant Firstimer / Ex Abroad (applicant[basic][applicant_ex])
 - [x] Branch (applicant[basic][typess])
 - [x] Transfer Branch (applicant[basic][typess1])
-- [ ] Waitlist (applicant[basic][applicant_ppt_pay])
-- [ ] Other Source (applicant[basic][other_source])
-- [ ] Interview By (applicant[basic][date-by])
+- [x] Waitlist (applicant[basic][applicant_ppt_pay])
+- [x] Other Source (applicant[basic][other_source])
+- [x] Interview By (applicant[basic][date-by])
 
 ## Applicant Remarks
-- [ ] Remarks For Resume (applicant[basic][remarks_3])
+- [x] Remarks For Resume (applicant[basic][remarks_3])
 - [x] Remarks (applicant_remarks / fra_remarks)
 
 ## Family Background

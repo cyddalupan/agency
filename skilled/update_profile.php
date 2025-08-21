@@ -44,6 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recruitmentAgent = isset($_POST['recruitmentAgent']) ? $_POST['recruitmentAgent'] : null;
     $repatriated = isset($_POST['repatriated']) ? $_POST['repatriated'] : 0;
     $repatriationDate = isset($_POST['repatriationDate']) ? $_POST['repatriationDate'] : null;
+    $applicantEx = isset($_POST['applicantEx']) ? $_POST['applicantEx'] : null;
+    $branch = isset($_POST['branch']) ? $_POST['branch'] : null;
+    $transferBranch = isset($_POST['transferBranch']) ? $_POST['transferBranch'] : null;
+    $waitlist = isset($_POST['waitlist']) ? $_POST['waitlist'] : null;
+    $otherSource = isset($_POST['otherSource']) ? $_POST['otherSource'] : null;
+    $interviewBy = isset($_POST['interviewBy']) ? $_POST['interviewBy'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -84,6 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_preferred_country = :preferredCountry, applicant_other_skills = :otherSkills, personalAbilities = :personalAbilities,
                         date_applied = :dateApplied, applicant_training_branch = :trainingBranch, applicant_source = :source,
                         applicant_recruitment_agent = :recruitmentAgent, repat_checkbox = :repatriated, repat_date = :repatriationDate,
+                        applicant_ex = :applicantEx, typess = :branch, typess1 = :transferBranch,
+                        applicant_ppt_pay = :waitlist, other_source = :otherSource, date_by = :interviewBy,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -117,6 +125,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':recruitmentAgent' => $recruitmentAgent,
                 ':repatriated' => $repatriated,
                 ':repatriationDate' => $repatriationDate,
+                ':applicantEx' => $applicantEx,
+                ':branch' => $branch,
+                ':transferBranch' => $transferBranch,
+                ':waitlist' => $waitlist,
+                ':otherSource' => $otherSource,
+                ':interviewBy' => $interviewBy,
                 ':birthdate' => $birthdate
             ];
 
