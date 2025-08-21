@@ -51,6 +51,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $otherSource = isset($_POST['otherSource']) ? $_POST['otherSource'] : null;
     $interviewBy = isset($_POST['interviewBy']) ? $_POST['interviewBy'] : null;
     $remarksForResume = isset($_POST['remarksForResume']) ? $_POST['remarksForResume'] : null;
+    $partnerName = isset($_POST['partnerName']) ? $_POST['partnerName'] : null;
+    $partnerOccupation = isset($_POST['partnerOccupation']) ? $_POST['partnerOccupation'] : null;
+    $children = isset($_POST['children']) ? $_POST['children'] : null;
+    $motherName = isset($_POST['motherName']) ? $_POST['motherName'] : null;
+    $motherOccupation = isset($_POST['motherOccupation']) ? $_POST['motherOccupation'] : null;
+    $fatherName = isset($_POST['fatherName']) ? $_POST['fatherName'] : null;
+    $fatherOccupation = isset($_POST['fatherOccupation']) ? $_POST['fatherOccupation'] : null;
+    $positionInFamily = isset($_POST['positionInFamily']) ? $_POST['positionInFamily'] : null;
+    $numBrothers = isset($_POST['numBrothers']) ? $_POST['numBrothers'] : null;
+    $numSisters = isset($_POST['numSisters']) ? $_POST['numSisters'] : null;
+    $relativeName = isset($_POST['relativeName']) ? $_POST['relativeName'] : null;
+    $relativeMobile = isset($_POST['relativeMobile']) ? $_POST['relativeMobile'] : null;
+    $emergencyContactName = isset($_POST['emergencyContactName']) ? $_POST['emergencyContactName'] : null;
+    $emergencyContactRelationship = isset($_POST['emergencyContactRelationship']) ? $_POST['emergencyContactRelationship'] : null;
+    $emergencyContactNumber = isset($_POST['emergencyContactNumber']) ? $_POST['emergencyContactNumber'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -94,6 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         applicant_ex = :applicantEx, typess = :branch, typess1 = :transferBranch,
                         applicant_ppt_pay = :waitlist, other_source = :otherSource, date_by = :interviewBy,
                         remarks_3 = :remarksForResume,
+                        partner_husband = :partnerName, partner_occupation = :partnerOccupation, children = :children,
+                        applicant_mothers = :motherName, occ_of_mom = :motherOccupation, nam_of_fat = :fatherName,
+                        occ_of_fat = :fatherOccupation, pos_in_fam = :positionInFamily, no_of_bro = :numBrothers,
+                        no_of_sis = :numSisters, relative_name = :relativeName, relative_mobile = :relativeMobile,
+                        applicant_incase_name = :emergencyContactName, applicant_incase_relation = :emergencyContactRelationship, applicant_incase_contact = :emergencyContactNumber,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -134,6 +154,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':otherSource' => $otherSource,
                 ':interviewBy' => $interviewBy,
                 ':remarksForResume' => $remarksForResume,
+                ':partnerName' => $partnerName,
+                ':partnerOccupation' => $partnerOccupation,
+                ':children' => $children,
+                ':motherName' => $motherName,
+                ':motherOccupation' => $motherOccupation,
+                ':fatherName' => $fatherName,
+                ':fatherOccupation' => $fatherOccupation,
+                ':positionInFamily' => $positionInFamily,
+                ':numBrothers' => $numBrothers,
+                ':numSisters' => $numSisters,
+                ':relativeName' => $relativeName,
+                ':relativeMobile' => $relativeMobile,
+                ':emergencyContactName' => $emergencyContactName,
+                ':emergencyContactRelationship' => $emergencyContactRelationship,
+                ':emergencyContactNumber' => $emergencyContactNumber,
                 ':birthdate' => $birthdate
             ];
 
