@@ -394,6 +394,19 @@ include_once('header.php');
                                     <label for="medicalStatus" class="form-label">Medical Status</label>
                                     <input type="text" class="form-control" id="medicalStatus" name="medicalStatus" value="<?php echo htmlspecialchars($user_data['applicant_medical_status']); ?>">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="medicalRemarks" class="form-label">Medical Remarks</label>
+                                    <textarea class="form-control" id="medicalRemarks" name="medicalRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_medical_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="policeClearanceExpiry" class="form-label">Police Clearance Expiry</label>
+                                    <input type="date" class="form-control" id="policeClearanceExpiry" name="policeClearanceExpiry" value="<?php echo htmlspecialchars($user_data['applicant_police_clearance_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="policeClearanceStatus" class="form-label">Police Clearance Status</label>
+                                    <input type="text" class="form-control" id="policeClearanceStatus" name="policeClearanceStatus" value="<?php echo htmlspecialchars($user_data['applicant_police_clearance_status']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>

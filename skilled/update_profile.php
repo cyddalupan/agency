@@ -101,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $visaDuration = isset($_POST['visaDuration']) ? $_POST['visaDuration'] : null;
     $medicalExpiry = isset($_POST['medicalExpiry']) ? $_POST['medicalExpiry'] : null;
     $medicalStatus = isset($_POST['medicalStatus']) ? $_POST['medicalStatus'] : null;
+    $medicalRemarks = isset($_POST['medicalRemarks']) ? $_POST['medicalRemarks'] : null;
+    $policeClearanceExpiry = isset($_POST['policeClearanceExpiry']) ? $_POST['policeClearanceExpiry'] : null;
+    $policeClearanceStatus = isset($_POST['policeClearanceStatus']) ? $_POST['policeClearanceStatus'] : null;
     $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
 
     // 2. Handle File Upload
@@ -162,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         passport_number = :passportNumber, passport_issue = :passportDateIssued, passport_issue_place = :passportPlaceIssue,
                         passport_expiration = :passportExpiration, applicant_visa_number = :visaNumber, applicant_visa_expiry = :visaExpiry,
                         cyd_visa_duration = :visaDuration, applicant_medical_expiry = :medicalExpiry, applicant_medical_status = :medicalStatus,
+                        applicant_medical_remarks = :medicalRemarks, applicant_police_clearance_expiry = :policeClearanceExpiry, applicant_police_clearance_status = :policeClearanceStatus,
                         applicant_birthdate = :birthdate";
             
             $params = [
@@ -252,6 +256,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':visaDuration' => $visaDuration,
                 ':medicalExpiry' => $medicalExpiry,
                 ':medicalStatus' => $medicalStatus,
+                ':medicalRemarks' => $medicalRemarks,
+                ':policeClearanceExpiry' => $policeClearanceExpiry,
+                ':policeClearanceStatus' => $policeClearanceStatus,
                 ':birthdate' => $birthdate
             ];
 
