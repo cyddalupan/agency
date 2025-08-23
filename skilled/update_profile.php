@@ -13,302 +13,87 @@ require_once(dirname(__DIR__) . '/config.php');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Retrieve all form data
     $user_id = isset($_POST['applicant_id']) ? $_POST['applicant_id'] : null;
-    $firstName = isset($_POST['firstName']) ? $_POST['firstName'] : null;
-    $middleName = isset($_POST['middleName']) ? $_POST['middleName'] : null;
-    $lastName = isset($_POST['lastName']) ? $_POST['lastName'] : null;
-    $age = isset($_POST['age']) ? $_POST['age'] : null;
-    $contactNumber = isset($_POST['contactNumber']) ? $_POST['contactNumber'] : null;
-    $otherContactNumber = isset($_POST['otherContactNumber']) ? $_POST['otherContactNumber'] : null;
-    $anotherContactNumber = isset($_POST['anotherContactNumber']) ? $_POST['anotherContactNumber'] : null;
-    $placeOfBirth = isset($_POST['placeOfBirth']) ? $_POST['placeOfBirth'] : null;
-    $email = isset($_POST['email']) ? $_POST['email'] : null;
-    $password = isset($_POST['password']) ? $_POST['password'] : null;
-    $remarks = isset($_POST['remarks']) ? $_POST['remarks'] : null;
-    $gender = isset($_POST['gender']) ? $_POST['gender'] : null;
-    $nationality = isset($_POST['nationality']) ? $_POST['nationality'] : null;
-    $civilStatus = isset($_POST['civilStatus']) ? $_POST['civilStatus'] : null;
-    $address = isset($_POST['address']) ? $_POST['address'] : null;
-    $height = isset($_POST['height']) ? $_POST['height'] : null;
-    $weight = isset($_POST['weight']) ? $_POST['weight'] : null;
-    $religion = isset($_POST['religion']) ? $_POST['religion'] : null;
-    $languages = isset($_POST['languages']) ? $_POST['languages'] : null;
-    $positionType = isset($_POST['applicant_position_type']) ? $_POST['applicant_position_type'] : null;
-    $currency = isset($_POST['currency']) ? $_POST['currency'] : null;
-    $expectedSalary = isset($_POST['applicant_expected_salary']) ? $_POST['applicant_expected_salary'] : null;
-    $preferredCountry = isset($_POST['preferredCountry']) ? $_POST['preferredCountry'] : null;
-    $otherSkills = isset($_POST['otherSkills']) ? $_POST['otherSkills'] : null;
-    $personalAbilities = isset($_POST['personalAbilities']) ? $_POST['personalAbilities'] : null;
-    $dateApplied = isset($_POST['dateApplied']) ? $_POST['dateApplied'] : null;
-    $trainingBranch = isset($_POST['trainingBranch']) ? $_POST['trainingBranch'] : null;
-    $source = isset($_POST['source']) ? $_POST['source'] : null;
-    $recruitmentAgent = isset($_POST['recruitmentAgent']) ? $_POST['recruitmentAgent'] : null;
-    $repatriated = isset($_POST['repatriated']) ? $_POST['repatriated'] : 0;
-    $repatriationDate = isset($_POST['repatriationDate']) ? $_POST['repatriationDate'] : null;
-    $applicantEx = isset($_POST['applicantEx']) ? $_POST['applicantEx'] : null;
-    $branch = isset($_POST['branch']) ? $_POST['branch'] : null;
-    $transferBranch = isset($_POST['transferBranch']) ? $_POST['transferBranch'] : null;
-    $waitlist = isset($_POST['waitlist']) ? $_POST['waitlist'] : null;
-    $otherSource = isset($_POST['otherSource']) ? $_POST['otherSource'] : null;
-    $interviewBy = isset($_POST['interviewBy']) ? $_POST['interviewBy'] : null;
-    $remarksForResume = isset($_POST['remarksForResume']) ? $_POST['remarksForResume'] : null;
-    $partnerName = isset($_POST['partnerName']) ? $_POST['partnerName'] : null;
-    $partnerOccupation = isset($_POST['partnerOccupation']) ? $_POST['partnerOccupation'] : null;
-    $children = isset($_POST['children']) ? $_POST['children'] : null;
-    $motherName = isset($_POST['motherName']) ? $_POST['motherName'] : null;
-    $motherOccupation = isset($_POST['motherOccupation']) ? $_POST['motherOccupation'] : null;
-    $fatherName = isset($_POST['fatherName']) ? $_POST['fatherName'] : null;
-    $fatherOccupation = isset($_POST['fatherOccupation']) ? $_POST['fatherOccupation'] : null;
-    $positionInFamily = isset($_POST['positionInFamily']) ? $_POST['positionInFamily'] : null;
-    $numBrothers = isset($_POST['numBrothers']) ? $_POST['numBrothers'] : null;
-    $numSisters = isset($_POST['numSisters']) ? $_POST['numSisters'] : null;
-    $relativeName = isset($_POST['relativeName']) ? $_POST['relativeName'] : null;
-    $relativeMobile = isset($_POST['relativeMobile']) ? $_POST['relativeMobile'] : null;
-    $emergencyContactName = isset($_POST['emergencyContactName']) ? $_POST['emergencyContactName'] : null;
-    $emergencyContactRelationship = isset($_POST['emergencyContactRelationship']) ? $_POST['emergencyContactRelationship'] : null;
-    $emergencyContactNumber = isset($_POST['emergencyContactNumber']) ? $_POST['emergencyContactNumber'] : null;
-    $emergencyContactAddress = isset($_POST['emergencyContactAddress']) ? $_POST['emergencyContactAddress'] : null;
-    $hasTattoo = isset($_POST['hasTattoo']) ? $_POST['hasTattoo'] : 0;
-    $hasHemorrhoids = isset($_POST['hasHemorrhoids']) ? $_POST['hasHemorrhoids'] : 0;
-    $hasDiabetes = isset($_POST['hasDiabetes']) ? $_POST['hasDiabetes'] : 0;
-    $hasHighBlood = isset($_POST['hasHighBlood']) ? $_POST['hasHighBlood'] : 0;
-    $hasHeartProblem = isset($_POST['hasHeartProblem']) ? $_POST['hasHeartProblem'] : 0;
-    $hasAllergies = isset($_POST['hasAllergies']) ? $_POST['hasAllergies'] : 0;
-    $hasCyst = isset($_POST['hasCyst']) ? $_POST['hasCyst'] : 0;
-    $hasAsthma = isset($_POST['hasAsthma']) ? $_POST['hasAsthma'] : 0;
-    $tattooNeck = isset($_POST['tattooNeck']) ? $_POST['tattooNeck'] : null;
-    $tattooBack = isset($_POST['tattooBack']) ? $_POST['tattooBack'] : null;
-    $tattooHands = isset($_POST['tattooHands']) ? $_POST['tattooHands'] : null;
-    $tattooThigh = isset($_POST['tattooThigh']) ? $_POST['tattooThigh'] : null;
-    $tattooLegs = isset($_POST['tattooLegs']) ? $_POST['tattooLegs'] : null;
-    $tattooFoot = isset($_POST['tattooFoot']) ? $_POST['tattooFoot'] : null;
-    $medicalHistoryOthers = isset($_POST['medicalHistoryOthers']) ? $_POST['medicalHistoryOthers'] : null;
-    $covidVaccin = isset($_POST['covidVaccin']) ? $_POST['covidVaccin'] : 0;
-    $vaccineName = isset($_POST['vaccineName']) ? $_POST['vaccineName'] : null;
-    $firstDose = isset($_POST['firstDose']) ? $_POST['firstDose'] : null;
-    $secondDose = isset($_POST['secondDose']) ? $_POST['secondDose'] : null;
-    $vaccineLocation = isset($_POST['vaccineLocation']) ? $_POST['vaccineLocation'] : null;
-    $boqCard = isset($_POST['boqCard']) ? $_POST['boqCard'] : null;
-    $vaccineCert = isset($_POST['vaccineCert']) ? $_POST['vaccineCert'] : null;
-    $booster = isset($_POST['booster']) ? $_POST['booster'] : 0;
-    $boosterName = isset($_POST['boosterName']) ? $_POST['boosterName'] : null;
-    $boosterDate = isset($_POST['boosterDate']) ? $_POST['boosterDate'] : null;
-    $passportNumber = isset($_POST['passportNumber']) ? $_POST['passportNumber'] : null;
-    $passportDateIssued = isset($_POST['passportDateIssued']) ? $_POST['passportDateIssued'] : null;
-    $passportPlaceIssue = isset($_POST['passportPlaceIssue']) ? $_POST['passportPlaceIssue'] : null;
-    $passportExpiration = isset($_POST['passportExpiration']) ? $_POST['passportExpiration'] : null;
-    $visaNumber = isset($_POST['visaNumber']) ? $_POST['visaNumber'] : null;
-    $visaExpiry = isset($_POST['visaExpiry']) ? $_POST['visaExpiry'] : null;
-    $visaDuration = isset($_POST['visaDuration']) ? $_POST['visaDuration'] : null;
-    $medicalExpiry = isset($_POST['medicalExpiry']) ? $_POST['medicalExpiry'] : null;
-    $medicalStatus = isset($_POST['medicalStatus']) ? $_POST['medicalStatus'] : null;
-    $medicalRemarks = isset($_POST['medicalRemarks']) ? $_POST['medicalRemarks'] : null;
-    $policeClearanceExpiry = isset($_POST['policeClearanceExpiry']) ? $_POST['policeClearanceExpiry'] : null;
-    $policeClearanceStatus = isset($_POST['policeClearanceStatus']) ? $_POST['policeClearanceStatus'] : null;
-    $policeClearanceRemarks = isset($_POST['policeClearanceRemarks']) ? $_POST['policeClearanceRemarks'] : null;
-    $nbiExpiry = isset($_POST['nbiExpiry']) ? $_POST['nbiExpiry'] : null;
-    $nbiStatus = isset($_POST['nbiStatus']) ? $_POST['nbiStatus'] : null;
-    $nbiRemarks = isset($_POST['nbiRemarks']) ? $_POST['nbiRemarks'] : null;
-    $prcLicenseExpiry = isset($_POST['prcLicenseExpiry']) ? $_POST['prcLicenseExpiry'] : null;
-    $prcLicenseStatus = isset($_POST['prcLicenseStatus']) ? $_POST['prcLicenseStatus'] : null;
-    $prcLicenseRemarks = isset($_POST['prcLicenseRemarks']) ? $_POST['prcLicenseRemarks'] : null;
-    $tesdaCertificateExpiry = isset($_POST['tesdaCertificateExpiry']) ? $_POST['tesdaCertificateExpiry'] : null;
-    $tesdaCertificateStatus = isset($_POST['tesdaCertificateStatus']) ? $_POST['tesdaCertificateStatus'] : null;
-    $tesdaCertificateRemarks = isset($_POST['tesdaCertificateRemarks']) ? $_POST['tesdaCertificateRemarks'] : null;
-    $otherCertificateExpiry = isset($_POST['otherCertificateExpiry']) ? $_POST['otherCertificateExpiry'] : null;
-    $otherCertificateStatus = isset($_POST['otherCertificateStatus']) ? $_POST['otherCertificateStatus'] : null;
-    $birthdate = $age ? (date('Y') - $age) . "-01-01" : null;
+    $page = isset($_POST['page']) ? $_POST['page'] : 'personal_info'; // Default to personal_info
 
-    // 2. Handle File Upload
+    // Dynamically include all POST data as variables for the handlers to use
+    foreach ($_POST as $key => $value) {
+        $key = $value;
+    }
+
+    // Calculate birthdate from age if age is provided
+    $birthdate = isset($age) && $age ? (date('Y') - $age) . "-01-01" : null;
+
+    // Handle file upload centrally
     $resume_path = null;
     if (isset($_FILES['resume']) && $_FILES['resume']['error'] == 0) {
         $target_dir = "uploads/";
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0755, true);
         }
-        // Create a unique file name to avoid overwriting
         $file_extension = pathinfo($_FILES["resume"]["name"], PATHINFO_EXTENSION);
         $unique_file_name = "resume_" . $user_id . "_" . time() . "." . $file_extension;
         $target_file = $target_dir . $unique_file_name;
-        
         $move_function = defined('TESTING_MODE') ? 'copy' : 'move_uploaded_file';
         if ($move_function($_FILES["resume"]["tmp_name"], $target_file)) {
             $resume_path = $target_file;
         }
     }
 
-    if ($user_id) {
-        try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8";
-            $options = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ];
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    $handler_path = __DIR__ . '/update_handlers/' . $page . '.php';
 
-            // 3. Build the full UPDATE query using named placeholders
-            $sql_parts = [];
-            $params = [];
+    if (file_exists($handler_path)) {
+        $fields = include $handler_path;
 
-            $fields = [
-                'applicant_first' => $firstName,
-                'applicant_middle' => $middleName,
-                'applicant_last' => $lastName,
-                'applicant_age' => $age,
-                'applicant_contacts' => $contactNumber,
-                'contacts2' => $otherContactNumber,
-                'contacts3' => $anotherContactNumber,
-                'applicant_email' => $email,
-                'fra_remarks' => $remarks,
-                'applicant_gender' => $gender,
-                'applicant_nationality' => $nationality,
-                'applicant_civil_status' => $civilStatus,
-                'applicant_address' => $address,
-                'contacts4' => $placeOfBirth,
-                'applicant_height' => $height,
-                'applicant_weight' => $weight,
-                'applicant_religion' => $religion,
-                'applicant_languages' => $languages,
-                'applicant_position_type' => $positionType,
-                'currency' => $currency,
-                'applicant_expected_salary' => $expectedSalary,
-                'applicant_preferred_country' => $preferredCountry,
-                'applicant_other_skills' => $otherSkills,
-                'personalAbilities' => $personalAbilities,
-                'date_applied' => $dateApplied,
-                'applicant_training_branch' => $trainingBranch,
-                'applicant_source' => $source,
-                'applicant_recruitment_agent' => $recruitmentAgent,
-                'repat_checkbox' => $repatriated,
-                'repat_date' => $repatriationDate,
-                'applicant_ex' => $applicantEx,
-                'typess' => $branch,
-                'typess1' => $transferBranch,
-                'applicant_ppt_pay' => $waitlist,
-                'other_source' => $otherSource,
-                'date_by' => $interviewBy,
-                'remarks_3' => $remarksForResume,
-                'partner_husband' => $partnerName,
-                'partner_occupation' => $partnerOccupation,
-                'children' => $children,
-                'applicant_mothers' => $motherName,
-                'occ_of_mom' => $motherOccupation,
-                'nam_of_fat' => $fatherName,
-                'occ_of_fat' => $fatherOccupation,
-                'pos_in_fam' => $positionInFamily,
-                'no_of_bro' => $numBrothers,
-                'no_of_sis' => $numSisters,
-                'relative_name' => $relativeName,
-                'relative_mobile' => $relativeMobile,
-                'applicant_incase_name' => $emergencyContactName,
-                'applicant_incase_relation' => $emergencyContactRelationship,
-                'applicant_incase_contact' => $emergencyContactNumber,
-                'applicant_incase_address' => $emergencyContactAddress,
-                't1' => $hasTattoo,
-                't2' => $hasHemorrhoids,
-                't3' => $hasDiabetes,
-                't4' => $hasHighBlood,
-                't5' => $hasHeartProblem,
-                't6' => $hasAllergies,
-                't7' => $hasCyst,
-                't8' => $hasAsthma,
-                'is_manicure' => $tattooNeck,
-                'is_massage' => $tattooBack,
-                'is_blower' => $tattooHands,
-                'is_coloring' => $tattooThigh,
-                'is_sewing' => $tattooLegs,
-                'is_computer' => $tattooFoot,
-                'applicant_jobs' => $medicalHistoryOthers,
-                'covidme' => $covidVaccin,
-                'covid_name' => $vaccineName,
-                'covid_date' => $firstDose,
-                'covid_date2' => $secondDose,
-                'covid_loc' => $vaccineLocation,
-                'covid_yellow' => $boqCard,
-                'covid_cert' => $vaccineCert,
-                'covidb1' => $booster,
-                'covidb2' => $boosterName,
-                'covidb3' => $boosterDate,
-                'passport_number' => $passportNumber,
-                'passport_issue' => $passportDateIssued,
-                'passport_issue_place' => $passportPlaceIssue,
-                'passport_expiration' => $passportExpiration,
-                'applicant_visa_number' => $visaNumber,
-                'applicant_visa_expiry' => $visaExpiry,
-                'cyd_visa_duration' => $visaDuration,
-                'applicant_medical_expiry' => $medicalExpiry,
-                'applicant_medical_status' => $medicalStatus,
-                'applicant_medical_remarks' => $medicalRemarks,
-                'applicant_police_clearance_expiry' => $policeClearanceExpiry,
-                'applicant_police_clearance_status' => $policeClearanceStatus,
-                'applicant_police_clearance_remarks' => $policeClearanceRemarks,
-                'applicant_nbi_expiry' => $nbiExpiry,
-                'applicant_nbi_status' => $nbiStatus,
-                'applicant_nbi_remarks' => $nbiRemarks,
-                'applicant_prc_license_expiry' => $prcLicenseExpiry,
-                'applicant_prc_license_status' => $prcLicenseStatus,
-                'applicant_prc_license_remarks' => $prcLicenseRemarks,
-                'applicant_tesda_certificate_expiry' => $tesdaCertificateExpiry,
-                'applicant_tesda_certificate_status' => $tesdaCertificateStatus,
-                'applicant_tesda_certificate_remarks' => $tesdaCertificateRemarks,
-                'applicant_other_certificate_expiry' => $otherCertificateExpiry,
-                'applicant_other_certificate_status' => $otherCertificateStatus,
-                'applicant_birthdate' => $birthdate,
-            ];
+        $sql_parts = [];
+        $params = [];
 
+        if (is_array($fields)) {
             foreach ($fields as $key => $value) {
                 if ($value !== null) {
                     $sql_parts[] = "`{$key}` = :{$key}";
                     $params[":{$key}"] = $value;
                 }
             }
+        }
+        
+        if (isset($password) && $password) {
+            $sql_parts[] = "`password` = :password";
+            $params[":password"] = $password;
+        }
 
-            if ($password) {
-                $sql_parts[] = "`password` = :password";
-                $params[":password"] = $password;
+        if ($user_id && !empty($sql_parts)) {
+            try {
+                $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8";
+                $options = [
+                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES   => false,
+                ];
+                $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+                $sql = "UPDATE `applicant` SET " . implode(', ', $sql_parts) . " WHERE `applicant_id` = :applicant_id";
+                $params[':applicant_id'] = $user_id;
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+                $_SESSION['message'] = 'Profile updated successfully!';
+            } catch (PDOException $e) {
+                $_SESSION['error'] = "Database update failed: " . $e->getMessage();
             }
-
-            if ($resume_path) {
-                $sql_parts[] = "`applicant_cv` = :applicant_cv";
-                $params[":applicant_cv"] = $resume_path;
-            }
-
-            if (empty($sql_parts)) {
-                // Nothing to update
-                if (!defined('TESTING_MODE')) {
-                    header('Location: profile.php');
-                    exit;
-                }
-                return;
-            }
-
-            $sql = "UPDATE `applicant` SET " . implode(', ', $sql_parts) . " WHERE `applicant_id` = :applicant_id";
-            $params[':applicant_id'] = $user_id;
-
-            // 4. Execute the query
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-
-            $_SESSION['message'] = 'Profile updated successfully!';
-            if (!defined('TESTING_MODE')) {
-                header('Location: profile.php');
-                exit;
-            }
-
-        } catch (PDOException $e) {
-            $_SESSION['error'] = "Database update failed: " . $e->getMessage();
-            if (!defined('TESTING_MODE')) {
-                header('Location: profile.php');
-                exit;
-            }
+        } else {
+            // No fields to update, or user_id not provided
+            $_SESSION['message'] = 'No changes were made.';
         }
     } else {
-        $_SESSION['error'] = 'Invalid input for profile update.';
-        if (!defined('TESTING_MODE')) {
-            header('Location: profile.php');
-            exit;
-        }
+        $_SESSION['error'] = "Invalid update section specified.";
     }
+
+    if (!defined('TESTING_MODE')) {
+        header('Location: profile.php?page=' . $page);
+        exit;
+    }
+
 } else {
     if (!defined('TESTING_MODE')) {
         header('Location: profile.php');
