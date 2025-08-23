@@ -109,3 +109,29 @@ This section summarizes common problems encountered when working with the Gemini
 *   **Incomplete Test Simulation:**
     *   **Problem:** Test scripts may fail because they don't fully mimic the application's real-world execution flow (e.g., not simulating a logged-in user, missing `$_SERVER` variables like `REQUEST_METHOD`).
     *   **Suggestion:** Ensure your test scripts accurately set up all necessary environment variables (`$_SESSION`, `$_POST`, `$_SERVER`, etc.) and simulate the complete user journey or application state required for the code under test to function correctly.
+
+## 7. Running Tests
+
+To ensure a consistent environment, all tests must be executed inside the `web` Docker container. This provides the test scripts with the correct PHP version and all the necessary extensions, like `pdo_mysql`.
+
+### Running a Single Test
+
+To run a single test file, use the `docker-compose exec` command:
+
+```bash
+docker-compose exec web php /var/www/html/skilled/test_login_integration.php
+```
+
+Replace `/var/www/html/skilled/test_login_integration.php` with the actual path to the test file you want to run.
+
+### Running All Tests
+
+You can run all tests in a directory by iterating through the files and executing them:
+
+```bash
+for test_file in skilled/test_*.php; do
+  echo "Running $test_file..."
+  docker-compose exec web php /var/www/html/$test_file
+  echo ""
+done
+```

@@ -29,9 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $weight = isset($_POST['weight']) ? $_POST['weight'] : null;
     $religion = isset($_POST['religion']) ? $_POST['religion'] : null;
     $languages = isset($_POST['languages']) ? $_POST['languages'] : null;
-    $positionType = isset($_POST['positionType']) ? $_POST['positionType'] : null;
+    $positionType = isset($_POST['applicant_position_type']) ? $_POST['applicant_position_type'] : null;
     $currency = isset($_POST['currency']) ? $_POST['currency'] : null;
-    $expectedSalary = isset($_POST['expectedSalary']) ? $_POST['expectedSalary'] : null;
+    $expectedSalary = isset($_POST['applicant_expected_salary']) ? $_POST['applicant_expected_salary'] : null;
     $preferredCountry = isset($_POST['preferredCountry']) ? $_POST['preferredCountry'] : null;
     $otherSkills = isset($_POST['otherSkills']) ? $_POST['otherSkills'] : null;
     $personalAbilities = isset($_POST['personalAbilities']) ? $_POST['personalAbilities'] : null;
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if ($user_id && $firstName && $lastName) {
+    if ($user_id) {
         try {
             $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8";
             $options = [
@@ -65,48 +65,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
-            // 3. Build the full UPDATE query
-            $sql = "UPDATE applicant SET 
-                        applicant_first = ?, applicant_middle = ?, applicant_last = ?, applicant_age = ?,
-                        applicant_contacts = ?, applicant_email = ?, fra_remarks = ?, applicant_gender = ?,
-                        applicant_nationality = ?, applicant_civil_status = ?, applicant_address = ?,
-                        applicant_height = ?, applicant_weight = ?, applicant_religion = ?, applicant_languages = ?,
-                        applicant_position_type = :applicant_position_type, currency = :currency, applicant_expected_salary = :applicant_expected_salary,
-                        applicant_preferred_country = :applicant_preferred_country, applicant_other_skills = :applicant_other_skills, personalAbilities = :personalAbilities,
-                        applicant_birthdate = ?";
-            
-            $params = [
-                $firstName, $middleName, $lastName, $age, $contactNumber, $email, $remarks, $gender,
-                $nationality, $civilStatus, $address, $height, $weight, $religion, $languages,
-                ':applicant_position_type' => $positionType,
-                ':currency' => $currency,
-                ':applicant_expected_salary' => $expectedSalary,
-                ':applicant_preferred_country' => $preferredCountry,
-                ':applicant_other_skills' => $otherSkills,
-                ':personalAbilities' => $personalAbilities,
-                $birthdate
+            // 3. Build the full UPDATE query using named placeholders
+            $sql_parts = [];
+            $params = [];
+
+            $fields = [
+                'applicant_first' => $firstName,
+                'applicant_middle' => $middleName,
+                'applicant_last' => $lastName,
+                'applicant_age' => $age,
+                'applicant_contacts' => $contactNumber,
+                'applicant_email' => $email,
+                'fra_remarks' => $remarks,
+                'applicant_gender' => $gender,
+                'applicant_nationality' => $nationality,
+                'applicant_civil_status' => $civilStatus,
+                'applicant_address' => $address,
+                'applicant_height' => $height,
+                'applicant_weight' => $weight,
+                'applicant_religion' => $religion,
+                'applicant_languages' => $languages,
+                'applicant_position_type' => $positionType,
+                'currency' => $currency,
+                'applicant_expected_salary' => $expectedSalary,
+                'applicant_preferred_country' => $preferredCountry,
+                'applicant_other_skills' => $otherSkills,
+                'personalAbilities' => $personalAbilities,
+                'applicant_birthdate' => $birthdate,
             ];
 
+            foreach ($fields as $key => $value) {
+                if ($value !== null) {
+                    $sql_parts[] = "`{$key}` = :{$key}";
+                    $params[":{$key}"] = $value;
+                }
+            }
+
             if ($password) {
-                $sql .= ", password = ?";
-                $params[] = $password;
+                $sql_parts[] = "`password` = :password";
+                $params[":password"] = $password;
             }
 
             if ($resume_path) {
-                $sql .= ", applicant_cv = ?";
-                $params[] = $resume_path;
+                $sql_parts[] = "`applicant_cv` = :applicant_cv";
+                $params[":applicant_cv"] = $resume_path;
             }
 
-            $sql .= " WHERE applicant_id = ?";
-            $params[] = $user_id;
+            if (empty($sql_parts)) {
+                // Nothing to update
+                if (!defined('TESTING_MODE')) {
+                    header('Location: profile.php');
+                    exit;
+                }
+                return;
+            }
+
+            $sql = "UPDATE `applicant` SET " . implode(', ', $sql_parts) . " WHERE `applicant_id` = :applicant_id";
+            $params[':applicant_id'] = $user_id;
 
             // 4. Execute the query
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-
-            echo "--- DEBUG: Affected rows ---
-";
-            var_dump($stmt->rowCount());
 
             $_SESSION['message'] = 'Profile updated successfully!';
             if (!defined('TESTING_MODE')) {
