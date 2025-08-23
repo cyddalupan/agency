@@ -43,6 +43,12 @@ $_POST['age'] = 30;
 $_POST['contactNumber'] = '0987654321';
 $_POST['email'] = 'test.user.profile.updated@example.com';
 $_POST['remarks'] = 'This is an updated test remark.';
+$_POST['positionType'] = 'Skilled';
+$_POST['currency'] = 'PHP';
+$_POST['expectedSalary'] = 100000;
+$_POST['preferredCountry'] = 1;
+$_POST['otherSkills'] = 'PHP, MySQL, Docker';
+$_POST['personalAbilities'] = 'Hardworking, Fast learner';
 
 // --- Execute the Script ---
 ob_start();
@@ -77,8 +83,7 @@ try {
         }
         
     } else {
-        echo "\n--- RESULT ---\
-";
+        echo "\n--- RESULT ---\\n";
         echo "❌ Test FAILED: Could not find the record with ID '{$test_user_id}'.\n";
     }
 

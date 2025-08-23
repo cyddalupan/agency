@@ -112,10 +112,23 @@ include_once('header.php');
                                     </div>
                                 </div>
 
+                                <div class="mb-3">
+                                    <label for="placeOfBirth" class="form-label">Place of Birth</label>
+                                    <input type="text" class="form-control" id="placeOfBirth" name="placeOfBirth" value="<?php echo htmlspecialchars($user_data['contacts4']); ?>">
+                                </div>
+
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label for="contactNumber" class="form-label">Contact Number</label>
                                         <input type="tel" class="form-control" id="contactNumber" name="contactNumber" value="<?php echo htmlspecialchars($user_data['applicant_contacts']); ?>" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="otherContactNumber" class="form-label">Other Contact Number</label>
+                                        <input type="tel" class="form-control" id="otherContactNumber" name="otherContactNumber" value="<?php echo htmlspecialchars($user_data['contacts2']); ?>">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="anotherContactNumber" class="form-label">Another Contact Number</label>
+                                        <input type="tel" class="form-control" id="anotherContactNumber" name="anotherContactNumber" value="<?php echo htmlspecialchars($user_data['contacts3']); ?>">
                                     </div>
                                 </div>
 
@@ -154,6 +167,68 @@ include_once('header.php');
                                     <label for="password" class="form-label">Password</label>
                                     <input type="password" class="form-control" id="password" name="password" value="" placeholder="Leave blank to keep current password">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="dateApplied" class="form-label">Date Applied</label>
+                                    <input type="date" class="form-control" id="dateApplied" name="dateApplied" value="<?php echo htmlspecialchars($user_data['date_applied']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="trainingBranch" class="form-label">Training Branch</label>
+                                    <input type="text" class="form-control" id="trainingBranch" name="trainingBranch" value="<?php echo htmlspecialchars($user_data['applicant_training_branch']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="source" class="form-label">Source</label>
+                                    <input type="text" class="form-control" id="source" name="source" value="<?php echo htmlspecialchars($user_data['applicant_source']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="recruitmentAgent" class="form-label">Recruitment Agent</label>
+                                    <input type="text" class="form-control" id="recruitmentAgent" name="recruitmentAgent" value="<?php echo htmlspecialchars($user_data['applicant_recruitment_agent']); ?>">
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="repatriated" name="repatriated" value="1" <?php echo ($user_data['repat_checkbox'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="repatriated">
+                                        Repatriated
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="repatriationDate" class="form-label">Repatriation Date</label>
+                                    <input type="date" class="form-control" id="repatriationDate" name="repatriationDate" value="<?php echo htmlspecialchars($user_data['repat_date']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="applicantEx" class="form-label">Applicant Firstimer / Ex Abroad</label>
+                                    <input type="text" class="form-control" id="applicantEx" name="applicantEx" value="<?php echo htmlspecialchars($user_data['applicant_ex']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="branch" class="form-label">Branch</label>
+                                    <input type="text" class="form-control" id="branch" name="branch" value="<?php echo htmlspecialchars($user_data['typess']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="transferBranch" class="form-label">Transfer Branch</label>
+                                    <input type="text" class="form-control" id="transferBranch" name="transferBranch" value="<?php echo htmlspecialchars($user_data['typess1']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="waitlist" class="form-label">Waitlist</label>
+                                    <input type="text" class="form-control" id="waitlist" name="waitlist" value="<?php echo htmlspecialchars($user_data['applicant_ppt_pay']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="otherSource" class="form-label">Other Source</label>
+                                    <input type="text" class="form-control" id="otherSource" name="otherSource" value="<?php echo htmlspecialchars($user_data['other_source']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="interviewBy" class="form-label">Interview By</label>
+                                    <input type="text" class="form-control" id="interviewBy" name="interviewBy" value="<?php echo htmlspecialchars($user_data['date-by']); ?>">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -170,8 +245,93 @@ include_once('header.php');
                         <div id="remarksCollapse" class="accordion-collapse collapse" aria-labelledby="remarksHeading" data-bs-parent="#profileAccordion">
                             <div class="accordion-body">
                                 <div class="mb-3">
+                                    <label for="remarksForResume" class="form-label">Remarks For Resume</label>
+                                    <textarea class="form-control" id="remarksForResume" name="remarksForResume" rows="3"><?php echo htmlspecialchars($user_data['remarks_3']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
                                     <label for="remarks" class="form-label">Remarks</label>
                                     <textarea class="form-control" id="remarks" name="remarks" rows="3"><?php echo htmlspecialchars($user_data['fra_remarks']); ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Family Background Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="familyBackgroundHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#familyBackgroundCollapse" aria-expanded="false" aria-controls="familyBackgroundCollapse">
+                                Family Background
+                            </button>
+                        </h2>
+                        <div id="familyBackgroundCollapse" class="accordion-collapse collapse" aria-labelledby="familyBackgroundHeading" data-bs-parent="#profileAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="partnerName" class="form-label">Name of Partner</label>
+                                    <input type="text" class="form-control" id="partnerName" name="partnerName" value="<?php echo htmlspecialchars($user_data['partner_husband']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="partnerOccupation" class="form-label">Occupation of Partner</label>
+                                    <input type="text" class="form-control" id="partnerOccupation" name="partnerOccupation" value="<?php echo htmlspecialchars($user_data['partner_occupation']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="children" class="form-label">Children(s)</label>
+                                    <input type="text" class="form-control" id="children" name="children" value="<?php echo htmlspecialchars($user_data['children']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="motherName" class="form-label">Name of Mother</label>
+                                    <input type="text" class="form-control" id="motherName" name="motherName" value="<?php echo htmlspecialchars($user_data['applicant_mothers']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="motherOccupation" class="form-label">Occupation of Mother</label>
+                                    <input type="text" class="form-control" id="motherOccupation" name="motherOccupation" value="<?php echo htmlspecialchars($user_data['occ_of_mom']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fatherName" class="form-label">Name of Father</label>
+                                    <input type="text" class="form-control" id="fatherName" name="fatherName" value="<?php echo htmlspecialchars($user_data['nam_of_fat']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="fatherOccupation" class="form-label">Occupation of Father</label>
+                                    <input type="text" class="form-control" id="fatherOccupation" name="fatherOccupation" value="<?php echo htmlspecialchars($user_data['occ_of_fat']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="positionInFamily" class="form-label">Your Position in your Family</label>
+                                    <input type="text" class="form-control" id="positionInFamily" name="positionInFamily" value="<?php echo htmlspecialchars($user_data['pos_in_fam']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="numBrothers" class="form-label">No. of Brothers</label>
+                                    <input type="number" class="form-control" id="numBrothers" name="numBrothers" value="<?php echo htmlspecialchars($user_data['no_of_bro']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="numSisters" class="form-label">No. of Sisters</label>
+                                    <input type="number" class="form-control" id="numSisters" name="numSisters" value="<?php echo htmlspecialchars($user_data['no_of_sis']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="relativeName" class="form-label">Who will look after the children when you will be overseas?</label>
+                                    <input type="text" class="form-control" id="relativeName" name="relativeName" value="<?php echo htmlspecialchars($user_data['relative_name']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="relativeMobile" class="form-label">Name and Mobile No. of relative to contact?</label>
+                                    <input type="text" class="form-control" id="relativeMobile" name="relativeMobile" value="<?php echo htmlspecialchars($user_data['relative_mobile']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="emergencyContactName" class="form-label">Emergency Contact Name</label>
+                                    <input type="text" class="form-control" id="emergencyContactName" name="emergencyContactName" value="<?php echo htmlspecialchars($user_data['applicant_incase_name']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="emergencyContactRelationship" class="form-label">Emergency Contact Relationship</label>
+                                    <input type="text" class="form-control" id="emergencyContactRelationship" name="emergencyContactRelationship" value="<?php echo htmlspecialchars($user_data['applicant_incase_relation']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="emergencyContactNumber" class="form-label">Emergency Contact Contact No.</label>
+                                    <input type="text" class="form-control" id="emergencyContactNumber" name="emergencyContactNumber" value="<?php echo htmlspecialchars($user_data['applicant_incase_contact']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="emergencyContactAddress" class="form-label">Emergency Contact Address</label>
+                                    <textarea class="form-control" id="emergencyContactAddress" name="emergencyContactAddress" rows="3"><?php echo htmlspecialchars($user_data['applicant_incase_address']); ?></textarea>
                                 </div>
                             </div>
                         </div>
@@ -194,6 +354,110 @@ include_once('header.php');
                                     <?php else: ?>
                                         <small class="form-text text-muted">No resume attached.</small>
                                     <?php endif; ?>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="passportNumber" class="form-label">Passport Number</label>
+                                    <input type="text" class="form-control" id="passportNumber" name="passportNumber" value="<?php echo htmlspecialchars($user_data['passport_number']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="passportDateIssued" class="form-label">Passport Date issued</label>
+                                    <input type="date" class="form-control" id="passportDateIssued" name="passportDateIssued" value="<?php echo htmlspecialchars($user_data['passport_issue']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="passportPlaceIssue" class="form-label">Passport place Issue</label>
+                                    <input type="text" class="form-control" id="passportPlaceIssue" name="passportPlaceIssue" value="<?php echo htmlspecialchars($user_data['passport_issue_place']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="passportExpiration" class="form-label">Passport Expiration</label>
+                                    <input type="date" class="form-control" id="passportExpiration" name="passportExpiration" value="<?php echo htmlspecialchars($user_data['passport_expiration']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="visaNumber" class="form-label">Visa Number</label>
+                                    <input type="text" class="form-control" id="visaNumber" name="visaNumber" value="<?php echo htmlspecialchars($user_data['applicant_visa_number']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="visaExpiry" class="form-label">Visa Expiry</label>
+                                    <input type="date" class="form-control" id="visaExpiry" name="visaExpiry" value="<?php echo htmlspecialchars($user_data['applicant_visa_expiry']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="visaDuration" class="form-label">Visa Duration</label>
+                                    <input type="text" class="form-control" id="visaDuration" name="visaDuration" value="<?php echo htmlspecialchars($user_data['cyd_visa_duration']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="medicalExpiry" class="form-label">Medical Expiry</label>
+                                    <input type="date" class="form-control" id="medicalExpiry" name="medicalExpiry" value="<?php echo htmlspecialchars($user_data['applicant_medical_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="medicalStatus" class="form-label">Medical Status</label>
+                                    <input type="text" class="form-control" id="medicalStatus" name="medicalStatus" value="<?php echo htmlspecialchars($user_data['applicant_medical_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="medicalRemarks" class="form-label">Medical Remarks</label>
+                                    <textarea class="form-control" id="medicalRemarks" name="medicalRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_medical_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="policeClearanceExpiry" class="form-label">Police Clearance Expiry</label>
+                                    <input type="date" class="form-control" id="policeClearanceExpiry" name="policeClearanceExpiry" value="<?php echo htmlspecialchars($user_data['applicant_police_clearance_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="policeClearanceStatus" class="form-label">Police Clearance Status</label>
+                                    <input type="text" class="form-control" id="policeClearanceStatus" name="policeClearanceStatus" value="<?php echo htmlspecialchars($user_data['applicant_police_clearance_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="policeClearanceRemarks" class="form-label">Police Clearance Remarks</label>
+                                    <textarea class="form-control" id="policeClearanceRemarks" name="policeClearanceRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_police_clearance_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nbiExpiry" class="form-label">NBI Expiry</label>
+                                    <input type="date" class="form-control" id="nbiExpiry" name="nbiExpiry" value="<?php echo htmlspecialchars($user_data['applicant_nbi_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nbiStatus" class="form-label">NBI Status</label>
+                                    <input type="text" class="form-control" id="nbiStatus" name="nbiStatus" value="<?php echo htmlspecialchars($user_data['applicant_nbi_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="nbiRemarks" class="form-label">NBI Remarks</label>
+                                    <textarea class="form-control" id="nbiRemarks" name="nbiRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_nbi_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prcLicenseExpiry" class="form-label">PRC License Expiry</label>
+                                    <input type="date" class="form-control" id="prcLicenseExpiry" name="prcLicenseExpiry" value="<?php echo htmlspecialchars($user_data['applicant_prc_license_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prcLicenseStatus" class="form-label">PRC License Status</label>
+                                    <input type="text" class="form-control" id="prcLicenseStatus" name="prcLicenseStatus" value="<?php echo htmlspecialchars($user_data['applicant_prc_license_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="prcLicenseRemarks" class="form-label">PRC License Remarks</label>
+                                    <textarea class="form-control" id="prcLicenseRemarks" name="prcLicenseRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_prc_license_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateExpiry" class="form-label">TESDA Certificate Expiry</label>
+                                    <input type="date" class="form-control" id="tesdaCertificateExpiry" name="tesdaCertificateExpiry" value="<?php echo htmlspecialchars($user_data['applicant_tesda_certificate_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateStatus" class="form-label">TESDA Certificate Status</label>
+                                    <input type="text" class="form-control" id="tesdaCertificateStatus" name="tesdaCertificateStatus" value="<?php echo htmlspecialchars($user_data['applicant_tesda_certificate_status']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tesdaCertificateRemarks" class="form-label">TESDA Certificate Remarks</label>
+                                    <textarea class="form-control" id="tesdaCertificateRemarks" name="tesdaCertificateRemarks" rows="3"><?php echo htmlspecialchars($user_data['applicant_tesda_certificate_remarks']); ?></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="otherCertificateExpiry" class="form-label">Other Certificate Expiry</label>
+                                    <input type="date" class="form-control" id="otherCertificateExpiry" name="otherCertificateExpiry" value="<?php echo htmlspecialchars($user_data['applicant_other_certificate_expiry']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="otherCertificateStatus" class="form-label">Other Certificate Status</label>
+                                    <input type="text" class="form-control" id="otherCertificateStatus" name="otherCertificateStatus" value="<?php echo htmlspecialchars($user_data['applicant_other_certificate_status']); ?>">
                                 </div>
                             </div>
                         </div>
@@ -233,6 +497,148 @@ include_once('header.php');
                                 <div class="mb-3">
                                     <label for="personalAbilities" class="form-label">Personal Abilities</label>
                                     <textarea class="form-control" id="personalAbilities" name="personalAbilities" rows="3"><?php echo htmlspecialchars($user_data['personalAbilities']); ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Health and Records Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="healthRecordsHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#healthRecordsCollapse" aria-expanded="false" aria-controls="healthRecordsCollapse">
+                                Health and Records
+                            </button>
+                        </h2>
+                        <div id="healthRecordsCollapse" class="accordion-collapse collapse" aria-labelledby="healthRecordsHeading" data-bs-parent="#profileAccordion">
+                            <div class="accordion-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasTattoo" name="hasTattoo" value="1" <?php echo ($user_data['t1'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasTattoo">
+                                        Do you have tattoo?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasHemorrhoids" name="hasHemorrhoids" value="1" <?php echo ($user_data['t2'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasHemorrhoids">
+                                        Do you have Hemmorhoids?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasDiabetes" name="hasDiabetes" value="1" <?php echo ($user_data['t3'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasDiabetes">
+                                        Do you have Diabetes?
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasHighBlood" name="hasHighBlood" value="1" <?php echo ($user_data['t4'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasHighBlood">
+                                        Do you have High Blood?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasHeartProblem" name="hasHeartProblem" value="1" <?php echo ($user_data['t5'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasHeartProblem">
+                                        Do you have Heart Problem?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasAllergies" name="hasAllergies" value="1" <?php echo ($user_data['t6'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasAllergies">
+                                        Do you have Allergies?
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasCyst" name="hasCyst" value="1" <?php echo ($user_data['t7'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasCyst">
+                                        Do you have Cyst?
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hasAsthma" name="hasAsthma" value="1" <?php echo ($user_data['t8'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hasAsthma">
+                                        Do you have Asthma?
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tattooNeck" class="form-label">Tattoo Location: NECK</label>
+                                    <input type="text" class="form-control" id="tattooNeck" name="tattooNeck" value="<?php echo htmlspecialchars($user_data['is_manicure']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooBack" class="form-label">Tattoo Location: BACK</label>
+                                    <input type="text" class="form-control" id="tattooBack" name="tattooBack" value="<?php echo htmlspecialchars($user_data['is_massage']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooHands" class="form-label">Tattoo Location: HANDS</label>
+                                    <input type="text" class="form-control" id="tattooHands" name="tattooHands" value="<?php echo htmlspecialchars($user_data['is_blower']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tattooThigh" class="form-label">Tattoo Location: THIGH</label>
+                                    <input type="text" class="form-control" id="tattooThigh" name="tattooThigh" value="<?php echo htmlspecialchars($user_data['is_coloring']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooLegs" class="form-label">Tattoo Location: LEGS</label>
+                                    <input type="text" class="form-control" id="tattooLegs" name="tattooLegs" value="<?php echo htmlspecialchars($user_data['is_sewing']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tattooFoot" class="form-label">Tattoo Location: FOOT</label>
+                                    <input type="text" class="form-control" id="tattooFoot" name="tattooFoot" value="<?php echo htmlspecialchars($user_data['is_computer']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="medicalHistoryOthers" class="form-label">Others (Medical History)</label>
+                                    <textarea class="form-control" id="medicalHistoryOthers" name="medicalHistoryOthers" rows="3"><?php echo htmlspecialchars($user_data['applicant_jobs']); ?></textarea>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="covidVaccin" name="covidVaccin" value="1" <?php echo ($user_data['covidme'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="covidVaccin">
+                                        COVID VACCIN
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vaccineName" class="form-label">Vaccine name</label>
+                                    <input type="text" class="form-control" id="vaccineName" name="vaccineName" value="<?php echo htmlspecialchars($user_data['covid_name']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="firstDose" class="form-label">1st Dose</label>
+                                    <input type="date" class="form-control" id="firstDose" name="firstDose" value="<?php echo htmlspecialchars($user_data['covid_date']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="secondDose" class="form-label">2nd Dose</label>
+                                    <input type="date" class="form-control" id="secondDose" name="secondDose" value="<?php echo htmlspecialchars($user_data['covid_date2']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="vaccineLocation" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="vaccineLocation" name="vaccineLocation" value="<?php echo htmlspecialchars($user_data['covid_loc']); ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="boqCard" class="form-label">BOQ card</label>
+                                    <input type="text" class="form-control" id="boqCard" name="boqCard" value="<?php echo htmlspecialchars($user_data['covid_yellow']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="vaccineCert" class="form-label">Vaccine Cert</label>
+                                    <input type="text" class="form-control" id="vaccineCert" name="vaccineCert" value="<?php echo htmlspecialchars($user_data['covid_cert']); ?>">
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="booster" name="booster" value="1" <?php echo ($user_data['covidb1'] == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="booster">
+                                        Booster
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="boosterName" class="form-label">Booster Name</label>
+                                    <input type="text" class="form-control" id="boosterName" name="boosterName" value="<?php echo htmlspecialchars($user_data['covidb2']); ?>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="boosterDate" class="form-label">Booster Date</label>
+                                    <input type="date" class="form-control" id="boosterDate" name="boosterDate" value="<?php echo htmlspecialchars($user_data['covidb3']); ?>">
                                 </div>
                             </div>
                         </div>

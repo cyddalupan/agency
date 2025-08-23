@@ -1,10 +1,10 @@
 ## Job Preferences and Skills
-- [ ] Position Type (applicant_position_type)
-- [ ] Currency (currency)
-- [ ] Expected Salary (applicant_expected_salary / expected-salary)
-- [ ] Preferred Country (applicant_preferred_country / preferred-country)
-- [ ] Other Skills (applicant_other_skills)
-- [ ] Personal Abilities (Note: May be part of custom fields or other_skills)
+- [x] Position Type (applicant_position_type)
+- [x] Currency (currency)
+- [x] Expected Salary (applicant_expected_salary / expected-salary)
+- [x] Preferred Country (applicant_preferred_country / preferred-country)
+- [x] Other Skills (applicant_other_skills)
+- [x] Personal Abilities (Note: May be part of custom fields or other_skills)
 - [ ] Skills (applicant_skills)
 - [ ] Work Experience (applicant_work_experience)
     - [ ] Company
