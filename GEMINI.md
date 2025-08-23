@@ -71,24 +71,28 @@ To find the controller for a URL (e.g., `/admin/applicants/review_single`):
 2.  Look for a controller file matching the URL structure (e.g., `app/controllers/admin/Applicants.php`).
 3.  Inside the controller, find the method corresponding to the URL (e.g., `review_single`).
 
-## 5. Database
+## 6. Troubleshooting and Best Practices
 
-*   **Host:** `db`
-*   **Database:** `iwebphil_everlast`
-*   **User:** `root`
-*   **Password:** (empty)
+This section summarizes common problems encountered when working with the application and provides suggestions for resolving them, along with best practices for an optimal workflow.
 
-Credentials are set in `config.php`. The full schema is in `database.md`.
+### General Troubleshooting Tips
 
-## 6. Troubleshooting and Best Practices for Gemini CLI
+*   **CRITICAL: `replace` Tool Failures (`0 occurrences found for old_string`)**
+    *   **Problem:** The `old_string` provided to the `replace` tool does not exactly match the content in the file. This is a very common and frustrating error. It can happen if the file has been modified since it was last read, or if there are subtle differences in whitespace, indentation, or hidden characters (e.g., invisible BOM characters, different line endings).
+    *   **Solution:** **ALWAYS** use the `read_file` tool to read the file's content immediately before attempting a `replace` operation. This ensures you have the most up-to-date and accurate `old_string` to match against.
+        ```
+        # INCORRECT: old_string might be outdated or have subtle differences
+        # print(default_api.replace(file_path="file.txt", old_string="old content", new_string="new content"))
 
-This section summarizes common problems encountered when working with the Gemini CLI and provides suggestions for resolving them, along with best practices for an optimal workflow.
-
-### Common Problems and Solutions
-
-*   **`replace` Tool Failures (`0 occurrences found for old_string`):**
-    *   **Problem:** The `old_string` provided to the `replace` tool does not exactly match the content in the file. This can happen if the file has been modified since it was last read, or if there are subtle differences in whitespace, indentation, or hidden characters.
-    *   **Suggestion:** Always use the `read_file` tool to read the file's content immediately before using `replace`. This ensures you have the most up-to-date and accurate `old_string`. If issues persist, use `cat -vET <file_path>` in the shell to reveal all characters, including hidden ones, for precise matching.
+        # CORRECT: Read the file content first to get the exact old_string
+        file_content = default_api.read_file(absolute_path="file.txt")['content']
+        # Now use file_content as the old_string, or a precise substring from it
+        # For example, if you want to replace 'foo' with 'bar' in a line 'hello foo world':
+        # old_string_to_replace = "hello foo world"
+        # new_string_to_replace = "hello bar world"
+        # print(default_api.replace(file_path="file.txt", old_string=old_string_to_replace, new_string=new_string_to_replace))
+        ```
+        If issues persist, use `cat -vET <file_path>` in the shell to reveal all characters, including hidden ones, for precise matching.
 
 *   **PHP `session_start()` Errors (`headers already sent`):**
     *   **Problem:** `session_start()` must be called before any output (including whitespace) is sent to the browser. In test scripts or included files, `echo` statements or even blank lines can cause this error.
@@ -96,7 +100,7 @@ This section summarizes common problems encountered when working with the Gemini
 
 *   **PHP Version Compatibility Issues (e.g., `??` operator in PHP 5.6):**
     *   **Problem:** Using language features or syntax that are not supported by the target PHP version (e.g., the null coalescing operator `??` was introduced in PHP 7, but this project uses PHP 5.6).
-    *   **Suggestion:** Always be aware of the project's specified PHP version. When modifying or adding code, use only compatible syntax and functions. Refer to PHP documentation for version-specific feature availability.
+    *   **Suggestion:** Always be aware of the project's specified PHP version. When modifying and adding code, use only compatible syntax and functions. Refer to PHP documentation for version-specific feature availability.
 
 *   **MySQL Strict Mode Errors (`Field 'X' doesn't have a default value`):**
     *   **Problem:** When inserting data into a MySQL database, strict mode can prevent inserts if non-nullable columns without default values are not explicitly provided in the `INSERT` statement.
@@ -110,28 +114,31 @@ This section summarizes common problems encountered when working with the Gemini
     *   **Problem:** Test scripts may fail because they don't fully mimic the application's real-world execution flow (e.g., not simulating a logged-in user, missing `$_SERVER` variables like `REQUEST_METHOD`).
     *   **Suggestion:** Ensure your test scripts accurately set up all necessary environment variables (`$_SESSION`, `$_POST`, `$_SERVER`, etc.) and simulate the complete user journey or application state required for the code under test to function correctly.
 
-## 7. Running Tests
+### Running and Debugging Tests
 
-To ensure a consistent environment, all tests must be executed inside the `web` Docker container. This provides the test scripts with the correct PHP version and all the necessary extensions, like `pdo_mysql`.
+To ensure a consistent environment, all PHP tests must be executed inside the `web` Docker container. This provides the test scripts with the correct PHP version and all the necessary extensions, like `pdo_mysql`.
 
-### Running a Single Test
-
-To run a single test file, use the `docker-compose exec` command:
-
-```bash
+*   **Running a Single Test:**
+    To run a single test file, use the `docker-compose exec` command:
+    ```bash
 docker-compose exec web php /var/www/html/skilled/test_login_integration.php
-```
+    ```
+    Replace `/var/www/html/skilled/test_login_integration.php` with the actual path to the test file you want to run.
 
-Replace `/var/www/html/skilled/test_login_integration.php` with the actual path to the test file you want to run.
+*   **Running All Tests:**
+    You can run all tests in a directory by iterating through the files and executing them. A dedicated shell script (e.g., `run_tests.sh`) can automate this process, providing a single, consistent command to run the entire test suite.
 
-### Running All Tests
+*   **Debugging Failing Tests (PHP/Database Interactions):**
+    When tests fail, especially those involving database operations, it's crucial to inspect the exact SQL queries and parameters being executed.
 
-You can run all tests in a directory by iterating through the files and executing them:
+    *   **Direct Output Debugging:** For quick debugging during development, you can temporarily add `var_dump()` statements followed by `die()` in your PHP code (e.g., in `update_profile.php`) to print variables and stop execution. Ensure any output buffering in calling scripts is disabled (e.g., by commenting out `ob_start()` and `ob_end_clean()` in test files).
+        ```php
+        // Example in your PHP script
+        var_dump($sql);
+        var_dump($params);
+        die("Debug Stop");
+        ```
+    *   **Checking Server Error Logs:** If direct output is not feasible, PHP errors and `error_log()` messages are typically written to the web server's error log (e.g., `/var/log/apache2/error.log` inside the `web` container). You can view these logs using `docker-compose logs web` or `docker-compose exec web cat /var/log/apache2/error.log`.
 
-```bash
-for test_file in skilled/test_*.php; do
-  echo "Running $test_file..."
-  docker-compose exec web php /var/www/html/$test_file
-  echo ""
-done
-```
+*   **Importance of a Comprehensive Test Suite:**
+    A robust test suite is invaluable for catching regressions and ensuring code quality. It allows for rapid validation of changes and helps maintain application stability.
