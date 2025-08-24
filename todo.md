@@ -45,3 +45,49 @@ The goal is to add integration tests for the newly refactored skilled profile mo
 - [x] **5. Run All Tests:**
   - [x] Execute the `tests/run_tests.sh` script to run the entire test suite.
   - [x] Ensure all tests pass and provide a final report.
+
+# Troubleshooting Plan for helloworld.welfareph.com
+
+This checklist outlines the steps to resolve the "Service Unavailable" error and ensure the PHP 5.6 application runs correctly within the Docker environment.
+
+- [x] **Step 1: Confirm `mod_proxy_fcgi` availability in `httpd:2.4`**
+    - [x] **Objective:** Verify if `mod_proxy_fcgi.so` exists in the `httpd:2.4` image and find its exact path.
+    - [x] **Action:** `docker run --rm httpd:2.4 find / -name "mod_proxy_fcgi.so" 2>/dev/null`
+    - [x] **Expected Output:** The absolute path to `mod_proxy_fcgi.so` (e.g., `/usr/local/apache2/modules/mod_proxy_fcgi.so`).
+
+- [x] **Step 2: Explicitly Load `mod_proxy_fcgi` in `docker-apache.conf`**
+    - [x] **Objective:** Modify `docker-apache.conf` to load `mod_proxy_fcgi` using a `LoadModule` directive.
+    - [x] **Action:**
+        - [x] Read the current `docker-apache.conf`.
+        - [x] Use `replace` to insert the `LoadModule` line at the top of the file.
+    - [x] **Verification:** Read `docker-apache.conf` again to confirm the `LoadModule` line is present.
+
+- [x] **Step 3: Confirm PHP-FPM Socket Path in `php:5.6-fpm`**
+    - [x] **Objective:** Find the exact Unix socket path where PHP-FPM is listening in the `php:5.6-fpm` container.
+    - [x] **Action:**
+        - [x] `docker create --name temp_php_fpm php:5.6-fpm`
+        - [x] `docker cp temp_php_fpm:/usr/local/etc/php-fpm.d/ /tmp/php-fpm.d/`
+        - [x] `docker rm temp_php_fpm`
+        - [x] `grep -r "listen =" /tmp/php-fpm.d/`
+    - [x] **Expected Output:** The Unix socket path (e.g., `/var/run/php/php5.6-fpm.sock`).
+
+- [x] **Step 4: Configure `ProxyPassMatch` in `docker-apache.conf`**
+    - [x] **Objective:** Ensure `docker-apache.conf` correctly uses `ProxyPassMatch` to forward PHP requests to the PHP-FPM socket.
+    - [x] **Action:**
+        - [x] Read the current `docker-apache.conf`.
+        - [x] Use `replace` to update the `ProxyPassMatch` line if necessary.
+    - [x] **Verification:** Read `docker-apache.conf` again to confirm the `ProxyPassMatch` line is correct.
+
+- [ ] **Step 5: Rebuild and Restart Docker Compose Services**
+    - [ ] **Objective:** Apply all the Apache configuration changes by rebuilding the `web` service and restarting all services.
+    - [ ] **Action:**
+        - [ ] `docker-compose -f /var/www/helloworld/docker-compose.yml build --no-cache`
+        - [ ] `docker-compose -f /var/www/helloworld/docker-compose.yml up -d`
+    - [ ] **Expected Output:** Successful build and container startup messages.
+
+- [ ] **Step 6: Verify PHP Execution and Error Logging**
+    - [ ] **Objective:** Confirm that `test.php` executes correctly and that errors are logged.
+    - [ ] **Action:**
+        - [ ] Instruct the user to access `https://helloworld.welfareph.com/test.php` in their browser.
+        - [ ] `docker logs helloworld_web_1`
+    - [ ] **Expected Output:** The `docker logs` should show the "Test error from test.php" message and "If you see this, PHP is working." should be displayed in the browser.
