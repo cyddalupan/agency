@@ -1,0 +1,11 @@
+
+.git
+.vscode
+node_modules
+vendor/
+.env
+error_log
+*.sql
+*.bak
+*.md
+*.txt

@@ -9,84 +9,118 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once(dirname(__DIR__) . '/config.php');
+require_once(dirname(__DIR__) . '/src/Database.php');
+require_once(dirname(__DIR__) . '/src/updaters/ApplicantUpdater.php');
+require_once(dirname(__DIR__) . '/src/updaters/ApplicantCertificateUpdater.php');
+require_once(dirname(__DIR__) . '/src/updaters/ApplicantEducationUpdater.php');
+
+// Include all handler functions
+require_once(dirname(__DIR__) . '/src/handlers/PersonalInfoHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/FamilyBackgroundHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/JobPreferencesHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/HealthHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/DocumentsHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/CertificatesHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/EducationHandler.php');
+require_once(dirname(__DIR__) . '/src/handlers/WorkExperienceHandler.php');
+
+// Helper function for file uploads
+function handleFileUpload($userId, $fileData, $targetDir = "uploads/")
+{
+    if (!is_array($fileData)) {
+        return null;
+    }
+    if (isset($fileData['name']) && $fileData['error'] == 0) {
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+        $file_extension = pathinfo($fileData["name"], PATHINFO_EXTENSION);
+        $unique_file_name = "resume_" . $userId . "_" . time() . "." . $file_extension;
+        $target_file = $targetDir . $unique_file_name;
+        $move_function = defined('TESTING_MODE') ? 'copy' : 'move_uploaded_file';
+        if ($move_function($fileData["tmp_name"], $target_file)) {
+            return $target_file;
+        }
+    }
+    return null;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Retrieve all form data
-    $user_id = isset($_POST['applicant_id']) ? $_POST['applicant_id'] : null;
+    $user_id = isset($_POST['applicant_id']) ? (int)$_POST['applicant_id'] : null;
     $page = isset($_POST['page']) ? $_POST['page'] : 'personal_info'; // Default to personal_info
 
-    // Dynamically include all POST data as variables for the handlers to use
-    foreach ($_POST as $key => $value) {
-        $key = $value;
-    }
-
-    // Calculate birthdate from age if age is provided
-    $birthdate = isset($age) && $age ? (date('Y') - $age) . "-01-01" : null;
-
-    // Handle file upload centrally
-    $resume_path = null;
-    if (isset($_FILES['resume']) && $_FILES['resume']['error'] == 0) {
-        $target_dir = "uploads/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0755, true);
-        }
-        $file_extension = pathinfo($_FILES["resume"]["name"], PATHINFO_EXTENSION);
-        $unique_file_name = "resume_" . $user_id . "_" . time() . "." . $file_extension;
-        $target_file = $target_dir . $unique_file_name;
-        $move_function = defined('TESTING_MODE') ? 'copy' : 'move_uploaded_file';
-        if ($move_function($_FILES["resume"]["tmp_name"], $target_file)) {
-            $resume_path = $target_file;
+    if ($user_id === null) {
+        $_SESSION['error'] = "User ID not provided.";
+        if (!defined('TESTING_MODE')) {
+            header('Location: profile.php');
+            exit;
         }
     }
 
-    $handler_path = __DIR__ . '/update_handlers/' . $page . '.php';
+    $pdo = DatabaseConnection::getConnection();
+    $success = false;
+    $applicantData = [];
 
-    if (file_exists($handler_path)) {
-        $fields = include $handler_path;
-
-        $sql_parts = [];
-        $params = [];
-
-        if (is_array($fields)) {
-            foreach ($fields as $key => $value) {
-                if ($value !== null) {
-                    $sql_parts[] = "`{$key}` = :{$key}";
-                    $params[":{$key}"] = $value;
-                }
-            }
+    try {
+        $pdo->beginTransaction(); // Start transaction
+        switch ($page) {
+            case 'personal_info':
+                $applicantData = getPersonalInfoUpdateData($_POST);
+                error_log("PersonalInfoHandler returned: " . print_r($applicantData, true));
+                break;
+            case 'family_background':
+                $applicantData = getFamilyBackgroundUpdateData($_POST);
+                break;
+            case 'documents':
+                $resume_path = handleFileUpload($user_id, isset($_FILES['resume']) ? $_FILES['resume'] : []);
+                $applicantData = getDocumentsUpdateData($_POST, $resume_path);
+                break;
+            case 'job_preferences':
+                $applicantData = getJobPreferencesUpdateData($_POST);
+                break;
+            case 'health':
+                $applicantData = getHealthUpdateData($_POST);
+                break;
+            case 'education':
+                $educationData = getEducationUpdateData($_POST);
+                $success = ApplicantEducationUpdater::updateApplicantEducation($pdo, $user_id, $educationData);
+                break;
+            case 'certificates':
+                $certificateData = getCertificatesUpdateData($_POST);
+                $success = ApplicantCertificateUpdater::updateApplicantCertificate($pdo, $user_id, $certificateData);
+                break;
+            case 'work_experience':
+                $experienceData = isset($_POST['experience']) ? $_POST['experience'] : [];
+                $success = handleWorkExperienceUpdate($pdo, $user_id, $experienceData);
+                break;
+            default:
+                $_SESSION['error'] = "Invalid update section specified.";
+                break;
         }
-        
-        if (isset($password) && $password) {
-            $sql_parts[] = "`password` = :password";
-            $params[":password"] = $password;
+
+        // Handle password update separately if provided
+        if (isset($_POST['password']) && !empty($_POST['password'])) {
+            $applicantData['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT); // Hash the password
         }
 
-        if ($user_id && !empty($sql_parts)) {
-            try {
-                $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8";
-                $options = [
-                    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES   => false,
-                ];
-                $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-
-                $sql = "UPDATE `applicant` SET " . implode(', ', $sql_parts) . " WHERE `applicant_id` = :applicant_id";
-                $params[':applicant_id'] = $user_id;
-
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute($params);
-
-                $_SESSION['message'] = 'Profile updated successfully!';
-            } catch (PDOException $e) {
-                $_SESSION['error'] = "Database update failed: " . $e->getMessage();
-            }
-        } else {
-            // No fields to update, or user_id not provided
-            $_SESSION['message'] = 'No changes were made.';
+        // Update applicant table if there's data for it
+        if (!empty($applicantData)) {
+            $success = ApplicantUpdater::updateApplicant($pdo, $user_id, $applicantData);
         }
-    } else {
-        $_SESSION['error'] = "Invalid update section specified.";
+
+        $pdo->commit(); // Commit transaction
+
+        if ($success) {
+            $_SESSION['message'] = 'Profile updated successfully!';
+        } else if (!isset($_SESSION['error'])) {
+            $_SESSION['message'] = 'No changes were made or an unknown error occurred.';
+        }
+
+    } catch (PDOException $e) {
+        $pdo->rollBack(); // Rollback transaction on error
+        $_SESSION['error'] = "Database operation failed: " . $e->getMessage();
+    } catch (Exception $e) {
+        $_SESSION['error'] = "An unexpected error occurred: " . $e->getMessage();
     }
 
     if (!defined('TESTING_MODE')) {

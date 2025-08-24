@@ -2,25 +2,25 @@ FROM php:5.6-apache
 
 # Point to the Debian archive repositories for the "stretch" release
 RUN echo "deb http://archive.debian.org/debian/ stretch main" > /etc/apt/sources.list && \
-    echo "deb http://archive.debian.org/debian-security/ stretch/updates main" >> /etc/apt/sources.list
-
-# Update the package list and install the MySQL client, allowing for unauthenticated packages
-RUN apt-get update && apt-get install -y --allow-unauthenticated default-mysql-client
-
-
+    echo "deb http://archive.debian.org/debian-security/ stretch/updates main" >> /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --allow-unauthenticated default-mysql-client
 
 # Install the mysql extensions. pdo_mysql will ensure the mysqlnd driver is used.
-RUN docker-php-ext-install mysql mysqli pdo_mysql \
-    && pecl install xdebug-2.5.5 \
-    && docker-php-ext-enable xdebug
+RUN docker-php-ext-install mysql mysqli pdo_mysql && \
+    pecl install xdebug-2.5.5 && \
+    docker-php-ext-enable xdebug
 
 # Configure XDebug
 COPY docker-apache.conf /etc/apache2/conf-available/docker-apache.conf
-RUN echo "zend_extension=xdebug.so" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_autostart=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.remote_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "zend_extension=xdebug.so" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
+    echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
+    echo "xdebug.remote_autostart=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
+    echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
+    echo "xdebug.remote_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+RUN echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-errors.ini && \
+    echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-errors.ini && \
+    echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/docker-php-errors.ini
 
 # Copy the application files to the web server's document root
 COPY . /var/www/html/
@@ -28,8 +28,13 @@ COPY . /var/www/html/
 # Enable Apache's mod_rewrite for CodeIgniter's clean URLs
 RUN a2enmod rewrite
 
+# Remove default Apache site and copy custom config
+RUN rm /etc/apache2/sites-enabled/000-default.conf
+COPY docker-apache.conf /etc/apache2/sites-available/helloworld.conf
+RUN a2ensite helloworld.conf
+
 # Set the working directory
 WORKDIR /var/www/html/
 
-# Expose port 80 to the host machine
+# Expose port 80
 EXPOSE 80

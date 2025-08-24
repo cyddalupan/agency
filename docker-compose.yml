@@ -1,3 +1,4 @@
+version: '2.1'
 services:
   web:
     build:
@@ -15,6 +16,7 @@ services:
   db:
     image: mysql:5.7
     restart: always
+    command: --sql-mode=""
     environment:
       MYSQL_DATABASE: 'iwebphil_everlast'
       MYSQL_ROOT_PASSWORD: ''
