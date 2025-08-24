@@ -9,7 +9,8 @@ error_reporting(E_ALL);
 date_default_timezone_set('Asia/Manila');
 
 try {
-    echo "Running test for skilled/profile.php update functionality...\n";
+    echo "Running test for skilled profile update functionality (via direct SQL update)...
+";
 
     // --- Test Setup ---
 

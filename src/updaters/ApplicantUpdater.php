@@ -22,14 +22,14 @@ class ApplicantUpdater
         error_log("ProfileUpdater SQL: " . $sql);
         error_log("ProfileUpdater Params: " . print_r($params, true));
 
-                $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $result = $stmt->execute($params);
         error_log("ProfileUpdater rowCount: " . $stmt->rowCount());
         if (!$result) {
-            // error_log("ProfileUpdater::updateApplicant execute failed for applicant_id: " . $userId . ", SQL: " . $sql . ", Params: " . print_r($params, true));
-            // error_log("PDO ErrorInfo: " . print_r($stmt->errorInfo(), true));
+            error_log("ProfileUpdater::updateApplicant execute failed for applicant_id: " . $userId . ", SQL: " . $sql . ", Params: " . print_r($params, true));
+            error_log("PDO ErrorInfo: " . print_r($stmt->errorInfo(), true));
+            error_log("SQLSTATE: " . $stmt->errorCode());
         }
-        error_log("ProfileUpdater rowCount: " . $stmt->rowCount());
         return $result;
     }
 }

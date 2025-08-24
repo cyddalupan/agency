@@ -50,7 +50,7 @@ ob_start();
 // The include path is relative to this test script's location
 define('TESTING_MODE', true);
 $_SERVER['REQUEST_METHOD'] = 'POST';
-include 'update_profile.php';
+include 'actions/update_job_preferences.php';
 $update_output = ob_get_clean();
 
 

@@ -114,6 +114,24 @@ This section summarizes common problems encountered when working with the applic
     *   **Problem:** Test scripts may fail because they don't fully mimic the application's real-world execution flow (e.g., not simulating a logged-in user, missing `$_SERVER` variables like `REQUEST_METHOD`).
     *   **Suggestion:** Ensure your test scripts accurately set up all necessary environment variables (`$_SESSION`, `$_POST`, `$_SERVER`, etc.) and simulate the complete user journey or application state required for the code under test to function correctly.
 
+### Lessons Learned from Recent Debugging
+
+*   **`replace` Tool Precision:** The `replace` tool is extremely sensitive to exact string matching, including whitespace and newlines. Always copy the `old_string` directly from `read_file` output to ensure accuracy. If issues persist, consider replacing smaller, more isolated code blocks.
+
+*   **PHP `session_start()` in Tests:** It's common for `session_start()` to issue a "Notice: A session had already been started" in test environments where a session might be initiated by the test runner or a bootstrap file. This is generally harmless and does not indicate a test failure.
+
+*   **`TESTING_MODE` for Redirects:** When testing PHP scripts that perform redirects (`header('Location: ...')`), define a `TESTING_MODE` constant (e.g., `define('TESTING_MODE', true);`) in your test setup. Then, wrap redirect calls in your application code with an `if (!defined('TESTING_MODE')) { ... }` block to prevent premature exits during testing.
+
+*   **Password Handling Discrepancy:** Be aware of inconsistencies in password handling (e.g., plain text storage in some parts of the application vs. hashing in others). For security, all password storage should ideally use strong hashing functions like `password_hash()`. Temporary deviations for compatibility should be clearly documented and addressed.
+
+*   **`PDOStatement::rowCount()` and `UPDATE` Queries:** A `rowCount()` of 0 for an `UPDATE` query does not necessarily mean failure. It indicates that no rows were *changed*. This can occur if:
+    *   The `WHERE` clause does not match any records.
+    *   The values being updated are identical to the existing values in the database.
+    *   Subtle type mismatches or `NULL` value handling can sometimes lead to unexpected `rowCount()` behavior even if the query executes without error.
+
+*   **Dynamic `UPDATE` Query Construction and `NULL` Values:** When dynamically building `UPDATE` queries (e.g., using `foreach` loops to construct `SET` clauses), ensure that `NULL` values are handled appropriately. If a handler function returns `NULL` for fields not present in `$_POST`, these `NULL`s can be included in the `UPDATE` statement. Filtering out `NULL` values from the data array before constructing the query can prevent unintended updates or `rowCount()` issues.
+    *   **Solution:** Use `array_filter($data, function($value) { return $value !== null; });` to remove `NULL` entries from the `$data` array before passing it to the `UPDATE` logic.
+
 ### Running and Debugging Tests
 
 To ensure a consistent environment, all PHP tests must be executed inside the `web` Docker container. This provides the test scripts with the correct PHP version and all the necessary extensions, like `pdo_mysql`.
@@ -142,3 +160,23 @@ docker-compose exec web php /var/www/html/skilled/test_login_integration.php
 
 *   **Importance of a Comprehensive Test Suite:**
     A robust test suite is invaluable for catching regressions and ensuring code quality. It allows for rapid validation of changes and helps maintain application stability.
+### Running the Profile Module Test Suite
+
+A dedicated test suite has been created for the refactored "Skilled Profile" module. These are integration tests that simulate form submissions and verify database changes.
+
+**Prerequisites:**
+1.  Ensure the Docker environment is running: `docker-compose up -d`
+
+**Running the Full Suite:**
+To run all tests for the profile module, execute the test runner script from the project root:
+
+```bash
+./tests/run_tests.sh
+```
+
+The script will automatically find and run all test files located in the `/tests` directory inside the `web` container. It will report progress and exit immediately if any test fails.
+
+**How it Works:**
+*   `tests/bootstrap.php`: This file sets up the testing environment. It defines a `TESTING_MODE` constant, connects to the database, and provides helper functions for creating and deleting test users.
+*   `tests/test_*.php`: Each test file is responsible for a specific action (e.g., `test_update_personal_info.php`). It sets up the necessary `$_SESSION` and `$_POST` data, includes the action script it's testing, and then asserts that the database was updated correctly.
+*   `tests/run_tests.sh`: This script automates the process of running all tests inside the Docker container, ensuring the correct PHP environment and database connection.

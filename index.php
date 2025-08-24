@@ -1,6 +1,5 @@
 <?php
-trigger_error("Test error from index.php", E_USER_ERROR);
-
+session_start();
 //Check PHP version
 if (phpversion() < 5.4) {
 	echo 'The server\'s PHP version ('.phpversion().') does not meet the minimum required version of this application which is v5.4. Please contact your administrator regarding to the upgrade of your PHP version.';

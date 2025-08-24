@@ -18,14 +18,13 @@ try {
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode = ''"
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
     // 1. Create a test user
     $sql = "INSERT INTO applicant (applicant_first, applicant_last, applicant_email, password) VALUES (?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(['Test', 'User', 'test.user.profile@example.com', 'password']);
+    $stmt->execute(['Initial Test', 'User', 'test.user.profile@example.com', 'password']);
     $test_user_id = $pdo->lastInsertId();
 
 } catch (PDOException $e) {
@@ -38,23 +37,12 @@ $_SESSION['user_id'] = $test_user_id;
 // 3. Define static POST data to simulate a form submission.
 $_POST['applicant_id'] = $test_user_id;
 $_POST['firstName'] = 'Test Updated';
-$_POST['lastName'] = 'User Updated';
-$_POST['age'] = 30;
-$_POST['contactNumber'] = '0987654321';
-$_POST['email'] = 'test.user.profile.updated@example.com';
-$_POST['remarks'] = 'This is an updated test remark.';
-$_POST['positionType'] = 'Skilled';
-$_POST['currency'] = 'PHP';
-$_POST['expectedSalary'] = 100000;
-$_POST['preferredCountry'] = 1;
-$_POST['otherSkills'] = 'PHP, MySQL, Docker';
-$_POST['personalAbilities'] = 'Hardworking, Fast learner';
 
 // --- Execute the Script ---
 ob_start();
 define('TESTING_MODE', true);
 $_SERVER['REQUEST_METHOD'] = 'POST';
-include 'update_profile.php';
+include 'actions/update_personal_info.php';
 $update_output = ob_get_clean();
 
 // --- Verification ---
@@ -91,6 +79,7 @@ try {
     echo "Verification failed: " . $e->getMessage() . "\n";
 } finally {
     // --- Cleanup ---
+    echo "Test user ID: " . $test_user_id . "\n";
     $delete_stmt = $pdo->prepare("DELETE FROM applicant WHERE applicant_id = ?");
     $delete_stmt->execute([$test_user_id]);
     $pdo = null;

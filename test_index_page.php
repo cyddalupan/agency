@@ -1,6 +1,6 @@
 <?php
 
-$url = 'http://localhost:8080'; // 'web' is the service name in docker-compose
+$url = 'http://localhost';
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

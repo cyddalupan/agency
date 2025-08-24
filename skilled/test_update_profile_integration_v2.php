@@ -31,7 +31,7 @@ echo "Executing update_profile.php...\n";
 ob_start();
 define('TESTING_MODE', true); // Define TESTING_MODE to prevent redirects
 $_SERVER['REQUEST_METHOD'] = 'POST'; // Simulate POST request method
-include 'update_profile.php';
+include 'actions/update_personal_info.php';
 $update_output = ob_get_clean();
 echo "update_profile.php executed.\n";
 echo "--- update_profile.php output ---\n";

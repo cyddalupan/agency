@@ -59,7 +59,7 @@ try {
 ob_start();
 define('TESTING_MODE', true);
 $_SERVER['REQUEST_METHOD'] = 'POST';
-include 'update_profile.php';
+include 'actions/update_family_background.php';
 $update_output = ob_get_clean();
 echo $update_output;
 
