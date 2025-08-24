@@ -56,10 +56,11 @@ error_log
 /.env
 /config.php
 uploads/
-# Docker
-Dockerfile
-Dockerfile.php56
-docker-compose.yml
+
+# Docker related files
+.dockerignore
+Dockerfile*
+docker-compose*.yml
 docker-apache.conf
 php-fpm.conf
 www.conf
