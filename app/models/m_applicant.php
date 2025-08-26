@@ -224,7 +224,7 @@ public $fileTypes = [
 public function __construct() 
 {
 
-if($_SESSION["settings"]['withTraining'] == 'yes'){
+if(isset($_SESSION["settings"]['withTraining']) && $_SESSION["settings"]['withTraining'] == 'yes'){
 $status['Enrolled to training']	= 16;
 $status['Started training']		= 17;
 $status['Failed Training']		= 18;
