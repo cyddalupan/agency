@@ -46,3 +46,6 @@ To ensure a consistent environment, all PHP tests must be executed inside the `w
     ```bash
     ./tests/run_tests.sh
     ```
+
+## 4. Architecture Notes
+* Routes are handled by CodeIgniter.

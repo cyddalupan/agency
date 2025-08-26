@@ -1,6 +1,6 @@
 
 
-<div ng-controller="admin-user">
+<div>
     <!-- Page Breadcrumb -->
     <div class="page-breadcrumbs">
         <ul class="breadcrumb">

@@ -110,10 +110,38 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
             <div class="page-content">
                 <?php $app->renderTemplate(); ?>
                 <!--One Page Loading-->
-                <div ng-show="imActive('applicants')"><?php require('public/applicants.html'); ?></div>
-                <ng-include src="'<?php echo site_url(); ?>public/stats_notification.html'"  ng-show="imActive('stats_notification')"></ng-include>
-                <ng-include src="'<?php echo site_url(); ?>public/media_notification.html'"  ng-show="imActive('media_notification')"></ng-include>
-                <ng-include src="'<?php echo site_url(); ?>public/change_password.html'"  ng-show="imActive('change_password')"></ng-include>
+                <div id="applicants" class="page-content-section"><?php require('public/applicants.html'); ?></div>
+                <div id="stats_notification" class="page-content-section" style="display:none;"><?php include('public/stats_notification.html'); ?></div>
+                <div id="media_notification" class="page-content-section" style="display:none;"><?php include('public/media_notification.html'); ?></div>
+                <div id="change_password" class="page-content-section" style="display:none;"><?php include('public/change_password.html'); ?></div>
+
+                <script>
+                    function showSection(sectionId) {
+                        const sections = document.querySelectorAll('.page-content-section');
+                        sections.forEach(section => {
+                            if (section.id === sectionId) {
+                                section.style.display = 'block';
+                            } else {
+                                section.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    function handleHashChange() {
+                        const hash = window.location.hash.substring(1);
+                        if (hash) {
+                            showSection(hash);
+                        } else {
+                            // Default to showing the applicants section
+                            showSection('applicants');
+                        }
+                    }
+
+                    window.addEventListener('hashchange', handleHashChange);
+
+                    // Initial page load
+                    handleHashChange();
+                </script>
                 <!--Site Footer-->
                 <?php $app->renderFooter(); ?>
             </div>

@@ -1,55 +1,3 @@
-<script type="text/javascript">
-    statusColors = [];
-    statusText = [];
-    //send to backend
-    <?php
-    //status color array
-    foreach ($statusColors as $key => $value) {
-        echo 'statusColors['.$key.'] = "'.$value.'"; ';
-    }
-    //status in text form array
-    foreach ($statusText as $key => $value) {
-        echo 'statusText['.$key.'] = "'.$value.'"; ';
-    }
-
-    //if training branch
-    echo 'branchID = 0;';
-    if($_SESSION['admin']['user']['user_type'] == 12){
-
-        //if trainingSpecialist get branch to get applicants only on that branch
-        $this->db->get('user');
-        $query = $this->db->get_where('user', array('user_id' => $_SESSION['admin']['user']['user_id']));
-        $trainingAdminResult = $query->result();
-
-        echo 'branchID = '.$trainingAdminResult[0]->branch_id.';';
-    }
-
-    //if training admin
-    echo 'isTrainingAdmin = 0;';
-    if($_SESSION['admin']['user']['user_type'] == 11){
-        echo 'isTrainingAdmin = 1;';
-    }
-
-    if(isset( $_GET['status'] ) ){
-        echo 'status = "'.$_GET['status'].'";';
-    }else{
-        echo 'status = "all";';
-    }
-	
-    if(isset( $_GET['skill'] ) ){
-        echo 'skill = "'.$_GET['skill'].'";';
-    }else{
-        echo 'skill = "all";';
-    }
-
-    //if quick search
-    if(isset($_POST['keyword'])){
-       echo 'searchKeyword = "'.$this->input->post('keyword').'";';
-    }else{
-       echo 'searchKeyword = "";';
-    }
-    ?>
-</script>
 <div>
     <!-- Page Breadcrumb -->
     <div class="page-breadcrumbs">
@@ -102,11 +50,6 @@
                             <a href="#" class="btn-show-photo btn btn-xs btn-info">Show photos</a>
                         </span>
                         <div class="widget-buttons">
-                            <a href="#" class="btn-advanced-search" ng-click="show_advance_search()">
-                                <i class="fa fa-search"></i> Advanced search
-                            </a>  
-                        </div> 
-                        <div class="widget-buttons">
                             <a href="#" data-toggle="maximize">
                                 <i class="fa fa-expand"></i>
                             </a>
@@ -122,127 +65,7 @@
                     <div class="widget-body">
                         <?php $app->renderAlerts(); ?>
 
-                        <div class="row advanced-search <?php echo isset( $get['search'] ) ? '' : 'hide'; ?>">
-                            <div class="col-sm-12">
-                                <div class="form-title">
-                                    <strong>Advanced Search</strong>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="form-group">
-                                    <label>Search keyword</label>
-                                    <input type="text" ng-model="keyword" class="form-control input-sm" placeholder="Keywords">
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="form-group">
-                                    <label>Country:</label> 
-                                    <select ng-model="search_country" class="form-control input-sm">
-                                        <option value="0">All</option>
-                                        <option value="{{country.country_id}}" ng-repeat="country in countries">{{country.country_name}}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-sm-3">
-                                <div class="form-group">
-                                    <label>Applicant Position Type:</label> 
-                                    <select ng-model="applicant_position_type" class="form-control input-sm">
-                                        <option value="null">Both</option>
-                                        <option value="Household">Household</option>
-                                        <option value="Skilled">Skilled</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="form-group">
-                                    <label>Position</label> 
-                                    <select class="form-control input-sm" ng-model="search_position">
-                                        <option value="0">-- Select position --</option>
-                                        <option value="{{position.position_id}}" ng-repeat="position in positions">{{position.position_name}}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <div class="form-group">
-                                    <label>Employer</label> 
-                                    <select class="form-control input-sm" ng-model="search_employer">
-                                        <option value="0">-- Select Employer --</option>
-                                        <option value="{{employer.employer_id}}" ng-repeat="employer in employers">{{employer.employer_name}}</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-sm-4">
-                                <div class="form-group">
-                                    <label>Status</label> 
-                                    <select class="form-control input-sm" ng-model="search_status">
-                                        <option value="111">-- Select Status --</option>
-										<option value="10">For Review</option>
-                                        <option value="0">Available</option>
-                                        <option value="4">Selected</option>
-                                        <option value="5">Line Up</option>
-                                        <option value="8">For Deployment</option>
-                                        <option value="9">Deployed</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="clearfix"></div>
-
-                            <span class="col-sm-6">
-                                <label>Date applied</label>
-                                <span class="input-group ">
-                                    <input ng-model="search_date_from" type="date" data-date-format="yyyy-mm-dd" class="form-control input-sm date-picker" placeholder="yyyy-mm-dd">
-                                    <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
-                                    <span class="input-group-addon">to</span>
-                                    <input ng-model="search_date_to" type="date" data-date-format="yyyy-mm-dd" class="form-control input-sm date-picker" placeholder="yyyy-mm-dd">
-                                </span>
-                            </span>
-
-                            <div class="col-sm-3">
-                                <div class="form-group">
-                                    <label>Gender</label>
-                                    <select ng-model="search_gender" class="form-control input-sm">
-                                        <option value="any">Any</option>
-                                        <option value="Male" >Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="clearfix"></div>
-
-                            <div class="col-sm-4">
-                                <label>Age bracket</label>
-                                <div class="input-group ">
-                                    <input ng-model="search_age_from" type="text" class="form-control input-sm" placeholder="0">
-                                    <span class="input-group-addon">&minus;</span>
-                                    <input ng-model="search_age_to" type="text" class="form-control input-sm" placeholder="0">
-                                </div>
-                            </div>
-
-                            <div class="col-sm-4">
-                                <label>Salary range</label>
-                                <div class="input-group ">
-                                    <input ng-model="search_salary_from" type="text" placeholder="0.00" class="form-control input-sm">
-                                    <span class="input-group-addon">&minus;</span>
-                                    <input ng-model="search_salary_to" type="text" placeholder="0.00" class="form-control input-sm">
-                                </div>
-                            </div>
-
-                            <div class="col-sm-2">
-                                <div class="input-group ">
-                                    <br>
-                                    <button ng-click="advance_search()" class="btn btn-lg btn-primary"><span class="fa fa-search"></span>Search</button>                            
-                                </div>
-                                <br><br>
-                            </div>
-                            <br><br>
-                            <hr class="wide">    
-                        </div>
-
-                        <h3 class="text-center" ng-show="noresult">-- No Result --</h3>
-                        <div class="table-responsive" ng-hide="noresult" style="overflow:scroll; padding-bottom:20px;">
+                        <div class="table-responsive" style="overflow:scroll; padding-bottom:20px;">
                             <table id="cyd_applicant_list" class="table table-bordered table-hover table-applicants">
                                 <thead class="bordered-palegreen">
                                     <tr>
@@ -279,129 +102,65 @@
                                         <th>Last updated by</th>
                                     </tr>
                                 </thead>
-                                <tr ng-repeat="(key, applicant) in applicants.data" ng-show="show_all_applicants" ng-class="applicant.hit_status">
-                                    <td>
-                                        <div class="checkbox">
+                                <tbody>
+                                <?php foreach($applicants as $key => $applicant): ?>
+                                    <tr>
+                                        <td>
                                             <div class="checkbox">
-                                                <label>
-                                                    <input type="checkbox" class="inverted applicants-selection" name="cyd_applicant_select" value="{{applicant.applicant_id}}" >
-                                                    <span class="text"></span>
-                                                </label>
+                                                <div class="checkbox">
+                                                    <label>
+                                                        <input type="checkbox" class="inverted applicants-selection" name="cyd_applicant_select" value="<?php echo $applicant['applicant_id']; ?>" >
+                                                        <span class="text"></span>
+                                                    </label>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button data-url="<?php echo site_url( 'admin/applicants/review'); ?>/{{applicant.applicant_id}}" class="btn btn-default btn-xs" data-toggle="modal" ng-click="showcydreview(applicant.applicant_id)" data-target="#modalApplicantReview">
-                                            <i class="fa fa-search"></i> Review
-                                        </button></br>
-										<small>{{applicant.applicant_position_type}}</small>
-                                        <div ng-show="applicant.showDeny"> 
-                                            <br><a href="<?php site_url(); ?>deny_hit/{{applicant.applicant_id}}" target="_blank" ng-click="applicant.hit_status = cleared; applicant.showDeny = 0" type="button" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="top" title="Click This if this Applicant is not black listed">Deny Hit</a>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        {{applicants.from + key}}
-                                    </td>
-                                    <td>{{applicant.applicant_created | date : shortTime}}</td>
-                                    <td>{{str_pad(applicant.applicant_id)}}</td>
-                                    <td>
-                                        <div class="applicant-photo hide" align="center">
-                                            <img src="{{applicant.image}}" alt="" height="100"/>
-                                        </div>
-                                        {{applicant.applicant_first}} {{applicant.applicant_middle}} {{applicant.applicant_last}}
-                                    </td>
-                                    <td>{{applicant.applicant_gender}}</td>
-                                    <td>
-                                        <span class="label graded {{applicant.statusColors}}">
-                                            {{applicant.statusText}}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span ng-if="applicant.statusText == 'Line Up'" ng-repeat="perEmployer in applicant.multiple_lineup">
-                                            {{perEmployer.employer[0].employer_name}}, 
-                                        </span>
-                                        <span ng-if="applicant.statusText != 'Line Up'">
-                                            {{applicant.employer.employer_name}}
-                                        </span>
-                                    </td>
-									<td>{{applicant.sub_employer}}</td>
-                
-                                    <td>{{applicant.applicant_passport.passport_number}}</td>
-                                    <td>{{applicant.position.position_name}}</td>
-                                    <td>
-                                        <div ng-repeat="subposition in applicant.applicant_preferred_positions">
-                                            {{subposition.position.position_name}},
-                                        </div>
-                                    </td>
-                                    <td>{{applicant.country.country_name}}</td>
-                                    <td>{{applicant.applicant_certificate.certificate_medical_result}}</td>
-                                    <td>
-                                        <span ng-show="{{applicant.applicant_certificate.certificate_authenticated_nbi}}" class="text-success"><i class="fa fa-check"></i></span>
-                                         <span ng-hide="{{applicant.applicant_certificate.certificate_authenticated_nbi}}" class="text-warning"><i class="fa fa-times"></i></span>
-                                    </td>
-                                    <td>
-                                        <span ng-show="{{applicant.applicant_requirement.requirement_trade_test}}" class="text-success"><i class="fa fa-check"></i></span>
-                                        <span ng-hide="{{applicant.applicant_requirement.requirement_trade_test}}" class="text-warning"><i class="fa fa-times"></i></span>
-                                    </td>
-                                    <td>
-                                        <span ng-show="{{applicant.applicant_requirement.requirement_coe}}" class="text-success"><i class="fa fa-check"></i></span>
-                                        <span ng-hide="{{applicant.applicant_requirement.requirement_coe}}" class="text-warning"><i class="fa fa-times"></i></span>
-                                    </td>
-                                
-                                    <td>{{applicant.applicant_certificate.insurance_no}}</td>
-                                    <td>
-                                        <span ng-show="{{applicant.applicant_requirement.requirement_visa}}" class="text-success"><i class="fa fa-check"></i></span>
-                                        <span ng-hide="{{applicant.applicant_requirement.requirement_visa}}" class="text-warning"><i class="fa fa-times"></i></span>
-                                    </td>
-                                    <td>{{applicant.applicant_requirement.requirement_ticket}}</td>
-                                    <td>{{applicant.applicant_requirement.requirement_oec_number}}</td>
-                                    <td>{{applicant.applicant_requirement.requirement_owwa_certificate}}</td>
-                                    <td>{{applicant.applicant_requirement.requirement_contract | date : 'fullDate'}}</td>
-                                    <td>{{applicant.applicant_remarks | limitTo : 100}}...</td>
-                                    <td>{{applicant.applicant_date_applied | date : 'fullDate'}}</td>
-                                    <td>{{applicant.applicant_civil_status}}</td>
-                                    <td>{{applicant.recruitment_agent.agent_first}} {{applicant.recruitment_agent.agent_last}}</td>
-                                    <td>{{applicant.user_updated.user_name}}</td>
-                                </tr>
+                                        </td>
+                                        <td>
+                                            <a href="<?php echo site_url('admin/applicants/review/' . $applicant['applicant_id']); ?>" class="btn btn-default btn-xs">
+                                                <i class="fa fa-search"></i> Review
+                                            </a>
+                                        </td>
+                                        <td><?php echo $paginationCounter['from'] + $key; ?></td>
+                                        <td><?php echo date('Y-m-d', strtotime($applicant['applicant_created'])); ?></td>
+                                        <td><?php echo str_pad($applicant['applicant_id'], 9, '0', STR_PAD_LEFT); ?></td>
+                                        <td><?php echo $applicant['applicant_first'] . ' ' . $applicant['applicant_middle'] . ' ' . $applicant['applicant_last']; ?></td>
+                                        <td><?php echo $applicant['applicant_gender']; ?></td>
+                                        <td>
+                                            <span class="label graded <?php echo $statusColors[$applicant['applicant_status']]; ?>">
+                                                <?php echo $statusText[$applicant['applicant_status']]; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo $applicant['employer_name']; ?></td>
+                                        <td><?php echo $applicant['sub_employer']; ?></td>
+                                        <td><?php echo $applicant['passport_number']; ?></td>
+                                        <td><?php echo $applicant['position_name']; ?></td>
+                                        <td></td>
+                                        <td><?php echo $applicant['country_name']; ?></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><?php echo $applicant['applicant_remarks']; ?></td>
+                                        <td><?php echo date('Y-m-d', strtotime($applicant['applicant_date_applied'])); ?></td>
+                                        <td><?php echo $applicant['applicant_civil_status']; ?></td>
+                                        <td><?php echo $applicant['agent_first'] . ' ' . $applicant['agent_last']; ?></td>
+                                        <td><?php echo $applicant['user_name']; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
                                 </tbody>
                             </table> 
-                            <div class="text-center text-info dashboardstats-loading" ng-show="show_applicant_loading">
-                                <h1><i class="fa fa-circle-o-notch fa-spin"></i></h1>
-                            </div>
-
                         <div class="clearfix"></div>
                         </div>
 
                         <div class="footer" align="right">
-                        <span class="pull-left">
-                        Showing {{applicants.from}} to {{applicants.to}} of {{applicants.total}} entries
-                        </span>
-                        <ul class="pagination">
-                            <li ng-hide="current_page == 1" ng-click="change_page(1)"><a href="#">«</a></li>
-                            <li ng-hide="current_page == 1" ng-click="change_page(current_page - 1)"><a href="#">Prev</a></li>
-                            <li ng-repeat="page in pages" ng-class="page.class" ng-click="change_page(page.pagenumber)"><a href="#" >{{page.pagenumber}}</a></li>
-                            <li ng-hide="current_page == applicants.last_page" ng-click="change_page(current_page + 1)"><a href="#">Next</a></li>
-                            <li ng-hide="current_page == applicants.last_page" ng-click="change_page(applicants.last_page)"><a href="#">»</a></li>
-                        </ul>
+                            <?php echo $paginationHTML; ?>
                         </div><!-- .table-responsive -->
-                        <hr>
-                        <h6><strong>Send Applicants To:</strong></h6> 
-                        <div class="row">   
-                            <div class="input-group">
-                                <div class="col-sm-4">
-                                    <select id="employers-selection" class="form-control">
-                                        <option value="">-- Select Employer --</option>
-                                        <option ng-repeat="employer in employers" value="{{employer.employer_id}}">{{employer.employer_name}}</option>
-                                    </select>
-                                </div>
-                                <div class="col-sm-3">
-                                    <span class="input-group-btn">
-                                        <button class="btn btn-sm btn-primary" id="btn-send-applicant">Send Applicants</button>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>            
             </div>

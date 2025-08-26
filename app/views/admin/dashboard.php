@@ -7,7 +7,7 @@ obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
 $mylink="https://thegrandmidoriortigas.info/agency/";
 ?>
 
-<div ng-controller="dashboard">
+<div>
 <!-- Page Breadcrumb -->
 <div class="page-breadcrumbs">
 <ul class="breadcrumb">

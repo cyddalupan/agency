@@ -518,6 +518,82 @@ class Reports  extends Admin_Controller {
 			$data['employer_name'] = 'All';
 		}
 
+		$this->load->model('m_applicant');
+		$status = (new m_applicant)->status;
+
+		// Total Selected
+		$this->db->from('applicant_view');
+		$this->db->where('applicant_status', $status['Selected']);
+		if($data['employer_id'] != 0){
+			$this->db->where('applicant_employer', $data['employer_id']);
+		}
+		$data['totalSelected'] = $this->db->count_all_results();
+
+		// Total Selected by position
+		$this->db->select('position_name as name, COUNT(*) as count');
+		$this->db->from('applicant_view');
+		$this->db->join('position', 'position_id = applicant_preferred_position');
+		$this->db->where('applicant_status', $status['Selected']);
+		if($data['employer_id'] != 0){
+			$this->db->where('applicant_employer', $data['employer_id']);
+		}
+		$this->db->group_by('position_name');
+		$data['totalSelectedPositions'] = $this->db->get()->result_array();
+
+		// Deployed weekly
+		$this->db->select('job_name as name, COUNT(*) as count');
+		$this->db->from('deployed');
+		$this->db->join('job', 'job_id = deployed_job');
+		$this->db->where('deployed_date >= DATE_SUB(NOW(), INTERVAL 1 WEEK)');
+		if($data['employer_id'] != 0){
+			$this->db->where('deployed_employer', $data['employer_id']);
+		}
+		$this->db->group_by('job_name');
+		$data['deployed_weekly'] = $this->db->get()->result_array();
+
+		// Deployed monthly
+		$this->db->select('job_name as name, COUNT(*) as count');
+		$this->db->from('deployed');
+		$this->db->join('job', 'job_id = deployed_job');
+		$this->db->where('deployed_date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
+		if($data['employer_id'] != 0){
+			$this->db->where('deployed_employer', $data['employer_id']);
+		}
+		$this->db->group_by('job_name');
+		$data['deployed_monthly'] = $this->db->get()->result_array();
+
+		// Deployed yearly
+		$this->db->select('job_name as name, COUNT(*) as count');
+		$this->db->from('deployed');
+		$this->db->join('job', 'job_id = deployed_job');
+		$this->db->where('deployed_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)');
+		if($data['employer_id'] != 0){
+			$this->db->where('deployed_employer', $data['employer_id']);
+		}
+		$this->db->group_by('job_name');
+		$data['deployed_yearly'] = $this->db->get()->result_array();
+
+		// Lineup monthly
+		$this->db->select('job_name as name, COUNT(*) as count');
+		$this->db->from('employer_lineup');
+		$this->db->join('job', 'job_id = lineup_job');
+		$this->db->where('lineup_date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
+		if($data['employer_id'] != 0){
+			$this->db->where('lineup_employer', $data['employer_id']);
+		}
+		$this->db->group_by('job_name');
+		$data['lineup_monthly'] = $this->db->get()->result_array();
+
+		// Lineup yearly
+		$this->db->select('job_name as name, COUNT(*) as count');
+		$this->db->from('employer_lineup');
+		$this->db->join('job', 'job_id = lineup_job');
+		$this->db->where('lineup_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)');
+		if($data['employer_id'] != 0){
+			$this->db->where('lineup_employer', $data['employer_id']);
+		}
+		$this->db->group_by('job_name');
+		$data['lineup_yearly'] = $this->db->get()->result_array();
 
 		$data['pageTitle'] = 'Summary Reports';
 		$this->load->view('header',$data);
@@ -556,6 +632,34 @@ class Reports  extends Admin_Controller {
 		}else{
 			$data['recruitment_agent_name'] = 'All RECRUITMENT';
 		}
+
+		$this->db->select('DATE(applicant_date_applied) as applied_date, COUNT(*) as count');
+		$this->db->from('applicant_view');
+		if($data['agent_id'] != 0){
+			$this->db->where('applicant_source', $data['agent_id']);
+		}
+		$this->db->where('applicant_date_applied >= DATE_SUB(NOW(), INTERVAL 1 WEEK)');
+		$this->db->group_by('applied_date');
+		$data['weekly'] = $this->db->get()->result_array();
+
+		$this->db->select('DATE(applicant_date_applied) as applied_date, COUNT(*) as count');
+		$this->db->from('applicant_view');
+		if($data['agent_id'] != 0){
+			$this->db->where('applicant_source', $data['agent_id']);
+		}
+		$this->db->where('applicant_date_applied >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
+		$this->db->group_by('applied_date');
+		$data['monthly'] = $this->db->get()->result_array();
+
+		$this->db->select('DATE(applicant_date_applied) as applied_date, COUNT(*) as count');
+		$this->db->from('applicant_view');
+		if($data['agent_id'] != 0){
+			$this->db->where('applicant_source', $data['agent_id']);
+		}
+		$this->db->where('applicant_date_applied >= DATE_SUB(NOW(), INTERVAL 1 YEAR)');
+		$this->db->group_by('applied_date');
+		$data['yearly'] = $this->db->get()->result_array();
+
 		$data['pageTitle'] = 'Summary Applied Online';
 		$this->load->view('header',$data);
 		$this->load->view('admin/reports/summary_applied_online',$data);

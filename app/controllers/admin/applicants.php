@@ -32,7 +32,7 @@ class Applicants  extends Admin_Controller {
 
 	public function all(){
 		//STOP ALL CODES REDIRECT to new APPLICANTS
-		redirect( site_url( 'admin/dashboard#/applicants/1' ) );
+		//redirect( site_url( 'admin/dashboard#/applicants/1' ) );
 
 
 		if ( isset( $_GET['archive'] ) && is_numeric( $_GET['archive'] ) ) {
@@ -61,9 +61,60 @@ class Applicants  extends Admin_Controller {
 			$this->getPath()['scripts'] . 'pages/applicants.js',
 		];
 
+        Pagination::init( 20 );
+        $recordScope = 'All';
+        $options     = [];
+        $sort        = ['applicant_created', 'DESC'];
+
+        if ( isset( $_GET['status'] ) && isset( $this->m_applicant->status[$_GET['status']] ) ) {
+            $recordScope = $_GET['status'];
+            $options['where'][] = [
+                'applicant_status' => ( new m_applicant )->status[$_GET['status']],
+            ];
+        }
+        
+        $searchEmployer = '';
+        if ( isset( $_GET['search'] ) ) {
+        	$search = $_GET['search'];
+        	if ( $search['employer'] > 0 ) {
+        		$searchEmployer = $search['employer'];
+        	}
+        	$applicants      = ( new m_applicant )->searchApplicants( Pagination::getPerPage(), Pagination::getRecordCursor() );
+        	$applicantsCount = ( new m_applicant )->searchApplicantsCount();
+        } else {
+        	$applicants      = ( new m_applicant )->getApplicants( $options, Pagination::getPerPage(), Pagination::getRecordCursor(), $sort );
+        	$applicantsCount = ( new m_applicant )->getApplicantsCount( $options );	
+        }
+
+        Pagination::setOptions([
+			'total-records' => $applicantsCount,
+		]);
+
+		$this->load->model('m_employer');
+		$employers = ( new m_employer )->all();
+
+		$this->load->model( 'm_position');
+        $categories = ( new m_position )->getActivePositionsGroupByCategory();
+
+		$this->load->model( 'm_country');		
+		$countries  = ( new m_country )->getCountries();
+
+		$post = isset( $_POST ) ? $_POST : [];
+		$get  = isset( $_GET ) ? $_GET : [];
+
 		$this->setVariables([
+            'recordScope'       => $recordScope,
+            'applicants'	    => $applicants,
+            'searchEmployer'	=> $searchEmployer,
+            'employers'         => $employers,
+            'categories'        => $categories,
+            'countries'         => $countries,
+            'post'              => $post,
+            'get'               => $get,
 			'statusText'	    => ( new m_applicant )->statusText,
 			'statusColors'	    => ( new m_applicant )->statusColors,
+            'paginationHTML'    => Pagination::generateHTML(),
+			'paginationCounter' => Pagination::getCounters(),
 		])
 			->setTitle('All applicants')
 			->renderPage('all_applicants');

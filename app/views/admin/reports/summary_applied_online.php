@@ -1,4 +1,4 @@
-<div id="summary-applied-online" ng-controller="summary-applied-online" ng-init="init('<?php echo $agent_id; ?>')">
+<div id="summary-applied-online">
 	<h4 class="text-center">
 		<?php echo $recruitment_agent_name; ?> <br>
 		APPLIED ONLINE REPORT SUMMARY <br>
@@ -20,40 +20,46 @@
 		<tr>
 			<td>
 				<ul class="list-group">
-					<li class="list-group-item" ng-repeat="weekly in applicants.weekly">
-						{{weekly.name}} <br>
-						{{weekly.count}}
+					<?php foreach($weekly as $week): ?>
+					<li class="list-group-item">
+						<?php echo $week['applied_date']; ?> <br>
+						<?php echo $week['count']; ?>
 					</li>
+					<?php endforeach; ?>
 				</ul>
 			</td>
 			<td>
 				<ul class="list-group">
-					<li class="list-group-item" ng-repeat="monthly in applicants.monthly">
-						{{monthly.name}} <br>
-						{{monthly.count}}
+					<?php foreach($monthly as $month): ?>
+					<li class="list-group-item">
+						<?php echo $month['applied_date']; ?> <br>
+						<?php echo $month['count']; ?>
 					</li>
+					<?php endforeach; ?>
 				</ul>
 			</td>
 			<td>
 				<ul class="list-group">
-					<li class="list-group-item" ng-repeat="yearly in applicants.yearly">
-						{{yearly.name}} <br>
-						{{yearly.count}}
+					<?php foreach($yearly as $year): ?>
+					<li class="list-group-item">
+						<?php echo $year['applied_date']; ?> <br>
+						<?php echo $year['count']; ?>
 					</li>
+					<?php endforeach; ?>
 				</ul>
 			</td>
 		</tr>
 		<tr>
 			<th>
-				{{applicants.count_weekly}} <br>
+				<?php echo count($weekly); ?> <br>
 				WEEK TOTAL 
 			</th>
 			<th>
-				{{applicants.count_monthly}} <br>
+				<?php echo count($monthly); ?> <br>
 				MONTH TOTAL
 			</th>
 			<th>
-				{{applicants.count_yearly}} <br>
+				<?php echo count($yearly); ?> <br>
 				YEAR TOTAL 
 			</th>
 		</tr>

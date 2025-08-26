@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="myApp">
+<html lang="en">
 <!-- Head -->
 <head>
     <meta name="robots" content="noindex">

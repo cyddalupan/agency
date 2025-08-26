@@ -1,4 +1,4 @@
-<div id="summary-reports" ng-controller="summary-reports" ng-init="init('<?php echo $employer_id; ?>')">
+<div id="summary-reports">
 	<h4 class="text-center">
 		<?php echo isset($employer_contact_person) ? $employer_contact_person : 'ALL EMPLOYERS'; ?><br>
 		RECRUITMENT STATUS REPORT SUMMARY <br>
@@ -22,17 +22,19 @@
 				<table class="table table-bordered">
 					<tr>
 						<th>
-							{{totalSelected}} <br>
+							<?php echo $totalSelected; ?> <br>
 							NO. OF IN PROCESS
 						</th>
 					<tr>
 					<tr>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="totalSelectedPosition in totalSelectedPositions">
-									{{totalSelectedPosition.name}} <br>
-									{{totalSelectedPosition.count}}
+								<?php foreach($totalSelectedPositions as $position): ?>
+								<li class="list-group-item">
+									<?php echo $position['name']; ?> <br>
+									<?php echo $position['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 					<tr>
@@ -42,41 +44,47 @@
 				<table class="table table-bordered">
 					<tr>
 						<th>
-							{{deployed.count_weekly}} <br>
+							<?php echo count($deployed_weekly); ?> <br>
 							FOR THE WEEK
 						</th>
 						<th>
-							{{deployed.count_monthly}} <br>
+							<?php echo count($deployed_monthly); ?> <br>
 							FOR THE MONTH
 						</th>
 						<th>
-							{{deployed.count_yearly}} <br>
+							<?php echo count($deployed_yearly); ?> <br>
 							FOR THE YEAR
 						</th>
 					<tr>
 					<tr>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="job_weekly in deployed.jobs_weekly">
-									{{job_weekly.name}} <br>
-									{{job_weekly.count}}
+								<?php foreach($deployed_weekly as $job): ?>
+								<li class="list-group-item">
+									<?php echo $job['name']; ?> <br>
+									<?php echo $job['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="job_monthly in deployed.jobs_monthly">
-									{{job_monthly.name}} <br>
-									{{job_monthly.count}}
+								<?php foreach($deployed_monthly as $job): ?>
+								<li class="list-group-item">
+									<?php echo $job['name']; ?> <br>
+									<?php echo $job['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="job_yearly in deployed.jobs_yearly">
-									{{job_yearly.name}} <br>
-									{{job_yearly.count}}
+								<?php foreach($deployed_yearly as $job): ?>
+								<li class="list-group-item">
+									<?php echo $job['name']; ?> <br>
+									<?php echo $job['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 					<tr>
@@ -86,29 +94,33 @@
 				<table class="table table-bordered">
 					<tr>
 						<th>
-							{{lineup.count_monthly}} <br>
+							<?php echo count($lineup_monthly); ?> <br>
 							FOR THE MONTH
 						</th>
 						<th>
-							{{lineup.count_yearly}} <br>
+							<?php echo count($lineup_yearly); ?> <br>
 							FOR THE YEAR
 						</th>
 					<tr>
 					<tr>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="job_monthly in lineup.jobs_monthly">
-									{{job_monthly.name}} <br>
-									{{job_monthly.count}}
+								<?php foreach($lineup_monthly as $job): ?>
+								<li class="list-group-item">
+									<?php echo $job['name']; ?> <br>
+									<?php echo $job['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 						<td>
 							<ul class="list-group">
-								<li class="list-group-item" ng-repeat="job_yearly in lineup.jobs_yearly">
-									{{job_yearly.name}} <br>
-									{{job_yearly.count}}
+								<?php foreach($lineup_yearly as $job): ?>
+								<li class="list-group-item">
+									<?php echo $job['name']; ?> <br>
+									<?php echo $job['count']; ?>
 								</li>
+								<?php endforeach; ?>
 							</ul>
 						</td>
 					<tr>
