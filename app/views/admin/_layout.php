@@ -59,7 +59,7 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
 </head>
 <!-- /Head -->
 <!-- Body -->
-<body ng-controller="site-controller">
+<body>
     <!-- Loading Container -->
     <div class="loading-container">
         <div class="loading-progress">
@@ -108,9 +108,7 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
             
             <!-- Page Content -->
             <div class="page-content">
-                <div ng-hide="hide_ci_page">
-                    <?php $app->renderTemplate(); ?>
-                </div>
+                <?php $app->renderTemplate(); ?>
                 <!--One Page Loading-->
                 <div ng-show="imActive('applicants')"><?php require('public/applicants.html'); ?></div>
                 <ng-include src="'<?php echo site_url(); ?>public/stats_notification.html'"  ng-show="imActive('stats_notification')"></ng-include>
@@ -153,9 +151,7 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
     <!--cyd jquery-->
     <script>base_url = '<?php echo base_url(); ?>';</script>
     
-    <script src="<?php echo $app->getPath()['scripts']; ?>angular.min.js"></script>
-    <script src="<?php echo $app->getPath()['scripts']; ?>ng-file-upload-all.min.js"></script>
-    <script src="<?php echo $app->getPath()['scripts']; ?>angular-cookies.min.js"></script>
+    
     <script src="<?php echo $app->getPath()['scripts']; ?>jquery-2.0.3.min.js"></script>
     <script src="<?php echo $app->getPath()['scripts']; ?>bootstrap.min.js"></script>
     <script src="<?php echo $app->getPath()['scripts']; ?>beyond.min.js"></script>
@@ -167,8 +163,7 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
 
 
     <?php $app->renderScripts(); ?>
-    <script src="<?php echo base_url(); ?>page/public/js/all.js"></script>
-    <script src="<?php echo base_url(); ?>page/public/js/AppController.js"></script>
+    
     <style type="text/css">
         <?php echo $_SESSION["settings"]['style']; ?>
     </style>
