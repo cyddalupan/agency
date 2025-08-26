@@ -55,7 +55,7 @@ class Signin extends Admin_Controller {
 				
 				Message::addModalSuccess('Welcome back '.$user['user_fullname'] . '!');
 				
-       			$url = site_url( ! empty( $returnUri ) ? $_GET['return_uri'] : 'admin/ng_signin');
+       			$url = site_url( ! empty( $returnUri ) ? $_GET['return_uri'] : 'admin/dashboard');
 			    redirect( $url );
 				exit;
 			} elseif ( $loggedIn === false ) {
