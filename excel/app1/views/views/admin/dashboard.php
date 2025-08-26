@@ -3,7 +3,7 @@ function resizeIframe(obj) {
     obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
 }
 </script>
-<div ng-controller="dashboard">
+<div>
     <!-- Page Breadcrumb -->
     <div class="page-breadcrumbs">
         <ul class="breadcrumb">
@@ -57,7 +57,7 @@ function resizeIframe(obj) {
                             </a>
                         </div>
                     </div>
-                    <div class="text-center text-info dashboardstats-loading dloading">
+                    <div class="text-center text-info dashboardstats-loading">
                         <h1><i class="fa fa-circle-o-notch fa-spin"></i></h1>
                     </div>
                     <iframe id="dashboardstats" onload='javascript:resizeIframe(this);' frameborder="0" scrolling="no" style="width:100%"></iframe>   
@@ -72,7 +72,7 @@ function resizeIframe(obj) {
                         <i class="widget-icon fa fa-tags themesecondary"></i>
                         <span class="widget-caption themesecondary">Updates Board</span>
                     </div><!--Widget Header-->
-                    <div class="text-center text-info updatesboard-loading uloading">
+                    <div class="text-center text-info updatesboard-loading">
                         <h1><i class="fa fa-circle-o-notch fa-spin"></i></h1>
                     </div>
                     <iframe id="updatesboard" onload='javascript:resizeIframe(this);' frameborder="0" scrolling="no" style="width:100%"></iframe>

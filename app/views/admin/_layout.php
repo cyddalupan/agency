@@ -6,7 +6,7 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" ng-app="myApp">
+<html lang="en">
 <!-- Head -->
 <head>
     <meta name="robots" content="noindex">
@@ -195,6 +195,19 @@ if($_SESSION['admin']['user']['user_id'] == 9999){
     <style type="text/css">
         <?php echo $_SESSION["settings"]['style']; ?>
     </style>
+<script>
+window.addEventListener('load', function() {
+    setTimeout(function(){
+        document.getElementById('dashboardstats').src = base_url + 'admin/dashboard/stats';
+        document.querySelector('.dashboardstats-loading').style.display = 'none';
+    }, 1000);
+
+    setTimeout(function(){
+        document.getElementById('updatesboard').src = base_url + 'admin/dashboard/updatesboard';
+        document.querySelector('.updatesboard-loading').style.display = 'none';
+    }, 2000);
+});
+</script>
 </body>
 <!--  /Body -->
 </html>
