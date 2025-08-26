@@ -25,7 +25,7 @@ include_once('header.php');
                 <div class="mt-3">
                     <?php
                     // Include the content for the personal_info page
-                    include_once('profile/personal_info.php');
+                    // include_once('profile/personal_info.php');
                     ?>
                 </div>
 

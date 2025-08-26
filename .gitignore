@@ -65,3 +65,4 @@ docker-apache.conf
 php-fpm.conf
 www.conf
 start-apache-php.sh
+GEMINI.md

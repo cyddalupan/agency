@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 //Check PHP version
 if (phpversion() < 5.4) {
 	echo 'The server\'s PHP version ('.phpversion().') does not meet the minimum required version of this application which is v5.4. Please contact your administrator regarding to the upgrade of your PHP version.';
@@ -15,7 +17,7 @@ spl_autoload_register( function( $class ) {
 
 // include_once __DIR__.'/lib/Application.php';
 
-session_start();
+//session_start();
 date_default_timezone_set('Asia/Manila');
 
 //edit index
