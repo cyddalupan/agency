@@ -40,9 +40,7 @@ class Landing extends MY_Controller {
 		echo '<a href="'.site_url('admin-system').'">Admin System</a> or 
 			<a href="'.site_url('employer-system').'">Employer System</a> or
 			<a href="'.site_url('applicant_system').'">Applicant Login</a> or
-			<a href="'.site_url('public-system').'">Apply Online</a> or
-			<a href="'.site_url('skilled/index.php').'">Skilled Registration</a> or
-			<a href="'.site_url('skilled/login.php').'">Skilled Login</a>';
+			<a href="'.site_url('public-system').'">Apply Online</a>';
 	}
 	
 }

@@ -5,17 +5,17 @@ class add_settings extends CI_Controller {
 	{
 		$this->load->library('session');
 
-		if(!$this->session->userdata('settings')){
+		if(!isset($_SESSION["settings"])){
 			$settings = array();
 			$query = $this->db->get('settings');
 			foreach ($query->result() as $row)
 			{
 			    $settings[$row->key] = $row->value;
 			}
-			$this->session->set_userdata('settings', $settings);
+			$_SESSION["settings"] = $settings;
 		}
 
-		redirect('landing');
+		redirect($this->session->flashdata('prev_url'));
 	}
 }
 ?>
