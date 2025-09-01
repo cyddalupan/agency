@@ -470,7 +470,12 @@ myApp.controller('site-controller',
 	########################################################################
 	*/
 
-	
+	/**
+	 * In Case the Cookie is not set, logout the use
+	 */
+	if(angular.isUndefined($cookies.getObject("user"))){
+		$window.location.href = base_url+'admin/dashboard?logout';
+	}
 
 	/**
 	 * In Case the Settings in not yet in Cookie.
