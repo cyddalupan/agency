@@ -3,40 +3,9 @@ session_start();
 if(isset($_SESSION['staff'])){
 header("location:index.php");
 }
-
+?>
+<?php 
 include 'db.php';
-
-// If the user is redirected from the external login page, the username will be in the URL.
-if(isset($_GET['username'])) {
-    $myusername = $_GET['username'];
-    $myusername = stripslashes($myusername);
-    $myusername = mysql_real_escape_string($myusername);
-
-    // Fetch user data from the database
-    $sql = "SELECT * FROM user WHERE user_name='" . $myusername . "'";
-    $result = mysql_query($sql);
-    $row = mysql_fetch_array($result);
-    $count = mysql_num_rows($result);
-
-    if($count == 1) {
-        // Register the session variables and redirect to the dashboard.
-        $_SESSION['staff'] = $myusername;
-        $_SESSION['user_fullname'] = $row['user_name'];
-        $_SESSION['user_type'] = $row['user_type'];
-        $_SESSION['user_name'] = $row['user_name'];
-        $_SESSION['user_id'] = $row['user_id'];
-        echo '<script type="text/javascript">
-<!--
-window.location = "index.php"
-//-->
-</script>
-';
-    } else {
-        // If the user is not found, display an error message.
-        echo "<center><p style='color:red;font-size:12px'>Invalid user.</p></center>";
-    }
-}
-
 if(isset($_POST['Submits'])){
 $myusername=$_POST['username'];
 $mypassword=$_POST['password']; 
