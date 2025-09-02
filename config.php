@@ -1,7 +1,7 @@
 <?php
 
 // Site URL
-define('SITE_URL', 'https://thegrandmidoriortigas.info/');
+define('SITE_URL', 'https://thegrandmidoriortigas.info/agency/');
 
 // Database credentials
 define('DB_HOST', 'db');
