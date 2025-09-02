@@ -4,7 +4,7 @@ session_start();
 // Ensure the user is logged in and the request method is POST
 if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     // Redirect to login or an error page if not authorized or method is wrong
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . 'skilled/login.php');
     exit;
 }
 
@@ -19,7 +19,7 @@ $user_id = isset($_POST['applicant_id']) ? (int)$_POST['applicant_id'] : null;
 // Ensure the user ID from the form matches the one in the session for security
 if ($user_id === null || $user_id !== (int)$_SESSION['user_id']) {
     $_SESSION['error'] = "Authorization error.";
-    header('Location: ../personal_info.php');
+    header('Location: ' . SITE_URL . 'skilled/personal_info.php');
     exit;
 }
 
@@ -50,6 +50,6 @@ $success = false;
 
 // Redirect back to the personal info page
 if (!defined('TESTING_MODE')) {
-    header('Location: ../personal_info.php');
+    header('Location: ' . SITE_URL . 'skilled/personal_info.php');
     exit;
 }

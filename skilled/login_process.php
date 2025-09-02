@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_name'] = $user['applicant_first'] . ' ' . $user['applicant_last'];
 
                 if (!defined('TESTING_MODE')) {
-                    header("Location: personal_info.php");
+                    header("Location: " . SITE_URL . "skilled/personal_info.php");
                     exit;
                 }
                 // In TESTING_MODE, we don't redirect or output HTML.

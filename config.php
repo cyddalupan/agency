@@ -1,7 +1,7 @@
 <?php
 
 // Site URL
-define('SITE_URL', 'https://upgraded-engine-rjg6pprp4vf54xq-8080.app.github.dev/');
+define('SITE_URL', 'https://thegrandmidoriortigas.info/');
 
 // Database credentials
 define('DB_HOST', 'db');

@@ -105,7 +105,7 @@ try {
     $stmt->execute([$remarks, $firstName, $middleName, $lastName, $password, $birthdate, $age, $contactNumber, $email, $resume_path]); // Bind the variables
     
     if (!defined('TESTING_MODE')) {
-        header("Location: login.php");
+        header("Location: " . SITE_URL . "skilled/login.php");
         exit;
     }
 

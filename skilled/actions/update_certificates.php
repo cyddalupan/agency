@@ -3,7 +3,7 @@ session_start();
 
 // Ensure the user is logged in and the request method is POST
 if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . 'skilled/login.php');
     exit;
 }
 
@@ -18,7 +18,7 @@ $user_id = isset($_POST['applicant_id']) ? (int)$_POST['applicant_id'] : null;
 // Ensure the user ID from the form matches the one in the session for security
 if ($user_id === null || $user_id !== (int)$_SESSION['user_id']) {
     $_SESSION['error'] = "Authorization error.";
-    header('Location: ../certificates.php');
+    header('Location: ' . SITE_URL . 'skilled/certificates.php');
     exit;
 }
 
@@ -51,6 +51,6 @@ try {
 
 // Redirect back to the certificates page
 if (!defined('TESTING_MODE')) {
-    header('Location: ../certificates.php');
+    header('Location: ' . SITE_URL . 'skilled/certificates.php');
     exit;
 }
