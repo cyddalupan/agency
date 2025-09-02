@@ -6,8 +6,8 @@ define('SITE_URL', 'https://upgraded-engine-rjg6pprp4vf54xq-8080.app.github.dev/
 // Database credentials
 define('DB_HOST', 'db');
 define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'database_name');
+define('DB_PASS', '.adonis132');
+define('DB_NAME', 'iwebphil_everlast');
 
 // Create a new PDO instance
 try {
