@@ -34,7 +34,7 @@ include_once 'login_process.php'; // Include the processing logic
                 </form>
             </div>
             <div class="card-footer text-center">
-                <p class="mb-0">Don't have an account? <a href="/skilled/index.php">Register here</a></p>
+                <p class="mb-0">Don't have an account? <a href="index.php">Register here</a></p>
             </div>
         </div>
     </div>
