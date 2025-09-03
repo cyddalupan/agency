@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Skilled extends MY_Controller {
+class Skilled_account extends MY_Controller {
 
     public function __construct()
     {
@@ -98,7 +98,7 @@ class Skilled extends MY_Controller {
         $this->db->insert('applicant', $data);
 
         // 5. Redirect to login page
-        redirect('skilled');
+        redirect('skilled_account');
     }
 
     public function login()
@@ -114,17 +114,17 @@ class Skilled extends MY_Controller {
             $this->session->set_userdata('user_id', $user->applicant_id);
             $this->session->set_userdata('user_email', $user->applicant_email);
             $this->session->set_userdata('user_name', $user->applicant_first . ' ' . $user->applicant_last);
-            redirect('skilled/profile');
+            redirect('skilled_account/profile');
         } else {
             // TODO: Show error message
-            redirect('skilled');
+            redirect('skilled_account');
         }
     }
 
     public function profile()
     {
         if (!$this->session->userdata('user_id')) {
-            redirect('skilled');
+            redirect('skilled_account');
         }
 
         $applicant_id = $this->session->userdata('user_id');
@@ -165,7 +165,7 @@ class Skilled extends MY_Controller {
     public function update_profile()
     {
         if (!$this->session->userdata('user_id')) {
-            redirect('skilled');
+            redirect('skilled_account');
         }
 
         $applicant_id = $this->session->userdata('user_id');
@@ -191,12 +191,12 @@ class Skilled extends MY_Controller {
             }
         }
 
-        redirect('skilled/profile');
+        redirect('skilled_account/profile');
     }
 
     public function logout()
     {
         $this->session->sess_destroy();
-        redirect('skilled');
+        redirect('skilled_account');
     }
 }
