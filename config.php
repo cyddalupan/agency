@@ -18,8 +18,8 @@ try {
 }
 
 // For legacy mysql_connect functions
-$con = mysql_connect(DB_HOST, DB_USER, DB_PASS);
-mysql_select_db(DB_NAME, $con);
+$con = @mysql_connect(DB_HOST, DB_USER, DB_PASS);
+@mysql_select_db(DB_NAME, $con);
 
 // For mysqli_connect functions
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
