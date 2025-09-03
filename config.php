@@ -5,7 +5,7 @@ define('SITE_URL', 'https://thegrandmidoriortigas.info/agency/');
 
 // Database credentials
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
+define('DB_USER', 'iwebphil_gensan');
 define('DB_PASS', '.adonis132');
 define('DB_NAME', 'iwebphil_everlast');
 
