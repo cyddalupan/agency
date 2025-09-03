@@ -72,3 +72,7 @@ This project is a complex legacy system. When working on it, it is crucial to:
 1.  **Identify the Context**: Determine which module or framework you are working in before making changes.
 2.  **Respect Existing Patterns**: Follow the conventions of the specific module you are editing (e.g., CodeIgniter MVC in `app/`, native PHP page/action pattern in `skilled/`).
 3.  **Be Mindful of Shared Resources**: Be careful when modifying shared files like `config.php` as they affect multiple parts of the system.
+
+REMEMBER: 
+- This is a live production code and we need to be careful on how we code and what strategies we are using.
+- for large code file, find a way to split it in a safe way.
