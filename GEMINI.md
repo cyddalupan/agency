@@ -73,6 +73,9 @@ This project is a complex legacy system. When working on it, it is crucial to:
 2.  **Respect Existing Patterns**: Follow the conventions of the specific module you are editing (e.g., CodeIgniter MVC in `app/`, native PHP page/action pattern in `skilled/`).
 3.  **Be Mindful of Shared Resources**: Be careful when modifying shared files like `config.php` as they affect multiple parts of the system.
 
+**PHP Version Compatibility Note:**
+During development, it was observed that some PHP language features, such as the null coalescing operator (`??`), require PHP version 7.0 or higher. If encountering parse errors or unexpected 500 Internal Server Errors, ensure the server's PHP version is compatible with the syntax used. For older PHP versions, equivalent constructs (e.g., the ternary operator `isset($var) ? $var : 'default'`) must be used.
+
 REMEMBER: 
 - This is a live production code and we need to be careful on how we code and what strategies we are using.
 - for large code file, find a way to split it in a safe way.

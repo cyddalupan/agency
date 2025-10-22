@@ -1,16 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Log debugging information to a file
-function log_debug($message) {
-    file_put_contents(__DIR__ . '/query_executor_debug.log', date('Y-m-d H:i:s') . ' - ' . $message . "\n", FILE_APPEND);
-}
-
-log_debug('Script started.');
-log_debug('$_SERVER contents: ' . print_r($_SERVER, true));
-
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); // IMPORTANT: Restrict in production environments
 
@@ -23,9 +11,6 @@ function generateDailyApiKey($baseString = 'cyd') {
 // Validate API Key
 $expectedApiKey = generateDailyApiKey();
 $receivedApiKey = isset($_SERVER['HTTP_X_API_KEY']) ? $_SERVER['HTTP_X_API_KEY'] : '';
-
-log_debug('Expected API Key: ' . $expectedApiKey);
-log_debug('Received API Key: ' . $receivedApiKey);
 
 if ($receivedApiKey !== $expectedApiKey) {
     http_response_code(401);
