@@ -52,7 +52,20 @@ error_log
 
 /bluemaxph.com
 
+<<<<<<< Updated upstream
 
 /skilled/uploads/
 
 excel/app1/cache/
+=======
+# Docker related files
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+docker-apache.conf
+php-fpm.conf
+www.conf
+start-apache-php.sh
+GEMINI.md
+excel/app1/cache 
+>>>>>>> Stashed changes
