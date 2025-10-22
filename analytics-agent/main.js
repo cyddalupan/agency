@@ -46377,6 +46377,8 @@ var AppComponent = class _AppComponent {
   // Add showThinkingModal property
   currentAiRole = "collaborate";
   // Initialize AI role
+  execution_context = [];
+  // New property to store execution context
   chatContainer;
   messageInput;
   constructor(apiService) {
@@ -46471,7 +46473,7 @@ ${dbSchema}`;
           const analysisPrompt = this.getAiRolePrompt();
           const analysisContextMessages = [...contextMessages];
           analysisContextMessages.unshift({ role: "system", content: analysisPrompt });
-          this.apiService.getAiResponse(analysisContextMessages, "Analyze the conversation history.", this.currentAiRole).subscribe({
+          this.apiService.getAiResponse(analysisContextMessages, "", this.currentAiRole).subscribe({
             next: (analysisResponse) => {
               let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
               let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
@@ -46482,10 +46484,8 @@ ${dbSchema}`;
               });
               this.isLoading = false;
               this.showThinkingModal = false;
-              this.apiService.saveChatHistory("Analyze the conversation history.", displayAnalysisContent).subscribe({
-                next: (saveResponse) => console.log("Analysis AI response saved:", saveResponse),
-                error: (saveError) => console.error("Error saving Analysis AI response:", saveError)
-              });
+              this.execution_context.push(displayAnalysisContent);
+              console.log("Analysis AI output stored in execution_context:", this.execution_context);
             },
             error: (analysisError) => {
               console.error("Error fetching Analysis AI response:", analysisError);

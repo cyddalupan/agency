@@ -25,6 +25,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
   isLoading: boolean = false; // Add isLoading property
   showThinkingModal: boolean = false; // Add showThinkingModal property
   currentAiRole: string = 'collaborate'; // Initialize AI role
+  execution_context: string[] = []; // New property to store execution context
 
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
@@ -137,13 +138,15 @@ export class AppComponent implements AfterViewChecked, OnInit {
           // The Analysis AI will analyze the entire conversation history
           const analysisPrompt = this.getAiRolePrompt(); // Get the prompt for Analysis AI
           // Pass the entire contextMessages (which includes the system prompt and recent history)
-          // to the Analysis AI for it to analyze the conversation.
-          // The last message in contextMessages will be the Collaboration AI's response with [[COLLAB_DONE]].
+          // to the Analysis AI for it to analyze the conversation. The last message in contextMessages will be the Collaboration AI's response with [[COLLAB_DONE]].
           const analysisContextMessages = [...contextMessages]; // Create a copy
           analysisContextMessages.unshift({ role: 'system', content: analysisPrompt }); // Add Analysis AI's system prompt
 
           // Make a new API call for Analysis AI
-          this.apiService.getAiResponse(analysisContextMessages, 'Analyze the conversation history.', this.currentAiRole).subscribe({
+          // The 'message' parameter here is the *user's last message* for the AI to respond to,
+          // but for an internal AI transition, we can pass an empty string or a specific internal trigger.
+          // The actual context for analysis is in analysisContextMessages.
+          this.apiService.getAiResponse(analysisContextMessages, '', this.currentAiRole).subscribe({
             next: (analysisResponse: any) => {
               let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
               let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
@@ -157,11 +160,11 @@ export class AppComponent implements AfterViewChecked, OnInit {
               this.isLoading = false;
               this.showThinkingModal = false;
 
-              // Save the Analysis AI's response to chat history
-              this.apiService.saveChatHistory('Analyze the conversation history.', displayAnalysisContent).subscribe({
-                next: (saveResponse) => console.log('Analysis AI response saved:', saveResponse),
-                error: (saveError) => console.error('Error saving Analysis AI response:', saveError)
-              });
+              // Store the Analysis AI's response in the execution_context array for later use
+              this.execution_context.push(displayAnalysisContent);
+              console.log('Analysis AI output stored in execution_context:', this.execution_context);
+
+              // No need to save to chat history database for internal AI steps
             },
             error: (analysisError: any) => {
               console.error('Error fetching Analysis AI response:', analysisError);
