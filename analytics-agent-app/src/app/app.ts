@@ -35,7 +35,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
     // Load chat history on component initialization
     this.apiService.getChatHistory().subscribe({
       next: (history: any) => {
-        if (history && history.data) {
+        if (history && history.data && history.data.length > 0) {
           // Clear initial AI message if history is loaded
           this.messages = [];
           // Reverse the order to display chronologically

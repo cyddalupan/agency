@@ -46385,7 +46385,7 @@ var AppComponent = class _AppComponent {
   ngOnInit() {
     this.apiService.getChatHistory().subscribe({
       next: (history) => {
-        if (history && history.data) {
+        if (history && history.data && history.data.length > 0) {
           this.messages = [];
           const sortedHistory = history.data.reverse();
           sortedHistory.forEach((item) => {
