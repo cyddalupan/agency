@@ -87,7 +87,6 @@ $postFields = json_encode([
     'model' => $model,
     'messages' => $messages,
     'temperature' => 0.7, // Example temperature
-    'max_tokens' => 150, // Example max tokens
 ]);
 
 $ch = curl_init();
