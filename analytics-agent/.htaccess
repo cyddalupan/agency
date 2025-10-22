@@ -1,8 +1,7 @@
-RewriteEngine On  
-# If an existing asset or directory is requested go to it as usual 
-RewriteCond %{REQUEST_FILENAME} -f [OR] 
-RewriteCond %{REQUEST_FILENAME} -d  
-RewriteRule ^ - [L]   
+RewriteEngine On
+RewriteBase /analytics-agent/
 
-# If the requested resource doesn't exist, use index.html  
-RewriteRule ^ index.html [L]     
+# Redirect all requests to index.html unless it's a file or directory that exists
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /analytics-agent/index.html [L]
