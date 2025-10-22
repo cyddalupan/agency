@@ -46159,17 +46159,24 @@ var _c0 = ["chatContainer"];
 var _c1 = ["messageInput"];
 function AppComponent_div_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 9)(1, "div", 10)(2, "p");
-    \u0275\u0275text(3);
-    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(0, "div", 10)(1, "div", 11);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
     const message_r2 = ctx.$implicit;
     \u0275\u0275classProp("justify-end", message_r2.sender === "user")("justify-start", message_r2.sender === "ai");
     \u0275\u0275advance();
     \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(message_r2.content);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", message_r2.content, " ");
+  }
+}
+function AppComponent_div_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 12)(1, "div", 11);
+    \u0275\u0275text(2, " Thinking... ");
+    \u0275\u0275elementEnd()();
   }
 }
 var AppComponent = class _AppComponent {
@@ -46177,6 +46184,8 @@ var AppComponent = class _AppComponent {
   title = "analytics-agent";
   messages = [];
   newMessage = "";
+  isLoading = false;
+  // Add isLoading property
   chatContainer;
   messageInput;
   constructor(apiService) {
@@ -46204,6 +46213,7 @@ var AppComponent = class _AppComponent {
     const userMessage = this.newMessage;
     this.newMessage = "";
     this.resetTextareaHeight();
+    this.isLoading = true;
     this.apiService.getAiResponse([], userMessage).subscribe({
       next: (response) => {
         const aiContent = response.choices?.[0]?.message?.content;
@@ -46211,6 +46221,7 @@ var AppComponent = class _AppComponent {
           sender: "ai",
           content: aiContent || "No response from AI."
         });
+        this.isLoading = false;
       },
       error: (error) => {
         console.error("Error fetching AI response:", error);
@@ -46218,6 +46229,7 @@ var AppComponent = class _AppComponent {
           sender: "ai",
           content: "Error: Could not get a response from the AI."
         });
+        this.isLoading = false;
       }
     });
   }
@@ -46245,42 +46257,44 @@ var AppComponent = class _AppComponent {
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatContainer = _t.first);
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     }
-  }, decls: 10, vars: 2, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"]], template: function AppComponent_Template(rf, ctx) {
+  }, decls: 11, vars: 3, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-start", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-start"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
       const _r1 = \u0275\u0275getCurrentView();
       \u0275\u0275elementStart(0, "div", 2)(1, "div", 3, 0);
-      \u0275\u0275template(3, AppComponent_div_3_Template, 4, 7, "div", 4);
+      \u0275\u0275template(3, AppComponent_div_3_Template, 3, 7, "div", 4)(4, AppComponent_div_4_Template, 3, 0, "div", 5);
       \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(4, "div", 5)(5, "div", 6)(6, "textarea", 7, 1);
-      \u0275\u0275twoWayListener("ngModelChange", function AppComponent_Template_textarea_ngModelChange_6_listener($event) {
+      \u0275\u0275elementStart(5, "div", 6)(6, "div", 7)(7, "textarea", 8, 1);
+      \u0275\u0275twoWayListener("ngModelChange", function AppComponent_Template_textarea_ngModelChange_7_listener($event) {
         \u0275\u0275restoreView(_r1);
         \u0275\u0275twoWayBindingSet(ctx.newMessage, $event) || (ctx.newMessage = $event);
         return \u0275\u0275resetView($event);
       });
-      \u0275\u0275listener("input", function AppComponent_Template_textarea_input_6_listener() {
+      \u0275\u0275listener("input", function AppComponent_Template_textarea_input_7_listener() {
         \u0275\u0275restoreView(_r1);
-        const messageInput_r3 = \u0275\u0275reference(7);
+        const messageInput_r3 = \u0275\u0275reference(8);
         return \u0275\u0275resetView(ctx.adjustTextareaHeight(messageInput_r3));
-      })("keydown.enter", function AppComponent_Template_textarea_keydown_enter_6_listener() {
+      })("keydown.enter", function AppComponent_Template_textarea_keydown_enter_7_listener() {
         \u0275\u0275restoreView(_r1);
         return \u0275\u0275resetView(ctx.sendMessage());
       });
       \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(8, "button", 8);
-      \u0275\u0275listener("click", function AppComponent_Template_button_click_8_listener() {
+      \u0275\u0275elementStart(9, "button", 9);
+      \u0275\u0275listener("click", function AppComponent_Template_button_click_9_listener() {
         \u0275\u0275restoreView(_r1);
         return \u0275\u0275resetView(ctx.sendMessage());
       });
-      \u0275\u0275text(9, " Send ");
+      \u0275\u0275text(10, " Send ");
       \u0275\u0275elementEnd()()()();
     }
     if (rf & 2) {
       \u0275\u0275advance(3);
       \u0275\u0275property("ngForOf", ctx.messages);
+      \u0275\u0275advance();
+      \u0275\u0275property("ngIf", ctx.isLoading);
       \u0275\u0275advance(3);
       \u0275\u0275twoWayProperty("ngModel", ctx.newMessage);
     }
-  }, dependencies: [CommonModule, NgForOf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
+  }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.3);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppComponent, [{
@@ -46292,7 +46306,14 @@ var AppComponent = class _AppComponent {
     <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
-        <p>{{ message.content }}</p>
+        {{ message.content }}
+      </div>
+    </div>
+
+    <!-- Thinking indicator -->
+    <div *ngIf="isLoading" class="flex justify-start">
+      <div class="glass-card p-3 rounded-lg max-w-xl">
+        Thinking...
       </div>
     </div>
   </div>
@@ -46315,7 +46336,7 @@ var AppComponent = class _AppComponent {
       </button>
     </div>
   </div>
-</div>`, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble {\n  background: rgba(0, 123, 255, 0.15);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
+</div>`, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble {\n  background: rgba(0, 123, 255, 0.3);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
   }], () => [{ type: ApiService }], { chatContainer: [{
     type: ViewChild,
     args: ["chatContainer"]

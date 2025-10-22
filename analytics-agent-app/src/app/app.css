@@ -12,7 +12,7 @@
 
 /* Base styles for glass containers */
 .glass-container {
-  background: rgba(255, 255, 255, 0.05); /* White with 5% opacity */
+  background: rgba(255, 255, 255, 0.1); /* White with 10% opacity */
   backdrop-filter: blur(10px); /* Frosted glass effect */
   border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle white border */
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); /* Soft shadow for depth */
@@ -20,14 +20,14 @@
 
 /* Styles for glass cards/panels (used for chat bubbles) */
 .glass-card {
-  background: rgba(255, 255, 255, 0.08); /* Slightly more opaque for chat bubbles */
+  background: rgba(255, 255, 255, 0.2); /* More opaque for chat bubbles */
   backdrop-filter: blur(5px); /* Slightly less blur */
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Styles for user message bubbles */
 .user-message-bubble {
-  background: rgba(0, 123, 255, 0.15); /* Blue tint for user messages */
+  background: rgba(0, 123, 255, 0.3); /* More opaque blue tint for user messages */
   backdrop-filter: blur(5px);
   border: 1px solid rgba(0, 123, 255, 0.25);
 }

@@ -19,6 +19,7 @@ export class AppComponent implements AfterViewChecked {
   title = 'analytics-agent';
   messages: Message[] = [];
   newMessage: string = '';
+  isLoading: boolean = false; // Add isLoading property
 
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
@@ -55,6 +56,8 @@ export class AppComponent implements AfterViewChecked {
     this.newMessage = ''; // Clear input immediately
     this.resetTextareaHeight();
 
+    this.isLoading = true; // Set loading to true before API call
+
     // Call AI service
     this.apiService.getAiResponse([], userMessage).subscribe({
       next: (response: any) => { // Type as any for now, or define a more specific interface if needed
@@ -63,6 +66,7 @@ export class AppComponent implements AfterViewChecked {
           sender: 'ai',
           content: aiContent || 'No response from AI.'
         });
+        this.isLoading = false; // Set loading to false after successful response
       },
       error: (error: any) => { // Explicitly type error
         console.error('Error fetching AI response:', error);
@@ -70,6 +74,7 @@ export class AppComponent implements AfterViewChecked {
           sender: 'ai',
           content: 'Error: Could not get a response from the AI.'
         });
+        this.isLoading = false; // Set loading to false after error
       }
     });
   }

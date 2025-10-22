@@ -5,7 +5,14 @@
     <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
-        <p>{{ message.content }}</p>
+        {{ message.content }}
+      </div>
+    </div>
+
+    <!-- Thinking indicator -->
+    <div *ngIf="isLoading" class="flex justify-start">
+      <div class="glass-card p-3 rounded-lg max-w-xl">
+        Thinking...
       </div>
     </div>
   </div>
