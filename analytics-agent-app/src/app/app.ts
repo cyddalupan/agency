@@ -33,10 +33,10 @@ export class AppComponent implements AfterViewChecked, OnInit {
     // Load chat history on component initialization
     this.apiService.getChatHistory().subscribe({
       next: (history: any) => {
-        if (history && history.results) {
+        if (history && history.data) {
           // Clear initial AI message if history is loaded
           this.messages = [];
-          history.results.forEach((item: any) => {
+          history.data.forEach((item: any) => {
             this.messages.push({ sender: 'user', content: item.message });
             this.messages.push({ sender: 'ai', content: item.reply });
           });

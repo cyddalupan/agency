@@ -46236,9 +46236,9 @@ var AppComponent = class _AppComponent {
   ngOnInit() {
     this.apiService.getChatHistory().subscribe({
       next: (history) => {
-        if (history && history.results) {
+        if (history && history.data) {
           this.messages = [];
-          history.results.forEach((item) => {
+          history.data.forEach((item) => {
             this.messages.push({ sender: "user", content: item.message });
             this.messages.push({ sender: "ai", content: item.reply });
           });
