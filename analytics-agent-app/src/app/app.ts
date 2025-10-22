@@ -88,11 +88,11 @@ export class AppComponent implements OnInit {
     });
   }
 
-  triggerQueryExecutor(): void {
+  async triggerQueryExecutor(): Promise<void> {
     const sql = 'SELECT * FROM applicant ORDER BY applicant_id DESC LIMIT 1';
     const params: { type: string, value: any }[] = []; // No parameters for this query
 
-    this.apiService.executeQuery(sql, params).subscribe({
+    (await this.apiService.executeQuery(sql, params)).subscribe({
       next: (response) => {
         this.queryResult = response;
         console.log('Query Executor Response:', response);

@@ -2,6 +2,22 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); // IMPORTANT: Restrict in production environments
 
+// Function to generate a daily rotating API key
+function generateDailyApiKey($baseString = 'cyd') {
+    $date = (new DateTime())->format('Y-m-d');
+    return hash('sha256', $baseString . $date);
+}
+
+// Validate API Key
+$expectedApiKey = generateDailyApiKey();
+$receivedApiKey = $_SERVER['HTTP_X_API_KEY'] ?? '';
+
+if ($receivedApiKey !== $expectedApiKey) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized: Invalid API Key']);
+    exit();
+}
+
 // Ensure this is a POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

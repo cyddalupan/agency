@@ -39510,8 +39510,23 @@ var ApiService = class _ApiService {
   phpApiUrl = "/agency/api/hello.php";
   // Adjust this URL if your PHP endpoint changes
   queryExecutorUrl = "/agency/api/query-executor.php";
+  baseApiKeyString = "cyd";
   constructor(http) {
     this.http = http;
+  }
+  async generateDailyApiKey() {
+    const today = /* @__PURE__ */ new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const day = today.getDate().toString().padStart(2, "0");
+    const dateString = `${year}-${month}-${day}`;
+    const combinedString = this.baseApiKeyString + dateString;
+    const textEncoder = new TextEncoder();
+    const data = textEncoder.encode(combinedString);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hexHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    return hexHash;
   }
   getHelloMessage() {
     return this.http.get(this.phpApiUrl);
@@ -39521,7 +39536,12 @@ var ApiService = class _ApiService {
     return this.http.post(aiServiceUrl, { context: context2, message });
   }
   executeQuery(sql, params) {
-    return this.http.post(this.queryExecutorUrl, { sql, params });
+    return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
+      const headers = new HttpHeaders({
+        "X-API-KEY": apiKey
+      });
+      return this.http.post(this.queryExecutorUrl, { sql, params }, { headers });
+    }));
   }
   static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
@@ -39600,10 +39620,10 @@ var AppComponent = class _AppComponent {
       }
     });
   }
-  triggerQueryExecutor() {
+  async triggerQueryExecutor() {
     const sql = "SELECT * FROM applicant ORDER BY applicant_id DESC LIMIT 1";
     const params = [];
-    this.apiService.executeQuery(sql, params).subscribe({
+    (await this.apiService.executeQuery(sql, params)).subscribe({
       next: (response) => {
         this.queryResult = response;
         console.log("Query Executor Response:", response);
