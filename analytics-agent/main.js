@@ -46284,8 +46284,12 @@ var ApiService = class _ApiService {
     }));
   }
   saveChatHistory(message, reply) {
-    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/\'/g, "\\'")}', '${reply.replace(/\'/g, "\\'")}', NOW())`;
-    return this.executeQuery(sql, []);
+    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES (?, ?, NOW())`;
+    const params = [
+      { type: "s", value: message },
+      { type: "s", value: reply }
+    ];
+    return this.executeQuery(sql, params);
   }
   getChatHistory() {
     const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
