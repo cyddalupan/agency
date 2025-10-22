@@ -23,6 +23,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
   newMessage: string = '';
   isLoading: boolean = false; // Add isLoading property
   showThinkingModal: boolean = false; // Add showThinkingModal property
+  currentAiRole: string = 'collaborate'; // Initialize AI role
 
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
@@ -65,10 +66,25 @@ export class AppComponent implements AfterViewChecked, OnInit {
     this.scrollToBottom();
   }
 
-  adjustTextareaHeight(element: HTMLTextAreaElement): void {
-    element.style.height = 'auto';
-    element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + 'px';
-    element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+  public adjustTextareaHeight(): void {
+    if (this.messageInput && this.messageInput.nativeElement) {
+      const element = this.messageInput.nativeElement;
+      element.style.height = 'auto';
+      element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + 'px';
+      element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+    }
+  }
+
+  private getAiRolePrompt(): string {
+    switch (this.currentAiRole) {
+      case 'collaborate':
+        return 'You are a Collaboration AI for a deployment agency system. Your purpose is to clarify the user\"s needs and generate a precise initial context for subsequent AI agents. Engage in a natural language dialogue to deconstruct the request, ask targeted questions to resolve ambiguity, and confirm the scope, constraints, and desired output format. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].';
+      case 'analyze':
+        return 'You are an Analysis AI for a deployment agency system. Your purpose is to summarize the user\"s intent and the clarified context into a concise brief for the Breakdown AI. You will receive a structured context object. Parse it, identify the core intent, key entities, and constraints, and formulate a high-level summary of the task to be performed.';
+      // Add other roles as needed
+      default:
+        return 'You are a helpful assistant for a deployment agency system.';
+    }
   }
 
   sendMessage(): void {
@@ -94,10 +110,31 @@ export class AppComponent implements AfterViewChecked, OnInit {
       content: msg.content
     }));
 
-    // Call AI service
-    this.apiService.getAiResponse(contextMessages, userMessage).subscribe({
+    // Add the AI role prompt to the beginning of the context messages
+    contextMessages.unshift({ role: 'system', content: this.getAiRolePrompt() });
+
+    // Call AI service with the current AI role
+    this.apiService.getAiResponse(contextMessages, userMessage, this.currentAiRole).subscribe({
       next: (response: any) => { // Type as any for now, or define a more specific interface if needed
-        const aiContent = response.choices?.[0]?.message?.content;
+        let aiContent = response.choices?.[0]?.message?.content;
+
+        // Check for COLLAB_DONE trigger
+        if (aiContent && aiContent.includes('[[COLLAB_DONE]]')) {
+          this.currentAiRole = 'analyze'; // Transition to Analysis AI
+          // Extract context object (assuming it's a JSON string after the trigger)
+          const contextStartIndex = aiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
+          const contextString = aiContent.substring(contextStartIndex).trim();
+          try {
+            const contextObject = JSON.parse(contextString);
+            console.log('Collaboration Done. Extracted Context:', contextObject);
+            // You might want to store this contextObject in a service or another property
+            // For now, let's just log it and remove the trigger from the displayed message
+            aiContent = aiContent.substring(0, contextStartIndex - '[[COLLAB_DONE]]'.length).trim();
+          } catch (e) {
+            console.error('Error parsing context object:', e);
+          }
+        }
+
         this.messages.push({
           sender: 'ai',
           content: aiContent || 'No response from AI.'
@@ -133,7 +170,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
     } catch (err) { /* Error handling for when element is not yet available */ }
   }
 
-  private resetTextareaHeight(): void {
+  resetTextareaHeight(): void {
     if (this.messageInput && this.messageInput.nativeElement) {
       this.messageInput.nativeElement.style.height = 'auto';
     }

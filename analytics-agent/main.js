@@ -46123,13 +46123,13 @@ var ApiService = class _ApiService {
   getHelloMessage() {
     return this.http.get(this.phpApiUrl);
   }
-  getAiResponse(context2, message) {
+  getAiResponse(context2, message, role = "collaborate") {
     const aiServiceUrl = "/agency/api/ai-service.php";
     return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
       const headers = new HttpHeaders({
         "X-API-KEY": apiKey
       });
-      return this.http.post(aiServiceUrl, { context: context2, message }, { headers });
+      return this.http.post(aiServiceUrl, { context: context2, message, role }, { headers });
     }));
   }
   executeQuery(sql, params) {
@@ -46198,7 +46198,7 @@ function AppComponent_div_4_Template(rf, ctx) {
 }
 function AppComponent_div_11_Template(rf, ctx) {
   if (rf & 1) {
-    const _r6 = \u0275\u0275getCurrentView();
+    const _r5 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 16)(1, "div", 17)(2, "h2", 18);
     \u0275\u0275text(3, "AI is Thinking...");
     \u0275\u0275elementEnd();
@@ -46210,7 +46210,7 @@ function AppComponent_div_11_Template(rf, ctx) {
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(8, "button", 20);
     \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_8_listener() {
-      \u0275\u0275restoreView(_r6);
+      \u0275\u0275restoreView(_r5);
       const ctx_r3 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
     });
@@ -46228,6 +46228,8 @@ var AppComponent = class _AppComponent {
   // Add isLoading property
   showThinkingModal = false;
   // Add showThinkingModal property
+  currentAiRole = "collaborate";
+  // Initialize AI role
   chatContainer;
   messageInput;
   constructor(apiService) {
@@ -46262,10 +46264,24 @@ var AppComponent = class _AppComponent {
   ngAfterViewChecked() {
     this.scrollToBottom();
   }
-  adjustTextareaHeight(element) {
-    element.style.height = "auto";
-    element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
-    element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
+  adjustTextareaHeight() {
+    if (this.messageInput && this.messageInput.nativeElement) {
+      const element = this.messageInput.nativeElement;
+      element.style.height = "auto";
+      element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
+      element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
+    }
+  }
+  getAiRolePrompt() {
+    switch (this.currentAiRole) {
+      case "collaborate":
+        return 'You are a Collaboration AI for a deployment agency system. Your purpose is to clarify the user"s needs and generate a precise initial context for subsequent AI agents. Engage in a natural language dialogue to deconstruct the request, ask targeted questions to resolve ambiguity, and confirm the scope, constraints, and desired output format. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].';
+      case "analyze":
+        return 'You are an Analysis AI for a deployment agency system. Your purpose is to summarize the user"s intent and the clarified context into a concise brief for the Breakdown AI. You will receive a structured context object. Parse it, identify the core intent, key entities, and constraints, and formulate a high-level summary of the task to be performed.';
+      // Add other roles as needed
+      default:
+        return "You are a helpful assistant for a deployment agency system.";
+    }
   }
   sendMessage() {
     if (this.newMessage.trim() === "") {
@@ -46283,9 +46299,22 @@ var AppComponent = class _AppComponent {
       role: msg.sender === "user" ? "user" : "assistant",
       content: msg.content
     }));
-    this.apiService.getAiResponse(contextMessages, userMessage).subscribe({
+    contextMessages.unshift({ role: "system", content: this.getAiRolePrompt() });
+    this.apiService.getAiResponse(contextMessages, userMessage, this.currentAiRole).subscribe({
       next: (response) => {
-        const aiContent = response.choices?.[0]?.message?.content;
+        let aiContent = response.choices?.[0]?.message?.content;
+        if (aiContent && aiContent.includes("[[COLLAB_DONE]]")) {
+          this.currentAiRole = "analyze";
+          const contextStartIndex = aiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
+          const contextString = aiContent.substring(contextStartIndex).trim();
+          try {
+            const contextObject = JSON.parse(contextString);
+            console.log("Collaboration Done. Extracted Context:", contextObject);
+            aiContent = aiContent.substring(0, contextStartIndex - "[[COLLAB_DONE]]".length).trim();
+          } catch (e) {
+            console.error("Error parsing context object:", e);
+          }
+        }
         this.messages.push({
           sender: "ai",
           content: aiContent || "No response from AI."
@@ -46349,8 +46378,7 @@ var AppComponent = class _AppComponent {
       });
       \u0275\u0275listener("input", function AppComponent_Template_textarea_input_7_listener() {
         \u0275\u0275restoreView(_r1);
-        const messageInput_r5 = \u0275\u0275reference(8);
-        return \u0275\u0275resetView(ctx.adjustTextareaHeight(messageInput_r5));
+        return \u0275\u0275resetView(ctx.adjustTextareaHeight());
       })("keydown.enter", function AppComponent_Template_textarea_keydown_enter_7_listener($event) {
         \u0275\u0275restoreView(_r1);
         ctx.sendMessage();
@@ -46411,7 +46439,7 @@ var AppComponent = class _AppComponent {
         class="flex-1 resize-none outline-none bg-transparent text-white placeholder-gray-400 glass-input p-2"
         placeholder="Type your message..."
         [(ngModel)]="newMessage"
-        (input)="adjustTextareaHeight(messageInput)"
+        (input)="adjustTextareaHeight()"
         (keydown.enter)="sendMessage(); $event.preventDefault();"
       ></textarea>
       <button class="ml-2 px-4 py-2 glass-button bg-blue-600/50 hover:bg-blue-700/60 rounded-lg font-semibold"

@@ -27,7 +27,7 @@
         class="flex-1 resize-none outline-none bg-transparent text-white placeholder-gray-400 glass-input p-2"
         placeholder="Type your message..."
         [(ngModel)]="newMessage"
-        (input)="adjustTextareaHeight(messageInput)"
+        (input)="adjustTextareaHeight()"
         (keydown.enter)="sendMessage(); $event.preventDefault();"
       ></textarea>
       <button class="ml-2 px-4 py-2 glass-button bg-blue-600/50 hover:bg-blue-700/60 rounded-lg font-semibold"

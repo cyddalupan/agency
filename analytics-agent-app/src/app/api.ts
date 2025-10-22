@@ -33,14 +33,14 @@ export class ApiService {
     return this.http.get<{ message: string, timestamp: string }>(this.phpApiUrl);
   }
 
-  getAiResponse(context: string | any[], message: string): Observable<any> {
+  getAiResponse(context: string | any[], message: string, role: string = 'collaborate'): Observable<any> {
     const aiServiceUrl = '/agency/api/ai-service.php';
     return from(this.generateDailyApiKey()).pipe(
       switchMap(apiKey => {
         const headers = new HttpHeaders({
           'X-API-KEY': apiKey
         });
-        return this.http.post<any>(aiServiceUrl, { context, message }, { headers });
+        return this.http.post<any>(aiServiceUrl, { context, message, role }, { headers });
       })
     );
   }
