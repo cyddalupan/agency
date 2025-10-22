@@ -86,7 +86,6 @@ $messages[] = ['role' => 'user', 'content' => $message];
 $postFields = json_encode([
     'model' => $model,
     'messages' => $messages,
-    'temperature' => 0.7, // Example temperature
 ]);
 
 $ch = curl_init();
