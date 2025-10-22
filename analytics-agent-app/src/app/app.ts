@@ -36,7 +36,9 @@ export class AppComponent implements AfterViewChecked, OnInit {
         if (history && history.data) {
           // Clear initial AI message if history is loaded
           this.messages = [];
-          history.data.forEach((item: any) => {
+          // Reverse the order to display chronologically
+          const sortedHistory = history.data.reverse();
+          sortedHistory.forEach((item: any) => {
             this.messages.push({ sender: 'user', content: item.message });
             this.messages.push({ sender: 'ai', content: item.reply });
           });

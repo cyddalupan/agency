@@ -64,7 +64,7 @@ export class ApiService {
   }
 
   getChatHistory(): Observable<any> {
-    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp ASC`;
+    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
     return this.executeQuery(sql, []);
   }
 }

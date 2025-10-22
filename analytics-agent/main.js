@@ -46145,7 +46145,7 @@ var ApiService = class _ApiService {
     return this.executeQuery(sql, []);
   }
   getChatHistory() {
-    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp ASC`;
+    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
     return this.executeQuery(sql, []);
   }
   static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
@@ -46238,7 +46238,8 @@ var AppComponent = class _AppComponent {
       next: (history) => {
         if (history && history.data) {
           this.messages = [];
-          history.data.forEach((item) => {
+          const sortedHistory = history.data.reverse();
+          sortedHistory.forEach((item) => {
             this.messages.push({ sender: "user", content: item.message });
             this.messages.push({ sender: "ai", content: item.reply });
           });
