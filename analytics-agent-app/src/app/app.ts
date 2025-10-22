@@ -8,6 +8,8 @@ interface Message {
   content: string;
 }
 
+const MAX_TEXTAREA_HEIGHT = 150; // Maximum height for the textarea in pixels
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -39,7 +41,8 @@ export class AppComponent implements AfterViewChecked {
 
   adjustTextareaHeight(element: HTMLTextAreaElement): void {
     element.style.height = 'auto';
-    element.style.height = element.scrollHeight + 'px';
+    element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + 'px';
+    element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
   }
 
   sendMessage(): void {

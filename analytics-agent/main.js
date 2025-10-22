@@ -46210,6 +46210,7 @@ function AppComponent_div_11_Template(rf, ctx) {
     \u0275\u0275elementEnd()()();
   }
 }
+var MAX_TEXTAREA_HEIGHT = 150;
 var AppComponent = class _AppComponent {
   apiService;
   title = "analytics-agent";
@@ -46233,7 +46234,8 @@ var AppComponent = class _AppComponent {
   }
   adjustTextareaHeight(element) {
     element.style.height = "auto";
-    element.style.height = element.scrollHeight + "px";
+    element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
+    element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
   }
   sendMessage() {
     if (this.newMessage.trim() === "") {
@@ -46295,7 +46297,7 @@ var AppComponent = class _AppComponent {
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatContainer = _t.first);
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     }
-  }, decls: 12, vars: 4, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-center", 3, "click", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter.prevent", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], ["class", "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", 4, "ngIf"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-center", 3, "click"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "cursor-pointer", "flex", "items-center", "space-x-2"], [1, "animate-spin", "rounded-full", "h-4", "w-4", "border-b-2", "border-white"], [1, "fixed", "inset-0", "bg-black", "bg-opacity-50", "flex", "items-center", "justify-center", "z-50"], [1, "glass-container", "p-6", "rounded-lg", "shadow-lg", "max-w-md", "w-full", "mx-4"], [1, "text-xl", "font-bold", "mb-4"], [1, "mt-2", "text-sm", "text-gray-300"], [1, "mt-4", "px-4", "py-2", "glass-button", "bg-red-600/50", "hover:bg-red-700/60", "rounded-lg", "font-semibold", 3, "click"]], template: function AppComponent_Template(rf, ctx) {
+  }, decls: 12, vars: 4, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-center", 3, "click", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], ["class", "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", 4, "ngIf"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-center", 3, "click"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "cursor-pointer", "flex", "items-center", "space-x-2"], [1, "animate-spin", "rounded-full", "h-4", "w-4", "border-b-2", "border-white"], [1, "fixed", "inset-0", "bg-black", "bg-opacity-50", "flex", "items-center", "justify-center", "z-50"], [1, "glass-container", "p-6", "rounded-lg", "shadow-lg", "max-w-md", "w-full", "mx-4"], [1, "text-xl", "font-bold", "mb-4"], [1, "mt-2", "text-sm", "text-gray-300"], [1, "mt-4", "px-4", "py-2", "glass-button", "bg-red-600/50", "hover:bg-red-700/60", "rounded-lg", "font-semibold", 3, "click"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
       const _r1 = \u0275\u0275getCurrentView();
       \u0275\u0275elementStart(0, "div", 2)(1, "div", 3, 0);
@@ -46311,9 +46313,10 @@ var AppComponent = class _AppComponent {
         \u0275\u0275restoreView(_r1);
         const messageInput_r5 = \u0275\u0275reference(8);
         return \u0275\u0275resetView(ctx.adjustTextareaHeight(messageInput_r5));
-      })("keydown.enter.prevent", function AppComponent_Template_textarea_keydown_enter_prevent_7_listener() {
+      })("keydown.enter", function AppComponent_Template_textarea_keydown_enter_7_listener($event) {
         \u0275\u0275restoreView(_r1);
-        return \u0275\u0275resetView(ctx.sendMessage());
+        ctx.sendMessage();
+        return \u0275\u0275resetView($event.preventDefault());
       });
       \u0275\u0275elementEnd();
       \u0275\u0275elementStart(9, "button", 9);
@@ -46371,7 +46374,7 @@ var AppComponent = class _AppComponent {
         placeholder="Type your message..."
         [(ngModel)]="newMessage"
         (input)="adjustTextareaHeight(messageInput)"
-        (keydown.enter.prevent)="sendMessage()"
+        (keydown.enter)="sendMessage(); $event.preventDefault();"
       ></textarea>
       <button class="ml-2 px-4 py-2 glass-button bg-blue-600/50 hover:bg-blue-700/60 rounded-lg font-semibold"
               (click)="sendMessage()">
@@ -46401,7 +46404,7 @@ var AppComponent = class _AppComponent {
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 18 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 20 });
 })();
 
 // node_modules/zone.js/fesm2015/zone.js
