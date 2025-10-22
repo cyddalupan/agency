@@ -46096,129 +46096,7 @@ var ReactiveFormsModule = class _ReactiveFormsModule {
   }], null, null);
 })();
 
-// src/app/api.ts
-var ApiService = class _ApiService {
-  http;
-  phpApiUrl = "/agency/api/hello.php";
-  // Adjust this URL if your PHP endpoint changes
-  queryExecutorUrl = "/agency/api/query-executor.php";
-  baseApiKeyString = "cyd";
-  constructor(http) {
-    this.http = http;
-  }
-  async generateDailyApiKey() {
-    const today = /* @__PURE__ */ new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const day = today.getDate().toString().padStart(2, "0");
-    const dateString = `${year}-${month}-${day}`;
-    const combinedString = this.baseApiKeyString + dateString;
-    const textEncoder = new TextEncoder();
-    const data = textEncoder.encode(combinedString);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hexHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    return hexHash;
-  }
-  getHelloMessage() {
-    return this.http.get(this.phpApiUrl);
-  }
-  getAiResponse(context2, message, role = "collaborate") {
-    const aiServiceUrl = "/agency/api/ai-service.php";
-    return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
-      const headers = new HttpHeaders({
-        "X-API-KEY": apiKey
-      });
-      return this.http.post(aiServiceUrl, { context: context2, message, role }, { headers });
-    }));
-  }
-  executeQuery(sql, params) {
-    return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
-      const headers = new HttpHeaders({
-        "X-API-KEY": apiKey
-      });
-      return this.http.post(this.queryExecutorUrl, { sql, params }, { headers });
-    }));
-  }
-  saveChatHistory(message, reply) {
-    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "'")}', '${reply.replace(/'/g, "'")}', NOW())`;
-    return this.executeQuery(sql, []);
-  }
-  getChatHistory() {
-    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
-    return this.executeQuery(sql, []);
-  }
-  static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
-  };
-  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _ApiService, factory: _ApiService.\u0275fac, providedIn: "root" });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ApiService, [{
-    type: Injectable,
-    args: [{
-      providedIn: "root"
-    }]
-  }], () => [{ type: HttpClient }], null);
-})();
-
-// src/app/app.ts
-var _c0 = ["chatContainer"];
-var _c1 = ["messageInput"];
-function AppComponent_div_3_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
-    \u0275\u0275text(2);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const message_r2 = ctx.$implicit;
-    \u0275\u0275classProp("justify-end", message_r2.sender === "user")("justify-start", message_r2.sender === "ai");
-    \u0275\u0275advance();
-    \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", message_r2.content, " ");
-  }
-}
-function AppComponent_div_4_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 13);
-    \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r3);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
-    });
-    \u0275\u0275elementStart(1, "div", 14)(2, "span");
-    \u0275\u0275text(3, "Thinking...");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(4, "span", 15);
-    \u0275\u0275elementEnd()();
-  }
-}
-function AppComponent_div_11_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 16)(1, "div", 17)(2, "h2", 18);
-    \u0275\u0275text(3, "AI is Thinking...");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "p");
-    \u0275\u0275text(5, "The AI is currently processing your request. Please wait a moment.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "p", 19);
-    \u0275\u0275text(7, "This modal will close automatically when a response is received or an error occurs.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "button", 20);
-    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_8_listener() {
-      \u0275\u0275restoreView(_r5);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
-    });
-    \u0275\u0275text(9, " Close ");
-    \u0275\u0275elementEnd()()();
-  }
-}
-var MAX_TEXTAREA_HEIGHT = 150;
+// src/app/schemas.ts
 var APPLICANT_TABLE_SCHEMA = `
 Table: applicant
 Columns:
@@ -46360,6 +46238,130 @@ applicant_remarks3 (Full texts)
 singil1 (Full texts)
 applicant_contacts_4 (Full texts)
 `;
+
+// src/app/api.ts
+var ApiService = class _ApiService {
+  http;
+  phpApiUrl = "/agency/api/hello.php";
+  // Adjust this URL if your PHP endpoint changes
+  queryExecutorUrl = "/agency/api/query-executor.php";
+  baseApiKeyString = "cyd";
+  constructor(http) {
+    this.http = http;
+  }
+  async generateDailyApiKey() {
+    const today = /* @__PURE__ */ new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const day = today.getDate().toString().padStart(2, "0");
+    const dateString = `${year}-${month}-${day}`;
+    const combinedString = this.baseApiKeyString + dateString;
+    const textEncoder = new TextEncoder();
+    const data = textEncoder.encode(combinedString);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hexHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    return hexHash;
+  }
+  getHelloMessage() {
+    return this.http.get(this.phpApiUrl);
+  }
+  getAiResponse(context2, message, role = "collaborate") {
+    const aiServiceUrl = "/agency/api/ai-service.php";
+    return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
+      const headers = new HttpHeaders({
+        "X-API-KEY": apiKey
+      });
+      return this.http.post(aiServiceUrl, { context: context2, message, role }, { headers });
+    }));
+  }
+  executeQuery(sql, params) {
+    return from(this.generateDailyApiKey()).pipe(switchMap((apiKey) => {
+      const headers = new HttpHeaders({
+        "X-API-KEY": apiKey
+      });
+      return this.http.post(this.queryExecutorUrl, { sql, params }, { headers });
+    }));
+  }
+  saveChatHistory(message, reply) {
+    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "'")}', '${reply.replace(/'/g, "'")}', NOW())`;
+    return this.executeQuery(sql, []);
+  }
+  getChatHistory() {
+    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
+    return this.executeQuery(sql, []);
+  }
+  static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
+    return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
+  };
+  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _ApiService, factory: _ApiService.\u0275fac, providedIn: "root" });
+};
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ApiService, [{
+    type: Injectable,
+    args: [{
+      providedIn: "root"
+    }]
+  }], () => [{ type: HttpClient }], null);
+})();
+
+// src/app/app.ts
+var _c0 = ["chatContainer"];
+var _c1 = ["messageInput"];
+function AppComponent_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const message_r2 = ctx.$implicit;
+    \u0275\u0275classProp("justify-end", message_r2.sender === "user")("justify-start", message_r2.sender === "ai");
+    \u0275\u0275advance();
+    \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", message_r2.content, " ");
+  }
+}
+function AppComponent_div_4_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275elementStart(1, "div", 14)(2, "span");
+    \u0275\u0275text(3, "Thinking...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(4, "span", 15);
+    \u0275\u0275elementEnd()();
+  }
+}
+function AppComponent_div_11_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r5 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 16)(1, "div", 17)(2, "h2", 18);
+    \u0275\u0275text(3, "AI is Thinking...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "p");
+    \u0275\u0275text(5, "The AI is currently processing your request. Please wait a moment.");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "p", 19);
+    \u0275\u0275text(7, "This modal will close automatically when a response is received or an error occurs.");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(8, "button", 20);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_8_listener() {
+      \u0275\u0275restoreView(_r5);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275text(9, " Close ");
+    \u0275\u0275elementEnd()()();
+  }
+}
+var MAX_TEXTAREA_HEIGHT = 150;
 var AppComponent = class _AppComponent {
   apiService;
   title = "analytics-agent";
@@ -46417,7 +46419,7 @@ var AppComponent = class _AppComponent {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case "collaborate":
-        return `You are a Collaboration AI for a deployment agency system. Your goal is to clarify the user's needs and generate a precise initial context for subsequent AI agents. Keep your responses short and to the point. Engage in a natural language dialogue to deconstruct the request, ask targeted questions to resolve ambiguity, and confirm the scope, constraints, and desired output format. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].
+        return `You are a Collaboration AI for a deployment agency system. Your goal is to clarify the user's needs and generate a precise initial context for subsequent AI agents. ALWAYS keep your responses short and to the point. NEVER echo back instructions. Engage in a natural language dialogue to deconstruct the request, ask targeted questions to resolve ambiguity, and confirm the scope, constraints, and desired output format. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].
 
 Available Database Schema:
 ${dbSchema}`;
@@ -46428,7 +46430,7 @@ Available Database Schema:
 ${dbSchema}`;
       // Add other roles as needed
       default:
-        return `You are a helpful assistant for a deployment agency system. Keep your responses short and to the point.
+        return `You are a helpful assistant for a deployment agency system. ALWAYS keep your responses short and to the point. NEVER echo back instructions.
 
 Available Database Schema:
 ${dbSchema}`;
@@ -46621,7 +46623,7 @@ ${dbSchema}`;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 162 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 21 });
 })();
 
 // node_modules/zone.js/fesm2015/zone.js
