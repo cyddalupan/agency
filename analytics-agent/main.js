@@ -39515,6 +39515,10 @@ var ApiService = class _ApiService {
   getHelloMessage() {
     return this.http.get(this.phpApiUrl);
   }
+  getAiResponse(context2, message) {
+    const aiServiceUrl = "/agency/api/ai-service.php";
+    return this.http.post(aiServiceUrl, { context: context2, message });
+  }
   static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
   };
@@ -39530,11 +39534,28 @@ var ApiService = class _ApiService {
 })();
 
 // src/app/app.ts
+function AppComponent_div_20_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 6)(1, "h2", 7);
+    \u0275\u0275text(2, "AI Service Response");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "pre", 15);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "json");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r0 = \u0275\u0275nextContext();
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 1, ctx_r0.aiResponse));
+  }
+}
 var AppComponent = class _AppComponent {
   apiService;
   title = "analytics-agent";
   phpMessage = "";
   phpTimestamp = "";
+  aiResponse;
   constructor(apiService) {
     this.apiService = apiService;
   }
@@ -39544,49 +39565,72 @@ var AppComponent = class _AppComponent {
       this.phpTimestamp = data.timestamp;
     });
   }
+  triggerAiService() {
+    const context2 = "You are a helpful assistant.";
+    const message = "Tell me a short joke.";
+    this.apiService.getAiResponse(context2, message).subscribe({
+      next: (response) => {
+        this.aiResponse = response;
+        console.log("AI Service Response:", response);
+      },
+      error: (error) => {
+        console.error("Error triggering AI Service:", error);
+        this.aiResponse = { error: error.message || "Unknown error" };
+      }
+    });
+  }
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _AppComponent)(\u0275\u0275directiveInject(ApiService));
   };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 26, vars: 2, consts: [[1, "min-h-screen", "flex", "items-center", "justify-center", "p-4"], [1, "glass-container", "w-full", "max-w-md", "p-8", "rounded-xl", "shadow-2xl", "text-white"], [1, "text-4xl", "font-bold", "mb-6", "text-center"], [1, "mb-6"], [1, "text-lg", "mb-2"], [1, "text-sm", "opacity-80"], [1, "mb-6", "p-4", "rounded-lg", "glass-card"], [1, "text-2xl", "font-semibold", "mb-3"], [1, "mb-1"], [1, "font-medium"], ["for", "name", 1, "block", "text-sm", "font-medium", "mb-2"], ["type", "text", "id", "name", "placeholder", "Enter your name", 1, "w-full", "p-3", "rounded-lg", "bg-white/10", "border", "border-white/20", "focus:outline-none", "focus:ring-2", "focus:ring-blue-400", "glass-input"], [1, "w-full", "py-3", "px-4", "rounded-lg", "bg-blue-500/30", "hover:bg-blue-600/40", "transition-colors", "duration-200", "text-lg", "font-semibold", "glass-button"]], template: function AppComponent_Template(rf, ctx) {
+  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 29, vars: 3, consts: [[1, "min-h-screen", "flex", "items-center", "justify-center", "p-4"], [1, "glass-container", "w-full", "max-w-md", "p-8", "rounded-xl", "shadow-2xl", "text-white"], [1, "text-4xl", "font-bold", "mb-6", "text-center"], [1, "mb-6"], [1, "text-lg", "mb-2"], [1, "text-sm", "opacity-80"], [1, "mb-6", "p-4", "rounded-lg", "glass-card"], [1, "text-2xl", "font-semibold", "mb-3"], [1, "mb-1"], [1, "font-medium"], ["class", "mb-6 p-4 rounded-lg glass-card", 4, "ngIf"], ["for", "name", 1, "block", "text-sm", "font-medium", "mb-2"], ["type", "text", "id", "name", "placeholder", "Enter your name", 1, "w-full", "p-3", "rounded-lg", "bg-white/10", "border", "border-white/20", "focus:outline-none", "focus:ring-2", "focus:ring-blue-400", "glass-input"], [1, "w-full", "py-3", "px-4", "rounded-lg", "bg-blue-500/30", "hover:bg-blue-600/40", "transition-colors", "duration-200", "text-lg", "font-semibold", "glass-button", "mb-4", 3, "click"], [1, "w-full", "py-3", "px-4", "rounded-lg", "bg-blue-500/30", "hover:bg-blue-600/40", "transition-colors", "duration-200", "text-lg", "font-semibold", "glass-button"], [1, "whitespace-pre-wrap", "text-sm"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
-      \u0275\u0275domElementStart(0, "div", 0)(1, "div", 1)(2, "h1", 2);
+      \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h1", 2);
       \u0275\u0275text(3, "Liquid Glass App");
-      \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(4, "div", 3)(5, "p", 4);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(4, "div", 3)(5, "p", 4);
       \u0275\u0275text(6, "Welcome to your new Angular application with a stunning liquid glass design!");
-      \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(7, "p", 5);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(7, "p", 5);
       \u0275\u0275text(8, "This is a demonstration of how the glassmorphism effect can be applied to various UI elements.");
-      \u0275\u0275domElementEnd()();
-      \u0275\u0275domElementStart(9, "div", 6)(10, "h2", 7);
+      \u0275\u0275elementEnd()();
+      \u0275\u0275elementStart(9, "div", 6)(10, "h2", 7);
       \u0275\u0275text(11, "PHP API Data");
-      \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(12, "p", 8);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(12, "p", 8);
       \u0275\u0275text(13, "Message: ");
-      \u0275\u0275domElementStart(14, "span", 9);
+      \u0275\u0275elementStart(14, "span", 9);
       \u0275\u0275text(15);
-      \u0275\u0275domElementEnd()();
-      \u0275\u0275domElementStart(16, "p");
+      \u0275\u0275elementEnd()();
+      \u0275\u0275elementStart(16, "p");
       \u0275\u0275text(17, "Timestamp: ");
-      \u0275\u0275domElementStart(18, "span", 9);
+      \u0275\u0275elementStart(18, "span", 9);
       \u0275\u0275text(19);
-      \u0275\u0275domElementEnd()()();
-      \u0275\u0275domElementStart(20, "div", 3)(21, "label", 10);
-      \u0275\u0275text(22, "Your Name");
-      \u0275\u0275domElementEnd();
-      \u0275\u0275domElement(23, "input", 11);
-      \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(24, "button", 12);
-      \u0275\u0275text(25, " Submit ");
-      \u0275\u0275domElementEnd()()();
+      \u0275\u0275elementEnd()()();
+      \u0275\u0275template(20, AppComponent_div_20_Template, 6, 3, "div", 10);
+      \u0275\u0275elementStart(21, "div", 3)(22, "label", 11);
+      \u0275\u0275text(23, "Your Name");
+      \u0275\u0275elementEnd();
+      \u0275\u0275element(24, "input", 12);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(25, "button", 13);
+      \u0275\u0275listener("click", function AppComponent_Template_button_click_25_listener() {
+        return ctx.triggerAiService();
+      });
+      \u0275\u0275text(26, " Trigger AI Service ");
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(27, "button", 14);
+      \u0275\u0275text(28, " Submit ");
+      \u0275\u0275elementEnd()()();
     }
     if (rf & 2) {
       \u0275\u0275advance(15);
       \u0275\u0275textInterpolate(ctx.phpMessage);
       \u0275\u0275advance(4);
       \u0275\u0275textInterpolate(ctx.phpTimestamp);
+      \u0275\u0275advance();
+      \u0275\u0275property("ngIf", ctx.aiResponse);
     }
-  }, dependencies: [CommonModule], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
+  }, dependencies: [CommonModule, NgIf, JsonPipe], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppComponent, [{
@@ -39607,11 +39651,21 @@ var AppComponent = class _AppComponent {
           <p>Timestamp: <span class="font-medium">{{ phpTimestamp }}</span></p>
         </div>
 
+        <div class="mb-6 p-4 rounded-lg glass-card" *ngIf="aiResponse">
+          <h2 class="text-2xl font-semibold mb-3">AI Service Response</h2>
+          <pre class="whitespace-pre-wrap text-sm">{{ aiResponse | json }}</pre>
+        </div>
+
         <div class="mb-6">
           <label for="name" class="block text-sm font-medium mb-2">Your Name</label>
           <input type="text" id="name" placeholder="Enter your name"
                  class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400 glass-input">
         </div>
+
+        <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button mb-4"
+                (click)="triggerAiService()">
+          Trigger AI Service
+        </button>
 
         <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button">
           Submit
@@ -39622,7 +39676,7 @@ var AppComponent = class _AppComponent {
   }], () => [{ type: ApiService }], null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 40 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 49 });
 })();
 
 // node_modules/zone.js/fesm2015/zone.js
