@@ -39,11 +39,6 @@ if (!isset($data['sql']) || !isset($data['params'])) {
 $sql = trim($data['sql']);
 $params = $data['params']; // Array of {type: string, value: any}
 
-// --- TEMPORARY DEBUGGING LINE --- 
-echo json_encode(['debug_params' => $params, 'debug_sql' => $sql]);
-exit();
-// --- END TEMPORARY DEBUGGING LINE ---
-
 // --- Security Checks ---
 
 // 1. Whitelist Query Types
@@ -99,13 +94,15 @@ if ($stmt === false) {
 // Bind parameters
 if (!empty($params)) {
     $types = '';
-    $bind_values = [];
-    foreach ($params as $param) {
-        $types .= $param['type'];
-        $bind_values[] = &$param['value']; // Pass by reference for call_user_func_array
+    $bind_names = ['types' => $types];
+    for ($i = 0; $i < count($params); $i++) {
+        $types .= $params[$i]['type'];
+        $bind_name = 'p' . $i;
+        $$bind_name = $params[$i]['value'];
+        $bind_names[$bind_name] = &$$bind_name;
     }
-    array_unshift($bind_values, $types);
-    call_user_func_array([$stmt, 'bind_param'], $bind_values);
+    $bind_names['types'] = $types;
+    call_user_func_array([$stmt, 'bind_param'], $bind_names);
 }
 
 // Execute statement
