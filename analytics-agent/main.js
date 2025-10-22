@@ -1201,6 +1201,164 @@ var BehaviorSubject = class extends Subject {
   }
 };
 
+// node_modules/rxjs/dist/esm/internal/scheduler/dateTimestampProvider.js
+var dateTimestampProvider = {
+  now() {
+    return (dateTimestampProvider.delegate || Date).now();
+  },
+  delegate: void 0
+};
+
+// node_modules/rxjs/dist/esm/internal/scheduler/Action.js
+var Action = class extends Subscription {
+  constructor(scheduler, work) {
+    super();
+  }
+  schedule(state, delay = 0) {
+    return this;
+  }
+};
+
+// node_modules/rxjs/dist/esm/internal/scheduler/intervalProvider.js
+var intervalProvider = {
+  setInterval(handler, timeout, ...args) {
+    const { delegate } = intervalProvider;
+    if (delegate === null || delegate === void 0 ? void 0 : delegate.setInterval) {
+      return delegate.setInterval(handler, timeout, ...args);
+    }
+    return setInterval(handler, timeout, ...args);
+  },
+  clearInterval(handle) {
+    const { delegate } = intervalProvider;
+    return ((delegate === null || delegate === void 0 ? void 0 : delegate.clearInterval) || clearInterval)(handle);
+  },
+  delegate: void 0
+};
+
+// node_modules/rxjs/dist/esm/internal/scheduler/AsyncAction.js
+var AsyncAction = class extends Action {
+  constructor(scheduler, work) {
+    super(scheduler, work);
+    this.scheduler = scheduler;
+    this.work = work;
+    this.pending = false;
+  }
+  schedule(state, delay = 0) {
+    var _a;
+    if (this.closed) {
+      return this;
+    }
+    this.state = state;
+    const id = this.id;
+    const scheduler = this.scheduler;
+    if (id != null) {
+      this.id = this.recycleAsyncId(scheduler, id, delay);
+    }
+    this.pending = true;
+    this.delay = delay;
+    this.id = (_a = this.id) !== null && _a !== void 0 ? _a : this.requestAsyncId(scheduler, this.id, delay);
+    return this;
+  }
+  requestAsyncId(scheduler, _id, delay = 0) {
+    return intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay);
+  }
+  recycleAsyncId(_scheduler, id, delay = 0) {
+    if (delay != null && this.delay === delay && this.pending === false) {
+      return id;
+    }
+    if (id != null) {
+      intervalProvider.clearInterval(id);
+    }
+    return void 0;
+  }
+  execute(state, delay) {
+    if (this.closed) {
+      return new Error("executing a cancelled action");
+    }
+    this.pending = false;
+    const error = this._execute(state, delay);
+    if (error) {
+      return error;
+    } else if (this.pending === false && this.id != null) {
+      this.id = this.recycleAsyncId(this.scheduler, this.id, null);
+    }
+  }
+  _execute(state, _delay) {
+    let errored = false;
+    let errorValue;
+    try {
+      this.work(state);
+    } catch (e) {
+      errored = true;
+      errorValue = e ? e : new Error("Scheduled action threw falsy error");
+    }
+    if (errored) {
+      this.unsubscribe();
+      return errorValue;
+    }
+  }
+  unsubscribe() {
+    if (!this.closed) {
+      const { id, scheduler } = this;
+      const { actions } = scheduler;
+      this.work = this.state = this.scheduler = null;
+      this.pending = false;
+      arrRemove(actions, this);
+      if (id != null) {
+        this.id = this.recycleAsyncId(scheduler, id, null);
+      }
+      this.delay = null;
+      super.unsubscribe();
+    }
+  }
+};
+
+// node_modules/rxjs/dist/esm/internal/Scheduler.js
+var Scheduler = class _Scheduler {
+  constructor(schedulerActionCtor, now = _Scheduler.now) {
+    this.schedulerActionCtor = schedulerActionCtor;
+    this.now = now;
+  }
+  schedule(work, delay = 0, state) {
+    return new this.schedulerActionCtor(this, work).schedule(state, delay);
+  }
+};
+Scheduler.now = dateTimestampProvider.now;
+
+// node_modules/rxjs/dist/esm/internal/scheduler/AsyncScheduler.js
+var AsyncScheduler = class extends Scheduler {
+  constructor(SchedulerAction, now = Scheduler.now) {
+    super(SchedulerAction, now);
+    this.actions = [];
+    this._active = false;
+  }
+  flush(action) {
+    const { actions } = this;
+    if (this._active) {
+      actions.push(action);
+      return;
+    }
+    let error;
+    this._active = true;
+    do {
+      if (error = action.execute(action.state, action.delay)) {
+        break;
+      }
+    } while (action = actions.shift());
+    this._active = false;
+    if (error) {
+      while (action = actions.shift()) {
+        action.unsubscribe();
+      }
+      throw error;
+    }
+  }
+};
+
+// node_modules/rxjs/dist/esm/internal/scheduler/async.js
+var asyncScheduler = new AsyncScheduler(AsyncAction);
+var async = asyncScheduler;
+
 // node_modules/rxjs/dist/esm/internal/observable/empty.js
 var EMPTY = new Observable((subscriber) => subscriber.complete());
 
@@ -1643,6 +1801,11 @@ var EmptyError = createErrorClass((_super) => function EmptyErrorImpl() {
   this.message = "no elements in sequence";
 });
 
+// node_modules/rxjs/dist/esm/internal/util/isDate.js
+function isValidDate(value) {
+  return value instanceof Date && !isNaN(value);
+}
+
 // node_modules/rxjs/dist/esm/internal/operators/map.js
 function map(project, thisArg) {
   return operate((source, subscriber) => {
@@ -1858,6 +2021,35 @@ function forkJoin(...args) {
   return resultSelector ? result.pipe(mapOneOrManyArgs(resultSelector)) : result;
 }
 
+// node_modules/rxjs/dist/esm/internal/observable/timer.js
+function timer(dueTime = 0, intervalOrScheduler, scheduler = async) {
+  let intervalDuration = -1;
+  if (intervalOrScheduler != null) {
+    if (isScheduler(intervalOrScheduler)) {
+      scheduler = intervalOrScheduler;
+    } else {
+      intervalDuration = intervalOrScheduler;
+    }
+  }
+  return new Observable((subscriber) => {
+    let due = isValidDate(dueTime) ? +dueTime - scheduler.now() : dueTime;
+    if (due < 0) {
+      due = 0;
+    }
+    let n = 0;
+    return scheduler.schedule(function() {
+      if (!subscriber.closed) {
+        subscriber.next(n++);
+        if (0 <= intervalDuration) {
+          this.schedule(void 0, intervalDuration);
+        } else {
+          subscriber.complete();
+        }
+      }
+    }, due);
+  });
+}
+
 // node_modules/rxjs/dist/esm/internal/operators/filter.js
 function filter(predicate, thisArg) {
   return operate((source, subscriber) => {
@@ -1996,6 +2188,33 @@ function takeLast(count) {
 function last2(predicate, defaultValue) {
   const hasDefaultValue = arguments.length >= 2;
   return (source) => source.pipe(predicate ? filter((v, i) => predicate(v, i, source)) : identity, takeLast(1), hasDefaultValue ? defaultIfEmpty(defaultValue) : throwIfEmpty(() => new EmptyError()));
+}
+
+// node_modules/rxjs/dist/esm/internal/operators/retryWhen.js
+function retryWhen(notifier) {
+  return operate((source, subscriber) => {
+    let innerSub;
+    let syncResub = false;
+    let errors$;
+    const subscribeForRetryWhen = () => {
+      innerSub = source.subscribe(createOperatorSubscriber(subscriber, void 0, void 0, (err) => {
+        if (!errors$) {
+          errors$ = new Subject();
+          innerFrom(notifier(errors$)).subscribe(createOperatorSubscriber(subscriber, () => innerSub ? subscribeForRetryWhen() : syncResub = true));
+        }
+        if (errors$) {
+          errors$.next(err);
+        }
+      }));
+      if (syncResub) {
+        innerSub.unsubscribe();
+        innerSub = null;
+        syncResub = false;
+        subscribeForRetryWhen();
+      }
+    };
+    subscribeForRetryWhen();
+  });
 }
 
 // node_modules/rxjs/dist/esm/internal/operators/scan.js
@@ -27493,8 +27712,8 @@ function invalidPipeArgumentError(type, value) {
   return new RuntimeError(2100, ngDevMode && `InvalidPipeArgument: '${value}' for pipe '${stringify(type)}'`);
 }
 var SubscribableStrategy = class {
-  createSubscription(async, updateLatestValue, onError) {
-    return untracked2(() => async.subscribe({
+  createSubscription(async2, updateLatestValue, onError) {
+    return untracked2(() => async2.subscribe({
       next: updateLatestValue,
       error: onError
     }));
@@ -27504,8 +27723,8 @@ var SubscribableStrategy = class {
   }
 };
 var PromiseStrategy = class {
-  createSubscription(async, updateLatestValue, onError) {
-    async.then(
+  createSubscription(async2, updateLatestValue, onError) {
+    async2.then(
       // Using optional chaining because we may have set it to `null`; since the promise
       // is async, the view might be destroyed by the time the promise resolves.
       (v) => updateLatestValue?.(v),
@@ -27579,8 +27798,8 @@ var AsyncPipe = class _AsyncPipe {
     this._subscription = null;
     this._obj = null;
   }
-  _updateLatestValue(async, value) {
-    if (async === this._obj) {
+  _updateLatestValue(async2, value) {
+    if (async2 === this._obj) {
       this._latestValue = value;
       if (this.markForCheckOnValueUpdate) {
         this._ref?.markForCheck();
@@ -46240,6 +46459,18 @@ applicant_contacts_4 (Full texts)
 `;
 
 // src/app/api.ts
+var retryWithDelay = (delayMs, maxRetries = 1) => {
+  return (errors) => {
+    return errors.pipe(concatMap((error, iteration) => {
+      if (iteration < maxRetries) {
+        console.warn(`API call failed, retrying in ${delayMs / 1e3} seconds... (Attempt ${iteration + 1}/${maxRetries})`, error);
+        return timer(delayMs);
+      } else {
+        return throwError(() => new Error(`API call failed after ${maxRetries} retries.`));
+      }
+    }));
+  };
+};
 var ApiService = class _ApiService {
   http;
   phpApiUrl = "/agency/api/hello.php";
@@ -46264,7 +46495,7 @@ var ApiService = class _ApiService {
     return hexHash;
   }
   getHelloMessage() {
-    return this.http.get(this.phpApiUrl);
+    return this.http.get(this.phpApiUrl).pipe(retryWhen(retryWithDelay(5e3)));
   }
   getAiResponse(context2, message, role = "collaborate") {
     const aiServiceUrl = "/agency/api/ai-service.php";
@@ -46272,7 +46503,7 @@ var ApiService = class _ApiService {
       const headers = new HttpHeaders({
         "X-API-KEY": apiKey
       });
-      return this.http.post(aiServiceUrl, { context: context2, message, role }, { headers });
+      return this.http.post(aiServiceUrl, { context: context2, message, role }, { headers }).pipe(retryWhen(retryWithDelay(5e3)));
     }));
   }
   executeQuery(sql, params) {
@@ -46280,7 +46511,7 @@ var ApiService = class _ApiService {
       const headers = new HttpHeaders({
         "X-API-KEY": apiKey
       });
-      return this.http.post(this.queryExecutorUrl, { sql, params }, { headers });
+      return this.http.post(this.queryExecutorUrl, { sql, params }, { headers }).pipe(retryWhen(retryWithDelay(5e3)));
     }));
   }
   saveChatHistory(message, reply) {
@@ -48084,7 +48315,7 @@ function patchTimer(window2, setName, cancelName, nameSuffix) {
         args
       };
       const callback = args[0];
-      args[0] = function timer() {
+      args[0] = function timer2() {
         try {
           return callback.apply(this, arguments);
         } finally {

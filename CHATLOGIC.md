@@ -28,16 +28,15 @@
 ---
 
 ### [2] Analysis AI (start of execution phase)
-- **Purpose**: To summarize the user's intent and the clarified context into a concise brief for the Breakdown AI.
+- **Purpose**: To summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI.
 - **Trigger**: Automatic, upon receiving `[[COLLAB_DONE]]`.
 - **Inputs**:
-    - The structured context object from the Collaboration AI.
+    - The entire conversation history (including the Collaboration AI's output with `[[COLLAB_DONE]]`).
 - **Core Logic**:
-    - Parses the context object.
-    - Identifies the core intent, key entities, and constraints.
+    - Analyzes the conversation history to identify the core intent, key entities, and constraints.
     - Formulates a high-level summary of the task to be performed. This step ensures the core requirement is understood before planning the execution steps.
 - **Output**:
-    - A summarized intent string or object (e.g., "Task: Retrieve enterprise users inactive for >30 days.").
+    - A summarized intent string or object (e.g., "Task: Retrieve enterprise users inactive for >30 days."), stored in the `execution_context` array for subsequent AI stages. This output is NOT saved to the chat history database.
 
 ---
 

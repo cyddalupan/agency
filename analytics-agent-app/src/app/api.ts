@@ -1,7 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, from } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { Observable, from, throwError, timer } from 'rxjs'; // Added throwError, timer
+import { switchMap, retryWhen, delay, take, concatMap } from 'rxjs/operators'; // Added retryWhen, delay, take, concatMap
+
+// Helper function for retrying with a delay
+const retryWithDelay = (delayMs: number, maxRetries: number = 1) => { // maxRetries set to 1 for a single retry
+  return (errors: Observable<any>) => {
+    return errors.pipe(
+      concatMap((error, iteration) => {
+        if (iteration < maxRetries) {
+          console.warn(`API call failed, retrying in ${delayMs / 1000} seconds... (Attempt ${iteration + 1}/${maxRetries})`, error);
+          return timer(delayMs);
+        } else {
+          return throwError(() => new Error(`API call failed after ${maxRetries} retries.`));
+        }
+      })
+    );
+  };
+};
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +46,9 @@ export class ApiService {
   }
 
   getHelloMessage(): Observable<{ message: string, timestamp: string }> {
-    return this.http.get<{ message: string, timestamp: string }>(this.phpApiUrl);
+    return this.http.get<{ message: string, timestamp: string }>(this.phpApiUrl).pipe(
+      retryWhen(retryWithDelay(5000))
+    );
   }
 
   getAiResponse(context: string | any[], message: string, role: string = 'collaborate'): Observable<any> {
@@ -40,7 +58,9 @@ export class ApiService {
         const headers = new HttpHeaders({
           'X-API-KEY': apiKey
         });
-        return this.http.post<any>(aiServiceUrl, { context, message, role }, { headers });
+        return this.http.post<any>(aiServiceUrl, { context, message, role }, { headers }).pipe(
+          retryWhen(retryWithDelay(5000))
+        );
       })
     );
   }
@@ -51,7 +71,9 @@ export class ApiService {
         const headers = new HttpHeaders({
           'X-API-KEY': apiKey
         });
-        return this.http.post<any>(this.queryExecutorUrl, { sql, params }, { headers });
+        return this.http.post<any>(this.queryExecutorUrl, { sql, params }, { headers }).pipe(
+          retryWhen(retryWithDelay(5000))
+        );
       })
     );
   }
