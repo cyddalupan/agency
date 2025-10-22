@@ -22,7 +22,7 @@ function generateDailyApiKey($baseString = 'cyd') {
 
 // Validate API Key
 $expectedApiKey = generateDailyApiKey();
-$receivedApiKey = $_SERVER['HTTP_X_API_KEY'] ?? '';
+$receivedApiKey = isset($_SERVER['HTTP_X_API_KEY']) ? $_SERVER['HTTP_X_API_KEY'] : '';
 
 log_debug('Expected API Key: ' . $expectedApiKey);
 log_debug('Received API Key: ' . $receivedApiKey);
