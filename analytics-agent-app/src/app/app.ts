@@ -88,8 +88,14 @@ export class AppComponent implements AfterViewChecked, OnInit {
 
     this.isLoading = true; // Set loading to true before API call
 
+    // Prepare context for AI (last 10 messages, 5 user and 5 AI)
+    const contextMessages = this.messages.slice(-10).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
+
     // Call AI service
-    this.apiService.getAiResponse([], userMessage).subscribe({
+    this.apiService.getAiResponse(contextMessages, userMessage).subscribe({
       next: (response: any) => { // Type as any for now, or define a more specific interface if needed
         const aiContent = response.choices?.[0]?.message?.content;
         this.messages.push({

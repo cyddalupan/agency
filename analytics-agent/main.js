@@ -46279,7 +46279,11 @@ var AppComponent = class _AppComponent {
     this.newMessage = "";
     this.resetTextareaHeight();
     this.isLoading = true;
-    this.apiService.getAiResponse([], userMessage).subscribe({
+    const contextMessages = this.messages.slice(-10).map((msg) => ({
+      role: msg.sender === "user" ? "user" : "assistant",
+      content: msg.content
+    }));
+    this.apiService.getAiResponse(contextMessages, userMessage).subscribe({
       next: (response) => {
         const aiContent = response.choices?.[0]?.message?.content;
         this.messages.push({
