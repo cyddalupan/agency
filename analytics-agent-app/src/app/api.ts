@@ -62,4 +62,9 @@ export class ApiService {
     const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "\'")}', '${reply.replace(/'/g, "\'")}', NOW())`;
     return this.executeQuery(sql, []);
   }
+
+  getChatHistory(): Observable<any> {
+    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp ASC`;
+    return this.executeQuery(sql, []);
+  }
 }

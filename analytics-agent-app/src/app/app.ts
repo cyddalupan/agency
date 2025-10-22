@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { ApiService } from './api'; // Corrected import path for ApiService
@@ -17,7 +17,7 @@ const MAX_TEXTAREA_HEIGHT = 150; // Maximum height for the textarea in pixels
   templateUrl: './app.component.html',
   styleUrl: './app.css'
 })
-export class AppComponent implements AfterViewChecked {
+export class AppComponent implements AfterViewChecked, OnInit {
   title = 'analytics-agent';
   messages: Message[] = [];
   newMessage: string = '';
@@ -27,11 +27,35 @@ export class AppComponent implements AfterViewChecked {
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
 
-  constructor(private apiService: ApiService) { // Inject ApiService
-    // Initial AI message
-    this.messages.push({
-      sender: 'ai',
-      content: 'Hello! How can I help you today?'
+  constructor(private apiService: ApiService) { }
+
+  ngOnInit(): void {
+    // Load chat history on component initialization
+    this.apiService.getChatHistory().subscribe({
+      next: (history: any) => {
+        if (history && history.results) {
+          // Clear initial AI message if history is loaded
+          this.messages = [];
+          history.results.forEach((item: any) => {
+            this.messages.push({ sender: 'user', content: item.message });
+            this.messages.push({ sender: 'ai', content: item.reply });
+          });
+        } else {
+          // If no history, add initial AI message
+          this.messages.push({
+            sender: 'ai',
+            content: 'Hello! How can I help you today?'
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading chat history:', error);
+        // If error loading history, add initial AI message
+        this.messages.push({
+          sender: 'ai',
+          content: 'Hello! How can I help you today?'
+        });
+      }
     });
   }
 
@@ -79,7 +103,7 @@ export class AppComponent implements AfterViewChecked {
           error: (saveError) => console.error('Error saving chat history:', saveError)
         });
       },
-      error: (error: any) => { // Explicitly type error
+      error: (error: any) => {
         console.error('Error fetching AI response:', error);
         this.messages.push({
           sender: 'ai',

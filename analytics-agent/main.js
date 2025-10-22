@@ -46144,6 +46144,10 @@ var ApiService = class _ApiService {
     const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "'")}', '${reply.replace(/'/g, "'")}', NOW())`;
     return this.executeQuery(sql, []);
   }
+  getChatHistory() {
+    const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp ASC`;
+    return this.executeQuery(sql, []);
+  }
   static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
   };
@@ -46228,9 +46232,30 @@ var AppComponent = class _AppComponent {
   messageInput;
   constructor(apiService) {
     this.apiService = apiService;
-    this.messages.push({
-      sender: "ai",
-      content: "Hello! How can I help you today?"
+  }
+  ngOnInit() {
+    this.apiService.getChatHistory().subscribe({
+      next: (history) => {
+        if (history && history.results) {
+          this.messages = [];
+          history.results.forEach((item) => {
+            this.messages.push({ sender: "user", content: item.message });
+            this.messages.push({ sender: "ai", content: item.reply });
+          });
+        } else {
+          this.messages.push({
+            sender: "ai",
+            content: "Hello! How can I help you today?"
+          });
+        }
+      },
+      error: (error) => {
+        console.error("Error loading chat history:", error);
+        this.messages.push({
+          sender: "ai",
+          content: "Hello! How can I help you today?"
+        });
+      }
     });
   }
   ngAfterViewChecked() {
