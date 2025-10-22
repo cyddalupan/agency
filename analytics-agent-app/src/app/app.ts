@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-// import { RouterOutlet } from '@angular/router'; // Removed RouterOutlet as it's not used
-import { ApiService } from './api'; // Corrected import path: removed .ts extension
+import { ApiService } from './api';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule], // Removed RouterOutlet
+  imports: [CommonModule],
   template: `
     <div class="min-h-screen flex items-center justify-center p-4">
       <div class="glass-container w-full max-w-md p-8 rounded-xl shadow-2xl text-white">
@@ -23,11 +22,21 @@ import { ApiService } from './api'; // Corrected import path: removed .ts extens
           <p>Timestamp: <span class="font-medium">{{ phpTimestamp }}</span></p>
         </div>
 
+        <div class="mb-6 p-4 rounded-lg glass-card" *ngIf="aiResponse">
+          <h2 class="text-2xl font-semibold mb-3">AI Service Response</h2>
+          <pre class="whitespace-pre-wrap text-sm">{{ aiResponse | json }}</pre>
+        </div>
+
         <div class="mb-6">
           <label for="name" class="block text-sm font-medium mb-2">Your Name</label>
           <input type="text" id="name" placeholder="Enter your name"
                  class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400 glass-input">
         </div>
+
+        <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button mb-4"
+                (click)="triggerAiService()">
+          Trigger AI Service
+        </button>
 
         <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button">
           Submit
@@ -41,6 +50,7 @@ export class AppComponent implements OnInit {
   title = 'analytics-agent';
   phpMessage: string = '';
   phpTimestamp: string = '';
+  aiResponse: any;
 
   constructor(private apiService: ApiService) {}
 
@@ -48,6 +58,22 @@ export class AppComponent implements OnInit {
     this.apiService.getHelloMessage().subscribe(data => {
       this.phpMessage = data.message;
       this.phpTimestamp = data.timestamp;
+    });
+  }
+
+  triggerAiService(): void {
+    const context = 'You are a helpful assistant.';
+    const message = 'Tell me a short joke.';
+
+    this.apiService.getAiResponse(context, message).subscribe({
+      next: (response) => {
+        this.aiResponse = response;
+        console.log('AI Service Response:', response);
+      },
+      error: (error) => {
+        console.error('Error triggering AI Service:', error);
+        this.aiResponse = { error: error.message || 'Unknown error' };
+      }
     });
   }
 }
