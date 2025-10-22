@@ -55,4 +55,11 @@ export class ApiService {
       })
     );
   }
+
+  saveChatHistory(message: string, reply: string): Observable<any> {
+    // IMPORTANT: This directly embeds values into the SQL string. In a production environment,
+    // you should use parameterized queries to prevent SQL injection.
+    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "\'")}', '${reply.replace(/'/g, "\'")}', NOW())`;
+    return this.executeQuery(sql, []);
+  }
 }

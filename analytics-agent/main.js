@@ -46140,6 +46140,10 @@ var ApiService = class _ApiService {
       return this.http.post(this.queryExecutorUrl, { sql, params }, { headers });
     }));
   }
+  saveChatHistory(message, reply) {
+    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "'")}', '${reply.replace(/'/g, "'")}', NOW())`;
+    return this.executeQuery(sql, []);
+  }
   static \u0275fac = function ApiService_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _ApiService)(\u0275\u0275inject(HttpClient));
   };
@@ -46258,6 +46262,10 @@ var AppComponent = class _AppComponent {
         });
         this.isLoading = false;
         this.showThinkingModal = false;
+        this.apiService.saveChatHistory(userMessage, aiContent || "No response from AI.").subscribe({
+          next: (saveResponse) => console.log("Chat history saved:", saveResponse),
+          error: (saveError) => console.error("Error saving chat history:", saveError)
+        });
       },
       error: (error) => {
         console.error("Error fetching AI response:", error);

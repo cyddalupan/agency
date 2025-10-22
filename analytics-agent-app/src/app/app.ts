@@ -72,6 +72,12 @@ export class AppComponent implements AfterViewChecked {
         });
         this.isLoading = false; // Set loading to false after successful response
         this.showThinkingModal = false; // Close modal on response
+
+        // Save chat history after a successful AI reply
+        this.apiService.saveChatHistory(userMessage, aiContent || 'No response from AI.').subscribe({
+          next: (saveResponse) => console.log('Chat history saved:', saveResponse),
+          error: (saveError) => console.error('Error saving chat history:', saveError)
+        });
       },
       error: (error: any) => { // Explicitly type error
         console.error('Error fetching AI response:', error);
