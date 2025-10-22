@@ -125,11 +125,21 @@ if ($execute_success === false) {
         }
     } else {
         // For INSERT, UPDATE, DELETE, return affected rows or success message
-        echo json_encode([
-            'message' => 'Query executed successfully',
-            'affected_rows' => mysqli_stmt_affected_rows($stmt),
-            'insert_id' => mysqli_stmt_insert_id($stmt) // Will be 0 for UPDATE/DELETE
-        ]);
+        if ($execute_success) {
+            echo json_encode([
+                'message' => 'Query executed successfully',
+                'affected_rows' => mysqli_stmt_affected_rows($stmt),
+                'insert_id' => mysqli_stmt_insert_id($stmt) // Will be 0 for UPDATE/DELETE
+            ]);
+        } else {
+            // Provide detailed error for failed execution
+            http_response_code(500); // Keep 500 for now, but with more info
+            echo json_encode([
+                'error' => 'Statement execution failed for non-SELECT query: ' . mysqli_stmt_error($stmt),
+                'sql_state' => mysqli_stmt_sqlstate($stmt),
+                'errno' => mysqli_stmt_errno($stmt)
+            ]);
+        }
     }
 }
 
