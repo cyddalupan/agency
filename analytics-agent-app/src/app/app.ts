@@ -89,7 +89,7 @@ export class AppComponent implements OnInit {
   }
 
   triggerQueryExecutor(): void {
-    const sql = 'SELECT * FROM applicant ORDER BY id DESC LIMIT 1';
+    const sql = 'SELECT * FROM applicant ORDER BY applicant_id DESC LIMIT 1';
     const params: { type: string, value: any }[] = []; // No parameters for this query
 
     this.apiService.executeQuery(sql, params).subscribe({

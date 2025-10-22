@@ -39601,7 +39601,7 @@ var AppComponent = class _AppComponent {
     });
   }
   triggerQueryExecutor() {
-    const sql = "SELECT * FROM applicant ORDER BY id DESC LIMIT 1";
+    const sql = "SELECT * FROM applicant ORDER BY applicant_id DESC LIMIT 1";
     const params = [];
     this.apiService.executeQuery(sql, params).subscribe({
       next: (response) => {
