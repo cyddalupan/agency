@@ -39514,7 +39514,7 @@ var AppComponent = class _AppComponent {
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _AppComponent)();
   };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 92, vars: 0, consts: [["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], [1, "flex", "justify-start"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "font-bold"], [1, "flex", "justify-end"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "bg-blue-700/30"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "input"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold"]], template: function AppComponent_Template(rf, ctx) {
+  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 92, vars: 0, consts: [["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], [1, "flex", "justify-start"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "font-bold"], [1, "flex", "justify-end"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "user-message-bubble"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "input"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
       const _r1 = \u0275\u0275getCurrentView();
       \u0275\u0275domElementStart(0, "div", 1)(1, "div", 2)(2, "div", 3)(3, "div", 4)(4, "p")(5, "span", 5);
@@ -39598,12 +39598,12 @@ var AppComponent = class _AppComponent {
       \u0275\u0275text(91, " Send ");
       \u0275\u0275domElementEnd()()()();
     }
-  }, dependencies: [CommonModule], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
+  }, dependencies: [CommonModule], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.15);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppComponent, [{
     type: Component,
-    args: [{ selector: "app-root", standalone: true, imports: [CommonModule], template: `<div class="flex flex-col h-screen text-white">
+    args: [{ selector: "app-root", standalone: true, imports: [CommonModule], template: `<div class="flex flex-col h-screen text-white bg-transparent">
   <!-- Chat Area -->
   <div class="flex-1 overflow-y-auto p-4 space-y-4">
     <!-- Temporary Chat Messages -->
@@ -39614,7 +39614,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> I need assistance with my project. Specifically, I'm working on an Angular application and I'm trying to implement a new chat interface. I've already moved the HTML template to a separate file and now I'm focusing on the design and functionality of the chat bubbles, input area, and ensuring the background image is visible. It's a bit challenging to get everything to align perfectly with the glassmorphism effect I'm aiming for.</p>
       </div>
     </div>
@@ -39626,7 +39626,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> I'm trying to refactor some Angular code. The main issue right now is that the background image isn't showing up. I suspect it's being covered by a \`background-color\` somewhere. Also, I want to make sure the chat bubbles look good and the input area expands correctly as I type. I'm using Tailwind CSS, so I need to be careful with how I apply custom styles alongside utility classes.</p>
       </div>
     </div>
@@ -39638,7 +39638,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> I'm looking at the main component, \`app.component.ts\`, and its template. I've already moved the HTML to a separate file. Now I'm thinking about the overall design and how to integrate the glassmorphism effect seamlessly. I want to ensure that the chat interface is intuitive and visually appealing, providing a great user experience. The long text messages are for testing the scrolling behavior, so it's important that the scrollbar appears and functions correctly.</p>
       </div>
     </div>
@@ -39650,7 +39650,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> Yes, I've already moved the HTML to a separate file. Now I'm thinking about the overall design. I want something modern, with a focus on user experience. Maybe a dark theme with some subtle animations. The key is to make it feel responsive and fluid, even with a lot of content. I'm also considering how to handle different types of messages, like images or links, but that's for a later stage. For now, just getting the basic chat functionality and design right is the priority.</p>
       </div>
     </div>
@@ -39662,7 +39662,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> I want something modern, with a focus on user experience. Maybe a dark theme with some subtle animations. The glassmorphism effect is a good start, but I want to refine it further. I'm also considering how to make it responsive for different screen sizes, ensuring that the chat interface looks good and functions well on both desktop and mobile devices. The long messages are really helping me visualize how the scroll will behave, so thank you for that. I appreciate your guidance on this project.</p>
       </div>
     </div>
@@ -39674,7 +39674,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> Exactly! I'm also considering how to make it responsive for different screen sizes. I'm thinking about using \`flexbox\` and \`grid\` for the layout, and then adjusting properties with media queries. I also want to make sure that the input area is always visible at the bottom, even when the keyboard pops up on mobile. This is a crucial aspect for a good chat experience. I'm excited to see how this project evolves with your help!</p>
       </div>
     </div>
@@ -39686,7 +39686,7 @@ var AppComponent = class _AppComponent {
     </div>
 
     <div class="flex justify-end">
-      <div class="glass-card p-3 rounded-lg max-w-xl bg-blue-700/30">
+      <div class="glass-card p-3 rounded-lg max-w-xl user-message-bubble">
         <p><span class="font-bold">User:</span> Thanks for the advice! I'll keep that in mind as I continue to develop the application. I'm really learning a lot through this process. Your insights are invaluable, and I appreciate the detailed explanations. I'm confident that with your help, I can create a truly outstanding chat application. I'll let you know if I encounter any more challenges or have further design ideas. Looking forward to our next steps!</p>
       </div>
     </div>
@@ -39707,7 +39707,7 @@ var AppComponent = class _AppComponent {
       </button>
     </div>
   </div>
-</div>`, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
+</div>`, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.08);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble {\n  background: rgba(0, 123, 255, 0.15);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
   }], null, null);
 })();
 (() => {

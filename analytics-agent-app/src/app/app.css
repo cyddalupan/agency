@@ -25,6 +25,13 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+/* Styles for user message bubbles */
+.user-message-bubble {
+  background: rgba(0, 123, 255, 0.15); /* Blue tint for user messages */
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 123, 255, 0.25);
+}
+
 /* Styles for glass input fields */
 .glass-input {
   background: rgba(255, 255, 255, 0.15); /* Increased opacity */
