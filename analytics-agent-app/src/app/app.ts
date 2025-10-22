@@ -122,19 +122,22 @@ export class AppComponent implements AfterViewChecked, OnInit {
 
         // Check for COLLAB_DONE trigger
         if (aiContent && aiContent.includes('[[COLLAB_DONE]]')) {
+          window.alert('[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.'); // Add alert
           this.currentAiRole = 'analyze'; // Transition to Analysis AI
-          // Extract context object (assuming it's a JSON string after the trigger)
+          // Extract context object (assuming it\'s a JSON string after the trigger)
           const contextStartIndex = aiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
           const contextString = aiContent.substring(contextStartIndex).trim();
           try {
             const contextObject = JSON.parse(contextString);
             console.log('Collaboration Done. Extracted Context:', contextObject);
             // You might want to store this contextObject in a service or another property
-            // For now, let's just log it and remove the trigger from the displayed message
-            aiContent = aiContent.substring(0, contextStartIndex - '[[COLLAB_DONE]]'.length).trim();
+            // For now, let\'s just log it and remove the trigger from the displayed message
+            aiContent = aiContent.replace(/(\[\[.*?\]\])/g, '').trim(); // Remove all [[...]] patterns
           } catch (e) {
             console.error('Error parsing context object:', e);
           }
+        } else {
+          aiContent = aiContent.replace(/(\[\[.*?\]\])/g, '').trim(); // Remove all [[...]] patterns even if COLLAB_DONE is not present
         }
 
         this.messages.push({

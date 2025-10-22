@@ -46457,16 +46457,19 @@ ${dbSchema}`;
       next: (response) => {
         let aiContent = response.choices?.[0]?.message?.content;
         if (aiContent && aiContent.includes("[[COLLAB_DONE]]")) {
+          window.alert("[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.");
           this.currentAiRole = "analyze";
           const contextStartIndex = aiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
           const contextString = aiContent.substring(contextStartIndex).trim();
           try {
             const contextObject = JSON.parse(contextString);
             console.log("Collaboration Done. Extracted Context:", contextObject);
-            aiContent = aiContent.substring(0, contextStartIndex - "[[COLLAB_DONE]]".length).trim();
+            aiContent = aiContent.replace(/(\[\[.*?\]\])/g, "").trim();
           } catch (e) {
             console.error("Error parsing context object:", e);
           }
+        } else {
+          aiContent = aiContent.replace(/(\[\[.*?\]\])/g, "").trim();
         }
         this.messages.push({
           sender: "ai",
