@@ -46468,54 +46468,35 @@ ${dbSchema}`;
         let displayContent = rawAiContent || "No response from AI.";
         if (rawAiContent && rawAiContent.includes("[[COLLAB_DONE]]")) {
           this.currentAiRole = "analyze";
-          const contextStartIndex = rawAiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
-          const contextString = rawAiContent.substring(contextStartIndex).trim();
-          try {
-            const contextObject = JSON.parse(contextString);
-            console.log("Collaboration Done. Extracted Context:", contextObject);
-            this.currentAiRole = "analyze";
-            const analysisPrompt = this.getAiRolePrompt();
-            const analysisMessage = `Analyze the following context: ${JSON.stringify(contextObject)}`;
-            this.apiService.getAiResponse([{ role: "system", content: analysisPrompt }], analysisMessage, this.currentAiRole).subscribe({
-              next: (analysisResponse) => {
-                let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
-                let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
-                displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
-                this.messages.push({
-                  sender: "ai",
-                  content: displayAnalysisContent
-                });
-                this.isLoading = false;
-                this.showThinkingModal = false;
-                this.apiService.saveChatHistory(analysisMessage, displayAnalysisContent).subscribe({
-                  next: (saveResponse) => console.log("Analysis AI response saved:", saveResponse),
-                  error: (saveError) => console.error("Error saving Analysis AI response:", saveError)
-                });
-              },
-              error: (analysisError) => {
-                console.error("Error fetching Analysis AI response:", analysisError);
-                this.messages.push({
-                  sender: "ai",
-                  content: "Error: Could not get a response from the Analysis AI."
-                });
-                this.isLoading = false;
-                this.showThinkingModal = false;
-              }
-            });
-          } catch (e) {
-            console.error("Error parsing context object:", e);
-            displayContent = this.cleanAiContent(displayContent);
-            this.messages.push({
-              sender: "ai",
-              content: displayContent
-            });
-            this.isLoading = false;
-            this.showThinkingModal = false;
-            this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
-              next: (saveResponse) => console.log("Chat history saved:", saveResponse),
-              error: (saveError) => console.error("Error saving chat history:", saveError)
-            });
-          }
+          const analysisPrompt = this.getAiRolePrompt();
+          const analysisContextMessages = [...contextMessages];
+          analysisContextMessages.unshift({ role: "system", content: analysisPrompt });
+          this.apiService.getAiResponse(analysisContextMessages, "Analyze the conversation history.", this.currentAiRole).subscribe({
+            next: (analysisResponse) => {
+              let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
+              let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
+              displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
+              this.messages.push({
+                sender: "ai",
+                content: displayAnalysisContent
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+              this.apiService.saveChatHistory("Analyze the conversation history.", displayAnalysisContent).subscribe({
+                next: (saveResponse) => console.log("Analysis AI response saved:", saveResponse),
+                error: (saveError) => console.error("Error saving Analysis AI response:", saveError)
+              });
+            },
+            error: (analysisError) => {
+              console.error("Error fetching Analysis AI response:", analysisError);
+              this.messages.push({
+                sender: "ai",
+                content: "Error: Could not get a response from the Analysis AI."
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+            }
+          });
         } else {
           displayContent = this.cleanAiContent(displayContent);
           this.messages.push({

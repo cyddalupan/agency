@@ -133,65 +133,46 @@ export class AppComponent implements AfterViewChecked, OnInit {
         // Check for COLLAB_DONE trigger BEFORE cleaning for display
         if (rawAiContent && rawAiContent.includes('[[COLLAB_DONE]]')) {
           this.currentAiRole = 'analyze';
-          const contextStartIndex = rawAiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
-          const contextString = rawAiContent.substring(contextStartIndex).trim();
-          try {
-            const contextObject = JSON.parse(contextString);
-            console.log('Collaboration Done. Extracted Context:', contextObject);
-            // The context object is extracted from rawAiContent
 
-            // Transition to Analysis AI
-            this.currentAiRole = 'analyze';
-            const analysisPrompt = this.getAiRolePrompt(); // Get the prompt for Analysis AI
-            const analysisMessage = `Analyze the following context: ${JSON.stringify(contextObject)}`;
+          // The Analysis AI will analyze the entire conversation history
+          const analysisPrompt = this.getAiRolePrompt(); // Get the prompt for Analysis AI
+          // Pass the entire contextMessages (which includes the system prompt and recent history)
+          // to the Analysis AI for it to analyze the conversation.
+          // The last message in contextMessages will be the Collaboration AI's response with [[COLLAB_DONE]].
+          const analysisContextMessages = [...contextMessages]; // Create a copy
+          analysisContextMessages.unshift({ role: 'system', content: analysisPrompt }); // Add Analysis AI's system prompt
 
-            // Make a new API call for Analysis AI
-            this.apiService.getAiResponse([{ role: 'system', content: analysisPrompt }], analysisMessage, this.currentAiRole).subscribe({
-              next: (analysisResponse: any) => {
-                let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
-                let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
+          // Make a new API call for Analysis AI
+          this.apiService.getAiResponse(analysisContextMessages, 'Analyze the conversation history.', this.currentAiRole).subscribe({
+            next: (analysisResponse: any) => {
+              let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
+              let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
 
-                displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
+              displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
 
-                this.messages.push({
-                  sender: 'ai',
-                  content: displayAnalysisContent
-                });
-                this.isLoading = false;
-                this.showThinkingModal = false;
+              this.messages.push({
+                sender: 'ai',
+                content: displayAnalysisContent
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
 
-                // Save the Analysis AI's response to chat history
-                this.apiService.saveChatHistory(analysisMessage, displayAnalysisContent).subscribe({
-                  next: (saveResponse) => console.log('Analysis AI response saved:', saveResponse),
-                  error: (saveError) => console.error('Error saving Analysis AI response:', saveError)
-                });
-              },
-              error: (analysisError: any) => {
-                console.error('Error fetching Analysis AI response:', analysisError);
-                this.messages.push({
-                  sender: 'ai',
-                  content: 'Error: Could not get a response from the Analysis AI.'
-                });
-                this.isLoading = false;
-                this.showThinkingModal = false;
-              }
-            });
-
-          } catch (e) {
-            console.error('Error parsing context object:', e);
-            // If parsing fails, still display the original AI message (cleaned)
-            displayContent = this.cleanAiContent(displayContent);
-            this.messages.push({
-              sender: 'ai',
-              content: displayContent
-            });
-            this.isLoading = false;
-            this.showThinkingModal = false;
-            this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
-              next: (saveResponse) => console.log('Chat history saved:', saveResponse),
-              error: (saveError) => console.error('Error saving chat history:', saveError)
-            });
-          }
+              // Save the Analysis AI's response to chat history
+              this.apiService.saveChatHistory('Analyze the conversation history.', displayAnalysisContent).subscribe({
+                next: (saveResponse) => console.log('Analysis AI response saved:', saveResponse),
+                error: (saveError) => console.error('Error saving Analysis AI response:', saveError)
+              });
+            },
+            error: (analysisError: any) => {
+              console.error('Error fetching Analysis AI response:', analysisError);
+              this.messages.push({
+                sender: 'ai',
+                content: 'Error: Could not get a response from the Analysis AI.'
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+            }
+          });
         } else {
           // If no COLLAB_DONE trigger, just display and save the original AI message
           displayContent = this.cleanAiContent(displayContent);
