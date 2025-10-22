@@ -28,7 +28,7 @@
           "configurations": {
             "production": {
 		"outputPath": "dist-temp", 
-		"baseHref": "/analytics-agent/",  
+		"baseHref": "/agency/analytics-agent/",  
               "budgets": [
                 {
                   "type": "initial",
