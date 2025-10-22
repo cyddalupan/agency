@@ -57,11 +57,11 @@ export class AppComponent implements AfterViewChecked {
 
     // Call AI service
     this.apiService.getAiResponse([], userMessage).subscribe({
-      next: (response: { message: string }) => { // Explicitly type response
-        // Assuming the AI response has a 'message' field
+      next: (response: any) => { // Type as any for now, or define a more specific interface if needed
+        const aiContent = response.choices?.[0]?.message?.content;
         this.messages.push({
           sender: 'ai',
-          content: response.message || 'No response from AI.'
+          content: aiContent || 'No response from AI.'
         });
       },
       error: (error: any) => { // Explicitly type error

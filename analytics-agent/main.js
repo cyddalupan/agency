@@ -46206,9 +46206,10 @@ var AppComponent = class _AppComponent {
     this.resetTextareaHeight();
     this.apiService.getAiResponse([], userMessage).subscribe({
       next: (response) => {
+        const aiContent = response.choices?.[0]?.message?.content;
         this.messages.push({
           sender: "ai",
-          content: response.message || "No response from AI."
+          content: aiContent || "No response from AI."
         });
       },
       error: (error) => {
