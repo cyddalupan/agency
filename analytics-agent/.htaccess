@@ -1,8 +1,9 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /agency/analytics-agent/
+  RewriteBase /analytics-agent/
 
-  RewriteCond %{REQUEST_FILENAME} !-f
+  # If the requested path is a file or directory, serve it directly
+  RewriteCond %{REQUEST_FILENAME} !-f [OR]
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ index.html [L]
+  RewriteRule ^(.*)$ index.html [L]
 </IfModule>
