@@ -46386,7 +46386,7 @@ var AppComponent = class _AppComponent {
           const sortedHistory = history.data.reverse();
           sortedHistory.forEach((item) => {
             this.messages.push({ sender: "user", content: item.message });
-            this.messages.push({ sender: "ai", content: item.reply });
+            this.messages.push({ sender: "ai", content: this.cleanAiContent(item.reply) });
           });
         } else {
           this.messages.push({
@@ -46414,6 +46414,9 @@ var AppComponent = class _AppComponent {
       element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
       element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
     }
+  }
+  cleanAiContent(content) {
+    return content.replace(/(\[\[.*?\]\])/g, "").trim();
   }
   getAiRolePrompt() {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
@@ -46446,7 +46449,7 @@ ${dbSchema}`;
     });
     const userMessage = this.newMessage;
     this.newMessage = "";
-    this.resetTextareaHeight();
+    this.adjustTextareaHeight();
     this.isLoading = true;
     const contextMessages = this.messages.slice(-10).map((msg) => ({
       role: msg.sender === "user" ? "user" : "assistant",
@@ -46455,29 +46458,28 @@ ${dbSchema}`;
     contextMessages.unshift({ role: "system", content: this.getAiRolePrompt() });
     this.apiService.getAiResponse(contextMessages, userMessage, this.currentAiRole).subscribe({
       next: (response) => {
-        let aiContent = response.choices?.[0]?.message?.content;
-        if (aiContent && aiContent.includes("[[COLLAB_DONE]]")) {
+        let rawAiContent = response.choices?.[0]?.message?.content;
+        let displayContent = rawAiContent || "No response from AI.";
+        if (rawAiContent && rawAiContent.includes("[[COLLAB_DONE]]")) {
           window.alert("[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.");
           this.currentAiRole = "analyze";
-          const contextStartIndex = aiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
-          const contextString = aiContent.substring(contextStartIndex).trim();
+          const contextStartIndex = rawAiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
+          const contextString = rawAiContent.substring(contextStartIndex).trim();
           try {
             const contextObject = JSON.parse(contextString);
             console.log("Collaboration Done. Extracted Context:", contextObject);
-            aiContent = aiContent.replace(/(\[\[.*?\]\])/g, "").trim();
           } catch (e) {
             console.error("Error parsing context object:", e);
           }
-        } else {
-          aiContent = aiContent.replace(/(\[\[.*?\]\])/g, "").trim();
         }
+        displayContent = this.cleanAiContent(displayContent);
         this.messages.push({
           sender: "ai",
-          content: aiContent || "No response from AI."
+          content: displayContent
         });
         this.isLoading = false;
         this.showThinkingModal = false;
-        this.apiService.saveChatHistory(userMessage, aiContent || "No response from AI.").subscribe({
+        this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
           next: (saveResponse) => console.log("Chat history saved:", saveResponse),
           error: (saveError) => console.error("Error saving chat history:", saveError)
         });
@@ -46500,11 +46502,6 @@ ${dbSchema}`;
     try {
       this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
     } catch (err) {
-    }
-  }
-  resetTextareaHeight() {
-    if (this.messageInput && this.messageInput.nativeElement) {
-      this.messageInput.nativeElement.style.height = "auto";
     }
   }
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {

@@ -42,7 +42,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
           const sortedHistory = history.data.reverse();
           sortedHistory.forEach((item: any) => {
             this.messages.push({ sender: 'user', content: item.message });
-            this.messages.push({ sender: 'ai', content: item.reply });
+            this.messages.push({ sender: 'ai', content: this.cleanAiContent(item.reply) }); // Clean old replies
           });
         } else {
           // If no history, add initial AI message
@@ -76,6 +76,10 @@ export class AppComponent implements AfterViewChecked, OnInit {
     }
   }
 
+  private cleanAiContent(content: string): string {
+    return content.replace(/(\[\[.*?\]\])/g, '').trim();
+  }
+
   private getAiRolePrompt(): string {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
@@ -102,7 +106,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
 
     const userMessage = this.newMessage;
     this.newMessage = ''; // Clear input immediately
-    this.resetTextareaHeight();
+    this.adjustTextareaHeight(); // Call the correct adjust method
 
     this.isLoading = true; // Set loading to true before API call
 
@@ -118,37 +122,36 @@ export class AppComponent implements AfterViewChecked, OnInit {
     // Call AI service with the current AI role
     this.apiService.getAiResponse(contextMessages, userMessage, this.currentAiRole).subscribe({
       next: (response: any) => { // Type as any for now, or define a more specific interface if needed
-        let aiContent = response.choices?.[0]?.message?.content;
+        let rawAiContent = response.choices?.[0]?.message?.content;
+        let displayContent = rawAiContent || 'No response from AI.'; // Initialize with raw or default
 
-        // Check for COLLAB_DONE trigger
-        if (aiContent && aiContent.includes('[[COLLAB_DONE]]')) {
-          window.alert('[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.'); // Add alert
-          this.currentAiRole = 'analyze'; // Transition to Analysis AI
-          // Extract context object (assuming it\'s a JSON string after the trigger)
-          const contextStartIndex = aiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
-          const contextString = aiContent.substring(contextStartIndex).trim();
+        // Check for COLLAB_DONE trigger BEFORE cleaning for display
+        if (rawAiContent && rawAiContent.includes('[[COLLAB_DONE]]')) {
+          window.alert('[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.');
+          this.currentAiRole = 'analyze';
+          const contextStartIndex = rawAiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
+          const contextString = rawAiContent.substring(contextStartIndex).trim();
           try {
             const contextObject = JSON.parse(contextString);
             console.log('Collaboration Done. Extracted Context:', contextObject);
-            // You might want to store this contextObject in a service or another property
-            // For now, let\'s just log it and remove the trigger from the displayed message
-            aiContent = aiContent.replace(/(\[\[.*?\]\])/g, '').trim(); // Remove all [[...]] patterns
+            // The context object is extracted from rawAiContent
           } catch (e) {
             console.error('Error parsing context object:', e);
           }
-        } else {
-          aiContent = aiContent.replace(/(\[\[.*?\]\])/g, '').trim(); // Remove all [[...]] patterns even if COLLAB_DONE is not present
         }
+
+        // Clean the content for display and for saving to history
+        displayContent = this.cleanAiContent(displayContent);
 
         this.messages.push({
           sender: 'ai',
-          content: aiContent || 'No response from AI.'
+          content: displayContent
         });
-        this.isLoading = false; // Set loading to false after successful response
-        this.showThinkingModal = false; // Close modal on response
+        this.isLoading = false;
+        this.showThinkingModal = false;
 
-        // Save chat history after a successful AI reply
-        this.apiService.saveChatHistory(userMessage, aiContent || 'No response from AI.').subscribe({
+        // Save chat history after a successful AI reply, using the cleaned content
+        this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
           next: (saveResponse) => console.log('Chat history saved:', saveResponse),
           error: (saveError) => console.error('Error saving chat history:', saveError)
         });
@@ -159,8 +162,8 @@ export class AppComponent implements AfterViewChecked, OnInit {
           sender: 'ai',
           content: 'Error: Could not get a response from the AI.'
         });
-        this.isLoading = false; // Set loading to false after error
-        this.showThinkingModal = false; // Close modal on error
+        this.isLoading = false;
+        this.showThinkingModal = false;
       }
     });
   }
@@ -173,11 +176,5 @@ export class AppComponent implements AfterViewChecked, OnInit {
     try {
       this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
     } catch (err) { /* Error handling for when element is not yet available */ }
-  }
-
-  resetTextareaHeight(): void {
-    if (this.messageInput && this.messageInput.nativeElement) {
-      this.messageInput.nativeElement.style.height = 'auto';
-    }
   }
 }
