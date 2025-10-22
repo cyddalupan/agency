@@ -46,7 +46,8 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "outputPath": "dist-temp" // <--- Add this line
             }
           },
           "defaultConfiguration": "production"
