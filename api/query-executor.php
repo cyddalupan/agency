@@ -39,6 +39,11 @@ if (!isset($data['sql']) || !isset($data['params'])) {
 $sql = trim($data['sql']);
 $params = $data['params']; // Array of {type: string, value: any}
 
+// --- TEMPORARY DEBUGGING LINE --- 
+echo json_encode(['debug_params' => $params, 'debug_sql' => $sql]);
+exit();
+// --- END TEMPORARY DEBUGGING LINE ---
+
 // --- Security Checks ---
 
 // 1. Whitelist Query Types
