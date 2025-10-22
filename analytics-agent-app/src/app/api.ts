@@ -35,7 +35,14 @@ export class ApiService {
 
   getAiResponse(context: string | any[], message: string): Observable<any> {
     const aiServiceUrl = '/agency/api/ai-service.php';
-    return this.http.post<any>(aiServiceUrl, { context, message });
+    return from(this.generateDailyApiKey()).pipe(
+      switchMap(apiKey => {
+        const headers = new HttpHeaders({
+          'X-API-KEY': apiKey
+        });
+        return this.http.post<any>(aiServiceUrl, { context, message }, { headers });
+      })
+    );
   }
 
   executeQuery(sql: string, params: { type: string, value: any }[]): Observable<any> {
