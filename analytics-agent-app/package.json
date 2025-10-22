@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-	    "build": "ng build --configuration=development && rm -rf ../analytics-agent && mkdir -p ../analytics-agent && cp -r dist-temp/browser/* ../analytics-agent/ && cp src/.htaccess ../analytics-agent/ && rm -rf dist-temp",    "watch": "ng build --watch --configuration development",
+	    "build": "ng build --base-href=/agency/analytics-agent/ --configuration=development && rm -rf ../analytics-agent && mkdir -p ../analytics-agent && cp -r dist-temp/browser/* ../analytics-agent/ && cp src/.htaccess ../analytics-agent/ && rm -rf dist-temp",    "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:analytics-agent": "node dist/analytics-agent/server/server.mjs"
   },
