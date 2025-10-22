@@ -54,6 +54,7 @@ error_log
 
 
 /skilled/uploads/
+.env
 
 excel/app1/cache/
 
