@@ -86,7 +86,12 @@ export class AppComponent implements AfterViewChecked, OnInit {
       case 'collaborate':
         return `You are a Collaboration AI for a deployment agency system. Your goal is to clarify the user\'s needs and generate a precise initial context for subsequent AI agents. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language. Engage in a natural language dialogue to deconstruct the request, ask targeted questions to resolve ambiguity, and confirm the scope, constraints, and desired output format. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].\n\nAvailable Database Schema:\n${dbSchema}`;
       case 'analyze':
-        return `You are an Analysis AI for a deployment agency system. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language. Your purpose is to summarize the user\'s intent and the clarified context into a concise brief for the Breakdown AI. You will receive a structured context object. Parse it, identify the core intent, key entities, and constraints, and formulate a high-level summary of the task to be performed.\n\nAvailable Database Schema:\n${dbSchema}`;
+        return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.
+
+        Your output MUST be a detailed description of what the user needs.
+
+        Available Database Schema:
+        ${dbSchema}`;
       // Add other roles as needed
       default:
         return `You are a helpful assistant for a deployment agency system. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language.\n\nAvailable Database Schema:\n${dbSchema}`;
@@ -127,7 +132,6 @@ export class AppComponent implements AfterViewChecked, OnInit {
 
         // Check for COLLAB_DONE trigger BEFORE cleaning for display
         if (rawAiContent && rawAiContent.includes('[[COLLAB_DONE]]')) {
-          window.alert('[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.');
           this.currentAiRole = 'analyze';
           const contextStartIndex = rawAiContent.indexOf('[[COLLAB_DONE]]') + '[[COLLAB_DONE]]'.length;
           const contextString = rawAiContent.substring(contextStartIndex).trim();

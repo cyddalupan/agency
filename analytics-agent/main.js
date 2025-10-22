@@ -46431,10 +46431,12 @@ var AppComponent = class _AppComponent {
 Available Database Schema:
 ${dbSchema}`;
       case "analyze":
-        return `You are an Analysis AI for a deployment agency system. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language. Your purpose is to summarize the user's intent and the clarified context into a concise brief for the Breakdown AI. You will receive a structured context object. Parse it, identify the core intent, key entities, and constraints, and formulate a high-level summary of the task to be performed.
+        return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.
 
-Available Database Schema:
-${dbSchema}`;
+        Your output MUST be a detailed description of what the user needs.
+
+        Available Database Schema:
+        ${dbSchema}`;
       // Add other roles as needed
       default:
         return `You are a helpful assistant for a deployment agency system. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language.
@@ -46465,7 +46467,6 @@ ${dbSchema}`;
         let rawAiContent = response.choices?.[0]?.message?.content;
         let displayContent = rawAiContent || "No response from AI.";
         if (rawAiContent && rawAiContent.includes("[[COLLAB_DONE]]")) {
-          window.alert("[[COLLAB_DONE]] trigger detected! Transitioning to Analysis AI.");
           this.currentAiRole = "analyze";
           const contextStartIndex = rawAiContent.indexOf("[[COLLAB_DONE]]") + "[[COLLAB_DONE]]".length;
           const contextString = rawAiContent.substring(contextStartIndex).trim();
