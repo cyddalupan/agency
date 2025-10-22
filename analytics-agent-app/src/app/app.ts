@@ -27,6 +27,11 @@ import { ApiService } from './api';
           <pre class="whitespace-pre-wrap text-sm">{{ aiResponse | json }}</pre>
         </div>
 
+        <div class="mb-6 p-4 rounded-lg glass-card" *ngIf="queryResult">
+          <h2 class="text-2xl font-semibold mb-3">Query Executor Result</h2>
+          <pre class="whitespace-pre-wrap text-sm">{{ queryResult | json }}</pre>
+        </div>
+
         <div class="mb-6">
           <label for="name" class="block text-sm font-medium mb-2">Your Name</label>
           <input type="text" id="name" placeholder="Enter your name"
@@ -36,6 +41,11 @@ import { ApiService } from './api';
         <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button mb-4"
                 (click)="triggerAiService()">
           Trigger AI Service
+        </button>
+
+        <button class="w-full py-3 px-4 rounded-lg bg-green-500/30 hover:bg-green-600/40 transition-colors duration-200 text-lg font-semibold glass-button mb-4"
+                (click)="triggerQueryExecutor()">
+          Trigger Query Executor (Latest Applicant)
         </button>
 
         <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button">
@@ -51,6 +61,7 @@ export class AppComponent implements OnInit {
   phpMessage: string = '';
   phpTimestamp: string = '';
   aiResponse: any;
+  queryResult: any;
 
   constructor(private apiService: ApiService) {}
 
@@ -73,6 +84,22 @@ export class AppComponent implements OnInit {
       error: (error) => {
         console.error('Error triggering AI Service:', error);
         this.aiResponse = { error: error.message || 'Unknown error' };
+      }
+    });
+  }
+
+  triggerQueryExecutor(): void {
+    const sql = 'SELECT * FROM applicant ORDER BY id DESC LIMIT 1';
+    const params: { type: string, value: any }[] = []; // No parameters for this query
+
+    this.apiService.executeQuery(sql, params).subscribe({
+      next: (response) => {
+        this.queryResult = response;
+        console.log('Query Executor Response:', response);
+      },
+      error: (error) => {
+        console.error('Error triggering Query Executor:', error);
+        this.queryResult = { error: error.message || 'Unknown error' };
       }
     });
   }
