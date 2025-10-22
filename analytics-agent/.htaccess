@@ -1,7 +1,10 @@
-RewriteEngine On
-RewriteBase /analytics-agent/
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /analytics-agent/
 
-# Redirect all requests to index.html unless it's a file or directory that exists
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /analytics-agent/index.html [L]
+  # Redirect all requests that are not for existing files or directories to index.html
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /analytics-agent/index.html [L]
+</IfModule>
