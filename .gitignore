@@ -60,3 +60,4 @@ excel/app1/cache/
 
 # Angular cache
 /analytics-agent-app/.angular/cache/
+.env

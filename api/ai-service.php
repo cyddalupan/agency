@@ -1,4 +1,36 @@
 <?php
+// Function to load environment variables from .env file
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return;
+    }
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Skip comments
+        }
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+
+        // Remove quotes if present
+        if (preg_match('/^"(.+)"$/', $value, $matches)) {
+            $value = $matches[1];
+        } elseif (preg_match("/^'(.+)'$/", $value, $matches)) {
+            $value = $matches[1];
+        }
+
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
+// Load .env file from the project root
+loadEnv(__DIR__ . '/../.env');
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); // IMPORTANT: Restrict in production environments
 
@@ -24,9 +56,14 @@ $context = $data['context'];
 $message = $data['message'];
 
 // OpenAI API configuration
-// IMPORTANT: Replace with your actual OpenAI API key.
-// For production, consider storing this securely (e.g., environment variables).
-$openaiApiKey = getenv('OPENAI_API_KEY') ?: 'YOUR_OPENAI_API_KEY_HERE';
+// IMPORTANT: Ensure OPENAI_API_KEY is set in your .env file or environment variables.
+$openaiApiKey = getenv('OPENAI_API_KEY');
+if (!$openaiApiKey) {
+    http_response_code(500);
+    echo json_encode(['error' => 'OpenAI API key not configured.']);
+    exit();
+}
+
 $openaiEndpoint = 'https://api.openai.com/v1/chat/completions';
 $model = 'gpt-5-mini'; // As specified in CHATLOGIC.md (Note: 'gpt-5-mini' is a placeholder model name)
 
