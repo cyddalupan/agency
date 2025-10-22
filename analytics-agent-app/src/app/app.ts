@@ -20,6 +20,7 @@ export class AppComponent implements AfterViewChecked {
   messages: Message[] = [];
   newMessage: string = '';
   isLoading: boolean = false; // Add isLoading property
+  showThinkingModal: boolean = false; // Add showThinkingModal property
 
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
@@ -67,6 +68,7 @@ export class AppComponent implements AfterViewChecked {
           content: aiContent || 'No response from AI.'
         });
         this.isLoading = false; // Set loading to false after successful response
+        this.showThinkingModal = false; // Close modal on response
       },
       error: (error: any) => { // Explicitly type error
         console.error('Error fetching AI response:', error);
@@ -75,8 +77,13 @@ export class AppComponent implements AfterViewChecked {
           content: 'Error: Could not get a response from the AI.'
         });
         this.isLoading = false; // Set loading to false after error
+        this.showThinkingModal = false; // Close modal on error
       }
     });
+  }
+
+  toggleThinkingModal(): void {
+    this.showThinkingModal = !this.showThinkingModal;
   }
 
   private scrollToBottom(): void {

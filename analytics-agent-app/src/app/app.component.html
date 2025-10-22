@@ -10,9 +10,10 @@
     </div>
 
     <!-- Thinking indicator -->
-    <div *ngIf="isLoading" class="flex justify-start">
-      <div class="glass-card p-3 rounded-lg max-w-xl">
-        Thinking...
+    <div *ngIf="isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
+      <div class="glass-card p-3 rounded-lg max-w-xl cursor-pointer flex items-center space-x-2">
+        <span>Thinking...</span>
+        <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
       </div>
     </div>
   </div>
@@ -27,11 +28,23 @@
         placeholder="Type your message..."
         [(ngModel)]="newMessage"
         (input)="adjustTextareaHeight(messageInput)"
-        (keydown.enter)="sendMessage()"
+        (keydown.enter.prevent)="sendMessage()"
       ></textarea>
       <button class="ml-2 px-4 py-2 glass-button bg-blue-600/50 hover:bg-blue-700/60 rounded-lg font-semibold"
               (click)="sendMessage()">
         Send
+      </button>
+    </div>
+  </div>
+
+  <!-- Thinking Modal -->
+  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="glass-container p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+      <h2 class="text-xl font-bold mb-4">AI is Thinking...</h2>
+      <p>The AI is currently processing your request. Please wait a moment.</p>
+      <p class="mt-2 text-sm text-gray-300">This modal will close automatically when a response is received or an error occurs.</p>
+      <button class="mt-4 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold" (click)="toggleThinkingModal()">
+        Close
       </button>
     </div>
   </div>

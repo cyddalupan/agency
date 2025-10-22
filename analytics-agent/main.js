@@ -46159,7 +46159,7 @@ var _c0 = ["chatContainer"];
 var _c1 = ["messageInput"];
 function AppComponent_div_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 10)(1, "div", 11);
+    \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd()();
   }
@@ -46174,9 +46174,40 @@ function AppComponent_div_3_Template(rf, ctx) {
 }
 function AppComponent_div_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 12)(1, "div", 11);
-    \u0275\u0275text(2, " Thinking... ");
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275elementStart(1, "div", 14)(2, "span");
+    \u0275\u0275text(3, "Thinking...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(4, "span", 15);
     \u0275\u0275elementEnd()();
+  }
+}
+function AppComponent_div_11_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 16)(1, "div", 17)(2, "h2", 18);
+    \u0275\u0275text(3, "AI is Thinking...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "p");
+    \u0275\u0275text(5, "The AI is currently processing your request. Please wait a moment.");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "p", 19);
+    \u0275\u0275text(7, "This modal will close automatically when a response is received or an error occurs.");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(8, "button", 20);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_8_listener() {
+      \u0275\u0275restoreView(_r6);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275text(9, " Close ");
+    \u0275\u0275elementEnd()()();
   }
 }
 var AppComponent = class _AppComponent {
@@ -46186,6 +46217,8 @@ var AppComponent = class _AppComponent {
   newMessage = "";
   isLoading = false;
   // Add isLoading property
+  showThinkingModal = false;
+  // Add showThinkingModal property
   chatContainer;
   messageInput;
   constructor(apiService) {
@@ -46222,6 +46255,7 @@ var AppComponent = class _AppComponent {
           content: aiContent || "No response from AI."
         });
         this.isLoading = false;
+        this.showThinkingModal = false;
       },
       error: (error) => {
         console.error("Error fetching AI response:", error);
@@ -46230,8 +46264,12 @@ var AppComponent = class _AppComponent {
           content: "Error: Could not get a response from the AI."
         });
         this.isLoading = false;
+        this.showThinkingModal = false;
       }
     });
+  }
+  toggleThinkingModal() {
+    this.showThinkingModal = !this.showThinkingModal;
   }
   scrollToBottom() {
     try {
@@ -46257,11 +46295,11 @@ var AppComponent = class _AppComponent {
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatContainer = _t.first);
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     }
-  }, decls: 11, vars: 3, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-start", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-start"]], template: function AppComponent_Template(rf, ctx) {
+  }, decls: 12, vars: 4, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-center", 3, "click", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter.prevent", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], ["class", "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", 4, "ngIf"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-center", 3, "click"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "cursor-pointer", "flex", "items-center", "space-x-2"], [1, "animate-spin", "rounded-full", "h-4", "w-4", "border-b-2", "border-white"], [1, "fixed", "inset-0", "bg-black", "bg-opacity-50", "flex", "items-center", "justify-center", "z-50"], [1, "glass-container", "p-6", "rounded-lg", "shadow-lg", "max-w-md", "w-full", "mx-4"], [1, "text-xl", "font-bold", "mb-4"], [1, "mt-2", "text-sm", "text-gray-300"], [1, "mt-4", "px-4", "py-2", "glass-button", "bg-red-600/50", "hover:bg-red-700/60", "rounded-lg", "font-semibold", 3, "click"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
       const _r1 = \u0275\u0275getCurrentView();
       \u0275\u0275elementStart(0, "div", 2)(1, "div", 3, 0);
-      \u0275\u0275template(3, AppComponent_div_3_Template, 3, 7, "div", 4)(4, AppComponent_div_4_Template, 3, 0, "div", 5);
+      \u0275\u0275template(3, AppComponent_div_3_Template, 3, 7, "div", 4)(4, AppComponent_div_4_Template, 5, 0, "div", 5);
       \u0275\u0275elementEnd();
       \u0275\u0275elementStart(5, "div", 6)(6, "div", 7)(7, "textarea", 8, 1);
       \u0275\u0275twoWayListener("ngModelChange", function AppComponent_Template_textarea_ngModelChange_7_listener($event) {
@@ -46271,9 +46309,9 @@ var AppComponent = class _AppComponent {
       });
       \u0275\u0275listener("input", function AppComponent_Template_textarea_input_7_listener() {
         \u0275\u0275restoreView(_r1);
-        const messageInput_r3 = \u0275\u0275reference(8);
-        return \u0275\u0275resetView(ctx.adjustTextareaHeight(messageInput_r3));
-      })("keydown.enter", function AppComponent_Template_textarea_keydown_enter_7_listener() {
+        const messageInput_r5 = \u0275\u0275reference(8);
+        return \u0275\u0275resetView(ctx.adjustTextareaHeight(messageInput_r5));
+      })("keydown.enter.prevent", function AppComponent_Template_textarea_keydown_enter_prevent_7_listener() {
         \u0275\u0275restoreView(_r1);
         return \u0275\u0275resetView(ctx.sendMessage());
       });
@@ -46284,7 +46322,9 @@ var AppComponent = class _AppComponent {
         return \u0275\u0275resetView(ctx.sendMessage());
       });
       \u0275\u0275text(10, " Send ");
-      \u0275\u0275elementEnd()()()();
+      \u0275\u0275elementEnd()()();
+      \u0275\u0275template(11, AppComponent_div_11_Template, 10, 0, "div", 10);
+      \u0275\u0275elementEnd();
     }
     if (rf & 2) {
       \u0275\u0275advance(3);
@@ -46293,6 +46333,8 @@ var AppComponent = class _AppComponent {
       \u0275\u0275property("ngIf", ctx.isLoading);
       \u0275\u0275advance(3);
       \u0275\u0275twoWayProperty("ngModel", ctx.newMessage);
+      \u0275\u0275advance(4);
+      \u0275\u0275property("ngIf", ctx.showThinkingModal);
     }
   }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.3);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
@@ -46311,9 +46353,10 @@ var AppComponent = class _AppComponent {
     </div>
 
     <!-- Thinking indicator -->
-    <div *ngIf="isLoading" class="flex justify-start">
-      <div class="glass-card p-3 rounded-lg max-w-xl">
-        Thinking...
+    <div *ngIf="isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
+      <div class="glass-card p-3 rounded-lg max-w-xl cursor-pointer flex items-center space-x-2">
+        <span>Thinking...</span>
+        <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
       </div>
     </div>
   </div>
@@ -46328,11 +46371,23 @@ var AppComponent = class _AppComponent {
         placeholder="Type your message..."
         [(ngModel)]="newMessage"
         (input)="adjustTextareaHeight(messageInput)"
-        (keydown.enter)="sendMessage()"
+        (keydown.enter.prevent)="sendMessage()"
       ></textarea>
       <button class="ml-2 px-4 py-2 glass-button bg-blue-600/50 hover:bg-blue-700/60 rounded-lg font-semibold"
               (click)="sendMessage()">
         Send
+      </button>
+    </div>
+  </div>
+
+  <!-- Thinking Modal -->
+  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="glass-container p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+      <h2 class="text-xl font-bold mb-4">AI is Thinking...</h2>
+      <p>The AI is currently processing your request. Please wait a moment.</p>
+      <p class="mt-2 text-sm text-gray-300">This modal will close automatically when a response is received or an error occurs.</p>
+      <button class="mt-4 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold" (click)="toggleThinkingModal()">
+        Close
       </button>
     </div>
   </div>
