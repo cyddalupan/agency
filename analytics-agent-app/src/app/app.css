@@ -4,7 +4,9 @@
 :host {
   display: block;
   min-height: 100vh;
-  background-color: #1a202c; /* Dark background for chat app */
+  background-image: url('/agency/analytics-agent/background.png');
+  background-size: cover;
+  background-position: center;
   font-family: 'Inter', sans-serif; /* Assuming a modern font, can be changed */
 }
 
