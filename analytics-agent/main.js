@@ -46284,8 +46284,12 @@ var ApiService = class _ApiService {
     }));
   }
   saveChatHistory(message, reply) {
-    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES ('${message.replace(/'/g, "'")}', '${reply.replace(/'/g, "'")}', NOW())`;
-    return this.executeQuery(sql, []);
+    const sql = `INSERT INTO chat_history (message, reply, timestamp) VALUES (?, ?, NOW())`;
+    const params = [
+      { type: "s", value: message },
+      { type: "s", value: reply }
+    ];
+    return this.executeQuery(sql, params);
   }
   getChatHistory() {
     const sql = `SELECT message, reply FROM chat_history ORDER BY timestamp DESC LIMIT 15`;
@@ -46468,21 +46472,62 @@ ${dbSchema}`;
           try {
             const contextObject = JSON.parse(contextString);
             console.log("Collaboration Done. Extracted Context:", contextObject);
+            this.currentAiRole = "analyze";
+            const analysisPrompt = this.getAiRolePrompt();
+            const analysisMessage = `Analyze the following context: ${JSON.stringify(contextObject)}`;
+            this.apiService.getAiResponse([{ role: "system", content: analysisPrompt }], analysisMessage, this.currentAiRole).subscribe({
+              next: (analysisResponse) => {
+                let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
+                let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
+                displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
+                this.messages.push({
+                  sender: "ai",
+                  content: displayAnalysisContent
+                });
+                this.isLoading = false;
+                this.showThinkingModal = false;
+                this.apiService.saveChatHistory(analysisMessage, displayAnalysisContent).subscribe({
+                  next: (saveResponse) => console.log("Analysis AI response saved:", saveResponse),
+                  error: (saveError) => console.error("Error saving Analysis AI response:", saveError)
+                });
+              },
+              error: (analysisError) => {
+                console.error("Error fetching Analysis AI response:", analysisError);
+                this.messages.push({
+                  sender: "ai",
+                  content: "Error: Could not get a response from the Analysis AI."
+                });
+                this.isLoading = false;
+                this.showThinkingModal = false;
+              }
+            });
           } catch (e) {
             console.error("Error parsing context object:", e);
+            displayContent = this.cleanAiContent(displayContent);
+            this.messages.push({
+              sender: "ai",
+              content: displayContent
+            });
+            this.isLoading = false;
+            this.showThinkingModal = false;
+            this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
+              next: (saveResponse) => console.log("Chat history saved:", saveResponse),
+              error: (saveError) => console.error("Error saving chat history:", saveError)
+            });
           }
+        } else {
+          displayContent = this.cleanAiContent(displayContent);
+          this.messages.push({
+            sender: "ai",
+            content: displayContent
+          });
+          this.isLoading = false;
+          this.showThinkingModal = false;
+          this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
+            next: (saveResponse) => console.log("Chat history saved:", saveResponse),
+            error: (saveError) => console.error("Error saving chat history:", saveError)
+          });
         }
-        displayContent = this.cleanAiContent(displayContent);
-        this.messages.push({
-          sender: "ai",
-          content: displayContent
-        });
-        this.isLoading = false;
-        this.showThinkingModal = false;
-        this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
-          next: (saveResponse) => console.log("Chat history saved:", saveResponse),
-          error: (saveError) => console.error("Error saving chat history:", saveError)
-        });
       },
       error: (error) => {
         console.error("Error fetching AI response:", error);

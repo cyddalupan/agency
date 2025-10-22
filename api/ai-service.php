@@ -54,6 +54,7 @@ if (!isset($data['context']) || !isset($data['message'])) {
 
 $context = $data['context'];
 $message = $data['message'];
+$role = $data['role'] ?? 'default'; // Extract role, default to 'default' if not provided
 
 // OpenAI API configuration
 // IMPORTANT: Ensure OPENAI_API_KEY is set in your .env file or environment variables.

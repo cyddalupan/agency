@@ -135,26 +135,73 @@ export class AppComponent implements AfterViewChecked, OnInit {
             const contextObject = JSON.parse(contextString);
             console.log('Collaboration Done. Extracted Context:', contextObject);
             // The context object is extracted from rawAiContent
+
+            // Transition to Analysis AI
+            this.currentAiRole = 'analyze';
+            const analysisPrompt = this.getAiRolePrompt(); // Get the prompt for Analysis AI
+            const analysisMessage = `Analyze the following context: ${JSON.stringify(contextObject)}`;
+
+            // Make a new API call for Analysis AI
+            this.apiService.getAiResponse([{ role: 'system', content: analysisPrompt }], analysisMessage, this.currentAiRole).subscribe({
+              next: (analysisResponse: any) => {
+                let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
+                let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
+
+                displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
+
+                this.messages.push({
+                  sender: 'ai',
+                  content: displayAnalysisContent
+                });
+                this.isLoading = false;
+                this.showThinkingModal = false;
+
+                // Save the Analysis AI's response to chat history
+                this.apiService.saveChatHistory(analysisMessage, displayAnalysisContent).subscribe({
+                  next: (saveResponse) => console.log('Analysis AI response saved:', saveResponse),
+                  error: (saveError) => console.error('Error saving Analysis AI response:', saveError)
+                });
+              },
+              error: (analysisError: any) => {
+                console.error('Error fetching Analysis AI response:', analysisError);
+                this.messages.push({
+                  sender: 'ai',
+                  content: 'Error: Could not get a response from the Analysis AI.'
+                });
+                this.isLoading = false;
+                this.showThinkingModal = false;
+              }
+            });
+
           } catch (e) {
             console.error('Error parsing context object:', e);
+            // If parsing fails, still display the original AI message (cleaned)
+            displayContent = this.cleanAiContent(displayContent);
+            this.messages.push({
+              sender: 'ai',
+              content: displayContent
+            });
+            this.isLoading = false;
+            this.showThinkingModal = false;
+            this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
+              next: (saveResponse) => console.log('Chat history saved:', saveResponse),
+              error: (saveError) => console.error('Error saving chat history:', saveError)
+            });
           }
+        } else {
+          // If no COLLAB_DONE trigger, just display and save the original AI message
+          displayContent = this.cleanAiContent(displayContent);
+          this.messages.push({
+            sender: 'ai',
+            content: displayContent
+          });
+          this.isLoading = false;
+          this.showThinkingModal = false;
+          this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
+            next: (saveResponse) => console.log('Chat history saved:', saveResponse),
+            error: (saveError) => console.error('Error saving chat history:', saveError)
+          });
         }
-
-        // Clean the content for display and for saving to history
-        displayContent = this.cleanAiContent(displayContent);
-
-        this.messages.push({
-          sender: 'ai',
-          content: displayContent
-        });
-        this.isLoading = false;
-        this.showThinkingModal = false;
-
-        // Save chat history after a successful AI reply, using the cleaned content
-        this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
-          next: (saveResponse) => console.log('Chat history saved:', saveResponse),
-          error: (saveError) => console.error('Error saving chat history:', saveError)
-        });
       },
       error: (error: any) => {
         console.error('Error fetching AI response:', error);

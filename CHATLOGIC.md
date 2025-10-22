@@ -27,7 +27,7 @@
 
 ---
 
-### [2] Analysis AI
+### [2] Analysis AI (start of execution phase)
 - **Purpose**: To summarize the user's intent and the clarified context into a concise brief for the Breakdown AI.
 - **Trigger**: Automatic, upon receiving `[[COLLAB_DONE]]`.
 - **Inputs**:
@@ -139,7 +139,7 @@
 - **Output**:
     - The final, polished response delivered to the user in the chat interface.
 
-
+### [9] Convert content to html (end of execution phase)
 
 ---
 ---
