@@ -39547,38 +39547,82 @@ var AppComponent = class _AppComponent {
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _AppComponent)(\u0275\u0275directiveInject(ApiService));
   };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 6, vars: 2, template: function AppComponent_Template(rf, ctx) {
+  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], decls: 26, vars: 2, consts: [[1, "min-h-screen", "flex", "items-center", "justify-center", "p-4"], [1, "glass-container", "w-full", "max-w-md", "p-8", "rounded-xl", "shadow-2xl", "text-white"], [1, "text-4xl", "font-bold", "mb-6", "text-center"], [1, "mb-6"], [1, "text-lg", "mb-2"], [1, "text-sm", "opacity-80"], [1, "mb-6", "p-4", "rounded-lg", "glass-card"], [1, "text-2xl", "font-semibold", "mb-3"], [1, "mb-1"], [1, "font-medium"], ["for", "name", 1, "block", "text-sm", "font-medium", "mb-2"], ["type", "text", "id", "name", "placeholder", "Enter your name", 1, "w-full", "p-3", "rounded-lg", "bg-white/10", "border", "border-white/20", "focus:outline-none", "focus:ring-2", "focus:ring-blue-400", "glass-input"], [1, "w-full", "py-3", "px-4", "rounded-lg", "bg-blue-500/30", "hover:bg-blue-600/40", "transition-colors", "duration-200", "text-lg", "font-semibold", "glass-button"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
-      \u0275\u0275domElementStart(0, "h1");
-      \u0275\u0275text(1, "Angular App");
+      \u0275\u0275domElementStart(0, "div", 0)(1, "div", 1)(2, "h1", 2);
+      \u0275\u0275text(3, "Liquid Glass App");
       \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(2, "p");
-      \u0275\u0275text(3);
+      \u0275\u0275domElementStart(4, "div", 3)(5, "p", 4);
+      \u0275\u0275text(6, "Welcome to your new Angular application with a stunning liquid glass design!");
       \u0275\u0275domElementEnd();
-      \u0275\u0275domElementStart(4, "p");
-      \u0275\u0275text(5);
+      \u0275\u0275domElementStart(7, "p", 5);
+      \u0275\u0275text(8, "This is a demonstration of how the glassmorphism effect can be applied to various UI elements.");
+      \u0275\u0275domElementEnd()();
+      \u0275\u0275domElementStart(9, "div", 6)(10, "h2", 7);
+      \u0275\u0275text(11, "PHP API Data");
       \u0275\u0275domElementEnd();
+      \u0275\u0275domElementStart(12, "p", 8);
+      \u0275\u0275text(13, "Message: ");
+      \u0275\u0275domElementStart(14, "span", 9);
+      \u0275\u0275text(15);
+      \u0275\u0275domElementEnd()();
+      \u0275\u0275domElementStart(16, "p");
+      \u0275\u0275text(17, "Timestamp: ");
+      \u0275\u0275domElementStart(18, "span", 9);
+      \u0275\u0275text(19);
+      \u0275\u0275domElementEnd()()();
+      \u0275\u0275domElementStart(20, "div", 3)(21, "label", 10);
+      \u0275\u0275text(22, "Your Name");
+      \u0275\u0275domElementEnd();
+      \u0275\u0275domElement(23, "input", 11);
+      \u0275\u0275domElementEnd();
+      \u0275\u0275domElementStart(24, "button", 12);
+      \u0275\u0275text(25, " Submit ");
+      \u0275\u0275domElementEnd()()();
     }
     if (rf & 2) {
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate1("Message from PHP: ", ctx.phpMessage);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1("Timestamp: ", ctx.phpTimestamp);
+      \u0275\u0275advance(15);
+      \u0275\u0275textInterpolate(ctx.phpMessage);
+      \u0275\u0275advance(4);
+      \u0275\u0275textInterpolate(ctx.phpTimestamp);
     }
-  }, dependencies: [CommonModule], encapsulation: 2 });
+  }, dependencies: [CommonModule], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background:\n    linear-gradient(\n      135deg,\n      #6a11cb 0%,\n      #2575fc 100%);\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppComponent, [{
     type: Component,
     args: [{ selector: "app-root", standalone: true, imports: [CommonModule], template: `
-    <h1>Angular App</h1>
-    <p>Message from PHP: {{ phpMessage }}</p>
-    <p>Timestamp: {{ phpTimestamp }}</p>
-  ` }]
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="glass-container w-full max-w-md p-8 rounded-xl shadow-2xl text-white">
+        <h1 class="text-4xl font-bold mb-6 text-center">Liquid Glass App</h1>
+
+        <div class="mb-6">
+          <p class="text-lg mb-2">Welcome to your new Angular application with a stunning liquid glass design!</p>
+          <p class="text-sm opacity-80">This is a demonstration of how the glassmorphism effect can be applied to various UI elements.</p>
+        </div>
+
+        <div class="mb-6 p-4 rounded-lg glass-card">
+          <h2 class="text-2xl font-semibold mb-3">PHP API Data</h2>
+          <p class="mb-1">Message: <span class="font-medium">{{ phpMessage }}</span></p>
+          <p>Timestamp: <span class="font-medium">{{ phpTimestamp }}</span></p>
+        </div>
+
+        <div class="mb-6">
+          <label for="name" class="block text-sm font-medium mb-2">Your Name</label>
+          <input type="text" id="name" placeholder="Enter your name"
+                 class="w-full p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400 glass-input">
+        </div>
+
+        <button class="w-full py-3 px-4 rounded-lg bg-blue-500/30 hover:bg-blue-600/40 transition-colors duration-200 text-lg font-semibold glass-button">
+          Submit
+        </button>
+      </div>
+    </div>
+  `, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background:\n    linear-gradient(\n      135deg,\n      #6a11cb 0%,\n      #2575fc 100%);\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.05);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
   }], () => [{ type: ApiService }], null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 17 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 40 });
 })();
 
 // node_modules/zone.js/fesm2015/zone.js

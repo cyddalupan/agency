@@ -1,0 +1,46 @@
+/* src/app/app.css */
+
+/* Global background for the app */
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); /* A vibrant gradient */
+  font-family: 'Inter', sans-serif; /* Assuming a modern font, can be changed */
+}
+
+/* Base styles for glass containers */
+.glass-container {
+  background: rgba(255, 255, 255, 0.1); /* White with 10% opacity */
+  backdrop-filter: blur(10px); /* Frosted glass effect */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle white border */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); /* Soft shadow for depth */
+}
+
+/* Styles for glass cards/panels */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05); /* Slightly less opaque than container */
+  backdrop-filter: blur(5px); /* Slightly less blur */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Styles for glass input fields */
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white; /* Ensure text is visible */
+}
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Styles for glass buttons */
+.glass-button {
+  background: rgba(76, 175, 80, 0.2); /* Example green tint */
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.glass-button:hover {
+  background: rgba(76, 175, 80, 0.3);
+}

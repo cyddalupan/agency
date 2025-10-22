@@ -76,3 +76,62 @@ This project is a complex legacy system. When working on it, it is crucial to:
 REMEMBER: 
 - This is a live production code and we need to be careful on how we code and what strategies we are using.
 - for large code file, find a way to split it in a safe way.
+
+## New Module: Analytics Agent (Angular SPA)
+
+A new standalone Angular Single Page Application (SPA) has been integrated into the project, accessible at `/agency/analytics-agent`. This module provides analytics capabilities and interacts with a simple PHP API endpoint.
+
+### Deployment and Configuration
+
+-   **Location**: The Angular application's build output is deployed to `/agency/analytics-agent/`.
+-   **Build Process**: The Angular project (`analytics-agent-app/`) is built using `npm run build`. The build script automates the following:
+    1.  Builds the Angular application into a temporary directory (`dist-temp`).
+    2.  Removes the existing deployment directory (`../analytics-agent/`).
+    3.  Creates a new deployment directory (`../analytics-agent/`).
+    4.  Copies the contents of the temporary build's `browser/` subdirectory to the deployment directory.
+    5.  Copies a specific `.htaccess` file from `analytics-agent-app/src/.htaccess` to the deployment directory.
+    6.  Cleans up the temporary build directory.
+-   **`baseHref`**: The Angular application is configured with a `baseHref` of `/agency/analytics-agent/` to ensure correct asset loading and routing within the subdirectory. This is explicitly set in the `ng build` command within `package.json`.
+-   **`.htaccess`**: A simplified `.htaccess` file is used within `/agency/analytics-agent/` to handle client-side routing for the Angular SPA. It ensures that requests for non-existent files or directories are rewritten to `index.html`, allowing Angular's router to take over.
+    ```apache
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteBase /agency/analytics-agent/
+
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteCond %{REQUEST_FILENAME} !-d
+      RewriteRule ^ index.html [L]
+    </IfModule>
+    ```
+-   **Zone.js**: For standalone Angular components, `zone.js` is imported directly in `src/main.ts` to ensure proper change detection.
+
+### API Integration (PHP Endpoint)
+
+The Angular application communicates with a basic PHP API endpoint for data exchange.
+
+-   **Endpoint Location**: `/agency/api/hello.php`
+-   **Functionality**: This endpoint currently returns a simple JSON object containing a message and a timestamp.
+-   **CORS**: The PHP endpoint includes `Access-Control-Allow-Origin: *` header to enable Cross-Origin Resource Sharing (CORS) for development purposes. **This should be restricted to specific origins in a production environment.**
+    ```php
+    <?php
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *'); // IMPORTANT: Restrict in production
+
+    echo json_encode([
+        'message' => 'Hello from PHP!',
+        'timestamp' => date('Y-m-d H:i:s')
+    ]);
+    ?>
+    ```
+
+### Angular Service and Component Usage
+
+-   **`ApiService` (`analytics-agent-app/src/app/api.ts`)**:
+    -   Provides a method (`getHelloMessage()`) to make an HTTP GET request to the PHP endpoint.
+    -   Uses `HttpClient` for making requests.
+-   **`AppComponent` (`analytics-agent-app/src/app/app.ts`)**:
+    -   Injects `ApiService`.
+    -   Calls `getHelloMessage()` on initialization (`ngOnInit`).
+    -   Displays the fetched `message` and `timestamp` in its template.
+-   **`app.config.ts` (`analytics-agent-app/src/app/app.config.ts`)**:
+    -   Configured to provide `HttpClient` for the application using `provideHttpClient()`.
