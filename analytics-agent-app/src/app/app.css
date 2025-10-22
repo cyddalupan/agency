@@ -27,13 +27,14 @@
 
 /* Styles for glass input fields */
 .glass-input {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15); /* Increased opacity */
+  backdrop-filter: blur(8px); /* Increased blur */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Stronger border */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Added shadow */
   color: white; /* Ensure text is visible */
 }
 .glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Styles for glass buttons */
