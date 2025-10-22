@@ -135,3 +135,22 @@ The Angular application communicates with a basic PHP API endpoint for data exch
     -   Displays the fetched `message` and `timestamp` in its template.
 -   **`app.config.ts` (`analytics-agent-app/src/app/app.config.ts`)**:
     -   Configured to provide `HttpClient` for the application using `provideHttpClient()`.
+
+## Liquid Glass Design Implementation
+
+The Angular application now features a "liquid glass" (glassmorphism) design applied across its components for a modern, translucent aesthetic. This effect is achieved primarily through CSS, with Tailwind CSS providing utility classes for rapid development.
+
+### Key Design Principles & Techniques:
+
+*   **Global Background**: A vibrant CSS gradient (`linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)`) is applied to the host element (`:host` in `src/app/app.css`) to provide a rich backdrop, essential for the glassmorphism effect to be visible.
+*   **Core Glassmorphism Effect**: Applied to elements like containers (`.glass-container`) and cards (`.glass-card`) using:
+    *   `background: rgba(255, 255, 255, 0.1)`: A semi-transparent white background to allow content behind to show through.
+    *   `backdrop-filter: blur(10px)`: The primary CSS property that creates the frosted glass effect by blurring the content behind the element. Different blur values are used for various elements (e.g., `10px` for containers, `5px` for cards/inputs).
+    *   `border: 1px solid rgba(255, 255, 255, 0.2)`: Subtle, semi-transparent borders to define the edges of the glass elements.
+    *   `box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37)`: A soft shadow to add depth and make elements appear to float.
+    *   `border-radius`: Rounded corners are used for a softer, modern look.
+*   **Input Fields & Buttons**: These elements (`.glass-input`, `.glass-button`) also receive glassmorphism styling, ensuring consistency across interactive UI elements. Placeholder text color is adjusted for visibility.
+*   **Styling Approach**:
+    *   **Tailwind CSS (CDN)**: For demonstration purposes, Tailwind CSS is included via a CDN link in `src/index.html`. This provides a utility-first framework for applying styles directly in the HTML template.
+    *   **Component-Specific CSS**: Core glassmorphism properties and the global background are defined in `src/app/app.css` to encapsulate the main design logic.
+*   **Performance**: While `backdrop-filter` can be intensive, the current implementation balances visual quality with smoothness for common browsers. Further optimization may involve `will-change` properties or more targeted application of effects.
