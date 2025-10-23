@@ -4,7 +4,7 @@ header('Access-Control-Allow-Origin: *'); // IMPORTANT: Restrict in production e
 
 // Function to generate a daily rotating API key
 function generateDailyApiKey($baseString = 'cyd') {
-    $date = (new DateTime())->format('Y-m-d');
+    $date = (new DateTime('now', new DateTimeZone('UTC')))->format('Y-m-d');
     return hash('sha256', $baseString . $date);
 }
 
