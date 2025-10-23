@@ -157,3 +157,7 @@ The Angular application now features a "liquid glass" (glassmorphism) design app
     *   **Tailwind CSS (CDN)**: For demonstration purposes, Tailwind CSS is included via a CDN link in `src/index.html`. This provides a utility-first framework for applying styles directly in the HTML template.
     *   **Component-Specific CSS**: Core glassmorphism properties and the global background are defined in `src/app/app.css` to encapsulate the main design logic.
 *   **Performance**: While `backdrop-filter` can be intensive, the current implementation balances visual quality with smoothness for common browsers. Further optimization may involve `will-change` properties or more targeted application of effects.
+
+## NOTE:
+
+run angular test using `ng test --watch=false --browsers=ChromeHeadless`

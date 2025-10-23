@@ -2513,7 +2513,7 @@ var Version = class {
     this.patch = parts.slice(2).join(".");
   }
 };
-var VERSION = /* @__PURE__ */ new Version("20.3.6");
+var VERSION = /* @__PURE__ */ new Version("20.3.7");
 var ERROR_DETAILS_PAGE_BASE_URL = (() => {
   const versionSubDomain = VERSION.major !== "0" ? `v${VERSION.major}.` : "";
   return `https://${versionSubDomain}angular.dev/errors`;
@@ -12742,7 +12742,7 @@ var ComponentFactory2 = class extends ComponentFactory$1 {
   }
 };
 function createRootTView(rootSelectorOrNode, componentDef, componentBindings, directives) {
-  const tAttributes = rootSelectorOrNode ? ["ng-version", "20.3.6"] : (
+  const tAttributes = rootSelectorOrNode ? ["ng-version", "20.3.7"] : (
     // Extract attributes and classes from the first selector only to match VE behavior.
     extractAttrsAndClassesFromSelector(componentDef.selectors[0])
   );
@@ -16645,7 +16645,7 @@ function scheduleDelayedTrigger(scheduleFn) {
   const cleanupFn = scheduleFn(() => triggerDeferBlock(0, lView, tNode), injector);
   storeTriggerCleanupFn(0, lDetails, cleanupFn);
 }
-function scheduleDelayedPrefetching(scheduleFn, trigger) {
+function scheduleDelayedPrefetching(scheduleFn) {
   if (false)
     return;
   const lView = getLView();
@@ -17675,6 +17675,7 @@ function \u0275\u0275animateLeave(value) {
     return \u0275\u0275animateLeave;
   }
   const tNode = getCurrentTNode();
+  cancelLeavingNodes(tNode, lView);
   addAnimationToLView(getLViewLeaveAnimations(lView), tNode, () => runLeaveAnimations(lView, tNode, value));
   initializeAnimationQueueScheduler(lView[INJECTOR]);
   return \u0275\u0275animateLeave;
@@ -17742,6 +17743,7 @@ function \u0275\u0275animateLeaveListener(value) {
   ngDevMode && assertAnimationTypes(value, "animate.leave");
   const lView = getLView();
   const tNode = getCurrentTNode();
+  cancelLeavingNodes(tNode, lView);
   allLeavingAnimations.add(lView);
   addAnimationToLView(getLViewLeaveAnimations(lView), tNode, () => runLeaveAnimationFunction(lView, tNode, value));
   initializeAnimationQueueScheduler(lView[INJECTOR]);
@@ -28368,7 +28370,7 @@ var XhrFactory = class {
 
 // node_modules/@angular/common/fesm2022/common.mjs
 var PLATFORM_BROWSER_ID = "browser";
-var VERSION2 = new Version("20.3.6");
+var VERSION2 = new Version("20.3.7");
 var ViewportScroller = class _ViewportScroller {
   // De-sugared tree-shakable injection
   // See #23917
@@ -33894,7 +33896,7 @@ var HydrationFeatureKind;
   HydrationFeatureKind2[HydrationFeatureKind2["EventReplay"] = 3] = "EventReplay";
   HydrationFeatureKind2[HydrationFeatureKind2["IncrementalHydration"] = 4] = "IncrementalHydration";
 })(HydrationFeatureKind || (HydrationFeatureKind = {}));
-var VERSION3 = new Version("20.3.6");
+var VERSION3 = new Version("20.3.7");
 
 // node_modules/@angular/router/fesm2022/router2.mjs
 var PRIMARY_OUTLET = "primary";
@@ -34396,7 +34398,7 @@ var UrlParser = class {
         outletName = PRIMARY_OUTLET;
       }
       const children = this.parseChildren();
-      segments[outletName] = Object.keys(children).length === 1 ? children[PRIMARY_OUTLET] : new UrlSegmentGroup([], children);
+      segments[outletName] = Object.keys(children).length === 1 && children[PRIMARY_OUTLET] ? children[PRIMARY_OUTLET] : new UrlSegmentGroup([], children);
       this.consumeOptional("//");
     }
     return segments;
@@ -38510,7 +38512,9 @@ var Router = class _Router {
   parseUrl(url) {
     try {
       return this.urlSerializer.parse(url);
-    } catch {
+    } catch (e) {
+      this.console.warn(formatRuntimeError(4018, ngDevMode && `Error parsing URL ${url}. Falling back to '/' instead. 
+` + e));
       return this.urlSerializer.parse("/");
     }
   }
@@ -39743,7 +39747,7 @@ function provideRouterInitializer() {
 }
 
 // node_modules/@angular/router/fesm2022/router.mjs
-var VERSION4 = new Version("20.3.6");
+var VERSION4 = new Version("20.3.7");
 
 // src/app/app.routes.ts
 var routes = [];
@@ -46230,7 +46234,7 @@ var UntypedFormBuilder = class _UntypedFormBuilder extends FormBuilder {
     }]
   }], null, null);
 })();
-var VERSION5 = new Version("20.3.6");
+var VERSION5 = new Version("20.3.7");
 var FormsModule = class _FormsModule {
   /**
    * @description
@@ -46546,7 +46550,7 @@ var _c1 = ["messageInput"];
 function AppComponent_div_3_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
-    \u0275\u0275text(2);
+    \u0275\u0275element(2, "div", 13);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -46555,45 +46559,139 @@ function AppComponent_div_3_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", message_r2.content, " ");
+    \u0275\u0275property("innerHTML", message_r2.content, \u0275\u0275sanitizeHtml);
   }
 }
 function AppComponent_div_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 13);
+    \u0275\u0275elementStart(0, "div", 14);
     \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r3 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
     });
-    \u0275\u0275elementStart(1, "div", 14)(2, "span");
-    \u0275\u0275text(3, "Thinking...");
+    \u0275\u0275elementStart(1, "div", 15)(2, "span");
+    \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275element(4, "span", 15);
+    \u0275\u0275element(4, "span", 16);
     \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext();
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r3.thinkingMessage);
+  }
+}
+function AppComponent_div_11_ol_7_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "li");
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const step_r6 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(step_r6);
+  }
+}
+function AppComponent_div_11_ol_7_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "ol", 27);
+    \u0275\u0275template(1, AppComponent_div_11_ol_7_li_1_Template, 2, 1, "li", 28);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r3.breakdownSteps);
+  }
+}
+function AppComponent_div_11_p_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "p", 29);
+    \u0275\u0275text(1, "No breakdown steps generated yet.");
+    \u0275\u0275elementEnd();
+  }
+}
+function AppComponent_div_11_div_13_pre_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "pre", 32);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const entry_r7 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(entry_r7);
+  }
+}
+function AppComponent_div_11_div_13_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 30);
+    \u0275\u0275template(1, AppComponent_div_11_div_13_pre_1_Template, 2, 1, "pre", 31);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r3.execution_context);
+  }
+}
+function AppComponent_div_11_p_14_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "p", 29);
+    \u0275\u0275text(1, "Execution has not started yet.");
+    \u0275\u0275elementEnd();
   }
 }
 function AppComponent_div_11_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 16)(1, "div", 17)(2, "h2", 18);
-    \u0275\u0275text(3, "AI is Thinking...");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "p");
-    \u0275\u0275text(5, "The AI is currently processing your request. Please wait a moment.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "p", 19);
-    \u0275\u0275text(7, "This modal will close automatically when a response is received or an error occurs.");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "button", 20);
-    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_8_listener() {
+    \u0275\u0275elementStart(0, "div", 17);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_0_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r3 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
     });
-    \u0275\u0275text(9, " Close ");
+    \u0275\u0275elementStart(1, "div", 18);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_1_listener($event) {
+      \u0275\u0275restoreView(_r5);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275elementStart(2, "h2", 19);
+    \u0275\u0275text(3, "AI Execution Details");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 20)(5, "h3", 21);
+    \u0275\u0275text(6, "Breakdown Steps");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(7, AppComponent_div_11_ol_7_Template, 2, 1, "ol", 22)(8, AppComponent_div_11_p_8_Template, 2, 0, "p", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(9, "hr", 24);
+    \u0275\u0275elementStart(10, "div")(11, "h3", 21);
+    \u0275\u0275text(12, "Execution Log");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(13, AppComponent_div_11_div_13_Template, 2, 1, "div", 25)(14, AppComponent_div_11_p_14_Template, 2, 0, "p", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(15, "button", 26);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_15_listener() {
+      \u0275\u0275restoreView(_r5);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275text(16, " Close ");
     \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext();
+    \u0275\u0275advance(7);
+    \u0275\u0275property("ngIf", ctx_r3.breakdownSteps.length > 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r3.breakdownSteps.length === 0);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("ngIf", ctx_r3.execution_context.length > 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r3.execution_context.length === 0);
   }
 }
 var MAX_TEXTAREA_HEIGHT = 150;
@@ -46610,6 +46708,22 @@ var AppComponent = class _AppComponent {
   // Initialize AI role
   execution_context = [];
   // New property to store execution context
+  breakdownSteps = [];
+  // New property to store breakdown steps
+  thinkingMessage = "Thinking...";
+  // New property for dynamic status
+  breakdownRetryCount = 0;
+  // Counter for Breakdown AI retries
+  MAX_BREAKDOWN_RETRIES = 2;
+  // Max retries for Breakdown AI
+  currentStepIndex = 0;
+  // To track the current step being executed
+  queryRetryCount = 0;
+  // Counter for Query AI retries
+  MAX_QUERY_RETRIES = 5;
+  // Max retries for Query AI
+  currentUserMessageForHistory = "";
+  // New property to store the original user message for history saving
   chatContainer;
   messageInput;
   constructor(apiService) {
@@ -46671,11 +46785,28 @@ ${dbSchema}`;
         Available Database Schema:
         ${dbSchema}`;
       // Add other roles as needed
-      default:
-        return `You are a helpful assistant for a deployment agency system. Your primary function is to help manage the application by manipulating data through queries. ALWAYS be EXTREMELY concise in your responses, using minimal words. NEVER echo back instructions or mention capabilities like 'Export report / CSV / PDF'. NEVER mention specific database fields or technical terms. ALWAYS use easy-to-understand language.
+      case "breakdown":
+        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
 
-Available Database Schema:
-${dbSchema}`;
+${APPLICANT_TABLE_SCHEMA}
+
+For example, if the task is "Retrieve enterprise users inactive for >30 days", your output should be: ["Find the 'enterprise' plan ID.", "Query the 'applicant' table for users matching the plan ID and last_login > 30 days ago.", "Format the final user list for display."].`;
+      case "execution":
+        return `You are an Execution AI. Your task is to process a single step from a breakdown plan. Determine if the step requires a database query. If it does, output [[QUERY_REQUIRED]] followed by a natural language description of the query needed. If it does not, output [[STEP_COMPLETE]] followed by a confirmation or the result of the internal action. The database schema is provided for context:
+
+${APPLICANT_TABLE_SCHEMA}`;
+      case "query_generation":
+        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
+
+${APPLICANT_TABLE_SCHEMA}`;
+      case "safety_check":
+        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks, destructive commands, or any unsafe operations. Respond with [[SAFE_TO_RUN]] if the query is safe for execution, or [[UNSAFE]] if it poses a risk. Do not include any other text or conversational filler.`;
+      case "finalization":
+        return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response.`;
+      case "html_conversion":
+        return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. Do not include any other text or conversational filler.`;
+      default:
+        return `You are a helpful AI assistant.`;
     }
   }
   sendMessage() {
@@ -46687,9 +46818,11 @@ ${dbSchema}`;
       content: this.newMessage
     });
     const userMessage = this.newMessage;
+    this.currentUserMessageForHistory = userMessage;
     this.newMessage = "";
     this.adjustTextareaHeight();
     this.isLoading = true;
+    this.thinkingMessage = "Thinking...";
     const contextMessages = this.messages.slice(-10).map((msg) => ({
       role: msg.sender === "user" ? "user" : "assistant",
       content: msg.content
@@ -46700,6 +46833,7 @@ ${dbSchema}`;
         let rawAiContent = response.choices?.[0]?.message?.content;
         let displayContent = rawAiContent || "No response from AI.";
         if (rawAiContent && rawAiContent.includes("[[COLLAB_DONE]]")) {
+          this.thinkingMessage = "Analyzing request...";
           this.currentAiRole = "analyze";
           const analysisPrompt = this.getAiRolePrompt();
           const analysisContextMessages = [...contextMessages];
@@ -46717,6 +46851,19 @@ ${dbSchema}`;
               this.showThinkingModal = false;
               this.execution_context.push(displayAnalysisContent);
               console.log("Analysis AI output stored in execution_context:", this.execution_context);
+              this.thinkingMessage = "Breaking down the task into steps...";
+              this.currentAiRole = "breakdown";
+              const breakdownPrompt = this.getAiRolePrompt();
+              const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
+              const breakdownContextMessages = [
+                { role: "system", content: breakdownPrompt },
+                { role: "user", content: analysisOutputForBreakdown }
+                // Pass analysis output as user message to breakdown AI
+              ];
+              this.apiService.getAiResponse(breakdownContextMessages, "", this.currentAiRole).subscribe({
+                next: (res) => this.handleBreakdownResponse(res),
+                error: (err) => this.handleBreakdownError(err)
+              });
             },
             error: (analysisError) => {
               console.error("Error fetching Analysis AI response:", analysisError);
@@ -46762,6 +46909,309 @@ ${dbSchema}`;
     } catch (err) {
     }
   }
+  handleBreakdownResponse(breakdownResponse) {
+    let rawBreakdownContent = breakdownResponse.choices?.[0]?.message?.content;
+    if (rawBreakdownContent) {
+      try {
+        const parsedSteps = JSON.parse(rawBreakdownContent);
+        if (Array.isArray(parsedSteps) && parsedSteps.every((step) => typeof step === "string")) {
+          this.breakdownSteps = parsedSteps;
+          console.log("Breakdown AI steps:", this.breakdownSteps);
+          this.breakdownRetryCount = 0;
+          this.isLoading = false;
+          this.showThinkingModal = false;
+          this.thinkingMessage = "Preparing for execution...";
+          this.executeNextStep(0);
+        } else {
+          throw new Error("Parsed content is not a JSON array of strings.");
+        }
+      } catch (e) {
+        console.error("Error parsing Breakdown AI response or invalid format:", e);
+        if (this.breakdownRetryCount < this.MAX_BREAKDOWN_RETRIES) {
+          this.breakdownRetryCount++;
+          console.warn(`Breakdown AI retry attempt ${this.breakdownRetryCount}/${this.MAX_BREAKDOWN_RETRIES}`);
+          const retryPrompt = this.getAiRolePrompt();
+          const feedbackMessage = `Previous response was not a valid JSON array of strings. Please provide the breakdown again in the correct format: ["step 1", "step 2"].`;
+          const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
+          const breakdownContextMessages = [
+            { role: "system", content: retryPrompt },
+            { role: "user", content: analysisOutputForBreakdown },
+            // Original input
+            { role: "assistant", content: rawBreakdownContent },
+            // Previous incorrect response
+            { role: "user", content: feedbackMessage }
+            // Feedback
+          ];
+          this.apiService.getAiResponse(breakdownContextMessages, "", this.currentAiRole).subscribe({
+            next: (res) => this.handleBreakdownResponse(res),
+            // Recursive call to handle response
+            error: (err) => this.handleBreakdownError(err)
+          });
+        } else {
+          this.messages.push({
+            sender: "ai",
+            content: "Error: Breakdown AI failed to produce valid steps after multiple attempts."
+          });
+          this.isLoading = false;
+          this.showThinkingModal = false;
+          this.breakdownRetryCount = 0;
+        }
+      }
+    } else {
+      this.messages.push({
+        sender: "ai",
+        content: "Error: No response from Breakdown AI."
+      });
+      this.isLoading = false;
+      this.showThinkingModal = false;
+      this.breakdownRetryCount = 0;
+    }
+  }
+  handleBreakdownError(breakdownError) {
+    console.error("Error fetching Breakdown AI response:", breakdownError);
+    this.messages.push({
+      sender: "ai",
+      content: "Error: Could not get a response from the Breakdown AI."
+    });
+    this.isLoading = false;
+    this.showThinkingModal = false;
+    this.breakdownRetryCount = 0;
+  }
+  executeNextStep(stepIndex) {
+    if (stepIndex >= this.breakdownSteps.length) {
+      console.log("All breakdown steps executed. Triggering Finalization AI.");
+      this.thinkingMessage = "Finalizing the response...";
+      this.currentAiRole = "finalization";
+      const finalizationPrompt = this.getAiRolePrompt();
+      const finalizationContextMessages = [
+        { role: "system", content: finalizationPrompt },
+        ...this.execution_context.map((content) => ({ role: "assistant", content }))
+        // Include all previous AI outputs
+      ];
+      this.apiService.getAiResponse(finalizationContextMessages, "", this.currentAiRole).subscribe({
+        next: (finalizationResponse) => {
+          let rawFinalizationContent = finalizationResponse.choices?.[0]?.message?.content;
+          let displayFinalizationContent = rawFinalizationContent || "No finalization message from AI.";
+          displayFinalizationContent = this.cleanAiContent(displayFinalizationContent);
+          this.thinkingMessage = "Converting to HTML...";
+          this.currentAiRole = "html_conversion";
+          const conversionPrompt = this.getAiRolePrompt();
+          const contentToConvert = displayFinalizationContent;
+          const conversionContextMessages = [
+            { role: "system", content: conversionPrompt },
+            { role: "user", content: contentToConvert }
+          ];
+          this.apiService.getAiResponse(conversionContextMessages, "", this.currentAiRole).subscribe({
+            next: (conversionResponse) => {
+              let rawHtmlContent = conversionResponse.choices?.[0]?.message?.content;
+              let displayHtmlContent = rawHtmlContent || "No HTML response from AI.";
+              this.messages.push({
+                sender: "ai",
+                content: displayHtmlContent
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+              this.apiService.saveChatHistory(this.currentUserMessageForHistory, displayHtmlContent).subscribe({
+                next: (saveResponse) => console.log("HTML content saved:", saveResponse),
+                error: (saveError) => console.error("Error saving HTML content:", saveError)
+              });
+            },
+            error: (conversionError) => {
+              console.error("Error fetching HTML Conversion AI response:", conversionError);
+              this.messages.push({
+                sender: "ai",
+                content: "Error: Could not get a response from the HTML Conversion AI."
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+            }
+          });
+        },
+        error: (finalizationError) => {
+          console.error("Error fetching Finalization AI response:", finalizationError);
+          this.messages.push({
+            sender: "ai",
+            content: "Error: Could not get a finalization message from the AI."
+          });
+          this.isLoading = false;
+          this.showThinkingModal = false;
+        }
+      });
+      return;
+    }
+    this.currentStepIndex = stepIndex;
+    this.currentAiRole = "execution";
+    const currentStep = this.breakdownSteps[this.currentStepIndex];
+    this.thinkingMessage = `Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`;
+    console.log(`Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`);
+    const executionPrompt = this.getAiRolePrompt();
+    const executionContextMessages = [
+      { role: "system", content: executionPrompt },
+      ...this.execution_context.map((content) => ({ role: "assistant", content })),
+      { role: "user", content: currentStep }
+      // The current step as the user message for the Execution AI
+    ];
+    this.apiService.getAiResponse(executionContextMessages, "", this.currentAiRole).subscribe({
+      next: (executionResponse) => {
+        let rawExecutionContent = executionResponse.choices?.[0]?.message?.content;
+        if (rawExecutionContent) {
+          this.execution_context.push(rawExecutionContent);
+          console.log("Execution AI output:", rawExecutionContent);
+          if (rawExecutionContent.includes("[[QUERY_REQUIRED]]")) {
+            const naturalLanguageQuery = rawExecutionContent.replace("[[QUERY_REQUIRED]]", "").trim();
+            console.log("Query required:", naturalLanguageQuery);
+            this.processQueryStep(naturalLanguageQuery);
+          } else if (rawExecutionContent.includes("[[STEP_COMPLETE]]")) {
+            console.log("Step complete:", rawExecutionContent.replace("[[STEP_COMPLETE]]", "").trim());
+            this.executeNextStep(this.currentStepIndex + 1);
+          } else {
+            console.log("Execution AI performed internal action or provided direct output:", rawExecutionContent);
+            this.executeNextStep(this.currentStepIndex + 1);
+          }
+        } else {
+          console.error("Error: No response from Execution AI for step:", currentStep);
+          this.messages.push({
+            sender: "ai",
+            content: `Error: No response from Execution AI for step "${currentStep}".`
+          });
+          this.isLoading = false;
+          this.showThinkingModal = false;
+        }
+      },
+      error: (executionError) => {
+        console.error("Error fetching Execution AI response:", executionError);
+        this.messages.push({
+          sender: "ai",
+          content: `Error: Could not get a response from the Execution AI for step "${currentStep}".`
+        });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+      }
+    });
+  }
+  processQueryStep(naturalLanguageQuery) {
+    this.currentAiRole = "query_generation";
+    this.thinkingMessage = "Generating SQL query...";
+    console.log("Generating SQL query for:", naturalLanguageQuery);
+    const queryGenerationPrompt = this.getAiRolePrompt();
+    const queryGenerationContextMessages = [
+      { role: "system", content: queryGenerationPrompt },
+      ...this.execution_context.map((content) => ({ role: "assistant", content })),
+      { role: "user", content: naturalLanguageQuery }
+      // The natural language query as the user message
+    ];
+    if (this.queryRetryCount > 0) {
+      queryGenerationContextMessages.push({
+        role: "user",
+        content: `Previous attempt failed. Please ensure the SQL query is valid and directly executable. Avoid any conversational text.`
+      });
+    }
+    this.apiService.getAiResponse(queryGenerationContextMessages, "", this.currentAiRole).subscribe({
+      next: (queryResponse) => {
+        let rawSqlQuery = queryResponse.choices?.[0]?.message?.content;
+        if (rawSqlQuery) {
+          this.execution_context.push(`Generated SQL: ${rawSqlQuery}`);
+          console.log("Generated SQL:", rawSqlQuery);
+          this.thinkingMessage = "Performing AI safety check on query...";
+          this.currentAiRole = "safety_check";
+          const safetyCheckPrompt = this.getAiRolePrompt();
+          const safetyCheckContextMessages = [
+            { role: "system", content: safetyCheckPrompt },
+            { role: "user", content: rawSqlQuery }
+            // Pass the generated SQL query to the Safety AI
+          ];
+          this.apiService.getAiResponse(safetyCheckContextMessages, "", this.currentAiRole).subscribe({
+            next: (safetyResponse) => {
+              let rawSafetyContent = safetyResponse.choices?.[0]?.message?.content;
+              if (rawSafetyContent && rawSafetyContent.includes("[[SAFE_TO_RUN]]")) {
+                console.log("SQL query passed AI safety check.");
+                this.execution_context.push(`AI Safety Check: [[SAFE_TO_RUN]]`);
+                this.thinkingMessage = "Executing SQL query...";
+                this.apiService.executeQuery(rawSqlQuery, []).subscribe({
+                  next: (queryResult) => {
+                    this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
+                    console.log("Query Result:", queryResult);
+                    this.queryRetryCount = 0;
+                    this.executeNextStep(this.currentStepIndex + 1);
+                  },
+                  error: (queryError) => {
+                    console.error("Error executing SQL query:", queryError);
+                    if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
+                      this.queryRetryCount++;
+                      console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
+                      this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+                      this.processQueryStep(naturalLanguageQuery);
+                    } else {
+                      this.messages.push({
+                        sender: "ai",
+                        content: `Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
+                      });
+                      this.isLoading = false;
+                      this.showThinkingModal = false;
+                      this.queryRetryCount = 0;
+                    }
+                  }
+                });
+              } else {
+                console.warn("SQL query failed AI safety check:", rawSqlQuery);
+                this.execution_context.push(`AI Safety Check: [[UNSAFE]]`);
+                if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
+                  this.queryRetryCount++;
+                  console.warn(`Query safety retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
+                  this.execution_context.push(`SQL query failed AI safety check. Please generate a safe query.`);
+                  this.processQueryStep(naturalLanguageQuery);
+                } else {
+                  this.messages.push({
+                    sender: "ai",
+                    content: `Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
+                  });
+                  this.isLoading = false;
+                  this.showThinkingModal = false;
+                  this.queryRetryCount = 0;
+                }
+              }
+            },
+            error: (safetyError) => {
+              console.error("Error fetching Safety AI response:", safetyError);
+              this.messages.push({
+                sender: "ai",
+                content: `Error: Could not get a response from the Safety AI for query "${rawSqlQuery}".`
+              });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+              this.queryRetryCount = 0;
+            }
+          });
+        } else {
+          console.error("Error: No SQL query generated for:", naturalLanguageQuery);
+          if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
+            this.queryRetryCount++;
+            console.warn(`Query generation retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
+            this.execution_context.push(`No SQL query was generated. Please generate a valid SQL query.`);
+            this.processQueryStep(naturalLanguageQuery);
+          } else {
+            this.messages.push({
+              sender: "ai",
+              content: `Error: Failed to generate a SQL query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
+            });
+            this.isLoading = false;
+            this.showThinkingModal = false;
+            this.queryRetryCount = 0;
+          }
+        }
+      },
+      error: (queryGenerationError) => {
+        console.error("Error fetching Query Generation AI response:", queryGenerationError);
+        this.messages.push({
+          sender: "ai",
+          content: `Error: Could not get a response from the Query Generation AI for "${naturalLanguageQuery}".`
+        });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+        this.queryRetryCount = 0;
+      }
+    });
+  }
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
     return new (__ngFactoryType__ || _AppComponent)(\u0275\u0275directiveInject(ApiService));
   };
@@ -46775,11 +47225,11 @@ ${dbSchema}`;
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.chatContainer = _t.first);
       \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.messageInput = _t.first);
     }
-  }, decls: 12, vars: 4, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-center", 3, "click", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], ["class", "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", 4, "ngIf"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [1, "flex", "justify-center", 3, "click"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "cursor-pointer", "flex", "items-center", "space-x-2"], [1, "animate-spin", "rounded-full", "h-4", "w-4", "border-b-2", "border-white"], [1, "fixed", "inset-0", "bg-black", "bg-opacity-50", "flex", "items-center", "justify-center", "z-50"], [1, "glass-container", "p-6", "rounded-lg", "shadow-lg", "max-w-md", "w-full", "mx-4"], [1, "text-xl", "font-bold", "mb-4"], [1, "mt-2", "text-sm", "text-gray-300"], [1, "mt-4", "px-4", "py-2", "glass-button", "bg-red-600/50", "hover:bg-red-700/60", "rounded-lg", "font-semibold", 3, "click"]], template: function AppComponent_Template(rf, ctx) {
+  }, decls: 12, vars: 4, consts: [["chatContainer", ""], ["messageInput", ""], [1, "flex", "flex-col", "h-screen", "text-white", "bg-transparent"], [1, "flex-1", "overflow-y-auto", "p-4", "space-y-4"], ["class", "flex", 3, "justify-end", "justify-start", 4, "ngFor", "ngForOf"], ["class", "flex justify-center", 3, "click", 4, "ngIf"], [1, "p-4"], [1, "flex", "items-center", "glass-container", "p-2", "rounded-lg"], ["rows", "1", "placeholder", "Type your message...", 1, "flex-1", "resize-none", "outline-none", "bg-transparent", "text-white", "placeholder-gray-400", "glass-input", "p-2", 3, "ngModelChange", "input", "keydown.enter", "ngModel"], [1, "ml-2", "px-4", "py-2", "glass-button", "bg-blue-600/50", "hover:bg-blue-700/60", "rounded-lg", "font-semibold", 3, "click"], ["class", "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", 3, "click", 4, "ngIf"], [1, "flex"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl"], [3, "innerHTML"], [1, "flex", "justify-center", 3, "click"], [1, "glass-card", "p-3", "rounded-lg", "max-w-xl", "cursor-pointer", "flex", "items-center", "space-x-2"], [1, "animate-spin", "rounded-full", "h-4", "w-4", "border-b-2", "border-white"], [1, "fixed", "inset-0", "bg-black", "bg-opacity-50", "flex", "items-center", "justify-center", "z-50", 3, "click"], [1, "glass-container", "p-6", "rounded-lg", "shadow-lg", "max-w-2xl", "w-full", "mx-4", "max-h-[80vh]", "overflow-y-auto", 3, "click"], [1, "text-xl", "font-bold", "mb-4"], [1, "mb-4"], [1, "font-semibold", "text-lg", "mb-2"], ["class", "list-decimal list-inside space-y-1 text-gray-200", 4, "ngIf"], ["class", "text-gray-400", 4, "ngIf"], [1, "border-gray-600", "my-4"], ["class", "space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg", 4, "ngIf"], [1, "mt-6", "px-4", "py-2", "glass-button", "bg-red-600/50", "hover:bg-red-700/60", "rounded-lg", "font-semibold", "w-full", 3, "click"], [1, "list-decimal", "list-inside", "space-y-1", "text-gray-200"], [4, "ngFor", "ngForOf"], [1, "text-gray-400"], [1, "space-y-2", "text-sm", "font-mono", "bg-black/20", "p-3", "rounded-lg"], ["class", "whitespace-pre-wrap", 4, "ngFor", "ngForOf"], [1, "whitespace-pre-wrap"]], template: function AppComponent_Template(rf, ctx) {
     if (rf & 1) {
       const _r1 = \u0275\u0275getCurrentView();
       \u0275\u0275elementStart(0, "div", 2)(1, "div", 3, 0);
-      \u0275\u0275template(3, AppComponent_div_3_Template, 3, 7, "div", 4)(4, AppComponent_div_4_Template, 5, 0, "div", 5);
+      \u0275\u0275template(3, AppComponent_div_3_Template, 3, 7, "div", 4)(4, AppComponent_div_4_Template, 5, 1, "div", 5);
       \u0275\u0275elementEnd();
       \u0275\u0275elementStart(5, "div", 6)(6, "div", 7)(7, "textarea", 8, 1);
       \u0275\u0275twoWayListener("ngModelChange", function AppComponent_Template_textarea_ngModelChange_7_listener($event) {
@@ -46803,7 +47253,7 @@ ${dbSchema}`;
       });
       \u0275\u0275text(10, " Send ");
       \u0275\u0275elementEnd()()();
-      \u0275\u0275template(11, AppComponent_div_11_Template, 10, 0, "div", 10);
+      \u0275\u0275template(11, AppComponent_div_11_Template, 17, 4, "div", 10);
       \u0275\u0275elementEnd();
     }
     if (rf & 2) {
@@ -46828,14 +47278,14 @@ ${dbSchema}`;
     <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
-        {{ message.content }}
+        <div [innerHTML]="message.content"></div>
       </div>
     </div>
 
     <!-- Thinking indicator -->
     <div *ngIf="isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
       <div class="glass-card p-3 rounded-lg max-w-xl cursor-pointer flex items-center space-x-2">
-        <span>Thinking...</span>
+        <span>{{ thinkingMessage }}</span>
         <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
       </div>
     </div>
@@ -46861,12 +47311,31 @@ ${dbSchema}`;
   </div>
 
   <!-- Thinking Modal -->
-  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="glass-container p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-      <h2 class="text-xl font-bold mb-4">AI is Thinking...</h2>
-      <p>The AI is currently processing your request. Please wait a moment.</p>
-      <p class="mt-2 text-sm text-gray-300">This modal will close automatically when a response is received or an error occurs.</p>
-      <button class="mt-4 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold" (click)="toggleThinkingModal()">
+  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="toggleThinkingModal()">
+    <div class="glass-container p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">AI Execution Details</h2>
+
+      <!-- Breakdown Steps -->
+      <div class="mb-4">
+        <h3 class="font-semibold text-lg mb-2">Breakdown Steps</h3>
+        <ol *ngIf="breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
+          <li *ngFor="let step of breakdownSteps">{{ step }}</li>
+        </ol>
+        <p *ngIf="breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
+      </div>
+
+      <hr class="border-gray-600 my-4">
+
+      <!-- Execution Log -->
+      <div>
+        <h3 class="font-semibold text-lg mb-2">Execution Log</h3>
+        <div *ngIf="execution_context.length > 0" class="space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg">
+          <pre *ngFor="let entry of execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
+        </div>
+        <p *ngIf="execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
+      </div>
+
+      <button class="mt-6 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold w-full" (click)="toggleThinkingModal()">
         Close
       </button>
     </div>
@@ -49291,7 +49760,7 @@ bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err))
 @angular/router/fesm2022/router.mjs:
 @angular/forms/fesm2022/forms.mjs:
   (**
-   * @license Angular v20.3.6
+   * @license Angular v20.3.7
    * (c) 2010-2025 Google LLC. https://angular.dev/
    * License: MIT
    *)

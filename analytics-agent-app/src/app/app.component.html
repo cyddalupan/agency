@@ -5,14 +5,14 @@
     <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
-        {{ message.content }}
+        <div [innerHTML]="message.content"></div>
       </div>
     </div>
 
     <!-- Thinking indicator -->
     <div *ngIf="isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
       <div class="glass-card p-3 rounded-lg max-w-xl cursor-pointer flex items-center space-x-2">
-        <span>Thinking...</span>
+        <span>{{ thinkingMessage }}</span>
         <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
       </div>
     </div>
@@ -38,12 +38,31 @@
   </div>
 
   <!-- Thinking Modal -->
-  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="glass-container p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-      <h2 class="text-xl font-bold mb-4">AI is Thinking...</h2>
-      <p>The AI is currently processing your request. Please wait a moment.</p>
-      <p class="mt-2 text-sm text-gray-300">This modal will close automatically when a response is received or an error occurs.</p>
-      <button class="mt-4 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold" (click)="toggleThinkingModal()">
+  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="toggleThinkingModal()">
+    <div class="glass-container p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">AI Execution Details</h2>
+
+      <!-- Breakdown Steps -->
+      <div class="mb-4">
+        <h3 class="font-semibold text-lg mb-2">Breakdown Steps</h3>
+        <ol *ngIf="breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
+          <li *ngFor="let step of breakdownSteps">{{ step }}</li>
+        </ol>
+        <p *ngIf="breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
+      </div>
+
+      <hr class="border-gray-600 my-4">
+
+      <!-- Execution Log -->
+      <div>
+        <h3 class="font-semibold text-lg mb-2">Execution Log</h3>
+        <div *ngIf="execution_context.length > 0" class="space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg">
+          <pre *ngFor="let entry of execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
+        </div>
+        <p *ngIf="execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
+      </div>
+
+      <button class="mt-6 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold w-full" (click)="toggleThinkingModal()">
         Close
       </button>
     </div>

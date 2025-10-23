@@ -7,138 +7,139 @@
 ## Frontend AI Workflow
 
 ### [1] Collaboration AI
-- **Purpose**: To clarify the user's needs and generate a precise initial context for the subsequent AI agents.
+- **Purpose**: To act as a standard assistant, clarifying the user's needs and collaborating on a plan.
 - **Trigger**: A new user request is initiated.
 - **Inputs**:
     - The user's initial, often ambiguous, prompt (e.g., "Find my best employees").
 - **Core Logic**:
     - Engages in a natural language dialogue to deconstruct the request.
-    - Asks targeted questions to resolve ambiguity (e.g., "What are the criteria for 'best'? Performance reviews, sales figures, or tenure?").
-    - Confirms the scope, constraints, and desired output format with the user.
-    - Synthesizes the entire conversation into a structured and unambiguous task description.
+    - Asks targeted questions to resolve ambiguity (e.g., "What are the criteria for 'best'?").
+    - The conversation is saved to the main chat history. This process is paused when the execution phase begins.
 - **Output**:
-    - A detailed context object for the Analysis AI.
-    - A `[[COLLAB_DONE]]` trigger to advance the workflow.
+    - A `[[COLLAB_DONE]]` trigger to advance the workflow once the plan is clear.
 - **Example**:
     - **User**: "I need a list of inactive users."
     - **AI**: "Certainly. How would you like to define 'inactive'? For example, users who haven't logged in for the past 30 days?"
     - **User**: "Yes, 30 days is good. And I only want to see users from the 'enterprise' plan."
-    - **Output Context**: `{ task: "find_inactive_users", criteria: { last_login: ">30 days ago", plan: "enterprise" }, output_format: "list" }`
+    - **AI**: "Understood. I will get that list for you." -> `[[COLLAB_DONE]]`
 
 ---
 
 ### [2] Analysis AI (start of execution phase)
-- **Purpose**: To summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI.
+- **Purpose**: To summarize the user's intent from the history into a concise brief for the Breakdown AI.
 - **Trigger**: Automatic, upon receiving `[[COLLAB_DONE]]`.
 - **Inputs**:
-    - The entire conversation history (including the Collaboration AI's output with `[[COLLAB_DONE]]`).
+    - The entire conversation history.
 - **Core Logic**:
-    - Analyzes the conversation history to identify the core intent, key entities, and constraints.
-    - Formulates a high-level summary of the task to be performed. This step ensures the core requirement is understood before planning the execution steps.
+    - Analyzes the history to identify the core task.
 - **Output**:
-    - A summarized intent string or object (e.g., "Task: Retrieve enterprise users inactive for >30 days."), stored in the `execution_context` array for subsequent AI stages. This output is NOT saved to the chat history database.
+    - A summarized intent object (e.g., `{ task: "find_inactive_users", ... }`), which becomes the first entry in the `execution_context`. This output is displayed to the user as an AI message but **not** immediately saved to the chat history.
 
 ---
 
 ### [3] Breakdown AI
-- **Purpose**: To produce an ordered, step-by-step workflow plan to accomplish the user's request.
-- **Trigger**: Automatic, after the Analysis AI completes its summary.
+- **Purpose**: To produce an ordered, step-by-step workflow plan.
+- **Trigger**: Automatic, after the Analysis AI completes.
 - **Inputs**:
-    - The summarized intent from the Analysis AI.
+    - The summarized intent from the `execution_context`.
+    - The database schema for context.
 - **Core Logic**:
-    - Decomposes the summarized task into a sequence of logical, executable steps.
-    - Determines the dependencies between steps.
-    - Structures the output as an ordered list of actions.
+    - Decomposes the task into a sequence of logical, executable steps.
 - **Output**:
-    - An ordered list of workflow steps.
+    - A JSON array of workflow steps, stored in a `breakdownSteps` variable. This is **not** saved to chat history.
 - **Example**:
-    - **Input Intent**: "Task: Retrieve enterprise users inactive for >30 days."
-    - **Output Steps**:
-        1. `Find the 'enterprise' plan ID.`
-        2. `Query the database for users matching the plan ID.`
-        3. `Filter the results to include only users whose 'last_login' is older than 30 days.`
-        4. `Format the final user list for display.`
+    - **Output Steps**: `["Generate query to find 'enterprise' plan ID.", "Generate query for users with that plan ID and last_login > 30 days.", "Format the final user list."]`
 
 ---
 
 ### [4] Execution AI
-- **Purpose**: To process each step from the workflow, deciding if it requires data retrieval (a query).
-- **Trigger**: Automatic, processing one step at a time from the Breakdown AI's list.
+- **Purpose**: To orchestrate the execution of the plan by looping through the `breakdownSteps`.
+- **Trigger**: Automatic, after the Breakdown AI creates the steps.
 - **Inputs**:
-    - A single step from the workflow plan (e.g., "Find the 'enterprise' plan ID.").
+    - The `breakdownSteps` array.
 - **Core Logic**:
-    - Analyzes the step's action and determines if it can be resolved internally or if it needs to access an external data source (like a database).
-    - If a database query is needed, it formulates the query and sends it to the **SQL Query Executor API**.
+    - Iterates through each step string.
+    - For each step, it triggers the appropriate subsequent AI (e.g., Query Generation AI).
+    - It passes the current `execution_context` to the next AI for reference.
 - **Output**:
-    - If a query is needed: A `[[QUERY_REQUIRED]]` flag along with the formulated query.
-    - If no query is needed: The result of the internal action.
+    - Manages the overall flow until all steps are complete. The history of interactions within this loop is saved to the `execution_context`.
 
 ---
 
-### [4.1] Safety AI
-- **Purpose**: To check the formulated query for safety, permissions, and potential risks before execution. This logic runs on the frontend before calling the backend API.
-- **Trigger**: A `[[QUERY_REQUIRED]]` flag is detected from the Execution AI.
+### [5] Query Generation AI
+- **Purpose**: To compose a database query when required by an execution step.
+- **Trigger**: Called by the Execution AI when a step involves data retrieval.
 - **Inputs**:
-    - The database query formulated by the Execution AI.
+    - The specific step from `breakdownSteps`.
+    - The current `execution_context` (which includes previous steps, results, and any query errors).
 - **Core Logic**:
-    - Scans the query for destructive commands (`DROP`, `DELETE`, `UPDATE` without a `WHERE` clause).
-    - Validates against a set of allowed query patterns.
+    - Analyzes the step and the context to compose a precise and efficient SQL query.
 - **Output**:
-    - `[[SAFE_TO_RUN]]` if the query passes all checks.
-    - `[[UNSAFE]]` if the query is flagged as risky, along with a reason.
+    - A `[[QUERY_GENERATED]]` flag along with the formulated SQL query.
 
 ---
 
-### [5] Query Executor
-- **Purpose**: To call the backend API to execute a safe, structured query against the database.
+### [6] Safety AI
+- **Purpose**: To check the formulated query for safety and potential risks before execution.
+- **Trigger**: A `[[QUERY_GENERATED]]` flag is detected.
+- **Inputs**:
+    - The database query from the Query Generation AI.
+    - The `execution_context` for reference.
+- **Core Logic**:
+    - Scans the query for destructive or disallowed commands.
+- **Output**:
+    - `[[SAFE_TO_RUN]]` if the query passes.
+    - `[[UNSAFE]]` if the query is flagged, which halts the process.
+
+---
+
+### [7] Query Executor
+- **Purpose**: To execute a safe query via the backend API and handle retries.
 - **Trigger**: Receiving the `[[SAFE_TO_RUN]]` signal.
 - **Inputs**:
     - The validated database query.
 - **Core Logic**:
-    - Makes an HTTP request to the `/api/query-executor` backend endpoint, sending the query.
+    - Makes an HTTP request to the `/api/query-executor` backend endpoint.
+    - **Retry Loop**: If the query fails due to a database error (e.g., syntax error), the error message is added to the `execution_context`. The Query Executor then re-triggers the **Query Generation AI**, providing the error context. The new, corrected query runs through the Safety AI and is executed again. This loop can run a maximum of 5 times before halting.
 - **Output**:
-    - The raw query result from the backend, or a database error message.
-
----
-
-### [6] Verification & Correction AI
-- **Purpose**: To validate the query result and handle any errors, suggesting corrections if necessary.
-- **Trigger**: After the Query Executor returns its output.
-- **Inputs**:
-    - The query result or error message from the backend.
-- **Core Logic**:
-    - **On Success**: Performs a sanity check on the results.
-    - **On Failure**: Analyzes the error message to diagnose the problem and attempts to formulate a corrected query for retry.
-- **Output**:
-    - If successful: `[[QUERY_VERIFIED]]` and the validated data.
-    - If failed: A suggestion for a corrected query and a retry signal.
-
----
-
-### [7] Execution AI (Resumed)
-- **Purpose**: To continue processing the remaining steps in the workflow.
-- **Trigger**: Receiving the `[[QUERY_VERIFIED]]` signal.
-- **Inputs**:
-    - The next step from the workflow plan.
-    - The data returned from the verified query.
-- **Core Logic**:
-    - Integrates the query results into its current state and proceeds to the next step.
-- **Output**:
-    - Continues the loop until all steps are completed.
+    - On success: The raw query result from the backend.
+    - On failure (after max retries): A final error state.
 
 ---
 
 ### [8] Finalization AI
-- **Purpose**: To aggregate all results and produce a final, user-facing summary or answer.
-- **Trigger**: After the last workflow step is completed and verified.
+- **Purpose**: To aggregate all results into a final, user-facing answer.
+- **Trigger**: After the last workflow step is completed.
 - **Inputs**:
-    - The accumulated results and data from all executed steps.
+    - The entire `execution_context`, containing all steps, queries, and results.
 - **Core Logic**:
-    - Synthesizes the information into a coherent and human-readable response.
+    - Synthesizes all information into a coherent, human-readable response.
 - **Output**:
-    - The final, polished response delivered to the user in the chat interface.
+    - The final, polished text response.
 
-### [9] Convert content to html (end of execution phase)
+---
+
+### [9] HTML Conversion AI
+- **Purpose**: To convert the final text response into a rich HTML format.
+- **Trigger**: After the Finalization AI generates the response.
+- **Inputs**:
+    - The final text response.
+- **Core Logic**:
+    - Transforms the text into a visually appealing HTML structure.
+    - Uses **Tailwind CSS** for styling and incorporates **Font Awesome icons** for enhanced visual communication.
+- **Output**:
+    - A final HTML string.
+
+---
+
+### [10] Save to History (end of execution phase)
+- **Purpose**: To persist the final output to the user's chat history.
+- **Trigger**: After the HTML Conversion AI completes.
+- **Core Logic**:
+    - The final HTML output is saved to the main chat history database.
+    - The `execution_context` for the request is discarded.
+- **Output**:
+    - The user sees the final, formatted HTML response in their chat window.
 
 ---
 ---
