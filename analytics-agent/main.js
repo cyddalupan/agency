@@ -46544,230 +46544,28 @@ var ApiService = class _ApiService {
   }], () => [{ type: HttpClient }], null);
 })();
 
-// src/app/app.ts
-var _c0 = ["chatContainer"];
-var _c1 = ["messageInput"];
-function AppComponent_div_3_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
-    \u0275\u0275element(2, "div", 13);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const message_r2 = ctx.$implicit;
-    \u0275\u0275classProp("justify-end", message_r2.sender === "user")("justify-start", message_r2.sender === "ai");
-    \u0275\u0275advance();
-    \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
-    \u0275\u0275advance();
-    \u0275\u0275property("innerHTML", message_r2.content, \u0275\u0275sanitizeHtml);
-  }
-}
-function AppComponent_div_4_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 14);
-    \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r3);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
-    });
-    \u0275\u0275elementStart(1, "div", 15)(2, "span");
-    \u0275\u0275text(3);
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(4, "span", 16);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext();
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(ctx_r3.thinkingMessage);
-  }
-}
-function AppComponent_div_11_ol_7_li_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "li");
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const step_r6 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(step_r6);
-  }
-}
-function AppComponent_div_11_ol_7_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "ol", 27);
-    \u0275\u0275template(1, AppComponent_div_11_ol_7_li_1_Template, 2, 1, "li", 28);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngForOf", ctx_r3.breakdownSteps);
-  }
-}
-function AppComponent_div_11_p_8_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "p", 29);
-    \u0275\u0275text(1, "No breakdown steps generated yet.");
-    \u0275\u0275elementEnd();
-  }
-}
-function AppComponent_div_11_div_13_pre_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "pre", 32);
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const entry_r7 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(entry_r7);
-  }
-}
-function AppComponent_div_11_div_13_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 30);
-    \u0275\u0275template(1, AppComponent_div_11_div_13_pre_1_Template, 2, 1, "pre", 31);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngForOf", ctx_r3.execution_context);
-  }
-}
-function AppComponent_div_11_p_14_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "p", 29);
-    \u0275\u0275text(1, "Execution has not started yet.");
-    \u0275\u0275elementEnd();
-  }
-}
-function AppComponent_div_11_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 17);
-    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_0_listener() {
-      \u0275\u0275restoreView(_r5);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
-    });
-    \u0275\u0275elementStart(1, "div", 18);
-    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_1_listener($event) {
-      \u0275\u0275restoreView(_r5);
-      return \u0275\u0275resetView($event.stopPropagation());
-    });
-    \u0275\u0275elementStart(2, "h2", 19);
-    \u0275\u0275text(3, "AI Execution Details");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 20)(5, "h3", 21);
-    \u0275\u0275text(6, "Breakdown Steps");
-    \u0275\u0275elementEnd();
-    \u0275\u0275template(7, AppComponent_div_11_ol_7_Template, 2, 1, "ol", 22)(8, AppComponent_div_11_p_8_Template, 2, 0, "p", 23);
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(9, "hr", 24);
-    \u0275\u0275elementStart(10, "div")(11, "h3", 21);
-    \u0275\u0275text(12, "Execution Log");
-    \u0275\u0275elementEnd();
-    \u0275\u0275template(13, AppComponent_div_11_div_13_Template, 2, 1, "div", 25)(14, AppComponent_div_11_p_14_Template, 2, 0, "p", 23);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(15, "button", 26);
-    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_15_listener() {
-      \u0275\u0275restoreView(_r5);
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
-    });
-    \u0275\u0275text(16, " Close ");
-    \u0275\u0275elementEnd()()();
-  }
-  if (rf & 2) {
-    const ctx_r3 = \u0275\u0275nextContext();
-    \u0275\u0275advance(7);
-    \u0275\u0275property("ngIf", ctx_r3.breakdownSteps.length > 0);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r3.breakdownSteps.length === 0);
-    \u0275\u0275advance(5);
-    \u0275\u0275property("ngIf", ctx_r3.execution_context.length > 0);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r3.execution_context.length === 0);
-  }
-}
-var MAX_TEXTAREA_HEIGHT = 150;
-var AppComponent = class _AppComponent {
+// src/app/chat-orchestrator.service.ts
+var ChatOrchestratorService = class _ChatOrchestratorService {
   apiService;
-  title = "analytics-agent";
   messages = [];
   newMessage = "";
   isLoading = false;
-  // Add isLoading property
   showThinkingModal = false;
-  // Add showThinkingModal property
   currentAiRole = "collaborate";
-  // Initialize AI role
   execution_context = [];
-  // New property to store execution context
   breakdownSteps = [];
-  // New property to store breakdown steps
   thinkingMessage = "Thinking...";
-  // New property for dynamic status
   breakdownRetryCount = 0;
-  // Counter for Breakdown AI retries
   MAX_BREAKDOWN_RETRIES = 2;
-  // Max retries for Breakdown AI
   currentStepIndex = 0;
-  // To track the current step being executed
   queryRetryCount = 0;
-  // Counter for Query AI retries
   MAX_QUERY_RETRIES = 5;
-  // Max retries for Query AI
   currentUserMessageForHistory = "";
-  // New property to store the original user message for history saving
-  chatContainer;
-  messageInput;
   constructor(apiService) {
     this.apiService = apiService;
   }
-  ngOnInit() {
-    this.apiService.getChatHistory().subscribe({
-      next: (history) => {
-        if (history && history.data && history.data.length > 0) {
-          this.messages = [];
-          const sortedHistory = history.data.reverse();
-          sortedHistory.forEach((item) => {
-            this.messages.push({ sender: "user", content: item.message });
-            this.messages.push({ sender: "ai", content: this.cleanAiContent(item.reply) });
-          });
-        } else {
-          this.messages.push({
-            sender: "ai",
-            content: "Hello! How can I help you today?"
-          });
-        }
-      },
-      error: (error) => {
-        console.error("Error loading chat history:", error);
-        this.messages.push({
-          sender: "ai",
-          content: "Hello! How can I help you today?"
-        });
-      }
-    });
-  }
-  ngAfterViewChecked() {
-    this.scrollToBottom();
-  }
-  adjustTextareaHeight() {
-    if (this.messageInput && this.messageInput.nativeElement) {
-      const element = this.messageInput.nativeElement;
-      element.style.height = "auto";
-      element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
-      element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
-    }
-  }
   cleanAiContent(content) {
-    return content.replace(/(\[\[.*?\]\])/g, "").trim();
+    return content.replace(/\s*[[.*?]\s*/g, " ").trim();
   }
   getAiRolePrompt() {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
@@ -46784,13 +46582,12 @@ ${dbSchema}`;
 
         Available Database Schema:
         ${dbSchema}`;
-      // Add other roles as needed
       case "breakdown":
         return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
 
 ${APPLICANT_TABLE_SCHEMA}
 
-For example, if the task is "Retrieve enterprise users inactive for >30 days", your output should be: ["Find the 'enterprise' plan ID.", "Query the 'applicant' table for users matching the plan ID and last_login > 30 days ago.", "Format the final user list for display."].`;
+"Retrieve enterprise users inactive for >30 days", your output should be: ["Find the 'enterprise' plan ID.", "Query the 'applicant' table for users matching the plan ID and last_login > 30 days ago.", "Format the final user list for display."]`;
       case "execution":
         return `You are an Execution AI. Your task is to process a single step from a breakdown plan. Determine if the step requires a database query. If it does, output [[QUERY_REQUIRED]] followed by a natural language description of the query needed. If it does not, output [[STEP_COMPLETE]] followed by a confirmation or the result of the internal action. The database schema is provided for context:
 
@@ -46820,7 +46617,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
     const userMessage = this.newMessage;
     this.currentUserMessageForHistory = userMessage;
     this.newMessage = "";
-    this.adjustTextareaHeight();
     this.isLoading = true;
     this.thinkingMessage = "Thinking...";
     const contextMessages = this.messages.slice(-10).map((msg) => ({
@@ -46842,13 +46638,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
             next: (analysisResponse) => {
               let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
               let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
-              displayAnalysisContent = this.cleanAiContent(displayAnalysisContent);
-              this.messages.push({
-                sender: "ai",
-                content: displayAnalysisContent
-              });
-              this.isLoading = false;
-              this.showThinkingModal = false;
               this.execution_context.push(displayAnalysisContent);
               console.log("Analysis AI output stored in execution_context:", this.execution_context);
               this.thinkingMessage = "Breaking down the task into steps...";
@@ -46858,7 +46647,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
               const breakdownContextMessages = [
                 { role: "system", content: breakdownPrompt },
                 { role: "user", content: analysisOutputForBreakdown }
-                // Pass analysis output as user message to breakdown AI
               ];
               this.apiService.getAiResponse(breakdownContextMessages, "", this.currentAiRole).subscribe({
                 next: (res) => this.handleBreakdownResponse(res),
@@ -46900,15 +46688,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       }
     });
   }
-  toggleThinkingModal() {
-    this.showThinkingModal = !this.showThinkingModal;
-  }
-  scrollToBottom() {
-    try {
-      this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
-    } catch (err) {
-    }
-  }
   handleBreakdownResponse(breakdownResponse) {
     let rawBreakdownContent = breakdownResponse.choices?.[0]?.message?.content;
     if (rawBreakdownContent) {
@@ -46918,8 +46697,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
           this.breakdownSteps = parsedSteps;
           console.log("Breakdown AI steps:", this.breakdownSteps);
           this.breakdownRetryCount = 0;
-          this.isLoading = false;
-          this.showThinkingModal = false;
           this.thinkingMessage = "Preparing for execution...";
           this.executeNextStep(0);
         } else {
@@ -46936,15 +46713,11 @@ ${APPLICANT_TABLE_SCHEMA}`;
           const breakdownContextMessages = [
             { role: "system", content: retryPrompt },
             { role: "user", content: analysisOutputForBreakdown },
-            // Original input
             { role: "assistant", content: rawBreakdownContent },
-            // Previous incorrect response
             { role: "user", content: feedbackMessage }
-            // Feedback
           ];
           this.apiService.getAiResponse(breakdownContextMessages, "", this.currentAiRole).subscribe({
             next: (res) => this.handleBreakdownResponse(res),
-            // Recursive call to handle response
             error: (err) => this.handleBreakdownError(err)
           });
         } else {
@@ -46986,7 +46759,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       const finalizationContextMessages = [
         { role: "system", content: finalizationPrompt },
         ...this.execution_context.map((content) => ({ role: "assistant", content }))
-        // Include all previous AI outputs
       ];
       this.apiService.getAiResponse(finalizationContextMessages, "", this.currentAiRole).subscribe({
         next: (finalizationResponse) => {
@@ -47049,7 +46821,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       { role: "system", content: executionPrompt },
       ...this.execution_context.map((content) => ({ role: "assistant", content })),
       { role: "user", content: currentStep }
-      // The current step as the user message for the Execution AI
     ];
     this.apiService.getAiResponse(executionContextMessages, "", this.currentAiRole).subscribe({
       next: (executionResponse) => {
@@ -47098,7 +46869,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       { role: "system", content: queryGenerationPrompt },
       ...this.execution_context.map((content) => ({ role: "assistant", content })),
       { role: "user", content: naturalLanguageQuery }
-      // The natural language query as the user message
     ];
     if (this.queryRetryCount > 0) {
       queryGenerationContextMessages.push({
@@ -47118,7 +46888,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
           const safetyCheckContextMessages = [
             { role: "system", content: safetyCheckPrompt },
             { role: "user", content: rawSqlQuery }
-            // Pass the generated SQL query to the Safety AI
           ];
           this.apiService.getAiResponse(safetyCheckContextMessages, "", this.currentAiRole).subscribe({
             next: (safetyResponse) => {
@@ -47212,8 +46981,208 @@ ${APPLICANT_TABLE_SCHEMA}`;
       }
     });
   }
+  static \u0275fac = function ChatOrchestratorService_Factory(__ngFactoryType__) {
+    return new (__ngFactoryType__ || _ChatOrchestratorService)(\u0275\u0275inject(ApiService));
+  };
+  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _ChatOrchestratorService, factory: _ChatOrchestratorService.\u0275fac, providedIn: "root" });
+};
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(ChatOrchestratorService, [{
+    type: Injectable,
+    args: [{
+      providedIn: "root"
+    }]
+  }], () => [{ type: ApiService }], null);
+})();
+
+// src/app/app.ts
+var _c0 = ["chatContainer"];
+var _c1 = ["messageInput"];
+function AppComponent_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 11)(1, "div", 12);
+    \u0275\u0275element(2, "div", 13);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const message_r2 = ctx.$implicit;
+    \u0275\u0275classProp("justify-end", message_r2.sender === "user")("justify-start", message_r2.sender === "ai");
+    \u0275\u0275advance();
+    \u0275\u0275classProp("user-message-bubble", message_r2.sender === "user");
+    \u0275\u0275advance();
+    \u0275\u0275property("innerHTML", message_r2.content, \u0275\u0275sanitizeHtml);
+  }
+}
+function AppComponent_div_4_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 14);
+    \u0275\u0275listener("click", function AppComponent_div_4_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r3);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275elementStart(1, "div", 15)(2, "span");
+    \u0275\u0275text(3);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(4, "span", 16);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext();
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r3.orchestrator.thinkingMessage);
+  }
+}
+function AppComponent_div_11_ol_7_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "li");
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const step_r6 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(step_r6);
+  }
+}
+function AppComponent_div_11_ol_7_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "ol", 27);
+    \u0275\u0275template(1, AppComponent_div_11_ol_7_li_1_Template, 2, 1, "li", 28);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r3.orchestrator.breakdownSteps);
+  }
+}
+function AppComponent_div_11_p_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "p", 29);
+    \u0275\u0275text(1, "No breakdown steps generated yet.");
+    \u0275\u0275elementEnd();
+  }
+}
+function AppComponent_div_11_div_13_pre_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "pre", 32);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const entry_r7 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(entry_r7);
+  }
+}
+function AppComponent_div_11_div_13_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 30);
+    \u0275\u0275template(1, AppComponent_div_11_div_13_pre_1_Template, 2, 1, "pre", 31);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r3.orchestrator.execution_context);
+  }
+}
+function AppComponent_div_11_p_14_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "p", 29);
+    \u0275\u0275text(1, "Execution has not started yet.");
+    \u0275\u0275elementEnd();
+  }
+}
+function AppComponent_div_11_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r5 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 17);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r5);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275elementStart(1, "div", 18);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_div_click_1_listener($event) {
+      \u0275\u0275restoreView(_r5);
+      return \u0275\u0275resetView($event.stopPropagation());
+    });
+    \u0275\u0275elementStart(2, "h2", 19);
+    \u0275\u0275text(3, "AI Execution Details");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 20)(5, "h3", 21);
+    \u0275\u0275text(6, "Breakdown Steps");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(7, AppComponent_div_11_ol_7_Template, 2, 1, "ol", 22)(8, AppComponent_div_11_p_8_Template, 2, 0, "p", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(9, "hr", 24);
+    \u0275\u0275elementStart(10, "div")(11, "h3", 21);
+    \u0275\u0275text(12, "Execution Log");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(13, AppComponent_div_11_div_13_Template, 2, 1, "div", 25)(14, AppComponent_div_11_p_14_Template, 2, 0, "p", 23);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(15, "button", 26);
+    \u0275\u0275listener("click", function AppComponent_div_11_Template_button_click_15_listener() {
+      \u0275\u0275restoreView(_r5);
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.toggleThinkingModal());
+    });
+    \u0275\u0275text(16, " Close ");
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r3 = \u0275\u0275nextContext();
+    \u0275\u0275advance(7);
+    \u0275\u0275property("ngIf", ctx_r3.orchestrator.breakdownSteps.length > 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r3.orchestrator.breakdownSteps.length === 0);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("ngIf", ctx_r3.orchestrator.execution_context.length > 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r3.orchestrator.execution_context.length === 0);
+  }
+}
+var MAX_TEXTAREA_HEIGHT = 150;
+var AppComponent = class _AppComponent {
+  orchestrator;
+  title = "analytics-agent";
+  chatContainer;
+  messageInput;
+  constructor(orchestrator) {
+    this.orchestrator = orchestrator;
+  }
+  ngOnInit() {
+    this.orchestrator.messages.push({ sender: "ai", content: "Hello! How can I help you today?" });
+  }
+  ngAfterViewChecked() {
+    this.scrollToBottom();
+  }
+  adjustTextareaHeight() {
+    if (this.messageInput && this.messageInput.nativeElement) {
+      const element = this.messageInput.nativeElement;
+      element.style.height = "auto";
+      element.style.height = Math.min(element.scrollHeight, MAX_TEXTAREA_HEIGHT) + "px";
+      element.style.overflowY = element.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
+    }
+  }
+  sendMessage() {
+    this.orchestrator.sendMessage();
+    this.adjustTextareaHeight();
+  }
+  toggleThinkingModal() {
+    this.orchestrator.showThinkingModal = !this.orchestrator.showThinkingModal;
+  }
+  scrollToBottom() {
+    try {
+      this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
+    } catch (err) {
+    }
+  }
   static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _AppComponent)(\u0275\u0275directiveInject(ApiService));
+    return new (__ngFactoryType__ || _AppComponent)(\u0275\u0275directiveInject(ChatOrchestratorService));
   };
   static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], viewQuery: function AppComponent_Query(rf, ctx) {
     if (rf & 1) {
@@ -47234,7 +47203,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
       \u0275\u0275elementStart(5, "div", 6)(6, "div", 7)(7, "textarea", 8, 1);
       \u0275\u0275twoWayListener("ngModelChange", function AppComponent_Template_textarea_ngModelChange_7_listener($event) {
         \u0275\u0275restoreView(_r1);
-        \u0275\u0275twoWayBindingSet(ctx.newMessage, $event) || (ctx.newMessage = $event);
+        \u0275\u0275twoWayBindingSet(ctx.orchestrator.newMessage, $event) || (ctx.orchestrator.newMessage = $event);
         return \u0275\u0275resetView($event);
       });
       \u0275\u0275listener("input", function AppComponent_Template_textarea_input_7_listener() {
@@ -47258,13 +47227,13 @@ ${APPLICANT_TABLE_SCHEMA}`;
     }
     if (rf & 2) {
       \u0275\u0275advance(3);
-      \u0275\u0275property("ngForOf", ctx.messages);
+      \u0275\u0275property("ngForOf", ctx.orchestrator.messages);
       \u0275\u0275advance();
-      \u0275\u0275property("ngIf", ctx.isLoading);
+      \u0275\u0275property("ngIf", ctx.orchestrator.isLoading);
       \u0275\u0275advance(3);
-      \u0275\u0275twoWayProperty("ngModel", ctx.newMessage);
+      \u0275\u0275twoWayProperty("ngModel", ctx.orchestrator.newMessage);
       \u0275\u0275advance(4);
-      \u0275\u0275property("ngIf", ctx.showThinkingModal);
+      \u0275\u0275property("ngIf", ctx.orchestrator.showThinkingModal);
     }
   }, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel], styles: ['\n\n[_nghost-%COMP%] {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble[_ngcontent-%COMP%] {\n  background: rgba(0, 123, 255, 0.3);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input[_ngcontent-%COMP%]::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button[_ngcontent-%COMP%] {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button[_ngcontent-%COMP%]:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */'] });
 };
@@ -47275,7 +47244,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
   <!-- Chat Area -->
   <div #chatContainer class="flex-1 overflow-y-auto p-4 space-y-4">
     <!-- Chat messages will be rendered here dynamically -->
-    <div *ngFor="let message of messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
+    <div *ngFor="let message of orchestrator.messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
         <div [innerHTML]="message.content"></div>
@@ -47283,9 +47252,9 @@ ${APPLICANT_TABLE_SCHEMA}`;
     </div>
 
     <!-- Thinking indicator -->
-    <div *ngIf="isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
+    <div *ngIf="orchestrator.isLoading" class="flex justify-center" (click)="toggleThinkingModal()">
       <div class="glass-card p-3 rounded-lg max-w-xl cursor-pointer flex items-center space-x-2">
-        <span>{{ thinkingMessage }}</span>
+        <span>{{ orchestrator.thinkingMessage }}</span>
         <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
       </div>
     </div>
@@ -47299,7 +47268,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
         rows="1"
         class="flex-1 resize-none outline-none bg-transparent text-white placeholder-gray-400 glass-input p-2"
         placeholder="Type your message..."
-        [(ngModel)]="newMessage"
+        [(ngModel)]="orchestrator.newMessage"
         (input)="adjustTextareaHeight()"
         (keydown.enter)="sendMessage(); $event.preventDefault();"
       ></textarea>
@@ -47311,17 +47280,17 @@ ${APPLICANT_TABLE_SCHEMA}`;
   </div>
 
   <!-- Thinking Modal -->
-  <div *ngIf="showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="toggleThinkingModal()">
+  <div *ngIf="orchestrator.showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="toggleThinkingModal()">
     <div class="glass-container p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
       <h2 class="text-xl font-bold mb-4">AI Execution Details</h2>
 
       <!-- Breakdown Steps -->
       <div class="mb-4">
         <h3 class="font-semibold text-lg mb-2">Breakdown Steps</h3>
-        <ol *ngIf="breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
-          <li *ngFor="let step of breakdownSteps">{{ step }}</li>
+        <ol *ngIf="orchestrator.breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
+          <li *ngFor="let step of orchestrator.breakdownSteps">{{ step }}</li>
         </ol>
-        <p *ngIf="breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
+        <p *ngIf="orchestrator.breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
       </div>
 
       <hr class="border-gray-600 my-4">
@@ -47329,10 +47298,10 @@ ${APPLICANT_TABLE_SCHEMA}`;
       <!-- Execution Log -->
       <div>
         <h3 class="font-semibold text-lg mb-2">Execution Log</h3>
-        <div *ngIf="execution_context.length > 0" class="space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg">
-          <pre *ngFor="let entry of execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
+        <div *ngIf="orchestrator.execution_context.length > 0" class="space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg">
+          <pre *ngFor="let entry of orchestrator.execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
         </div>
-        <p *ngIf="execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
+        <p *ngIf="orchestrator.execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
       </div>
 
       <button class="mt-6 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold w-full" (click)="toggleThinkingModal()">
@@ -47341,7 +47310,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
     </div>
   </div>
 </div>`, styles: ['/* src/app/app.css */\n:host {\n  display: block;\n  min-height: 100vh;\n  background-image: url(/agency/analytics-agent/background.png);\n  background-size: cover;\n  background-position: center;\n  font-family: "Inter", sans-serif;\n}\n.glass-container {\n  background: rgba(255, 255, 255, 0.1);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);\n}\n.glass-card {\n  background: rgba(255, 255, 255, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(255, 255, 255, 0.15);\n}\n.user-message-bubble {\n  background: rgba(0, 123, 255, 0.3);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(0, 123, 255, 0.25);\n}\n.glass-input {\n  background: rgba(255, 255, 255, 0.15);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid rgba(255, 255, 255, 0.2);\n  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n  color: white;\n}\n.glass-input::placeholder {\n  color: rgba(255, 255, 255, 0.7);\n}\n.glass-button {\n  background: rgba(76, 175, 80, 0.2);\n  -webkit-backdrop-filter: blur(5px);\n  backdrop-filter: blur(5px);\n  border: 1px solid rgba(76, 175, 80, 0.3);\n  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);\n}\n.glass-button:hover {\n  background: rgba(76, 175, 80, 0.3);\n}\n/*# sourceMappingURL=app.css.map */\n'] }]
-  }], () => [{ type: ApiService }], { chatContainer: [{
+  }], () => [{ type: ChatOrchestratorService }], { chatContainer: [{
     type: ViewChild,
     args: ["chatContainer"]
   }], messageInput: [{
@@ -47350,7 +47319,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 21 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppComponent, { className: "AppComponent", filePath: "src/app/app.ts", lineNumber: 15 });
 })();
 
 // node_modules/zone.js/fesm2015/zone.js
