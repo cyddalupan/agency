@@ -25,6 +25,17 @@
 
 ---
 
+### Execution Phase UI
+
+- **Trigger**: The execution phase begins after `[[COLLAB_DONE]]`.
+- **User Experience**:
+    - The chat input is disabled.
+    - A thinking/processing indicator is displayed to the user, often within a modal, to signify that the AI is actively working on the request.
+    - No intermediate AI messages or results from the internal steps (Analysis, Breakdown, Query Generation, etc.) are shown to the user during this phase. The process is a loading message (that is clickable to show modal with more details about the process) from the user's perspective until the final result is ready.
+- **Completion**: The phase ends when the final, formatted HTML response is displayed to the user.
+
+---
+
 ### [2] Analysis AI (start of execution phase)
 - **Purpose**: To summarize the user's intent from the history into a concise brief for the Breakdown AI.
 - **Trigger**: Automatic, upon receiving `[[COLLAB_DONE]]`.
@@ -33,7 +44,7 @@
 - **Core Logic**:
     - Analyzes the history to identify the core task.
 - **Output**:
-    - A summarized intent object (e.g., `{ task: "find_inactive_users", ... }`), which becomes the first entry in the `execution_context`. This output is displayed to the user as an AI message but **not** immediately saved to the chat history.
+    - A summarized intent object (e.g., `{ task: "find_inactive_users", ... }`), which becomes the first entry in the `execution_context`. This output is for internal use and is **not** displayed to the user.
 
 ---
 

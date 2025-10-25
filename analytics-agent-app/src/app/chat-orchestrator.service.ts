@@ -19,7 +19,7 @@ export class ChatOrchestratorService {
   execution_context: string[] = [];
   breakdownSteps: string[] = [];
   public thinkingMessage: string = 'Thinking...';
-  private breakdownRetryCount: number = 0;
+  public breakdownRetryCount: number = 0;
   private readonly MAX_BREAKDOWN_RETRIES: number = 2;
   private currentStepIndex: number = 0;
   private queryRetryCount: number = 0;
@@ -36,7 +36,7 @@ export class ChatOrchestratorService {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case 'collaborate':
-        return `You are a Collaboration AI for a deployment agency system. Besides General assistance, Your goal is to clarify the user's needs and generate a precise initial context for subsequent AI agents. Your primary function is to help manage the application by getting or manipulating data through queries. reply in short messages. Avoid mentioning technical terms. ALWAYS use easy-to-understand language. Make sure we fully understand what the user needs. When you have a detailed context object, output it followed by the trigger [[COLLAB_DONE]].\n\nAvailable Database Schema:\n${dbSchema}`;
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]].\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
       case 'analyze':
         return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.\n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
       case 'breakdown':
