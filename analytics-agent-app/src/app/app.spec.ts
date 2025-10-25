@@ -85,4 +85,28 @@ describe('AppComponent', () => {
       expect(mockOrchestrator.showThinkingModal).toBe(false);
     });
   });
+
+  describe('Thinking Modal', () => {
+    it('should display two log containers when the modal is open', () => {
+      mockOrchestrator.showThinkingModal = true;
+      fixture.detectChanges();
+
+      const planContainer = fixture.nativeElement.querySelector('.log-container-plan');
+      const executionContainer = fixture.nativeElement.querySelector('.log-container-execution');
+
+      expect(planContainer).toBeTruthy();
+      expect(executionContainer).toBeTruthy();
+    });
+
+    it('should not display log containers when the modal is closed', () => {
+      mockOrchestrator.showThinkingModal = false;
+      fixture.detectChanges();
+
+      const planContainer = fixture.nativeElement.querySelector('.log-container-plan');
+      const executionContainer = fixture.nativeElement.querySelector('.log-container-execution');
+
+      expect(planContainer).toBeFalsy();
+      expect(executionContainer).toBeFalsy();
+    });
+  });
 });

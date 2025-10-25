@@ -54,3 +54,16 @@
 .glass-button:hover {
   background: rgba(76, 175, 80, 0.3);
 }
+
+/* Log container styles */
+.log-container-plan,
+.log-container-execution {
+  max-height: 60vh;
+}
+
+@media (max-width: 768px) {
+  .log-container-plan,
+  .log-container-execution {
+    max-height: 30vh;
+  }
+}

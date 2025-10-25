@@ -39,27 +39,31 @@
 
   <!-- Thinking Modal -->
   <div *ngIf="orchestrator.showThinkingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="toggleThinkingModal()">
-    <div class="glass-container p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
-      <h2 class="text-xl font-bold mb-4">AI Execution Details</h2>
+    <div class="glass-container p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col" (click)="$event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4 text-center">AI Execution Details</h2>
 
-      <!-- Breakdown Steps -->
-      <div class="mb-4">
-        <h3 class="font-semibold text-lg mb-2">Breakdown Steps</h3>
-        <ol *ngIf="orchestrator.breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
-          <li *ngFor="let step of orchestrator.breakdownSteps">{{ step }}</li>
-        </ol>
-        <p *ngIf="orchestrator.breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
-      </div>
-
-      <hr class="border-gray-600 my-4">
-
-      <!-- Execution Log -->
-      <div>
-        <h3 class="font-semibold text-lg mb-2">Execution Log</h3>
-        <div *ngIf="orchestrator.execution_context.length > 0" class="space-y-2 text-sm font-mono bg-black/20 p-3 rounded-lg">
-          <pre *ngFor="let entry of orchestrator.execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
+      <div class="flex-1 flex flex-col md:flex-row md:space-x-4 overflow-y-hidden">
+        <!-- Breakdown Steps -->
+        <div class="flex-1 flex flex-col log-container-plan">
+          <h3 class="font-semibold text-lg mb-2">Plan</h3>
+          <div class="flex-1 bg-black/20 p-3 rounded-lg overflow-y-auto">
+            <ol *ngIf="orchestrator.breakdownSteps.length > 0" class="list-decimal list-inside space-y-1 text-gray-200">
+              <li *ngFor="let step of orchestrator.breakdownSteps">{{ step }}</li>
+            </ol>
+            <p *ngIf="orchestrator.breakdownSteps.length === 0" class="text-gray-400">No breakdown steps generated yet.</p>
+          </div>
         </div>
-        <p *ngIf="orchestrator.execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
+
+        <!-- Execution Log -->
+        <div class="flex-1 flex flex-col log-container-execution mt-4 md:mt-0">
+          <h3 class="font-semibold text-lg mb-2">Execution Log</h3>
+          <div class="flex-1 bg-black/20 p-3 rounded-lg overflow-y-auto font-mono text-sm">
+            <div *ngIf="orchestrator.execution_context.length > 0" class="space-y-2">
+              <pre *ngFor="let entry of orchestrator.execution_context" class="whitespace-pre-wrap">{{ entry }}</pre>
+            </div>
+            <p *ngIf="orchestrator.execution_context.length === 0" class="text-gray-400">Execution has not started yet.</p>
+          </div>
+        </div>
       </div>
 
       <button class="mt-6 px-4 py-2 glass-button bg-red-600/50 hover:bg-red-700/60 rounded-lg font-semibold w-full" (click)="toggleThinkingModal()">
