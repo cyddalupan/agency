@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { ChatOrchestratorService } from './chat-orchestrator.service';
 import { ApiService } from './api';
@@ -113,5 +113,76 @@ describe('ChatOrchestratorService: isQuerySafe', () => {
   it('should return false for a query that is just "where"', () => {
     const query = 'where';
     expect(service.isQuerySafe(query)).toBe(false);
+  });
+});
+
+describe('ChatOrchestratorService: handleFinalization', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+  let stateMachineSpy: jasmine.Spy;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+    stateMachineSpy = spyOn(service['stateMachine'], 'next').and.callThrough();
+  });
+
+  it('should call apiService and transition to html_conversion on success', () => {
+    // Arrange
+    const finalizationResponse = { choices: [{ message: { content: 'Final summary' } }] };
+    mockApiService.getAiResponse.and.returnValue(of(finalizationResponse));
+    service.execution_context = ['step 1 result', 'step 2 result'];
+    const htmlConversionSpy = spyOn<any>(service, 'handleHtmlConversion');
+
+    // Act
+    service['stateMachine'].next({ role: 'finalization' });
+
+    // Assert
+    expect(mockApiService.getAiResponse).toHaveBeenCalledWith(
+      jasmine.any(Array),
+      '',
+      'finalization'
+    );
+    expect(htmlConversionSpy).toHaveBeenCalledWith('Final summary');
+  });
+
+  it('should handle API error and post a message', () => {
+    // Arrange
+    mockApiService.getAiResponse.and.returnValue(throwError(() => new Error('API Error')));
+    service.execution_context = ['step 1 result'];
+    service.messages = [];
+    service.isLoading = true;
+    const htmlConversionSpy = spyOn<any>(service, 'handleHtmlConversion');
+
+    // Act
+    service['stateMachine'].next({ role: 'finalization' });
+
+    // Assert
+    expect(service.messages.length).toBe(1);
+    expect(service.messages[0].content).toBe('Error: Could not get a finalization message from the AI.');
+    expect(service.isLoading).toBe(false);
+    expect(htmlConversionSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle empty AI response and transition with a default message', () => {
+    // Arrange
+    const emptyResponse = { choices: [{ message: { content: null } }] };
+    mockApiService.getAiResponse.and.returnValue(of(emptyResponse));
+    service.execution_context = ['step 1 result'];
+    const htmlConversionSpy = spyOn<any>(service, 'handleHtmlConversion');
+
+    // Act
+    service['stateMachine'].next({ role: 'finalization' });
+
+    // Assert
+    expect(mockApiService.getAiResponse).toHaveBeenCalled();
+    expect(htmlConversionSpy).toHaveBeenCalledWith('No finalization message from AI.');
   });
 });

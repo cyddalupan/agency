@@ -355,6 +355,15 @@ export class ChatOrchestratorService {
     return true;
   }
 
+  private handleFatalError(errorMessage: string): void {
+    this.messages.push({ sender: 'ai', content: errorMessage });
+    this.isLoading = false;
+    this.showThinkingModal = false;
+    this.queryRetryCount = 0;
+    this.safetyRetryCount = 0;
+    this.breakdownRetryCount = 0;
+  }
+
   private handleSafetyCheck(data: { query: string, nlp: string }): void {
     this.thinkingMessage = 'Performing safety check on query...';
 
@@ -362,29 +371,7 @@ export class ChatOrchestratorService {
       console.log('SQL query passed safety check.');
       this.execution_context.push(`Safety Check: [[SAFE_TO_RUN]]`);
       this.thinkingMessage = 'Executing SQL query...';
-      this.apiService.executeQuery(data.query, []).subscribe({
-        next: (queryResult: any) => {
-          this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
-          console.log('Query Result:', queryResult);
-          this.queryRetryCount = 0;
-          this.currentStepIndex++;
-          this.stateMachine.next({ role: 'execution' });
-        },
-        error: (queryError: any) => {
-          console.error('Error executing SQL query:', queryError);
-          if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
-            this.queryRetryCount++;
-            console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-            this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
-            this.stateMachine.next({ role: 'query_generation', data: data.nlp });
-          } else {
-            this.messages.push({ sender: 'ai', content: `Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.` });
-            this.isLoading = false;
-            this.showThinkingModal = false;
-            this.queryRetryCount = 0;
-          }
-        }
-      });
+      this.executeQueryWithRetries(data);
     } else {
       console.warn('SQL query failed safety check:', data.query);
       this.execution_context.push(`Safety Check: [[UNSAFE]]`);
@@ -394,12 +381,36 @@ export class ChatOrchestratorService {
         this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
         this.stateMachine.next({ role: 'query_generation', data: data.nlp });
       } else {
-        this.messages.push({ sender: 'ai', content: `Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.` });
-        this.isLoading = false;
-        this.showThinkingModal = false;
-        this.safetyRetryCount = 0;
+        this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
       }
     }
+  }
+
+  private executeQueryWithRetries(data: { query: string, nlp: string }): void {
+    this.apiService.executeQuery(data.query, []).subscribe({
+      next: (queryResult: any) => {
+        this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
+        console.log('Query Result:', queryResult);
+        this.queryRetryCount = 0;
+        this.currentStepIndex++;
+        this.stateMachine.next({ role: 'execution' });
+      },
+      error: (queryError: any) => {
+        console.error('Error executing SQL query:', queryError);
+        this.queryRetryCount++;
+        if (queryError.status === 500) {
+          return this.handleFatalError(`Error: Failed to execute query after ${this.queryRetryCount} attempts. Please refine your request.`);
+        }
+
+        if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
+          console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
+          this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+          this.stateMachine.next({ role: 'query_generation', data: data.nlp });
+        } else {
+          this.handleFatalError(`Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
+        }
+      }
+    });
   }
 
   private handleFinalization(): void {

@@ -36,6 +36,19 @@
 
 ---
 
+### Global Error Handling
+- **Purpose**: To provide a consistent and user-friendly error message when an unrecoverable error occurs during the execution phase.
+- **Trigger**: Any step in the execution workflow (Analysis, Breakdown, Query Execution, etc.) fails permanently. This includes reaching the maximum retry limit in the Query Executor.
+- **Core Logic**:
+    - The entire execution workflow is immediately halted.
+    - A pre-defined, generic error message is generated.
+    - This message is then passed through the standard **[9] HTML Conversion AI** and **[10] Save to History** steps to be displayed to the user.
+- **Output**:
+    - A formatted HTML chat reply with a user-friendly error message.
+- **Example Message**: "I'm sorry, but something went wrong while processing your request. If this issue continues, please contact a developer for assistance."
+
+---
+
 ### [2] Analysis AI (start of execution phase)
 - **Purpose**: To summarize the user's intent from the history into a concise brief for the Breakdown AI.
 - **Trigger**: Automatic, upon receiving `[[COLLAB_DONE]]`.
