@@ -438,6 +438,12 @@ export class ChatOrchestratorService {
   }
 
   private handleHtmlConversion(contentToConvert: string): void {
+    if (!contentToConvert) {
+      this.messages.push({ sender: 'ai', content: 'Error: Input to HTML conversion was null or undefined.' });
+      this.isLoading = false;
+      this.showThinkingModal = false;
+      return;
+    }
     this.thinkingMessage = 'Converting to HTML...';
     const conversionPrompt = this.getAiRolePrompt();
     const conversionContextMessages = [

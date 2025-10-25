@@ -186,3 +186,93 @@ describe('ChatOrchestratorService: handleFinalization', () => {
     expect(htmlConversionSpy).toHaveBeenCalledWith('No finalization message from AI.');
   });
 });
+
+describe('ChatOrchestratorService: handleHtmlConversion', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+  });
+
+  it('should call apiService and push HTML content to messages on success', () => {
+    // Arrange
+    const contentToConvert = 'Final summary text';
+    const htmlResponse = { choices: [{ message: { content: '<p>Final summary HTML</p>' } }] };
+    mockApiService.getAiResponse.and.returnValue(of(htmlResponse));
+    service.messages = [];
+    service.isLoading = true;
+
+    // Act
+    service['stateMachine'].next({ role: 'html_conversion', data: contentToConvert });
+
+    // Assert
+    expect(service.currentAiRole).toBe('html_conversion');
+    expect(mockApiService.getAiResponse).toHaveBeenCalledWith(
+      jasmine.any(Array),
+      '',
+      'html_conversion'
+    );
+    expect(service.messages.length).toBe(1);
+    expect(service.messages[0].content).toBe('<p>Final summary HTML</p>');
+    expect(service.isLoading).toBe(false);
+    expect(mockApiService.saveChatHistory).toHaveBeenCalled();
+  });
+
+  it('should handle API error and post an error message', () => {
+    // Arrange
+    const contentToConvert = 'Some content';
+    mockApiService.getAiResponse.and.returnValue(throwError(() => new Error('API Error')));
+    service.messages = [];
+    service.isLoading = true;
+
+    // Act
+    service['stateMachine'].next({ role: 'html_conversion', data: contentToConvert });
+
+    // Assert
+    expect(service.messages.length).toBe(1);
+    expect(service.messages[0].content).toBe('Error: Could not get a response from the HTML Conversion AI.');
+    expect(service.isLoading).toBe(false);
+  });
+
+  it('should handle empty AI response and post a default message', () => {
+    // Arrange
+    const contentToConvert = 'Some content';
+    const emptyResponse = { choices: [{ message: { content: null } }] };
+    mockApiService.getAiResponse.and.returnValue(of(emptyResponse));
+    service.messages = [];
+    service.isLoading = true;
+
+    // Act
+    service['stateMachine'].next({ role: 'html_conversion', data: contentToConvert });
+
+    // Assert
+    expect(service.messages.length).toBe(1);
+    expect(service.messages[0].content).toBe('No HTML response from AI.');
+    expect(service.isLoading).toBe(false);
+  });
+
+  it('should post an error if input content is null', () => {
+    // Arrange
+    const contentToConvert = null;
+    service.messages = [];
+    service.isLoading = true;
+
+    // Act
+    service['stateMachine'].next({ role: 'html_conversion', data: contentToConvert });
+
+    // Assert
+    expect(mockApiService.getAiResponse).not.toHaveBeenCalled();
+    expect(service.isLoading).toBe(false);
+    expect(service.messages.length).toBe(1);
+    expect(service.messages[0].content).toBe('Error: Input to HTML conversion was null or undefined.');
+  });
+});
