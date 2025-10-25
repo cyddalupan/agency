@@ -109,4 +109,33 @@ describe('AppComponent', () => {
       expect(executionContainer).toBeFalsy();
     });
   });
+
+  describe('Breakdown AI Plan Display', () => {
+    beforeEach(() => {
+      mockOrchestrator.showThinkingModal = true;
+    });
+
+    it('should display the breakdown steps when the modal is open', () => {
+      mockOrchestrator.breakdownSteps = ['Step 1: Analyze', 'Step 2: Query', 'Step 3: Format'];
+      fixture.detectChanges();
+
+      const stepElements = fixture.nativeElement.querySelectorAll('.log-container-plan li');
+      expect(stepElements.length).toBe(3);
+      expect(stepElements[0].textContent).toBe('Step 1: Analyze');
+      expect(stepElements[1].textContent).toBe('Step 2: Query');
+      expect(stepElements[2].textContent).toBe('Step 3: Format');
+    });
+
+    it('should display the "no steps" message when the breakdown steps array is empty', () => {
+      mockOrchestrator.breakdownSteps = [];
+      fixture.detectChanges();
+
+      const noStepsMessage = fixture.nativeElement.querySelector('.log-container-plan p');
+      expect(noStepsMessage).toBeTruthy();
+      expect(noStepsMessage.textContent).toContain('No breakdown steps generated yet.');
+
+      const stepElements = fixture.nativeElement.querySelectorAll('.log-container-plan li');
+      expect(stepElements.length).toBe(0);
+    });
+  });
 });
