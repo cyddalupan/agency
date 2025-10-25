@@ -332,12 +332,12 @@ export class ChatOrchestratorService {
     });
   }
 
-  private isQuerySafe(query: string): boolean {
+  public isQuerySafe(query: string): boolean {
     const lowerCaseQuery = query.toLowerCase();
-    const forbiddenKeywords = ['drop', 'truncate', 'alter', 'grant', 'revoke'];
+    const forbiddenKeywords = /\b(drop|truncate|alter|grant|revoke)\b/;
 
-    if (forbiddenKeywords.some(keyword => lowerCaseQuery.includes(keyword))) {
-      return false;
+    if (forbiddenKeywords.test(lowerCaseQuery)) {
+        return false;
     }
 
     if (lowerCaseQuery.includes('delete from') && !lowerCaseQuery.includes('where')) {
