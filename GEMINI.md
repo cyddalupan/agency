@@ -160,4 +160,4 @@ The Angular application now features a "liquid glass" (glassmorphism) design app
 
 ## NOTE:
 
-run angular test using `ng test --watch=false --browsers=ChromeHeadless`
+run angular test using `npm run test`

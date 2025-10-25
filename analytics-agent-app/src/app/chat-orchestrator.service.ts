@@ -1,10 +1,16 @@
 import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
 import { ApiService } from './api';
 import { APPLICANT_TABLE_SCHEMA } from './schemas';
 
 interface Message {
   sender: 'user' | 'ai';
   content: string;
+}
+
+interface State {
+  role: string;
+  data?: any;
 }
 
 @Injectable({
@@ -22,21 +28,54 @@ export class ChatOrchestratorService {
   public breakdownRetryCount: number = 0;
   private readonly MAX_BREAKDOWN_RETRIES: number = 2;
   private currentStepIndex: number = 0;
-  private queryRetryCount: number = 0;
+  public queryRetryCount: number = 0;
+  public safetyRetryCount: number = 0;
   private readonly MAX_QUERY_RETRIES: number = 5;
   private currentUserMessageForHistory: string = '';
 
-  constructor(private apiService: ApiService) { }
+  private stateMachine = new Subject<State>();
+
+  constructor(private apiService: ApiService) {
+    this.stateMachine.subscribe(state => {
+      this.currentAiRole = state.role;
+      switch (state.role) {
+        case 'collaborate':
+          this.handleCollaborate(state.data);
+          break;
+        case 'analyze':
+          this.handleAnalyze();
+          break;
+        case 'breakdown':
+          this.handleBreakdown(state.data);
+          break;
+        case 'execution':
+          this.handleExecution();
+          break;
+        case 'query_generation':
+          this.handleQueryGeneration(state.data);
+          break;
+        case 'safety_check':
+          this.handleSafetyCheck(state.data);
+          break;
+        case 'finalization':
+          this.handleFinalization();
+          break;
+        case 'html_conversion':
+          this.handleHtmlConversion(state.data);
+          break;
+      }
+    });
+  }
 
   private cleanAiContent(content: string): string {
-    return content.replace(/\s*[[.*?]\s*/g, ' ').trim();
+    return content.replace(/\s*\[[.*?]\s*/g, ' ').trim();
   }
 
   private getAiRolePrompt(): string {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case 'collaborate':
-        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]].\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
       case 'analyze':
         return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.\n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
       case 'breakdown':
@@ -73,11 +112,14 @@ export class ChatOrchestratorService {
     this.isLoading = true;
     this.thinkingMessage = 'Thinking...';
 
+    this.stateMachine.next({ role: 'collaborate', data: userMessage });
+  }
+
+  private handleCollaborate(userMessage: string): void {
     const contextMessages = this.messages.slice(-10).map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.content
     }));
-
     contextMessages.unshift({ role: 'system', content: this.getAiRolePrompt() });
 
     this.apiService.getAiResponse(contextMessages, userMessage, this.currentAiRole).subscribe({
@@ -86,53 +128,10 @@ export class ChatOrchestratorService {
         let displayContent = rawAiContent || 'No response from AI.';
 
         if (rawAiContent && rawAiContent.includes('[[COLLAB_DONE]]')) {
-          this.thinkingMessage = 'Analyzing request...';
-          this.currentAiRole = 'analyze';
-
-          const analysisPrompt = this.getAiRolePrompt();
-          const analysisContextMessages = [...contextMessages];
-          analysisContextMessages.unshift({ role: 'system', content: analysisPrompt });
-
-          this.apiService.getAiResponse(analysisContextMessages, '', this.currentAiRole).subscribe({
-            next: (analysisResponse: any) => {
-              let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
-              let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
-
-              this.execution_context.push(displayAnalysisContent);
-              console.log('Analysis AI output stored in execution_context:', this.execution_context);
-
-              this.thinkingMessage = 'Breaking down the task into steps...';
-              this.currentAiRole = 'breakdown';
-              const breakdownPrompt = this.getAiRolePrompt();
-              const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
-
-              const breakdownContextMessages = [
-                { role: 'system', content: breakdownPrompt },
-                { role: 'user', content: analysisOutputForBreakdown }
-              ];
-
-              this.apiService.getAiResponse(breakdownContextMessages, '', this.currentAiRole).subscribe({
-                next: (res) => this.handleBreakdownResponse(res),
-                error: (err) => this.handleBreakdownError(err)
-              });
-
-            },
-            error: (analysisError: any) => {
-              console.error('Error fetching Analysis AI response:', analysisError);
-              this.messages.push({
-                sender: 'ai',
-                content: 'Error: Could not get a response from the Analysis AI.'
-              });
-              this.isLoading = false;
-              this.showThinkingModal = false;
-            }
-          });
+          this.stateMachine.next({ role: 'analyze' });
         } else {
           displayContent = this.cleanAiContent(displayContent);
-          this.messages.push({
-            sender: 'ai',
-            content: displayContent
-          });
+          this.messages.push({ sender: 'ai', content: displayContent });
           this.isLoading = false;
           this.showThinkingModal = false;
           this.apiService.saveChatHistory(userMessage, displayContent).subscribe({
@@ -143,154 +142,103 @@ export class ChatOrchestratorService {
       },
       error: (error: any) => {
         console.error('Error fetching AI response:', error);
-        this.messages.push({
-          sender: 'ai',
-          content: 'Error: Could not get a response from the AI.'
-        });
+        this.messages.push({ sender: 'ai', content: 'Error: Could not get a response from the AI.' });
         this.isLoading = false;
         this.showThinkingModal = false;
       }
     });
   }
 
-  private handleBreakdownResponse(breakdownResponse: any): void {
-    let rawBreakdownContent = breakdownResponse.choices?.[0]?.message?.content;
-    if (rawBreakdownContent) {
-      try {
-        const parsedSteps = JSON.parse(rawBreakdownContent);
-        if (Array.isArray(parsedSteps) && parsedSteps.every(step => typeof step === 'string')) {
-          this.breakdownSteps = parsedSteps;
-          console.log('Breakdown AI steps:', this.breakdownSteps);
-          this.breakdownRetryCount = 0;
-          this.thinkingMessage = 'Preparing for execution...';
-          this.executeNextStep(0);
-        } else {
-          throw new Error('Parsed content is not a JSON array of strings.');
-        }
-      } catch (e) {
-        console.error('Error parsing Breakdown AI response or invalid format:', e);
-        if (this.breakdownRetryCount < this.MAX_BREAKDOWN_RETRIES) {
-          this.breakdownRetryCount++;
-          console.warn(`Breakdown AI retry attempt ${this.breakdownRetryCount}/${this.MAX_BREAKDOWN_RETRIES}`);
+  private handleAnalyze(): void {
+    this.thinkingMessage = 'Analyzing request...';
+    const analysisPrompt = this.getAiRolePrompt();
+    const analysisContextMessages = this.messages.slice(-10).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
+    analysisContextMessages.unshift({ role: 'system', content: analysisPrompt });
 
-          const retryPrompt = this.getAiRolePrompt();
-          const feedbackMessage = `Previous response was not a valid JSON array of strings. Please provide the breakdown again in the correct format: ["step 1", "step 2"].`;
-          const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
-
-          const breakdownContextMessages = [
-            { role: 'system', content: retryPrompt },
-            { role: 'user', content: analysisOutputForBreakdown },
-            { role: 'assistant', content: rawBreakdownContent },
-            { role: 'user', content: feedbackMessage }
-          ];
-
-          this.apiService.getAiResponse(breakdownContextMessages, '', this.currentAiRole).subscribe({
-            next: (res) => this.handleBreakdownResponse(res),
-            error: (err) => this.handleBreakdownError(err)
-          });
-        } else {
-          this.messages.push({
-            sender: 'ai',
-            content: 'Error: Breakdown AI failed to produce valid steps after multiple attempts.'
-          });
-          this.isLoading = false;
-          this.showThinkingModal = false;
-          this.breakdownRetryCount = 0;
-        }
+    this.apiService.getAiResponse(analysisContextMessages, '', this.currentAiRole).subscribe({
+      next: (analysisResponse: any) => {
+        let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
+        let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
+        this.execution_context.push(displayAnalysisContent);
+        console.log('Analysis AI output stored in execution_context:', this.execution_context);
+        this.stateMachine.next({ role: 'breakdown' });
+      },
+      error: (analysisError: any) => {
+        console.error('Error fetching Analysis AI response:', analysisError);
+        this.messages.push({ sender: 'ai', content: 'Error: Could not get a response from the Analysis AI.' });
+        this.isLoading = false;
+        this.showThinkingModal = false;
       }
-    } else {
-      this.messages.push({
-        sender: 'ai',
-        content: 'Error: No response from Breakdown AI.'
-      });
-      this.isLoading = false;
-      this.showThinkingModal = false;
-      this.breakdownRetryCount = 0;
-    }
-  }
-
-  private handleBreakdownError(breakdownError: any): void {
-    console.error('Error fetching Breakdown AI response:', breakdownError);
-    this.messages.push({
-      sender: 'ai',
-      content: 'Error: Could not get a response from the Breakdown AI.'
     });
-    this.isLoading = false;
-    this.showThinkingModal = false;
-    this.breakdownRetryCount = 0;
   }
 
-  private executeNextStep(stepIndex: number): void {
-    if (stepIndex >= this.breakdownSteps.length) {
-      console.log('All breakdown steps executed. Triggering Finalization AI.');
-      this.thinkingMessage = 'Finalizing the response...';
-      this.currentAiRole = 'finalization';
-      const finalizationPrompt = this.getAiRolePrompt();
-      const finalizationContextMessages = [
-        { role: 'system', content: finalizationPrompt },
-        ...this.execution_context.map(content => ({ role: 'assistant', content: content }))
-      ];
+  private handleBreakdown(data?: any): void {
+    this.thinkingMessage = 'Breaking down the task into steps...';
+    const breakdownPrompt = this.getAiRolePrompt();
+    const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
+    const breakdownContextMessages = [
+      { role: 'system', content: breakdownPrompt },
+      { role: 'user', content: analysisOutputForBreakdown }
+    ];
 
-      this.apiService.getAiResponse(finalizationContextMessages, '', this.currentAiRole).subscribe({
-        next: (finalizationResponse: any) => {
-          let rawFinalizationContent = finalizationResponse.choices?.[0]?.message?.content;
-          let displayFinalizationContent = rawFinalizationContent || 'No finalization message from AI.';
+    if (data?.retry) {
+      breakdownContextMessages.push({ role: 'assistant', content: data.rawContent });
+      breakdownContextMessages.push({ role: 'user', content: `Previous response was not a valid JSON array of strings. Please provide the breakdown again in the correct format: ["step 1", "step 2"].` });
+    }
 
-          displayFinalizationContent = this.cleanAiContent(displayFinalizationContent);
-
-          this.thinkingMessage = 'Converting to HTML...';
-          this.currentAiRole = 'html_conversion';
-          const conversionPrompt = this.getAiRolePrompt();
-          const contentToConvert = displayFinalizationContent;
-
-          const conversionContextMessages = [
-            { role: 'system', content: conversionPrompt },
-            { role: 'user', content: contentToConvert }
-          ];
-
-          this.apiService.getAiResponse(conversionContextMessages, '', this.currentAiRole).subscribe({
-            next: (conversionResponse: any) => {
-              let rawHtmlContent = conversionResponse.choices?.[0]?.message?.content;
-              let displayHtmlContent = rawHtmlContent || 'No HTML response from AI.';
-
-              this.messages.push({
-                sender: 'ai',
-                content: displayHtmlContent
-              });
-              this.isLoading = false;
-              this.showThinkingModal = false;
-
-              this.apiService.saveChatHistory(this.currentUserMessageForHistory, displayHtmlContent).subscribe({
-                next: (saveResponse) => console.log('HTML content saved:', saveResponse),
-                error: (saveError) => console.error('Error saving HTML content:', saveError)
-              });
-            },
-            error: (conversionError: any) => {
-              console.error('Error fetching HTML Conversion AI response:', conversionError);
-              this.messages.push({
-                sender: 'ai',
-                content: 'Error: Could not get a response from the HTML Conversion AI.'
-              });
-              this.isLoading = false;
-              this.showThinkingModal = false;
+    this.apiService.getAiResponse(breakdownContextMessages, '', this.currentAiRole).subscribe({
+      next: (res) => {
+        let rawBreakdownContent = res.choices?.[0]?.message?.content;
+        if (rawBreakdownContent) {
+          try {
+            const parsedSteps = JSON.parse(rawBreakdownContent);
+            if (Array.isArray(parsedSteps) && parsedSteps.every(step => typeof step === 'string')) {
+              this.breakdownSteps = parsedSteps;
+              console.log('Breakdown AI steps:', this.breakdownSteps);
+              this.breakdownRetryCount = 0;
+              this.stateMachine.next({ role: 'execution' });
+            } else {
+              throw new Error('Parsed content is not a JSON array of strings.');
             }
-          });
-        },
-        error: (finalizationError: any) => {
-          console.error('Error fetching Finalization AI response:', finalizationError);
-          this.messages.push({
-            sender: 'ai',
-            content: 'Error: Could not get a finalization message from the AI.'
-          });
+          } catch (e) {
+            console.error('Error parsing Breakdown AI response or invalid format:', e);
+            if (this.breakdownRetryCount < this.MAX_BREAKDOWN_RETRIES) {
+              this.breakdownRetryCount++;
+              console.warn(`Breakdown AI retry attempt ${this.breakdownRetryCount}/${this.MAX_BREAKDOWN_RETRIES}`);
+              this.stateMachine.next({ role: 'breakdown', data: { retry: true, rawContent: rawBreakdownContent } });
+            } else {
+              this.messages.push({ sender: 'ai', content: 'Error: Breakdown AI failed to produce valid steps after multiple attempts.' });
+              this.isLoading = false;
+              this.showThinkingModal = false;
+              this.breakdownRetryCount = 0;
+            }
+          }
+        } else {
+          this.messages.push({ sender: 'ai', content: 'Error: No response from Breakdown AI.' });
           this.isLoading = false;
           this.showThinkingModal = false;
+          this.breakdownRetryCount = 0;
         }
-      });
+      },
+      error: (err) => {
+        console.error('Error fetching Breakdown AI response:', err);
+        this.messages.push({ sender: 'ai', content: 'Error: Could not get a response from the Breakdown AI.' });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+        this.breakdownRetryCount = 0;
+      }
+    });
+  }
+
+  private handleExecution(): void {
+    if (this.currentStepIndex >= this.breakdownSteps.length) {
+      this.stateMachine.next({ role: 'finalization' });
       return;
     }
 
-    this.currentStepIndex = stepIndex;
-    this.currentAiRole = 'execution';
     const currentStep = this.breakdownSteps[this.currentStepIndex];
     this.thinkingMessage = `Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`;
     console.log(`Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`);
@@ -311,54 +259,45 @@ export class ChatOrchestratorService {
 
           if (rawExecutionContent.includes('[[QUERY_REQUIRED]]')) {
             const naturalLanguageQuery = rawExecutionContent.replace('[[QUERY_REQUIRED]]', '').trim();
-            console.log('Query required:', naturalLanguageQuery);
-            this.processQueryStep(naturalLanguageQuery);
-          } else if (rawExecutionContent.includes('[[STEP_COMPLETE]]')) {
-            console.log('Step complete:', rawExecutionContent.replace('[[STEP_COMPLETE]]', '').trim());
-            this.executeNextStep(this.currentStepIndex + 1);
+            this.stateMachine.next({ role: 'query_generation', data: naturalLanguageQuery });
           } else {
-            console.log('Execution AI performed internal action or provided direct output:', rawExecutionContent);
-            this.executeNextStep(this.currentStepIndex + 1);
+            if (rawExecutionContent.includes('[[STEP_COMPLETE]]')) {
+              console.log('Step complete:', rawExecutionContent.replace('[[STEP_COMPLETE]]', '').trim());
+            } else {
+              console.log('Execution AI performed internal action or provided direct output:', rawExecutionContent);
+            }
+            this.currentStepIndex++;
+            this.stateMachine.next({ role: 'execution' });
           }
         } else {
           console.error('Error: No response from Execution AI for step:', currentStep);
-          this.messages.push({
-            sender: 'ai',
-            content: `Error: No response from Execution AI for step "${currentStep}".`
-          });
+          this.messages.push({ sender: 'ai', content: `Error: No response from Execution AI for step "${currentStep}".` });
           this.isLoading = false;
           this.showThinkingModal = false;
         }
       },
       error: (executionError: any) => {
         console.error('Error fetching Execution AI response:', executionError);
-        this.messages.push({
-          sender: 'ai',
-          content: `Error: Could not get a response from the Execution AI for step "${currentStep}".`
-        });
+        this.messages.push({ sender: 'ai', content: `Error: Could not get a response from the Execution AI for step "${currentStep}".` });
         this.isLoading = false;
         this.showThinkingModal = false;
       }
     });
   }
 
-  private processQueryStep(naturalLanguageQuery: string): void {
-    this.currentAiRole = 'query_generation';
+  private handleQueryGeneration(naturalLanguageQuery: string): void {
     this.thinkingMessage = 'Generating SQL query...';
     console.log('Generating SQL query for:', naturalLanguageQuery);
 
     const queryGenerationPrompt = this.getAiRolePrompt();
     const queryGenerationContextMessages = [
       { role: 'system', content: queryGenerationPrompt },
-      ...this.execution_context.map(content => ({ role: 'assistant', content: content })),
+      ...this.execution_context.map(content => ({ role: 'assistant', content: content })).slice(-5),
       { role: 'user', content: naturalLanguageQuery }
     ];
 
     if (this.queryRetryCount > 0) {
-      queryGenerationContextMessages.push({
-        role: 'user',
-        content: `Previous attempt failed. Please ensure the SQL query is valid and directly executable. Avoid any conversational text.`
-      });
+      queryGenerationContextMessages.push({ role: 'user', content: `Previous attempt failed. Please ensure the SQL query is valid and directly executable. Avoid any conversational text.` });
     }
 
     this.apiService.getAiResponse(queryGenerationContextMessages, '', this.currentAiRole).subscribe({
@@ -367,89 +306,16 @@ export class ChatOrchestratorService {
         if (rawSqlQuery) {
           this.execution_context.push(`Generated SQL: ${rawSqlQuery}`);
           console.log('Generated SQL:', rawSqlQuery);
-
-          this.thinkingMessage = 'Performing AI safety check on query...';
-          this.currentAiRole = 'safety_check';
-          const safetyCheckPrompt = this.getAiRolePrompt();
-          const safetyCheckContextMessages = [
-            { role: 'system', content: safetyCheckPrompt },
-            { role: 'user', content: rawSqlQuery }
-          ];
-
-          this.apiService.getAiResponse(safetyCheckContextMessages, '', this.currentAiRole).subscribe({
-            next: (safetyResponse: any) => {
-              let rawSafetyContent = safetyResponse.choices?.[0]?.message?.content;
-              if (rawSafetyContent && rawSafetyContent.includes('[[SAFE_TO_RUN]]')) {
-                console.log('SQL query passed AI safety check.');
-                this.execution_context.push(`AI Safety Check: [[SAFE_TO_RUN]]`);
-                this.thinkingMessage = 'Executing SQL query...';
-                this.apiService.executeQuery(rawSqlQuery, []).subscribe({
-                  next: (queryResult: any) => {
-                    this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
-                    console.log('Query Result:', queryResult);
-                    this.queryRetryCount = 0;
-                    this.executeNextStep(this.currentStepIndex + 1);
-                  },
-                  error: (queryError: any) => {
-                    console.error('Error executing SQL query:', queryError);
-                    if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
-                      this.queryRetryCount++;
-                      console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-                      this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
-                      this.processQueryStep(naturalLanguageQuery);
-                    } else {
-                      this.messages.push({
-                        sender: 'ai',
-                        content: `Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
-                      });
-                      this.isLoading = false;
-                      this.showThinkingModal = false;
-                      this.queryRetryCount = 0;
-                    }
-                  }
-                });
-              } else {
-                console.warn('SQL query failed AI safety check:', rawSqlQuery);
-                this.execution_context.push(`AI Safety Check: [[UNSAFE]]`);
-                if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
-                  this.queryRetryCount++;
-                  console.warn(`Query safety retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-                  this.execution_context.push(`SQL query failed AI safety check. Please generate a safe query.`);
-                  this.processQueryStep(naturalLanguageQuery);
-                } else {
-                  this.messages.push({
-                    sender: 'ai',
-                    content: `Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
-                  });
-                  this.isLoading = false;
-                  this.showThinkingModal = false;
-                  this.queryRetryCount = 0;
-                }
-              }
-            },
-            error: (safetyError: any) => {
-              console.error('Error fetching Safety AI response:', safetyError);
-              this.messages.push({
-                sender: 'ai',
-                content: `Error: Could not get a response from the Safety AI for query "${rawSqlQuery}".`
-              });
-              this.isLoading = false;
-              this.showThinkingModal = false;
-              this.queryRetryCount = 0;
-            }
-          });
+          this.stateMachine.next({ role: 'safety_check', data: { query: rawSqlQuery, nlp: naturalLanguageQuery } });
         } else {
           console.error('Error: No SQL query generated for:', naturalLanguageQuery);
           if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
             this.queryRetryCount++;
             console.warn(`Query generation retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
             this.execution_context.push(`No SQL query was generated. Please generate a valid SQL query.`);
-            this.processQueryStep(naturalLanguageQuery);
+            this.stateMachine.next({ role: 'query_generation', data: naturalLanguageQuery });
           } else {
-            this.messages.push({
-              sender: 'ai',
-              content: `Error: Failed to generate a SQL query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`
-            });
+            this.messages.push({ sender: 'ai', content: `Error: Failed to generate a SQL query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.` });
             this.isLoading = false;
             this.showThinkingModal = false;
             this.queryRetryCount = 0;
@@ -458,13 +324,133 @@ export class ChatOrchestratorService {
       },
       error: (queryGenerationError: any) => {
         console.error('Error fetching Query Generation AI response:', queryGenerationError);
-        this.messages.push({
-          sender: 'ai',
-          content: `Error: Could not get a response from the Query Generation AI for "${naturalLanguageQuery}".`
-        });
+        this.messages.push({ sender: 'ai', content: `Error: Could not get a response from the Query Generation AI for "${naturalLanguageQuery}".` });
         this.isLoading = false;
         this.showThinkingModal = false;
         this.queryRetryCount = 0;
+      }
+    });
+  }
+
+  private isQuerySafe(query: string): boolean {
+    const lowerCaseQuery = query.toLowerCase();
+    const forbiddenKeywords = ['drop', 'truncate', 'alter', 'grant', 'revoke'];
+
+    if (forbiddenKeywords.some(keyword => lowerCaseQuery.includes(keyword))) {
+      return false;
+    }
+
+    if (lowerCaseQuery.includes('delete from') && !lowerCaseQuery.includes('where')) {
+      return false;
+    }
+
+    if (lowerCaseQuery.includes('update') && !lowerCaseQuery.includes('where')) {
+        return false;
+    }
+
+    if (lowerCaseQuery.trim() === 'where') {
+      return false;
+    }
+
+    return true;
+  }
+
+  private handleSafetyCheck(data: { query: string, nlp: string }): void {
+    this.thinkingMessage = 'Performing safety check on query...';
+
+    if (this.isQuerySafe(data.query)) {
+      console.log('SQL query passed safety check.');
+      this.execution_context.push(`Safety Check: [[SAFE_TO_RUN]]`);
+      this.thinkingMessage = 'Executing SQL query...';
+      this.apiService.executeQuery(data.query, []).subscribe({
+        next: (queryResult: any) => {
+          this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
+          console.log('Query Result:', queryResult);
+          this.queryRetryCount = 0;
+          this.currentStepIndex++;
+          this.stateMachine.next({ role: 'execution' });
+        },
+        error: (queryError: any) => {
+          console.error('Error executing SQL query:', queryError);
+          if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
+            this.queryRetryCount++;
+            console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
+            this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+            this.stateMachine.next({ role: 'query_generation', data: data.nlp });
+          } else {
+            this.messages.push({ sender: 'ai', content: `Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.` });
+            this.isLoading = false;
+            this.showThinkingModal = false;
+            this.queryRetryCount = 0;
+          }
+        }
+      });
+    } else {
+      console.warn('SQL query failed safety check:', data.query);
+      this.execution_context.push(`Safety Check: [[UNSAFE]]`);
+      if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
+        this.safetyRetryCount++;
+        console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
+        this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
+        this.stateMachine.next({ role: 'query_generation', data: data.nlp });
+      } else {
+        this.messages.push({ sender: 'ai', content: `Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.` });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+        this.safetyRetryCount = 0;
+      }
+    }
+  }
+
+  private handleFinalization(): void {
+    this.thinkingMessage = 'Finalizing the response...';
+    const finalizationPrompt = this.getAiRolePrompt();
+    const finalizationContextMessages = [
+      { role: 'system', content: finalizationPrompt },
+      ...this.execution_context.map(content => ({ role: 'assistant', content: content }))
+    ];
+
+    this.apiService.getAiResponse(finalizationContextMessages, '', this.currentAiRole).subscribe({
+      next: (finalizationResponse: any) => {
+        let rawFinalizationContent = finalizationResponse.choices?.[0]?.message?.content;
+        let displayFinalizationContent = rawFinalizationContent || 'No finalization message from AI.';
+        displayFinalizationContent = this.cleanAiContent(displayFinalizationContent);
+        this.stateMachine.next({ role: 'html_conversion', data: displayFinalizationContent });
+      },
+      error: (finalizationError: any) => {
+        console.error('Error fetching Finalization AI response:', finalizationError);
+        this.messages.push({ sender: 'ai', content: 'Error: Could not get a finalization message from the AI.' });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+      }
+    });
+  }
+
+  private handleHtmlConversion(contentToConvert: string): void {
+    this.thinkingMessage = 'Converting to HTML...';
+    const conversionPrompt = this.getAiRolePrompt();
+    const conversionContextMessages = [
+      { role: 'system', content: conversionPrompt },
+      { role: 'user', content: contentToConvert }
+    ];
+
+    this.apiService.getAiResponse(conversionContextMessages, '', this.currentAiRole).subscribe({
+      next: (conversionResponse: any) => {
+        let rawHtmlContent = conversionResponse.choices?.[0]?.message?.content;
+        let displayHtmlContent = rawHtmlContent || 'No HTML response from AI.';
+        this.messages.push({ sender: 'ai', content: displayHtmlContent });
+        this.isLoading = false;
+        this.showThinkingModal = false;
+        this.apiService.saveChatHistory(this.currentUserMessageForHistory, displayHtmlContent).subscribe({
+          next: (saveResponse) => console.log('HTML content saved:', saveResponse),
+          error: (saveError) => console.error('Error saving HTML content:', saveError)
+        });
+      },
+      error: (conversionError: any) => {
+        console.error('Error fetching HTML Conversion AI response:', conversionError);
+        this.messages.push({ sender: 'ai', content: 'Error: Could not get a response from the HTML Conversion AI.' });
+        this.isLoading = false;
+        this.showThinkingModal = false;
       }
     });
   }
