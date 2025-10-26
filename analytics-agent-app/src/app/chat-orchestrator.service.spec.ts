@@ -276,3 +276,41 @@ describe('ChatOrchestratorService: handleHtmlConversion', () => {
     expect(service.messages[0].content).toBe('Error: Input to HTML conversion was null or undefined.');
   });
 });
+
+describe('ChatOrchestratorService: AI Interaction Limiter', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+  });
+
+  it('should handle a fatal error and post a message if AI interactions exceed the limit', () => {
+    // Arrange: Set the counter to be at the limit
+    const limit = 15;
+    (service as any).aiInteractionCount = limit;
+    (service as any).MAX_AI_INTERACTIONS = limit;
+
+    const fatalErrorSpy = spyOn<any>(service, 'handleFatalError').and.callThrough();
+
+    // Act: Trigger the next AI interaction directly via the handler
+    service['handleCollaborate']('This message should trigger the error');
+
+    // Assert: Check that the fatal error handler was called with the correct message
+    expect(fatalErrorSpy).toHaveBeenCalledWith('Error: Maximum AI interactions exceeded for this request.');
+    
+    // Also assert the user-facing outcome
+    const lastMessage = service.messages[service.messages.length - 1];
+    expect(lastMessage.sender).toBe('ai');
+    expect(lastMessage.content).toContain('Error: Maximum AI interactions exceeded for this request.');
+    expect(service.isLoading).toBe(false);
+  });
+});

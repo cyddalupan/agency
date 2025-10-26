@@ -1,3 +1,5 @@
+Important: the angular is inside analytics-agent-app/src/app/
+
 # Chat App AI Workflow
 
 > **Architectural Note:** The detailed AI workflow described below (Collaboration, Analysis, Breakdown, etc.) is executed on the **frontend**. The frontend application orchestrates this logic and interacts with a set of dedicated backend APIs to perform specific tasks like calling a foundational AI model, executing database queries, and saving conversation history.

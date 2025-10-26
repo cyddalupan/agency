@@ -32,6 +32,8 @@ export class ChatOrchestratorService {
   public safetyRetryCount: number = 0;
   private readonly MAX_QUERY_RETRIES: number = 5;
   private currentUserMessageForHistory: string = '';
+  private aiInteractionCount = 0;
+  private readonly MAX_AI_INTERACTIONS = 15;
 
   private stateMachine = new Subject<State>();
 
@@ -100,6 +102,7 @@ export class ChatOrchestratorService {
       return;
     }
 
+    this.aiInteractionCount = 0;
     this.messages.push({
       sender: 'user',
       content: this.newMessage
@@ -116,6 +119,12 @@ export class ChatOrchestratorService {
   }
 
   private handleCollaborate(userMessage: string): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     const contextMessages = this.messages.slice(-10).map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -150,6 +159,12 @@ export class ChatOrchestratorService {
   }
 
   private handleAnalyze(): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     this.thinkingMessage = 'Analyzing request...';
     const analysisPrompt = this.getAiRolePrompt();
     const analysisContextMessages = this.messages.slice(-10).map(msg => ({
@@ -176,6 +191,12 @@ export class ChatOrchestratorService {
   }
 
   private handleBreakdown(data?: any): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     this.thinkingMessage = 'Breaking down the task into steps...';
     const breakdownPrompt = this.getAiRolePrompt();
     const analysisOutputForBreakdown = this.execution_context[this.execution_context.length - 1];
@@ -234,6 +255,12 @@ export class ChatOrchestratorService {
   }
 
   private handleExecution(): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     if (this.currentStepIndex >= this.breakdownSteps.length) {
       this.stateMachine.next({ role: 'finalization' });
       return;
@@ -286,6 +313,12 @@ export class ChatOrchestratorService {
   }
 
   private handleQueryGeneration(naturalLanguageQuery: string): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     this.thinkingMessage = 'Generating SQL query...';
     console.log('Generating SQL query for:', naturalLanguageQuery);
 
@@ -414,6 +447,12 @@ export class ChatOrchestratorService {
   }
 
   private handleFinalization(): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     this.thinkingMessage = 'Finalizing the response...';
     const finalizationPrompt = this.getAiRolePrompt();
     const finalizationContextMessages = [
@@ -438,6 +477,12 @@ export class ChatOrchestratorService {
   }
 
   private handleHtmlConversion(contentToConvert: string): void {
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
+    }
+
     if (!contentToConvert) {
       this.messages.push({ sender: 'ai', content: 'Error: Input to HTML conversion was null or undefined.' });
       this.isLoading = false;
