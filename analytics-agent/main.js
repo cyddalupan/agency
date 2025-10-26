@@ -46616,7 +46616,7 @@ ${dbSchema}`;
         Available Database Schema:
         ${dbSchema}`;
       case "breakdown":
-        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
+        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. this is automated steps so no steps that needs user input, step examples (web search, db query, thinking). Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
 
 ${APPLICANT_TABLE_SCHEMA}
 
@@ -46632,7 +46632,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
         return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks, destructive commands, or any unsafe operations. Respond with [[SAFE_TO_RUN]] if the query is safe for execution, or [[UNSAFE]] if it poses a risk. Do not include any other text or conversational filler.`;
       case "finalization":
-        return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response.`;
+        return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case "html_conversion":
         return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. Do not include any other text or conversational filler.`;
       default:
