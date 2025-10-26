@@ -21,9 +21,7 @@ export class AppComponent implements AfterViewChecked, OnInit {
   constructor(public orchestrator: ChatOrchestratorService) { }
 
   ngOnInit(): void {
-    // ngOnInit logic can be moved to the service if it's not directly related to the component's view.
-    // For now, we leave it here, but it could be a future refactoring step.
-    this.orchestrator.messages.push({ sender: 'ai', content: 'Hello! How can I help you today?' });
+    this.orchestrator.loadChatHistory();
   }
 
   ngAfterViewChecked(): void {

@@ -314,3 +314,70 @@ describe('ChatOrchestratorService: AI Interaction Limiter', () => {
     expect(service.isLoading).toBe(false);
   });
 });
+
+describe('ChatOrchestratorService: loadChatHistory', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+  });
+
+  it('should load history and populate messages array in correct order', () => {
+    // Arrange
+    const historyResponse = {
+      data: [
+        { user_message: 'Hello', ai_response: 'Hi there!' },
+        { user_message: 'How are you?', ai_response: 'I am fine.' }
+      ]
+    };
+    mockApiService.executeQuery.and.returnValue(of(historyResponse));
+    service.messages = []; // Clear initial messages
+
+    // Act
+    service.loadChatHistory();
+
+    // Assert
+    expect(mockApiService.executeQuery).toHaveBeenCalledWith('SELECT user_message, ai_response FROM chat_history ORDER BY created_at ASC LIMIT 20', []);
+    expect(service.messages.length).toBe(4);
+    expect(service.messages[0]).toEqual({ sender: 'user', content: 'Hello' });
+    expect(service.messages[1]).toEqual({ sender: 'ai', content: 'Hi there!' });
+    expect(service.messages[2]).toEqual({ sender: 'user', content: 'How are you?' });
+    expect(service.messages[3]).toEqual({ sender: 'ai', content: 'I am fine.' });
+  });
+
+  it('should handle empty history response', () => {
+    // Arrange
+    const historyResponse = { data: [] };
+    mockApiService.executeQuery.and.returnValue(of(historyResponse));
+    service.messages = [];
+
+    // Act
+    service.loadChatHistory();
+
+    // Assert
+    expect(service.messages.length).toBe(0);
+  });
+
+  it('should handle API error gracefully', () => {
+    // Arrange
+    mockApiService.executeQuery.and.returnValue(throwError(() => new Error('API Error')));
+    service.messages = [];
+    const consoleErrorSpy = spyOn(console, 'error');
+
+    // Act
+    service.loadChatHistory();
+
+    // Assert
+    expect(service.messages.length).toBe(0);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading chat history:', jasmine.any(Error));
+  });
+});

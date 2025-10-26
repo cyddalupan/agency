@@ -15,6 +15,7 @@ class MockChatOrchestratorService {
   breakdownSteps: string[] = [];
   execution_context: string[] = [];
   sendMessage = jasmine.createSpy('sendMessage');
+  loadChatHistory = jasmine.createSpy('loadChatHistory');
 }
 
 describe('AppComponent', () => {
@@ -49,10 +50,9 @@ describe('AppComponent', () => {
   });
 
   describe('ngOnInit', () => {
-    it('should add initial AI message on init', () => {
+    it('should call loadChatHistory on init', () => {
       component.ngOnInit();
-      expect(mockOrchestrator.messages.length).toBe(1);
-      expect(mockOrchestrator.messages[0].content).toBe('Hello! How can I help you today?');
+      expect(mockOrchestrator.loadChatHistory).toHaveBeenCalled();
     });
   });
 

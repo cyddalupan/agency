@@ -69,6 +69,28 @@ export class ChatOrchestratorService {
     });
   }
 
+  public loadChatHistory(): void {
+    const query = 'SELECT user_message, ai_response FROM chat_history ORDER BY created_at ASC LIMIT 20';
+    this.apiService.executeQuery(query, []).subscribe({
+      next: (response: any) => {
+        this.messages = [];
+        if (response && response.data) {
+          response.data.forEach((record: { user_message: string; ai_response: string; }) => {
+            if (record.user_message) {
+              this.messages.push({ sender: 'user', content: record.user_message });
+            }
+            if (record.ai_response) {
+              this.messages.push({ sender: 'ai', content: record.ai_response });
+            }
+          });
+        }
+      },
+      error: (err) => {
+        console.error('Error loading chat history:', err);
+      }
+    });
+  }
+
   private cleanAiContent(content: string): string {
     return content.replace(/\s*\[[.*?]\s*/g, ' ').trim();
   }
@@ -77,9 +99,9 @@ export class ChatOrchestratorService {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case 'collaborate':
-        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user\'s goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
       case 'analyze':
-        return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.\n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
+        return `You are an Analysis AI. Your task is to summarize the user\'s intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.\n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
       case 'breakdown':
         return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. this is automated steps so no steps that needs user input, step examples (web search, db query, thinking). Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:\n\n${APPLICANT_TABLE_SCHEMA}\n\n"Retrieve enterprise users inactive for >30 days", your output should be: ["Find the 'enterprise' plan ID.", "Query the 'applicant' table for users matching the plan ID and last_login > 30 days ago.", "Format the final user list for display."]`;
       case 'execution':

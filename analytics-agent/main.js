@@ -46597,6 +46597,27 @@ var ChatOrchestratorService = class _ChatOrchestratorService {
       }
     });
   }
+  loadChatHistory() {
+    const query = "SELECT user_message, ai_response FROM chat_history ORDER BY created_at ASC LIMIT 20";
+    this.apiService.executeQuery(query, []).subscribe({
+      next: (response) => {
+        this.messages = [];
+        if (response && response.data) {
+          response.data.forEach((record) => {
+            if (record.user_message) {
+              this.messages.push({ sender: "user", content: record.user_message });
+            }
+            if (record.ai_response) {
+              this.messages.push({ sender: "ai", content: record.ai_response });
+            }
+          });
+        }
+      },
+      error: (err) => {
+        console.error("Error loading chat history:", err);
+      }
+    });
+  }
   cleanAiContent(content) {
     return content.replace(/\s*\[[.*?]\s*/g, " ").trim();
   }
@@ -46604,7 +46625,7 @@ var ChatOrchestratorService = class _ChatOrchestratorService {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case "collaborate":
-        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..
 
 Available Database Schema for your reference:
 ${dbSchema}`;
@@ -47190,7 +47211,7 @@ var AppComponent = class _AppComponent {
     this.orchestrator = orchestrator;
   }
   ngOnInit() {
-    this.orchestrator.messages.push({ sender: "ai", content: "Hello! How can I help you today?" });
+    this.orchestrator.loadChatHistory();
   }
   ngAfterViewChecked() {
     this.scrollToBottom();
