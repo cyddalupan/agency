@@ -46637,7 +46637,7 @@ ${dbSchema}`;
         Available Database Schema:
         ${dbSchema}`;
       case "breakdown":
-        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. this is automated steps so no steps that needs user input, step examples (web search, db query, thinking). No need for steps like open or close database connection this is automated on query. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
+        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. this is automated steps so no steps that needs user input, step examples (web search, db query, thinking). query execution is handled by a different process so just give step on what to CRUD. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
 
 ${APPLICANT_TABLE_SCHEMA}
 
