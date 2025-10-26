@@ -70,17 +70,17 @@ export class ChatOrchestratorService {
   }
 
   public loadChatHistory(): void {
-    const query = 'SELECT user_message, ai_response FROM chat_history ORDER BY created_at ASC LIMIT 20';
+    const query = 'SELECT message, reply FROM chat_history ORDER BY timestamp ASC LIMIT 20';
     this.apiService.executeQuery(query, []).subscribe({
       next: (response: any) => {
         this.messages = [];
         if (response && response.data) {
-          response.data.forEach((record: { user_message: string; ai_response: string; }) => {
-            if (record.user_message) {
-              this.messages.push({ sender: 'user', content: record.user_message });
+          response.data.forEach((record: { message: string; reply: string; }) => {
+            if (record.message) {
+              this.messages.push({ sender: 'user', content: record.message });
             }
-            if (record.ai_response) {
-              this.messages.push({ sender: 'ai', content: record.ai_response });
+            if (record.reply) {
+              this.messages.push({ sender: 'ai', content: record.reply });
             }
           });
         }

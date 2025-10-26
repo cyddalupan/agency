@@ -335,8 +335,8 @@ describe('ChatOrchestratorService: loadChatHistory', () => {
     // Arrange
     const historyResponse = {
       data: [
-        { user_message: 'Hello', ai_response: 'Hi there!' },
-        { user_message: 'How are you?', ai_response: 'I am fine.' }
+        { message: 'Hello', reply: 'Hi there!' },
+        { message: 'How are you?', reply: 'I am fine.' }
       ]
     };
     mockApiService.executeQuery.and.returnValue(of(historyResponse));
@@ -346,7 +346,7 @@ describe('ChatOrchestratorService: loadChatHistory', () => {
     service.loadChatHistory();
 
     // Assert
-    expect(mockApiService.executeQuery).toHaveBeenCalledWith('SELECT user_message, ai_response FROM chat_history ORDER BY created_at ASC LIMIT 20', []);
+    expect(mockApiService.executeQuery).toHaveBeenCalledWith('SELECT message, reply FROM chat_history ORDER BY timestamp ASC LIMIT 20', []);
     expect(service.messages.length).toBe(4);
     expect(service.messages[0]).toEqual({ sender: 'user', content: 'Hello' });
     expect(service.messages[1]).toEqual({ sender: 'ai', content: 'Hi there!' });
