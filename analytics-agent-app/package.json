@@ -7,6 +7,7 @@
     "build": "ng build --base-href=/agency/analytics-agent/ --configuration=development && rm -rf ../analytics-agent && mkdir -p ../analytics-agent && cp -r dist-temp/browser/* ../analytics-agent/ && cp src/.htaccess ../analytics-agent/ && rm -rf dist-temp",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false --browsers=ChromeHeadless --progress=false",
+    "testci": "CHROME_BIN=/usr/bin/chromium-browser ng test --watch=false --browsers=ChromeHeadlessCI --progress=false",
     "serve:ssr:analytics-agent": "node dist/analytics-agent/server/server.mjs"
   },
   "prettier": {
