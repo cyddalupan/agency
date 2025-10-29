@@ -109,7 +109,7 @@ export class ChatOrchestratorService {
       case 'query_generation':
         return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:\n\n${APPLICANT_TABLE_SCHEMA}`;
       case 'safety_check':
-        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks, destructive commands, or any unsafe operations. Respond with [[SAFE_TO_RUN]] if the query is safe for execution, or [[UNSAFE]] if it poses a risk. Do not include any other text or conversational filler.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] where <reason> is a brief explanation of the risk. Do not include any other text or conversational filler.`;
       case 'finalization':
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case 'html_conversion':
@@ -387,29 +387,6 @@ export class ChatOrchestratorService {
     });
   }
 
-  public isQuerySafe(query: string): boolean {
-    const lowerCaseQuery = query.toLowerCase();
-    const forbiddenKeywords = /\b(drop|truncate|alter|grant|revoke)\b/;
-
-    if (forbiddenKeywords.test(lowerCaseQuery)) {
-        return false;
-    }
-
-    if (lowerCaseQuery.includes('delete from') && !lowerCaseQuery.includes('where')) {
-      return false;
-    }
-
-    if (lowerCaseQuery.includes('update') && !lowerCaseQuery.includes('where')) {
-        return false;
-    }
-
-    if (lowerCaseQuery.trim() === 'where') {
-      return false;
-    }
-
-    return true;
-  }
-
   private handleFatalError(errorMessage: string): void {
     this.messages.push({ sender: 'ai', content: errorMessage });
     this.isLoading = false;
@@ -420,25 +397,51 @@ export class ChatOrchestratorService {
   }
 
   private handleSafetyCheck(data: { query: string, nlp: string }): void {
-    this.thinkingMessage = 'Performing safety check on query...';
-
-    if (this.isQuerySafe(data.query)) {
-      console.log('SQL query passed safety check.');
-      this.execution_context.push(`Safety Check: [[SAFE_TO_RUN]]`);
-      this.thinkingMessage = 'Executing SQL query...';
-      this.executeQueryWithRetries(data);
-    } else {
-      console.warn('SQL query failed safety check:', data.query);
-      this.execution_context.push(`Safety Check: [[UNSAFE]]`);
-      if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
-        this.safetyRetryCount++;
-        console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
-        this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
-        this.stateMachine.next({ role: 'query_generation', data: data.nlp });
-      } else {
-        this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
-      }
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError('Error: Maximum AI interactions exceeded for this request.');
+      return;
     }
+
+    this.thinkingMessage = 'Performing safety check on query...';
+    const safetyPrompt = this.getAiRolePrompt();
+    const safetyContextMessages = [
+      { role: 'system', content: safetyPrompt },
+    ];
+
+    this.apiService.getAiResponse(safetyContextMessages, data.query, this.currentAiRole).subscribe({
+      next: (response: any) => {
+        const rawAiContent = response.choices?.[0]?.message?.content;
+
+        if (rawAiContent && rawAiContent.includes('[[SAFE_TO_RUN]]')) {
+          console.log('SQL query passed AI safety check.');
+          this.execution_context.push('Safety Check: [[SAFE_TO_RUN]]');
+          this.thinkingMessage = 'Executing SQL query...';
+          this.executeQueryWithRetries(data);
+        } else {
+          let reason = 'AI deemed the query unsafe, but did not provide a specific reason.';
+          if (rawAiContent && rawAiContent.startsWith('[[UNSAFE:')) {
+            reason = rawAiContent.substring(9, rawAiContent.length - 2);
+          }
+          
+          const unsafeResponse = `[[UNSAFE: ${reason}]]`;
+          console.warn(`SQL query failed safety check: ${reason}`);
+          this.execution_context.push(`Safety Check: ${unsafeResponse}`);
+
+          if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
+            this.safetyRetryCount++;
+            console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
+            this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
+            this.stateMachine.next({ role: 'query_generation', data: data.nlp });
+          } else {
+            this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
+          }
+        }
+      },
+      error: (error: any) => {
+        this.handleFatalError('Error: Could not get a response from the Safety AI.');
+      }
+    });
   }
 
   private executeQueryWithRetries(data: { query: string, nlp: string }): void {

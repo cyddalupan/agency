@@ -1,20 +1,20 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
+import { delay } from 'rxjs/operators';
 
 import { ChatOrchestratorService } from './chat-orchestrator.service';
 import { ApiService } from './api';
 
 class MockApiService {
-  getChatHistory = jasmine.createSpy('getChatHistory').and.returnValue(of({ data: [] }));
-  saveChatHistory = jasmine.createSpy('saveChatHistory').and.returnValue(of({}));
   getAiResponse = jasmine.createSpy('getAiResponse').and.returnValue(of({ choices: [{ message: { content: 'AI response' } }] }));
   executeQuery = jasmine.createSpy('executeQuery').and.returnValue(of({}));
-  safetyRetryCount: number = 0;
+  saveChatHistory = jasmine.createSpy('saveChatHistory').and.returnValue(of({}));
 }
 
 describe('ChatOrchestratorService: Safety AI', () => {
   let service: ChatOrchestratorService;
+  let apiService: MockApiService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -25,77 +25,48 @@ describe('ChatOrchestratorService: Safety AI', () => {
       ]
     });
     service = TestBed.inject(ChatOrchestratorService);
+    apiService = TestBed.inject(ApiService) as unknown as MockApiService;
   });
 
-  describe('[6] Safety AI (Local Check)', () => {
-    it('should approve a safe SELECT query', () => {
-      const query = "SELECT id, name FROM users WHERE status = 'active';";
-      expect((service as any).isQuerySafe(query)).toBe(true);
-    });
+  describe('[6] Safety AI (AI Check)', () => {
+    const safeQuery = 'SELECT * FROM users;';
+    const unsafeQuery = 'DROP TABLE users;';
+    const nlp = 'some natural language query';
 
-    it('should approve a safe SELECT query with a JOIN', () => {
-      const query = 'SELECT u.id, p.name FROM users u JOIN profiles p ON u.id = p.user_id;';
-      expect((service as any).isQuerySafe(query)).toBe(true);
-    });
+    it('should proceed with execution when AI returns [[SAFE_TO_RUN]]', fakeAsync(() => {
+      service.currentAiRole = 'safety_check';
+      apiService.getAiResponse.withArgs(jasmine.any(Array), safeQuery, 'safety_check').and.returnValue(of({ choices: [{ message: { content: '[[SAFE_TO_RUN]]' } }] }).pipe(delay(1)));
+      const executeSpy = spyOn(service as any, 'executeQueryWithRetries').and.stub();
 
-    it('should approve a safe UPDATE query with a WHERE clause', () => {
-      const query = "UPDATE users SET name = 'John' WHERE id = 1;";
-      expect((service as any).isQuerySafe(query)).toBe(true);
-    });
+      (service as any).handleSafetyCheck({ query: safeQuery, nlp });
+      tick(1);
 
-    it('should approve a safe DELETE query with a WHERE clause', () => {
-      const query = 'DELETE FROM users WHERE id = 1;';
-      expect((service as any).isQuerySafe(query)).toBe(true);
-    });
+      expect(executeSpy).toHaveBeenCalledWith({ query: safeQuery, nlp });
+    }));
 
-    it('should reject a query containing DROP', () => {
-      const query = 'DROP TABLE users;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+    it('should trigger query_generation retry when AI returns [[UNSAFE:]]', fakeAsync(() => {
+      service.currentAiRole = 'safety_check';
+      service.safetyRetryCount = 0;
+      apiService.getAiResponse.withArgs(jasmine.any(Array), unsafeQuery, 'safety_check').and.returnValue(of({ choices: [{ message: { content: '[[UNSAFE: Contains DROP statement]]' } }] }).pipe(delay(1)));
+      const stateMachineSpy = spyOn((service as any).stateMachine, 'next');
 
-    it('should reject a query containing TRUNCATE', () => {
-      const query = 'TRUNCATE TABLE users;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+      (service as any).handleSafetyCheck({ query: unsafeQuery, nlp });
+      tick(1);
 
-    it('should reject a query containing ALTER', () => {
-      const query = 'ALTER TABLE users ADD COLUMN email VARCHAR(255);';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+      expect(service.safetyRetryCount).toBe(1);
+      expect(stateMachineSpy).toHaveBeenCalledWith({ role: 'query_generation', data: nlp });
+    }));
 
-    it('should reject a query containing GRANT', () => {
-      const query = 'GRANT SELECT ON users TO public;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+    it('should call handleFatalError after max retries', fakeAsync(() => {
+      service.currentAiRole = 'safety_check';
+      service.safetyRetryCount = (service as any).MAX_QUERY_RETRIES;
+      apiService.getAiResponse.withArgs(jasmine.any(Array), unsafeQuery, 'safety_check').and.returnValue(of({ choices: [{ message: { content: '[[UNSAFE: Contains DROP statement]]' } }] }).pipe(delay(1)));
+      const fatalErrorSpy = spyOn(service as any, 'handleFatalError').and.stub();
 
-    it('should reject a query containing REVOKE', () => {
-      const query = 'REVOKE SELECT ON users FROM public;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+      (service as any).handleSafetyCheck({ query: unsafeQuery, nlp });
+      tick(1);
 
-    it('should reject an UPDATE query without a WHERE clause', () => {
-      const query = "UPDATE users SET status = 'inactive';";
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
-
-    it('should reject a DELETE query without a WHERE clause', () => {
-      const query = 'DELETE FROM users;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
-
-    it('should reject a query that is just the keyword WHERE', () => {
-      const query = 'WHERE';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
-
-    it('should handle complex queries and still find unsafe keywords', () => {
-      const query = 'SELECT * FROM users; TRUNCATE TABLE logs;';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
-
-    it('should handle different casing for unsafe keywords', () => {
-      const query = 'delete from users';
-      expect((service as any).isQuerySafe(query)).toBe(false);
-    });
+      expect(fatalErrorSpy).toHaveBeenCalled();
+    }));
   });
 });
