@@ -2513,7 +2513,7 @@ var Version = class {
     this.patch = parts.slice(2).join(".");
   }
 };
-var VERSION = /* @__PURE__ */ new Version("20.3.7");
+var VERSION = /* @__PURE__ */ new Version("20.3.9");
 var ERROR_DETAILS_PAGE_BASE_URL = (() => {
   const versionSubDomain = VERSION.major !== "0" ? `v${VERSION.major}.` : "";
   return `https://${versionSubDomain}angular.dev/errors`;
@@ -11591,6 +11591,7 @@ function icuContainerIteratorNext(state) {
     }
   } else {
     if (state.stack.length === 0) {
+      state.lView = void 0;
       return null;
     } else {
       state.removes = state.stack.pop();
@@ -12742,7 +12743,7 @@ var ComponentFactory2 = class extends ComponentFactory$1 {
   }
 };
 function createRootTView(rootSelectorOrNode, componentDef, componentBindings, directives) {
-  const tAttributes = rootSelectorOrNode ? ["ng-version", "20.3.7"] : (
+  const tAttributes = rootSelectorOrNode ? ["ng-version", "20.3.9"] : (
     // Extract attributes and classes from the first selector only to match VE behavior.
     extractAttrsAndClassesFromSelector(componentDef.selectors[0])
   );
@@ -28370,7 +28371,7 @@ var XhrFactory = class {
 
 // node_modules/@angular/common/fesm2022/common.mjs
 var PLATFORM_BROWSER_ID = "browser";
-var VERSION2 = new Version("20.3.7");
+var VERSION2 = new Version("20.3.9");
 var ViewportScroller = class _ViewportScroller {
   // De-sugared tree-shakable injection
   // See #23917
@@ -28734,7 +28735,7 @@ function logModifiedWarning(ngSrc) {
   const directiveDetails = imgDirectiveDetails(ngSrc);
   console.warn(formatRuntimeError(2964, `${directiveDetails} this image is the Largest Contentful Paint (LCP) element and has had its "ngSrc" attribute modified. This can cause slower loading performance. It is recommended not to modify the "ngSrc" property on any image which could be the LCP element.`));
 }
-var INTERNAL_PRECONNECT_CHECK_BLOCKLIST = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+var INTERNAL_PRECONNECT_CHECK_BLOCKLIST = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]"]);
 var PRECONNECT_CHECK_BLOCKLIST = new InjectionToken(ngDevMode ? "PRECONNECT_CHECK_BLOCKLIST" : "");
 var PreconnectLinkChecker = class _PreconnectLinkChecker {
   document = inject2(DOCUMENT);
@@ -33896,7 +33897,7 @@ var HydrationFeatureKind;
   HydrationFeatureKind2[HydrationFeatureKind2["EventReplay"] = 3] = "EventReplay";
   HydrationFeatureKind2[HydrationFeatureKind2["IncrementalHydration"] = 4] = "IncrementalHydration";
 })(HydrationFeatureKind || (HydrationFeatureKind = {}));
-var VERSION3 = new Version("20.3.7");
+var VERSION3 = new Version("20.3.9");
 
 // node_modules/@angular/router/fesm2022/router2.mjs
 var PRIMARY_OUTLET = "primary";
@@ -34389,7 +34390,7 @@ var UrlParser = class {
       if (next !== "/" && next !== ")" && next !== ";") {
         throw new RuntimeError(4010, (typeof ngDevMode === "undefined" || ngDevMode) && `Cannot parse url '${this.url}'`);
       }
-      let outletName = void 0;
+      let outletName;
       if (path.indexOf(":") > -1) {
         outletName = path.slice(0, path.indexOf(":"));
         this.capture(outletName);
@@ -34398,7 +34399,7 @@ var UrlParser = class {
         outletName = PRIMARY_OUTLET;
       }
       const children = this.parseChildren();
-      segments[outletName] = Object.keys(children).length === 1 && children[PRIMARY_OUTLET] ? children[PRIMARY_OUTLET] : new UrlSegmentGroup([], children);
+      segments[outletName ?? PRIMARY_OUTLET] = Object.keys(children).length === 1 && children[PRIMARY_OUTLET] ? children[PRIMARY_OUTLET] : new UrlSegmentGroup([], children);
       this.consumeOptional("//");
     }
     return segments;
@@ -35670,7 +35671,7 @@ var RouterOutlet = class _RouterOutlet {
    *
    * When unset, the value of the token is `undefined` by default.
    */
-  routerOutletData = input(void 0, ...ngDevMode ? [{
+  routerOutletData = input(...ngDevMode ? [void 0, {
     debugName: "routerOutletData"
   }] : []);
   parentContexts = inject2(ChildrenOutletContexts);
@@ -39747,7 +39748,7 @@ function provideRouterInitializer() {
 }
 
 // node_modules/@angular/router/fesm2022/router.mjs
-var VERSION4 = new Version("20.3.7");
+var VERSION4 = new Version("20.3.9");
 
 // src/app/app.routes.ts
 var routes = [];
@@ -46234,7 +46235,7 @@ var UntypedFormBuilder = class _UntypedFormBuilder extends FormBuilder {
     }]
   }], null, null);
 })();
-var VERSION5 = new Version("20.3.7");
+var VERSION5 = new Version("20.3.9");
 var FormsModule = class _FormsModule {
   /**
    * @description
@@ -46651,7 +46652,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
-        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks, destructive commands, or any unsafe operations. Respond with [[SAFE_TO_RUN]] if the query is safe for execution, or [[UNSAFE]] if it poses a risk. Do not include any other text or conversational filler.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] where <reason> is a brief explanation of the risk. Do not include any other text or conversational filler.`;
       case "finalization":
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case "html_conversion":
@@ -46730,7 +46731,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
         let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
         let displayAnalysisContent = rawAnalysisContent || "No response from Analysis AI.";
         this.execution_context.push(displayAnalysisContent);
-        console.log("Analysis AI output stored in execution_context:", this.execution_context);
         this.stateMachine.next({ role: "breakdown" });
       },
       error: (analysisError) => {
@@ -46766,7 +46766,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
             const parsedSteps = JSON.parse(rawBreakdownContent);
             if (Array.isArray(parsedSteps) && parsedSteps.every((step) => typeof step === "string")) {
               this.breakdownSteps = parsedSteps;
-              console.log("Breakdown AI steps:", this.breakdownSteps);
               this.breakdownRetryCount = 0;
               this.stateMachine.next({ role: "execution" });
             } else {
@@ -46813,7 +46812,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
     }
     const currentStep = this.breakdownSteps[this.currentStepIndex];
     this.thinkingMessage = `Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`;
-    console.log(`Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`);
     const executionPrompt = this.getAiRolePrompt();
     const executionContextMessages = [
       { role: "system", content: executionPrompt },
@@ -46825,16 +46823,10 @@ ${APPLICANT_TABLE_SCHEMA}`;
         let rawExecutionContent = executionResponse.choices?.[0]?.message?.content;
         if (rawExecutionContent) {
           this.execution_context.push(rawExecutionContent);
-          console.log("Execution AI output:", rawExecutionContent);
           if (rawExecutionContent.includes("[[QUERY_REQUIRED]]")) {
             const naturalLanguageQuery = rawExecutionContent.replace("[[QUERY_REQUIRED]]", "").trim();
             this.stateMachine.next({ role: "query_generation", data: naturalLanguageQuery });
           } else {
-            if (rawExecutionContent.includes("[[STEP_COMPLETE]]")) {
-              console.log("Step complete:", rawExecutionContent.replace("[[STEP_COMPLETE]]", "").trim());
-            } else {
-              console.log("Execution AI performed internal action or provided direct output:", rawExecutionContent);
-            }
             this.currentStepIndex++;
             this.stateMachine.next({ role: "execution" });
           }
@@ -46860,7 +46852,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       return;
     }
     this.thinkingMessage = "Generating SQL query...";
-    console.log("Generating SQL query for:", naturalLanguageQuery);
     const queryGenerationPrompt = this.getAiRolePrompt();
     const queryGenerationContextMessages = [
       { role: "system", content: queryGenerationPrompt },
@@ -46875,7 +46866,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
         let rawSqlQuery = queryResponse.choices?.[0]?.message?.content;
         if (rawSqlQuery) {
           this.execution_context.push(`Generated SQL: ${rawSqlQuery}`);
-          console.log("Generated SQL:", rawSqlQuery);
           this.stateMachine.next({ role: "safety_check", data: { query: rawSqlQuery, nlp: naturalLanguageQuery } });
         } else {
           console.error("Error: No SQL query generated for:", naturalLanguageQuery);
@@ -46901,23 +46891,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
       }
     });
   }
-  isQuerySafe(query) {
-    const lowerCaseQuery = query.toLowerCase();
-    const forbiddenKeywords = /\b(drop|truncate|alter|grant|revoke)\b/;
-    if (forbiddenKeywords.test(lowerCaseQuery)) {
-      return false;
-    }
-    if (lowerCaseQuery.includes("delete from") && !lowerCaseQuery.includes("where")) {
-      return false;
-    }
-    if (lowerCaseQuery.includes("update") && !lowerCaseQuery.includes("where")) {
-      return false;
-    }
-    if (lowerCaseQuery.trim() === "where") {
-      return false;
-    }
-    return true;
-  }
   handleFatalError(errorMessage) {
     this.messages.push({ sender: "ai", content: errorMessage });
     this.isLoading = false;
@@ -46927,30 +46900,50 @@ ${APPLICANT_TABLE_SCHEMA}`;
     this.breakdownRetryCount = 0;
   }
   handleSafetyCheck(data) {
-    this.thinkingMessage = "Performing safety check on query...";
-    if (this.isQuerySafe(data.query)) {
-      console.log("SQL query passed safety check.");
-      this.execution_context.push(`Safety Check: [[SAFE_TO_RUN]]`);
-      this.thinkingMessage = "Executing SQL query...";
-      this.executeQueryWithRetries(data);
-    } else {
-      console.warn("SQL query failed safety check:", data.query);
-      this.execution_context.push(`Safety Check: [[UNSAFE]]`);
-      if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
-        this.safetyRetryCount++;
-        console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
-        this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
-        this.stateMachine.next({ role: "query_generation", data: data.nlp });
-      } else {
-        this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
-      }
+    this.aiInteractionCount++;
+    if (this.aiInteractionCount > this.MAX_AI_INTERACTIONS) {
+      this.handleFatalError("Error: Maximum AI interactions exceeded for this request.");
+      return;
     }
+    this.thinkingMessage = "Performing safety check on query...";
+    const safetyPrompt = this.getAiRolePrompt();
+    const safetyContextMessages = [
+      { role: "system", content: safetyPrompt }
+    ];
+    this.apiService.getAiResponse(safetyContextMessages, data.query, this.currentAiRole).subscribe({
+      next: (response) => {
+        const rawAiContent = response.choices?.[0]?.message?.content;
+        if (rawAiContent && rawAiContent.includes("[[SAFE_TO_RUN]]")) {
+          this.execution_context.push("Safety Check: [[SAFE_TO_RUN]]");
+          this.thinkingMessage = "Executing SQL query...";
+          this.executeQueryWithRetries(data);
+        } else {
+          let reason = "AI deemed the query unsafe, but did not provide a specific reason.";
+          if (rawAiContent && rawAiContent.startsWith("[[UNSAFE:")) {
+            reason = rawAiContent.substring(9, rawAiContent.length - 2);
+          }
+          const unsafeResponse = `[[UNSAFE: ${reason}]]`;
+          console.warn(`SQL query failed safety check: ${reason}`);
+          this.execution_context.push(`Safety Check: ${unsafeResponse}`);
+          if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
+            this.safetyRetryCount++;
+            console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
+            this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
+            this.stateMachine.next({ role: "query_generation", data: data.nlp });
+          } else {
+            this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
+          }
+        }
+      },
+      error: (error) => {
+        this.handleFatalError("Error: Could not get a response from the Safety AI.");
+      }
+    });
   }
   executeQueryWithRetries(data) {
     this.apiService.executeQuery(data.query, []).subscribe({
       next: (queryResult) => {
         this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
-        console.log("Query Result:", queryResult);
         this.queryRetryCount = 0;
         this.currentStepIndex++;
         this.stateMachine.next({ role: "execution" });
@@ -49789,7 +49782,7 @@ bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err))
 @angular/router/fesm2022/router.mjs:
 @angular/forms/fesm2022/forms.mjs:
   (**
-   * @license Angular v20.3.7
+   * @license Angular v20.3.9
    * (c) 2010-2025 Google LLC. https://angular.dev/
    * License: MIT
    *)

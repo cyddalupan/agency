@@ -200,7 +200,6 @@ export class ChatOrchestratorService {
         let rawAnalysisContent = analysisResponse.choices?.[0]?.message?.content;
         let displayAnalysisContent = rawAnalysisContent || 'No response from Analysis AI.';
         this.execution_context.push(displayAnalysisContent);
-        console.log('Analysis AI output stored in execution_context:', this.execution_context);
         this.stateMachine.next({ role: 'breakdown' });
       },
       error: (analysisError: any) => {
@@ -240,7 +239,6 @@ export class ChatOrchestratorService {
             const parsedSteps = JSON.parse(rawBreakdownContent);
             if (Array.isArray(parsedSteps) && parsedSteps.every(step => typeof step === 'string')) {
               this.breakdownSteps = parsedSteps;
-              console.log('Breakdown AI steps:', this.breakdownSteps);
               this.breakdownRetryCount = 0;
               this.stateMachine.next({ role: 'execution' });
             } else {
@@ -290,7 +288,6 @@ export class ChatOrchestratorService {
 
     const currentStep = this.breakdownSteps[this.currentStepIndex];
     this.thinkingMessage = `Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`;
-    console.log(`Executing step ${this.currentStepIndex + 1}/${this.breakdownSteps.length}: ${currentStep}`);
 
     const executionPrompt = this.getAiRolePrompt();
     const executionContextMessages = [
@@ -304,17 +301,11 @@ export class ChatOrchestratorService {
         let rawExecutionContent = executionResponse.choices?.[0]?.message?.content;
         if (rawExecutionContent) {
           this.execution_context.push(rawExecutionContent);
-          console.log('Execution AI output:', rawExecutionContent);
 
           if (rawExecutionContent.includes('[[QUERY_REQUIRED]]')) {
             const naturalLanguageQuery = rawExecutionContent.replace('[[QUERY_REQUIRED]]', '').trim();
             this.stateMachine.next({ role: 'query_generation', data: naturalLanguageQuery });
           } else {
-            if (rawExecutionContent.includes('[[STEP_COMPLETE]]')) {
-              console.log('Step complete:', rawExecutionContent.replace('[[STEP_COMPLETE]]', '').trim());
-            } else {
-              console.log('Execution AI performed internal action or provided direct output:', rawExecutionContent);
-            }
             this.currentStepIndex++;
             this.stateMachine.next({ role: 'execution' });
           }
@@ -342,7 +333,6 @@ export class ChatOrchestratorService {
     }
 
     this.thinkingMessage = 'Generating SQL query...';
-    console.log('Generating SQL query for:', naturalLanguageQuery);
 
     const queryGenerationPrompt = this.getAiRolePrompt();
     const queryGenerationContextMessages = [
@@ -360,7 +350,6 @@ export class ChatOrchestratorService {
         let rawSqlQuery = queryResponse.choices?.[0]?.message?.content;
         if (rawSqlQuery) {
           this.execution_context.push(`Generated SQL: ${rawSqlQuery}`);
-          console.log('Generated SQL:', rawSqlQuery);
           this.stateMachine.next({ role: 'safety_check', data: { query: rawSqlQuery, nlp: naturalLanguageQuery } });
         } else {
           console.error('Error: No SQL query generated for:', naturalLanguageQuery);
@@ -414,7 +403,6 @@ export class ChatOrchestratorService {
         const rawAiContent = response.choices?.[0]?.message?.content;
 
         if (rawAiContent && rawAiContent.includes('[[SAFE_TO_RUN]]')) {
-          console.log('SQL query passed AI safety check.');
           this.execution_context.push('Safety Check: [[SAFE_TO_RUN]]');
           this.thinkingMessage = 'Executing SQL query...';
           this.executeQueryWithRetries(data);
@@ -448,7 +436,6 @@ export class ChatOrchestratorService {
     this.apiService.executeQuery(data.query, []).subscribe({
       next: (queryResult: any) => {
         this.execution_context.push(`Query Result: ${JSON.stringify(queryResult)}`);
-        console.log('Query Result:', queryResult);
         this.queryRetryCount = 0;
         this.currentStepIndex++;
         this.stateMachine.next({ role: 'execution' });
