@@ -46691,7 +46691,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
-        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] where <reason> is a brief explanation of the risk. Do not include any other text or conversational filler.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., \`DROP TABLE\`, \`ALTER TABLE\`, \`TRUNCATE TABLE\`) or contains high-risk patterns like \`UNION ALL\`, \`LOAD DATA INFILE\`, or SQL comments (\`--\`, \`#\`). A query is considered **SAFE** if it is a standard \`SELECT\`, \`INSERT\`, \`UPDATE\`, or \`DELETE\` statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
       case "finalization":
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case "html_conversion":
@@ -46947,7 +46947,8 @@ ${APPLICANT_TABLE_SCHEMA}`;
     this.thinkingMessage = "Performing safety check on query...";
     const safetyPrompt = this.getAiRolePrompt();
     const safetyContextMessages = [
-      { role: "system", content: safetyPrompt }
+      { role: "system", content: safetyPrompt },
+      ...this.execution_context.map((content) => ({ role: "assistant", content }))
     ];
     this.apiService.getAiResponse(safetyContextMessages, data.query, this.currentAiRole).subscribe({
       next: (response) => {

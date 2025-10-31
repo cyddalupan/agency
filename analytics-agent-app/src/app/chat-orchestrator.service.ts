@@ -120,7 +120,7 @@ ${dbSchema}`;
       case 'query_generation':
         return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:\n\n${APPLICANT_TABLE_SCHEMA}`;
       case 'safety_check':
-        return `You are a Safety AI. Your task is to analyze a given SQL query for potential risks. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] where <reason> is a brief explanation of the risk. Do not include any other text or conversational filler.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., \`DROP TABLE\`, \`ALTER TABLE\`, \`TRUNCATE TABLE\`) or contains high-risk patterns like \`UNION ALL\`, \`LOAD DATA INFILE\`, or SQL comments (\`--\`, \`#\`). A query is considered **SAFE** if it is a standard \`SELECT\`, \`INSERT\`, \`UPDATE\`, or \`DELETE\` statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
       case 'finalization':
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case 'html_conversion':
@@ -407,6 +407,7 @@ ${dbSchema}`;
     const safetyPrompt = this.getAiRolePrompt();
     const safetyContextMessages = [
       { role: 'system', content: safetyPrompt },
+      ...this.execution_context.map(content => ({ role: 'assistant', content: content }))
     ];
 
     this.apiService.getAiResponse(safetyContextMessages, data.query, this.currentAiRole).subscribe({

@@ -299,3 +299,45 @@ describe('ChatOrchestratorService: loadChatHistory', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading chat history:', jasmine.any(Error));
   });
 });
+
+describe('ChatOrchestratorService: handleSafetyCheck', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+    // Spy on executeQueryWithRetries to prevent the chain from continuing
+    spyOn<any>(service, 'executeQueryWithRetries').and.callFake(() => {});
+  });
+
+  it('should pass execution_context to the Safety AI', () => {
+    // Arrange
+    const testExecutionContext = ['analysis result', 'some previous step'];
+    const testQuery = 'SELECT * FROM users';
+    service.execution_context = testExecutionContext;
+    service.currentAiRole = 'safety_check'; // Set the role directly for this test
+    mockApiService.getAiResponse.and.returnValue(of({ choices: [{ message: { content: '[[SAFE_TO_RUN]]' } }] }));
+
+    // Act
+    (service as any).handleSafetyCheck({ query: testQuery, nlp: 'get users' });
+
+    // Assert
+    expect(mockApiService.getAiResponse).toHaveBeenCalledWith(
+      [
+        jasmine.objectContaining({ role: 'system' }),
+        jasmine.objectContaining({ role: 'assistant', content: 'analysis result' }),
+        jasmine.objectContaining({ role: 'assistant', content: 'some previous step' })
+      ],
+      testQuery,
+      'safety_check'
+    );
+  });
+});
