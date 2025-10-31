@@ -46463,6 +46463,44 @@ singil1 (Full texts)
 applicant_contacts_4 (Full texts)
 `;
 
+// src/app/prompts.ts
+var BREAKDOWN_PROMPT_INSTRUCTIONS = `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. A typical breakdown is rarely more than 3 steps.
+
+This process is automated, so do not create steps that require user input or deal with low-level implementation details like opening/closing database connections.
+
+Do not include any conversational text or explanations\u2014only the final JSON array.`;
+var BREAKDOWN_PROMPT_GOOD_EXAMPLE = `
+---
+**GOOD Response Examples (actionable, high-level steps):**
+
+*User Task: "I need the 10 oldest male applicants and comment on their health."*
+\`\`\`json
+["get 10 oldest male applicant", "add comment on their health status"]
+\`\`\`
+
+*User Task: "Update applicants who passed medical yesterday to deployed."*
+\`\`\`json
+["find applicant passed medical yesterday", "update applicant status to deployed"]
+\`\`\`
+---
+`;
+var BREAKDOWN_PROMPT_BAD_EXAMPLE = `
+---
+**BAD Response Examples (implementation details, conversational):**
+
+*Bad (deals with low-level details):*
+\`\`\`json
+["open sql connection", "SELECT * FROM applicants...", "close sql connection"]
+\`\`\`
+
+*Bad (conversational, not a JSON array):*
+\`\`\`
+"Sure, I can do that. First I will connect to the database..."
+\`\`\`
+---
+`;
+var BREAKDOWN_PROMPT_SCHEMA_CONTEXT = `The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:`;
+
 // src/app/api.ts
 var retryWithDelay = (delayMs, maxRetries = 1) => {
   return (errors) => {
@@ -46638,11 +46676,12 @@ ${dbSchema}`;
         Available Database Schema:
         ${dbSchema}`;
       case "breakdown":
-        return `You are an expert AI assistant whose sole purpose is to break down a given task into a series of discrete, ordered, and actionable steps. The output must be a JSON array of strings, where each string is a single step. this is automated steps so no steps that needs user input, step examples (web search, db query, thinking). query execution is handled by a different process so just give step on what to CRUD. Do not include any other text or conversational filler. The database schema is provided below for context when formulating steps that involve data retrieval or manipulation:
+        return `${BREAKDOWN_PROMPT_INSTRUCTIONS}
+${BREAKDOWN_PROMPT_GOOD_EXAMPLE}
+${BREAKDOWN_PROMPT_BAD_EXAMPLE}
+${BREAKDOWN_PROMPT_SCHEMA_CONTEXT}
 
-${APPLICANT_TABLE_SCHEMA}
-
-"Retrieve enterprise users inactive for >30 days", your output should be: ["Find the 'enterprise' plan ID.", "Query the 'applicant' table for users matching the plan ID and last_login > 30 days ago.", "Format the final user list for display."]`;
+${dbSchema}`;
       case "execution":
         return `You are an Execution AI. Your task is to process a single step from a breakdown plan. Determine if the step requires a database query. If it does, output [[QUERY_REQUIRED]] followed by a natural language description of the query needed. If it does not, output [[STEP_COMPLETE]] followed by a confirmation or the result of the internal action. The database schema is provided for context:
 
@@ -46928,7 +46967,6 @@ ${APPLICANT_TABLE_SCHEMA}`;
           if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
             this.safetyRetryCount++;
             console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
-            this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
             this.stateMachine.next({ role: "query_generation", data: data.nlp });
           } else {
             this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);

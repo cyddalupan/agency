@@ -430,7 +430,6 @@ ${dbSchema}`;
           if (this.safetyRetryCount < this.MAX_QUERY_RETRIES) {
             this.safetyRetryCount++;
             console.warn(`Query safety retry attempt ${this.safetyRetryCount}/${this.MAX_QUERY_RETRIES}`);
-            this.execution_context.push(`SQL query failed safety check. Please generate a safe query.`);
             this.stateMachine.next({ role: 'query_generation', data: data.nlp });
           } else {
             this.handleFatalError(`Error: Failed to generate a safe query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
