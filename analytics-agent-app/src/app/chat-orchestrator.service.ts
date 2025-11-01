@@ -39,7 +39,7 @@ export class ChatOrchestratorService {
   private readonly MAX_QUERY_RETRIES: number = 5;
   private currentUserMessageForHistory: string = '';
   private aiInteractionCount = 0;
-  private readonly MAX_AI_INTERACTIONS = 15;
+  private readonly MAX_AI_INTERACTIONS = 25;
 
   private stateMachine = new Subject<State>();
 

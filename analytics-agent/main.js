@@ -46607,7 +46607,7 @@ var ChatOrchestratorService = class _ChatOrchestratorService {
   MAX_QUERY_RETRIES = 5;
   currentUserMessageForHistory = "";
   aiInteractionCount = 0;
-  MAX_AI_INTERACTIONS = 15;
+  MAX_AI_INTERACTIONS = 25;
   stateMachine = new Subject();
   constructor(apiService) {
     this.apiService = apiService;
