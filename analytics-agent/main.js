@@ -46692,13 +46692,13 @@ ${dbSchema}`;
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "query_generation":
-        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid MySQL query (MySQL 5.7.23). Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
+        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid MySQL query (MySQL 5.7.23 meaning use example: applicant_id = '51' not applicant_id = 51). Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
         return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., <table>DROP TABLE</table>, <table>ALTER TABLE</table>, <table>TRUNCATE TABLE</table>) or contains high-risk patterns like <table>UNION ALL</table>, <table>LOAD DATA INFILE</table>, or SQL comments (<table>--</table>, <table>#</table>). A query is considered **SAFE** if it is a standard <table>SELECT</table>, <table>INSERT</table>, <table>UPDATE</table>, or <table>DELETE</table> statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
       case "finalization":
-        return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
+        return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand. do not include the code and sql queries`;
       case "html_conversion":
         return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML (mobile size) using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. avoid gray font because the parent html background is darkgray unless we add a customized background color. This is a view only html avoid using form attributes. Do not include any other text or conversational filler.`;
       default:
