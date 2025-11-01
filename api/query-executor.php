@@ -43,7 +43,8 @@ $params = $data['params']; // Array of {type: string, value: any}
 
 // 1. Whitelist Query Types
 $allowed_query_types = array('SELECT', 'INSERT', 'UPDATE', 'DELETE');
-$query_type = strtoupper(substr($sql, 0, strpos($sql, ' ')));
+$sql_parts = preg_split('/\s+/', $sql);
+$query_type = strtoupper($sql_parts[0]);
 
 if (!in_array($query_type, $allowed_query_types)) {
     http_response_code(403);
