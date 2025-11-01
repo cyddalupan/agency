@@ -65,15 +65,42 @@ describe('ChatOrchestratorService: Query Executor', () => {
       expect(stateMachineSpy).toHaveBeenCalledWith({ role: 'query_generation', data: nlp });
     }));
 
-    it('should call handleFatalError on a non-recoverable error', fakeAsync(() => {
-      const serverError = { status: 500, message: 'Internal Server Error' };
+    it('should retry on a 500 error and extract the error message from the JSON body', fakeAsync(() => {
+      const detailedError = 'Unique constraint violation';
+      const serverError = {
+        status: 500,
+        error: { error: detailedError }
+      };
+      service.queryRetryCount = 0;
+      service.execution_context = [];
       apiService.executeQuery.and.returnValue(throwError(() => serverError).pipe(delay(1)));
-      const fatalErrorSpy = spyOn(service as any, 'handleFatalError').and.stub();
+      const stateMachineSpy = spyOn((service as any).stateMachine, 'next');
 
       (service as any).executeQueryWithRetries({ query, nlp });
       tick(1);
 
-      expect(fatalErrorSpy).toHaveBeenCalled();
+      expect(service.queryRetryCount).toBe(1);
+      expect(service.execution_context).toContain(`SQL Error: ${detailedError}. Please correct the SQL query.`);
+      expect(stateMachineSpy).toHaveBeenCalledWith({ role: 'query_generation', data: nlp });
+    }));
+
+    it('should retry on an error and extract the error message from a raw string body', fakeAsync(() => {
+      const rawErrorString = 'Fatal PHP error';
+      const serverError = {
+        status: 500,
+        error: rawErrorString
+      };
+      service.queryRetryCount = 0;
+      service.execution_context = [];
+      apiService.executeQuery.and.returnValue(throwError(() => serverError).pipe(delay(1)));
+      const stateMachineSpy = spyOn((service as any).stateMachine, 'next');
+
+      (service as any).executeQueryWithRetries({ query, nlp });
+      tick(1);
+
+      expect(service.queryRetryCount).toBe(1);
+      expect(service.execution_context).toContain(`SQL Error: ${rawErrorString}. Please correct the SQL query.`);
+      expect(stateMachineSpy).toHaveBeenCalledWith({ role: 'query_generation', data: nlp });
     }));
 
     it('should call handleFatalError after max retries', fakeAsync(() => {

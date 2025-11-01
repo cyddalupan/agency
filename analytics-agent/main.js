@@ -46998,12 +46998,16 @@ ${lastError}
       error: (queryError) => {
         console.error("Error executing SQL query:", queryError);
         this.queryRetryCount++;
-        if (queryError.status === 500) {
-          return this.handleFatalError(`Error: Failed to execute query after ${this.queryRetryCount} attempts. Please refine your request.`);
-        }
         if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
           console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-          const backendError = queryError.error?.error || queryError.message;
+          let backendError = queryError.message;
+          if (queryError.error) {
+            if (typeof queryError.error === "object" && queryError.error.error) {
+              backendError = queryError.error.error;
+            } else if (typeof queryError.error === "string") {
+              backendError = queryError.error;
+            }
+          }
           this.execution_context.push(`SQL Error: ${backendError}. Please correct the SQL query.`);
           this.stateMachine.next({ role: "query_generation", data: data.nlp });
         } else {
