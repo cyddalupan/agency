@@ -46669,7 +46669,7 @@ var ChatOrchestratorService = class _ChatOrchestratorService {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case "collaborate":
-        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user's needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user's goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..
 
 Available Database Schema for your reference:
 ${dbSchema}`;
@@ -46692,11 +46692,11 @@ ${dbSchema}`;
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "query_generation":
-        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. You must generate a valid MySQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
+        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid MySQL query (MySQL 5.7.23). Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
-        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., \`DROP TABLE\`, \`ALTER TABLE\`, \`TRUNCATE TABLE\`) or contains high-risk patterns like \`UNION ALL\`, \`LOAD DATA INFILE\`, or SQL comments (\`--\`, \`#\`). A query is considered **SAFE** if it is a standard \`SELECT\`, \`INSERT\`, \`UPDATE\`, or \`DELETE\` statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., <table>DROP TABLE</table>, <table>ALTER TABLE</table>, <table>TRUNCATE TABLE</table>) or contains high-risk patterns like <table>UNION ALL</table>, <table>LOAD DATA INFILE</table>, or SQL comments (<table>--</table>, <table>#</table>). A query is considered **SAFE** if it is a standard <table>SELECT</table>, <table>INSERT</table>, <table>UPDATE</table>, or <table>DELETE</table> statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
       case "finalization":
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case "html_conversion":
@@ -46899,11 +46899,14 @@ ${APPLICANT_TABLE_SCHEMA}`;
     const queryGenerationPrompt = this.getAiRolePrompt();
     const queryGenerationContextMessages = [
       { role: "system", content: queryGenerationPrompt },
-      ...this.execution_context.map((content) => ({ role: "assistant", content })).slice(-5),
+      ...this.execution_context.map((content) => ({ role: "assistant", content })),
       { role: "user", content: naturalLanguageQuery }
     ];
     if (this.queryRetryCount > 0) {
-      queryGenerationContextMessages.push({ role: "user", content: `Previous attempt failed. Please ensure the SQL query is valid and directly executable. Avoid any conversational text.` });
+      const lastError = this.execution_context[this.execution_context.length - 1];
+      queryGenerationContextMessages.push({ role: "user", content: `The previous attempt to execute the query failed with the following error: 
+${lastError}
+. Please analyze the error and the database schema to generate a corrected and valid MySQL query.` });
     }
     this.apiService.getAiResponse(queryGenerationContextMessages, "", this.currentAiRole).subscribe({
       next: (queryResponse) => {
@@ -47000,7 +47003,8 @@ ${APPLICANT_TABLE_SCHEMA}`;
         }
         if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
           console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-          this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+          const backendError = queryError.error?.error || queryError.message;
+          this.execution_context.push(`SQL Error: ${backendError}. Please correct the SQL query.`);
           this.stateMachine.next({ role: "query_generation", data: data.nlp });
         } else {
           this.handleFatalError(`Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);

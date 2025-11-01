@@ -46,8 +46,13 @@ describe('ChatOrchestratorService: Query Executor', () => {
     }));
 
     it('should retry to query_generation on a recoverable error', fakeAsync(() => {
-      const queryError = { message: 'Syntax error' };
+      // Simulate the nested error structure from HttpErrorResponse
+      const queryError = {
+        error: { error: 'Syntax error' }
+      };
       service.queryRetryCount = 0;
+      // Clear context for this test
+      service.execution_context = [];
       apiService.executeQuery.and.returnValue(throwError(() => queryError).pipe(delay(1)));
       const stateMachineSpy = spyOn((service as any).stateMachine, 'next');
 
@@ -55,7 +60,8 @@ describe('ChatOrchestratorService: Query Executor', () => {
       tick(1);
 
       expect(service.queryRetryCount).toBe(1);
-      expect(service.execution_context).toContain(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+      // Check if the specific error string was pushed to the context array
+      expect(service.execution_context).toContain('SQL Error: Syntax error. Please correct the SQL query.');
       expect(stateMachineSpy).toHaveBeenCalledWith({ role: 'query_generation', data: nlp });
     }));
 

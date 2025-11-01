@@ -461,7 +461,8 @@ ${dbSchema}`;
 
         if (this.queryRetryCount < this.MAX_QUERY_RETRIES) {
           console.warn(`Query execution retry attempt ${this.queryRetryCount}/${this.MAX_QUERY_RETRIES}`);
-          this.execution_context.push(`Query execution failed: ${queryError.message}. Please correct the SQL query.`);
+          const backendError = queryError.error?.error || queryError.message;
+          this.execution_context.push(`SQL Error: ${backendError}. Please correct the SQL query.`);
           this.stateMachine.next({ role: 'query_generation', data: data.nlp });
         } else {
           this.handleFatalError(`Error: Failed to execute query after ${this.MAX_QUERY_RETRIES} attempts. Please refine your request.`);
