@@ -25,6 +25,41 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+/* New styles for responsive content within chat bubbles */
+:host::ng-deep .chat-message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+:host::ng-deep .chat-message-content pre {
+  white-space: pre-wrap; /* Allow pre-formatted text to wrap */
+  word-break: break-all;
+}
+
+:host::ng-deep .chat-message-content table {
+  width: 100% !important; /* Force table to fit container */
+  table-layout: fixed; /* Allow table to be responsive */
+  display: block;
+  overflow-x: auto; /* Allow horizontal scrolling for very wide tables */
+  border-collapse: collapse;
+}
+
+:host::ng-deep .chat-message-content th,
+:host::ng-deep .chat-message-content td {
+  max-width: none; /* Override any max-width that might be set */
+  word-break: break-word; /* Allow content to wrap within cells */
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+:host::ng-deep .chat-message-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+
+
 /* Styles for user message bubbles */
 .user-message-bubble {
   background: rgba(0, 123, 255, 0.3); /* More opaque blue tint for user messages */

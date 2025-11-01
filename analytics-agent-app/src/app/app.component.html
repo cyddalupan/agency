@@ -5,7 +5,7 @@
     <div *ngFor="let message of orchestrator.messages" class="flex" [class.justify-end]="message.sender === 'user'" [class.justify-start]="message.sender === 'ai'">
       <div class="glass-card p-3 rounded-lg max-w-xl"
            [class.user-message-bubble]="message.sender === 'user'">
-        <div [innerHTML]="message.content"></div>
+        <div class="chat-message-content" [innerHTML]="message.content"></div>
       </div>
     </div>
 
