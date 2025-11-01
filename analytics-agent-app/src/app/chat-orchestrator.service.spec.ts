@@ -208,7 +208,7 @@ describe('ChatOrchestratorService: AI Interaction Limiter', () => {
       ]
     });
     service = TestBed.inject(ChatOrchestratorService);
-    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
   });
 
   it('should handle a fatal error and post a message if AI interactions exceed the limit', () => {
@@ -339,5 +339,33 @@ describe('ChatOrchestratorService: handleSafetyCheck', () => {
       testQuery,
       'safety_check'
     );
+  });
+});
+
+describe('ChatOrchestratorService: Query Generation', () => {
+  let service: ChatOrchestratorService;
+  let mockApiService: MockApiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ChatOrchestratorService,
+        { provide: ApiService, useClass: MockApiService }
+      ]
+    });
+    service = TestBed.inject(ChatOrchestratorService);
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+  });
+
+  it('should include MySQL dialect instruction in the query_generation prompt', () => {
+    // Arrange
+    service.currentAiRole = 'query_generation';
+
+    // Act
+    const prompt = (service as any).getAiRolePrompt();
+
+    // Assert
+    expect(prompt).toContain('MySQL');
   });
 });

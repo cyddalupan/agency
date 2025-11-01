@@ -46687,7 +46687,7 @@ ${dbSchema}`;
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "query_generation":
-        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
+        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. You must generate a valid MySQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:
 
 ${APPLICANT_TABLE_SCHEMA}`;
       case "safety_check":
