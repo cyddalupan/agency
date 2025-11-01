@@ -46468,6 +46468,8 @@ var BREAKDOWN_PROMPT_INSTRUCTIONS = `You are an expert AI assistant whose sole p
 
 This process is automated, so do not create steps that require user input or deal with low-level implementation details like opening/closing database connections.
 
+dont query the same data, we can process the data like filter it or sort without doing query.
+
 Do not include any conversational text or explanations\u2014only the final JSON array.`;
 var BREAKDOWN_PROMPT_GOOD_EXAMPLE = `
 ---
@@ -46491,6 +46493,9 @@ var BREAKDOWN_PROMPT_BAD_EXAMPLE = `
 *Bad (deals with low-level details):*
 \`\`\`json
 ["open sql connection", "SELECT * FROM applicants...", "close sql connection"]
+\`\`\`
+
+[SELECT applicant_id, applicant_first, applicant_middle, applicant_last,] this is bad because the comma breaks the array format.
 \`\`\`
 
 *Bad (conversational, not a JSON array):*
@@ -46669,7 +46674,7 @@ var ChatOrchestratorService = class _ChatOrchestratorService {
 Available Database Schema for your reference:
 ${dbSchema}`;
       case "analyze":
-        return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.
+        return `You are an Analysis AI. Your task is to summarize the user's intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object. focus on the newer message from user. 
 
         Your output MUST be a detailed description of what the user needs.
 
@@ -46695,7 +46700,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
       case "finalization":
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case "html_conversion":
-        return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML (mobile size) using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. Use white background. Do not include any other text or conversational filler.`;
+        return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML (mobile size) using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. avoid gray font because the parent html background is darkgray unless we add a customized background color. This is a view only html avoid using form attributes. Do not include any other text or conversational filler.`;
       default:
         return `You are a helpful AI assistant.`;
     }
@@ -47042,7 +47047,7 @@ ${APPLICANT_TABLE_SCHEMA}`;
       this.showThinkingModal = false;
       return;
     }
-    this.thinkingMessage = "Converting to HTML...";
+    this.thinkingMessage = "Final Cleanups...";
     const conversionPrompt = this.getAiRolePrompt();
     const conversionContextMessages = [
       { role: "system", content: conversionPrompt },

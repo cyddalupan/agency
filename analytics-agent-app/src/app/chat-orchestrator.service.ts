@@ -107,7 +107,7 @@ export class ChatOrchestratorService {
       case 'collaborate':
         return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user\'s goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
       case 'analyze':
-        return `You are an Analysis AI. Your task is to summarize the user\'s intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object.\n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
+        return `You are an Analysis AI. Your task is to summarize the user\'s intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object. focus on the newer message from user. \n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
       case 'breakdown':
         return `${BREAKDOWN_PROMPT_INSTRUCTIONS}
 ${BREAKDOWN_PROMPT_GOOD_EXAMPLE}
@@ -124,7 +124,7 @@ ${dbSchema}`;
       case 'finalization':
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case 'html_conversion':
-        return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML (mobile size) using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. Use white background. Do not include any other text or conversational filler.`;
+        return `You are an HTML Conversion AI. Your task is to convert the final AI response to HTML (mobile size) using Tailwind CSS for styling (which is already installed). Make sure to use a generous amount of Font Awesome icons to enhance the visual presentation. avoid gray font because the parent html background is darkgray unless we add a customized background color. This is a view only html avoid using form attributes. Do not include any other text or conversational filler.`;
       default:
         return `You are a helpful AI assistant.`;
     }
@@ -512,7 +512,7 @@ ${dbSchema}`;
       this.showThinkingModal = false;
       return;
     }
-    this.thinkingMessage = 'Converting to HTML...';
+    this.thinkingMessage = 'Final Cleanups...';
     const conversionPrompt = this.getAiRolePrompt();
     const conversionContextMessages = [
       { role: 'system', content: conversionPrompt },

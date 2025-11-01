@@ -208,7 +208,7 @@ describe('ChatOrchestratorService: AI Interaction Limiter', () => {
       ]
     });
     service = TestBed.inject(ChatOrchestratorService);
-mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
   });
 
   it('should handle a fatal error and post a message if AI interactions exceed the limit', () => {
@@ -343,23 +343,9 @@ describe('ChatOrchestratorService: handleSafetyCheck', () => {
 });
 
 describe('ChatOrchestratorService: Query Generation', () => {
-  let service: ChatOrchestratorService;
-  let mockApiService: MockApiService;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [
-        ChatOrchestratorService,
-        { provide: ApiService, useClass: MockApiService }
-      ]
-    });
-    service = TestBed.inject(ChatOrchestratorService);
-    mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
-  });
-
   it('should include MySQL dialect instruction in the query_generation prompt', () => {
     // Arrange
+    const service = TestBed.inject(ChatOrchestratorService);
     service.currentAiRole = 'query_generation';
 
     // Act
@@ -367,5 +353,32 @@ describe('ChatOrchestratorService: Query Generation', () => {
 
     // Assert
     expect(prompt).toContain('MySQL');
+  });
+
+  it('should pass the full execution context to the AI', () => {
+    // Arrange
+    const service = TestBed.inject(ChatOrchestratorService);
+    const mockApiService = TestBed.inject(ApiService) as unknown as MockApiService;
+    const getAiResponseSpy = spyOn(mockApiService, 'getAiResponse').and.callThrough();
+
+    const fullContext = [
+      'item 1',
+      'item 2',
+      'item 3',
+      'item 4',
+      'item 5',
+      'item 6'
+    ];
+    service.execution_context = fullContext;
+    const nlpQuery = 'find users';
+
+    // Act
+    (service as any).handleQueryGeneration(nlpQuery);
+
+    // Assert
+    expect(getAiResponseSpy).toHaveBeenCalled();
+    const aiCallArgs = getAiResponseSpy.calls.mostRecent().args[0];
+    const assistantMessages = aiCallArgs.filter((msg: any) => msg.role === 'assistant');
+    expect(assistantMessages.length).toBe(fullContext.length);
   });
 });
