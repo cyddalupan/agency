@@ -77,7 +77,7 @@ describe('ChatOrchestratorService: Integration', () => {
 
     // --- Finalization Phase ---
     expect(service.currentAiRole).toBe('html_conversion');
-    expect(service.thinkingMessage).toBe('Converting to HTML...');
+    expect(service.thinkingMessage).toBe('Final Cleanups...');
     tick(1); // Allow html_conversion call to resolve
 
     // --- HTML Conversion Phase ---

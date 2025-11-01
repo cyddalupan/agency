@@ -105,7 +105,7 @@ export class ChatOrchestratorService {
     const dbSchema = APPLICANT_TABLE_SCHEMA;
     switch (this.currentAiRole) {
       case 'collaborate':
-        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user\'s goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
+        return `You are a Collaboration AI for a deployment agency system. Your purpose is to act as a helpful assistant, clarifying the user\'s needs to generate a precise context for subsequent AI agents. Reply in short, easy-to-understand messages and avoid technical terms. Your goal is to fully understand what the user wants to achieve. Crucially, you must not ask about or discuss the final output format (e.g., CSV, JSON, HTML). The system handles all formatting automatically. Your sole focus is to understand the user\'s goal. When you have a clear understanding and a detailed context, output the trigger [[COLLAB_DONE]]..\n\nAvailable Database Schema for your reference:\n${dbSchema}`;
       case 'analyze':
         return `You are an Analysis AI. Your task is to summarize the user\'s intent and the clarified context from the Collaboration AI into a concise brief for the Breakdown AI. You will receive a structured context object. focus on the newer message from user. \n\n        Your output MUST be a detailed description of what the user needs.\n\n        Available Database Schema:\n        ${dbSchema}`;
       case 'breakdown':
@@ -118,9 +118,9 @@ ${dbSchema}`;
       case 'execution':
         return `You are an Execution AI. Your task is to process a single step from a breakdown plan. Determine if the step requires a database query. If it does, output [[QUERY_REQUIRED]] followed by a natural language description of the query needed. If it does not, output [[STEP_COMPLETE]] followed by a confirmation or the result of the internal action. The database schema is provided for context:\n\n${APPLICANT_TABLE_SCHEMA}`;
       case 'query_generation':
-        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid SQL query. You must generate a valid MySQL query. Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:\n\n${APPLICANT_TABLE_SCHEMA}`;
+        return `You are a Query Generation AI. Your task is to convert a natural language query description into a valid MySQL query (MySQL 5.7.23). Use the provided database schema for reference. Output ONLY the SQL query string. Do not include any other text or conversational filler. If you cannot generate a valid SQL query, output an empty string or an error message. The database schema is provided for context:\n\n${APPLICANT_TABLE_SCHEMA}`;
       case 'safety_check':
-        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., \`DROP TABLE\`, \`ALTER TABLE\`, \`TRUNCATE TABLE\`) or contains high-risk patterns like \`UNION ALL\`, \`LOAD DATA INFILE\`, or SQL comments (\`--\`, \`#\`). A query is considered **SAFE** if it is a standard \`SELECT\`, \`INSERT\`, \`UPDATE\`, or \`DELETE\` statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
+        return `You are a Safety AI. Your task is to analyze a given SQL query for specific structural risks. Your goal is to prevent database damage. A query is considered **UNSAFE** only if it contains commands that alter the database schema (e.g., <table>DROP TABLE</table>, <table>ALTER TABLE</table>, <table>TRUNCATE TABLE</table>) or contains high-risk patterns like <table>UNION ALL</table>, <table>LOAD DATA INFILE</table>, or SQL comments (<table>--</table>, <table>#</table>). A query is considered **SAFE** if it is a standard <table>SELECT</table>, <table>INSERT</table>, <table>UPDATE</table>, or <table>DELETE</table> statement used for data retrieval or modification. Accessing personal or sensitive data is **not** an unsafe condition. Respond with [[SAFE_TO_RUN]] if the query is safe. If it is unsafe, respond with [[UNSAFE: <reason>]] and specify the dangerous pattern found.`;
       case 'finalization':
         return `You are a Finalization AI. Your task is to aggregate all results and produce a final, user-facing summary or answer. Synthesize the information into a coherent and human-readable response. focus on the value non technical user can understand.`;
       case 'html_conversion':
@@ -348,12 +348,13 @@ ${dbSchema}`;
     const queryGenerationPrompt = this.getAiRolePrompt();
     const queryGenerationContextMessages = [
       { role: 'system', content: queryGenerationPrompt },
-      ...this.execution_context.map(content => ({ role: 'assistant', content: content })).slice(-5),
+      ...this.execution_context.map(content => ({ role: 'assistant', content: content })),
       { role: 'user', content: naturalLanguageQuery }
     ];
 
     if (this.queryRetryCount > 0) {
-      queryGenerationContextMessages.push({ role: 'user', content: `Previous attempt failed. Please ensure the SQL query is valid and directly executable. Avoid any conversational text.` });
+      const lastError = this.execution_context[this.execution_context.length - 1];
+      queryGenerationContextMessages.push({ role: 'user', content: `The previous attempt to execute the query failed with the following error: \n${lastError}\n. Please analyze the error and the database schema to generate a corrected and valid MySQL query.` });
     }
 
     this.apiService.getAiResponse(queryGenerationContextMessages, '', this.currentAiRole).subscribe({
