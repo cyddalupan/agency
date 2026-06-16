@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Agency;
+use App\Models\Applicant;
 use App\Models\Employer;
 use App\Models\User;
 use App\Models\Bill;
@@ -115,6 +116,64 @@ class AccountingOverviewTest extends TestCase
 
         $response = $this->actingAs($this->user)
             ->get(route('accounting.employer', $otherEmployer));
+
+        $response->assertNotFound();
+    }
+
+    // Worker accounting
+
+    #[Test]
+    public function shows_worker_accounting_overview(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+        Bill::factory()->create([
+            'agency_id' => $this->agency->id,
+            'applicant_id' => $applicant->id,
+            'applicant_cost' => 5000,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('accounting.worker', $applicant));
+
+        $response->assertOk();
+        $response->assertViewHas('applicant');
+        $response->assertViewHas('totalCost');
+        $response->assertViewHas('totalPaid');
+        $response->assertViewHas('balance');
+    }
+
+    #[Test]
+    public function worker_accounting_totals(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+        $bill = Bill::factory()->create([
+            'agency_id' => $this->agency->id,
+            'applicant_id' => $applicant->id,
+            'applicant_cost' => 15000,
+        ]);
+        Payment::factory()->create([
+            'agency_id' => $this->agency->id,
+            'bill_id' => $bill->id,
+            'amount' => 5000,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('accounting.worker', $applicant));
+
+        $response->assertOk();
+        $this->assertEquals(15000, $response->viewData('totalCost'));
+        $this->assertEquals(5000, $response->viewData('totalPaid'));
+        $this->assertEquals(10000, $response->viewData('balance'));
+    }
+
+    #[Test]
+    public function worker_accounting_tenant_scoped(): void
+    {
+        $otherAgency = Agency::factory()->create();
+        $otherApplicant = Applicant::factory()->create(['agency_id' => $otherAgency->id]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('accounting.worker', $otherApplicant));
 
         $response->assertNotFound();
     }

@@ -11,8 +11,8 @@ return new class extends Migration
         if (!Schema::hasTable('status_transitions')) {
             Schema::create('status_transitions', function (Blueprint $table) {
                 $table->id();
-                $table->integer('from_code');
-                $table->integer('to_code');
+                $table->unsignedSmallInteger('from_code');
+                $table->unsignedSmallInteger('to_code');
                 $table->boolean('is_active')->default(true);
                 $table->timestamps();
 

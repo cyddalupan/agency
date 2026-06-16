@@ -113,7 +113,14 @@ Route::middleware('auth:web')->group(function () {
     // Accounting routes
     Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::get('/employer/{employer}', [AccountingController::class, 'employer'])->name('employer');
+        Route::get('/worker/{applicant}', [AccountingController::class, 'worker'])->name('worker');
+        Route::get('/marketing-agency/{marketingAgency}', [AccountingController::class, 'marketingAgency'])->name('marketing-agency');
+        Route::get('/marketing-agent/{marketingAgent}', [AccountingController::class, 'marketingAgent'])->name('marketing-agent');
+        Route::get('/recruitment-agent/{recruitmentAgent}', [AccountingController::class, 'recruitmentAgent'])->name('recruitment-agent');
     });
+
+    // Transaction history
+    Route::get('/transactions', [ReportController::class, 'transactions'])->name('transactions.index');
 
     // Report PDF routes
     Route::prefix('reports')->name('reports.')->group(function () {
