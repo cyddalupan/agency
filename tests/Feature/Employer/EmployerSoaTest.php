@@ -31,6 +31,7 @@ class EmployerSoaTest extends TestCase
 
         $this->user = User::factory()->create([
             'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
         ]);
     }
 
