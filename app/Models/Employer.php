@@ -33,4 +33,9 @@ class Employer extends Model
     {
         return $this->hasMany(JobPosition::class);
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

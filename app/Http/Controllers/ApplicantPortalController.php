@@ -11,7 +11,11 @@ class ApplicantPortalController extends Controller
     {
         $applicant = Auth::guard('applicant')->user();
 
-        return view('portal.dashboard', compact('applicant'));
+        $logs = $applicant->logs()
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('portal.dashboard', compact('applicant', 'logs'));
     }
 
     public function profile()

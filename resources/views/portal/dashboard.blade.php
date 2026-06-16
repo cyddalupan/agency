@@ -90,6 +90,38 @@
         </div>
     </div>
 
+    {{-- Status History --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body p-6">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>📜</span> Status History
+            </h3>
+            @if($logs->isNotEmpty())
+                <ul class="relative">
+                    <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-base-300"></div>
+                    @foreach($logs as $log)
+                        <li class="relative pl-10 pb-6 last:pb-0">
+                            {{-- Timeline dot --}}
+                            <div class="absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-primary bg-base-100"></div>
+
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1">
+                                    <span class="badge badge-sm">{{ $log->new_status }}</span>
+                                    @if($log->notes)
+                                        <p class="text-sm mt-1 opacity-70">{{ $log->notes }}</p>
+                                    @endif
+                                </div>
+                                <span class="text-xs opacity-50 whitespace-nowrap">{{ $log->created_at->diffForHumans() }}</span>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No status changes recorded yet.</p>
+            @endif
+        </div>
+    </div>
+
     {{-- Browse jobs CTA --}}
     <div class="card bg-base-100 shadow-sm mb-6">
         <div class="card-body p-6 text-center">

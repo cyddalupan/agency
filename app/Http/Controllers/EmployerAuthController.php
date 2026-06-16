@@ -7,15 +7,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
-class ApplicantAuthController extends Controller
+class EmployerAuthController extends Controller
 {
     public function loginForm()
     {
-        if (Auth::guard('applicant')->check()) {
-            return redirect()->route('portal.dashboard');
-        }
-
-        return view('portal.login');
+        return view('employer.auth.login');
     }
 
     public function login(Request $request)
@@ -25,7 +21,7 @@ class ApplicantAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = Str::lower('login:applicant:' . $request->input('email'));
+        $key = Str::lower('login:employer:' . $request->input('email'));
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
@@ -34,11 +30,25 @@ class ApplicantAuthController extends Controller
             ])->onlyInput('email');
         }
 
-        if (Auth::guard('applicant')->attempt($credentials, $request->boolean('remember'))) {
+        $remember = $request->boolean('remember');
+
+        if (Auth::guard('web')->attempt($credentials, $remember)) {
             RateLimiter::clear($key);
+            $user = Auth::guard('web')->user();
+
+            if ($user->user_type !== 'employer') {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'These credentials are not registered as an employer.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
 
-            return redirect()->intended(route('portal.dashboard'));
+            return redirect()->intended(route('employer.dashboard'));
         }
 
         RateLimiter::hit($key);
@@ -50,11 +60,11 @@ class ApplicantAuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::guard('applicant')->logout();
+        Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('portal.login');
+        return redirect()->route('employer.login');
     }
 }

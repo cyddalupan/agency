@@ -15,12 +15,18 @@ class User extends Authenticatable
 
     protected $fillable = [
         'agency_id',
+        'employer_id',
         'name',
         'email',
         'password',
         'user_type',
         'status',
     ];
+
+    public function employer()
+    {
+        return $this->belongsTo(Employer::class);
+    }
 
     protected $hidden = [
         'password',

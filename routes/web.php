@@ -11,6 +11,8 @@ use App\Http\Controllers\CustomFieldDefinitionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployerController;
+use App\Http\Controllers\EmployerAuthController;
+use App\Http\Controllers\EmployerDashboardController;
 use App\Http\Controllers\JobPositionController;
 use App\Http\Controllers\MarketingAgencyController;
 use App\Http\Controllers\MarketingAgentController;
@@ -33,6 +35,32 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/profile', [ApplicantPortalController::class, 'profile'])->name('profile');
         Route::get('/jobs', [ApplicantJobController::class, 'index'])->name('jobs.index');
         Route::get('/jobs/{job}', [ApplicantJobController::class, 'show'])->name('jobs.show');
+    });
+});
+
+// === Employer Portal ===
+Route::prefix('employer')->name('employer.')->group(function () {
+    // Guest
+    Route::get('/login', [EmployerAuthController::class, 'loginForm'])->name('login');
+    Route::post('/login', [EmployerAuthController::class, 'login'])->name('login.post');
+
+    // Authenticated
+    Route::middleware(['auth:web', 'employer'])->group(function () {
+        Route::post('/logout', [EmployerAuthController::class, 'logout'])->name('logout');
+        Route::get('/dashboard', [EmployerDashboardController::class, 'index'])->name('dashboard');
+    });
+});
+
+// === Employer Portal ===
+Route::prefix('employer')->name('employer.')->group(function () {
+    // Guest
+    Route::get('/login', [EmployerAuthController::class, 'loginForm'])->name('login');
+    Route::post('/login', [EmployerAuthController::class, 'login'])->name('login.post');
+
+    // Authenticated
+    Route::middleware(['auth:web', 'employer'])->group(function () {
+        Route::post('/logout', [EmployerAuthController::class, 'logout'])->name('logout');
+        Route::get('/dashboard', [EmployerDashboardController::class, 'index'])->name('dashboard');
     });
 });
 
