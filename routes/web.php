@@ -110,6 +110,7 @@ Route::middleware('auth:web')->group(function () {
 
     // Report PDF routes
     Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/applicants', [ReportController::class, 'applicants'])->name('applicants');
         Route::get('/bill/{bill}', [ReportController::class, 'bill'])->name('bill');
         Route::get('/or/{or}', [ReportController::class, 'or'])->name('or');
         Route::get('/commission/{commission}', [ReportController::class, 'commission'])->name('commission');
