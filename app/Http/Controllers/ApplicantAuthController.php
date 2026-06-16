@@ -2,13 +2,52 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Applicant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class ApplicantAuthController extends Controller
 {
+    public function showRegistrationForm()
+    {
+        if (Auth::guard('applicant')->check()) {
+            return redirect()->route('portal.dashboard');
+        }
+
+        return view('portal.register');
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name'  => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'email'      => ['required', 'string', 'email', 'max:255', 'unique:applicants'],
+            'contact'    => ['nullable', 'string', 'max:20'],
+            'password'   => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $applicant = Applicant::create([
+            'agency_id'   => 1, // Default agency
+            'first_name'  => $validated['first_name'],
+            'last_name'   => $validated['last_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'email'       => $validated['email'],
+            'contact'     => $validated['contact'] ?? null,
+            'password'    => Hash::make($validated['password']),
+        ]);
+
+        Auth::guard('applicant')->login($applicant);
+
+        $request->session()->regenerate();
+
+        return redirect()->route('portal.dashboard');
+    }
+
     public function loginForm()
     {
         if (Auth::guard('applicant')->check()) {

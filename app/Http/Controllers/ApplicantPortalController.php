@@ -20,7 +20,7 @@ class ApplicantPortalController extends Controller
 
     public function profile()
     {
-        $applicant = Auth::guard('applicant')->user();
+        $applicant = Auth::guard('applicant')->user()->load('documents');
 
         return view('portal.profile', compact('applicant'));
     }

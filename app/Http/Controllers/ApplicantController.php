@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Applicant;
 use App\Models\StatusCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 
 
@@ -132,5 +133,52 @@ class ApplicantController extends Controller
 
         return redirect()->route('applicants.index')
             ->with('success', 'Applicant deleted successfully.');
+    }
+
+    public function export()
+    {
+        $applicants = Applicant::with('statusCode')->get();
+
+        $headers = [
+            'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
+            'Date of Birth', 'Gender', 'Nationality',
+            'Street', 'City', 'State', 'Postal Code', 'Country',
+            'Status', 'Created At',
+        ];
+
+        $callback = function () use ($applicants, $headers) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($applicants as $applicant) {
+                fputcsv($file, [
+                    $applicant->first_name,
+                    $applicant->last_name,
+                    $applicant->middle_name,
+                    $applicant->email,
+                    $applicant->contact,
+                    $applicant->date_of_birth?->format('Y-m-d'),
+                    $applicant->gender,
+                    $applicant->nationality,
+                    $applicant->street,
+                    $applicant->city,
+                    $applicant->state,
+                    $applicant->postal_code,
+                    $applicant->country,
+                    $applicant->statusCode?->name ?? 'N/A',
+                    $applicant->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=applicants.csv',
+        ]);
     }
 }

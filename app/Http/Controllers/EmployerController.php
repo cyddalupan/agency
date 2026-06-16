@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bill;
 use App\Models\Country;
 use App\Models\Employer;
 use Illuminate\Http\RedirectResponse;
@@ -87,5 +88,19 @@ class EmployerController extends Controller
 
         return redirect()->route('employers.index')
             ->with('success', 'Employer deleted successfully.');
+    }
+
+    public function soa(Employer $employer): View
+    {
+        $bills = Bill::with('payments')
+            ->where('employer_id', $employer->id)
+            ->latest()
+            ->get();
+
+        $totalBilled = $bills->sum('employer_cost');
+        $totalPaid = $bills->flatMap->payments->sum('amount');
+        $balance = $totalBilled - $totalPaid;
+
+        return view('employers.soa', compact('employer', 'bills', 'totalBilled', 'totalPaid', 'balance'));
     }
 }

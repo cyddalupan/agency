@@ -112,6 +112,114 @@
         </div>
     </div>
 
+    {{-- Documents --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>📄</span> Documents
+            </h3>
+
+            {{-- Upload Form --}}
+            <form action="{{ route('portal.documents.upload') }}" method="POST" enctype="multipart/form-data" class="mb-6 p-4 bg-base-200 rounded-lg">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="label">
+                            <span class="label-text">Document Type</span>
+                        </label>
+                        <select name="document_type" class="select select-bordered w-full">
+                            <option value="">Select type...</option>
+                            <option value="resume">Resume / CV</option>
+                            <option value="passport">Passport</option>
+                            <option value="education">Educational Certificate</option>
+                            <option value="training">Training Certificate</option>
+                            <option value="medical">Medical Result</option>
+                            <option value="nbi">NBI Clearance</option>
+                            <option value="other">Other</option>
+                        </select>
+                        @error('document_type')
+                            <span class="text-error text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="label">
+                            <span class="label-text">File (PDF, JPG, PNG - max 5MB)</span>
+                        </label>
+                        <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" class="file-input file-input-bordered w-full" />
+                        @error('document')
+                            <span class="text-error text-xs mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="btn btn-primary w-full">
+                            Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <label class="label">
+                        <span class="label-text">Notes (optional)</span>
+                    </label>
+                    <input type="text" name="notes" class="input input-bordered w-full" placeholder="e.g. Updated resume" />
+                </div>
+            </form>
+
+            {{-- Documents List --}}
+            @if($applicant->relationLoaded('documents') ? $applicant->documents->isNotEmpty() : $applicant->documents()->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>File</th>
+                                <th>Size</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(($applicant->relationLoaded('documents') ? $applicant->documents : $applicant->documents()->get()) as $document)
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-outline">{{ ucfirst($document->document_type) }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            @php
+                                                $ext = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
+                                                $icon = in_array($ext, ['jpg', 'jpeg', 'png']) ? '🖼️' : '📄';
+                                            @endphp
+                                            <span>{{ $icon }}</span>
+                                            <span class="text-sm">{{ $document->file_name }}</span>
+                                        </div>
+                                        @if($document->notes)
+                                            <p class="text-xs opacity-50 mt-1">{{ $document->notes }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="text-sm">
+                                        @if($document->file_size > 1024 * 1024)
+                                            {{ number_format($document->file_size / 1024 / 1024, 1) }} MB
+                                        @else
+                                            {{ number_format($document->file_size / 1024, 0) }} KB
+                                        @endif
+                                    </td>
+                                    <td class="text-sm opacity-70">{{ $document->created_at->diffForHumans() }}</td>
+                                    <td>
+                                        <a href="{{ route('portal.documents.download', $document) }}" class="btn btn-ghost btn-xs">
+                                            Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No documents uploaded yet.</p>
+            @endif
+        </div>
+    </div>
+
     <div class="text-center mt-8">
         <a href="{{ route('portal.dashboard') }}" class="btn btn-ghost">
             ← Back to Dashboard

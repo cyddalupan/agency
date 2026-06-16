@@ -20,11 +20,14 @@ use App\Http\Controllers\SubTableController;
 use App\Http\Controllers\ApplicantAuthController;
 use App\Http\Controllers\ApplicantPortalController;
 use App\Http\Controllers\ApplicantJobController;
+use App\Http\Controllers\PortalDocumentController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
 Route::prefix('portal')->name('portal.')->group(function () {
     // Guest (not logged in as applicant)
+    Route::get('/register', [ApplicantAuthController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [ApplicantAuthController::class, 'register'])->name('register.post');
     Route::get('/login', [ApplicantAuthController::class, 'loginForm'])->name('login');
     Route::post('/login', [ApplicantAuthController::class, 'login'])->name('login.post');
 
@@ -35,19 +38,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::get('/profile', [ApplicantPortalController::class, 'profile'])->name('profile');
         Route::get('/jobs', [ApplicantJobController::class, 'index'])->name('jobs.index');
         Route::get('/jobs/{job}', [ApplicantJobController::class, 'show'])->name('jobs.show');
-    });
-});
-
-// === Employer Portal ===
-Route::prefix('employer')->name('employer.')->group(function () {
-    // Guest
-    Route::get('/login', [EmployerAuthController::class, 'loginForm'])->name('login');
-    Route::post('/login', [EmployerAuthController::class, 'login'])->name('login.post');
-
-    // Authenticated
-    Route::middleware(['auth:web', 'employer'])->group(function () {
-        Route::post('/logout', [EmployerAuthController::class, 'logout'])->name('logout');
-        Route::get('/dashboard', [EmployerDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/documents/upload', [PortalDocumentController::class, 'upload'])->name('documents.upload');
+        Route::get('/documents/{document}/download', [PortalDocumentController::class, 'download'])->name('documents.download');
     });
 });
 
@@ -85,6 +77,7 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/agency/dashboard', [AgencyDashboardController::class, 'index'])->name('agency.dashboard');
 
     // Applicant routes
+    Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
     Route::resource('applicants', ApplicantController::class);
 
     // Applicant sub-table routes
@@ -95,6 +88,7 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Employer routes
+    Route::get('employers/{employer}/soa', [EmployerController::class, 'soa'])->name('employers.soa');
     Route::resource('employers', EmployerController::class);
 
     // Job Position routes (nested under employers)
