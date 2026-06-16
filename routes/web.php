@@ -18,6 +18,7 @@ use App\Http\Controllers\MarketingAgencyController;
 use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\SubTableController;
 use App\Http\Controllers\ApplicantAuthController;
+use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\ApplicantPortalController;
 use App\Http\Controllers\ApplicantJobController;
 use App\Http\Controllers\PortalDocumentController;
@@ -108,6 +109,11 @@ Route::middleware('auth:web')->group(function () {
     Route::resource('official-receipts', OfficialReceiptController::class);
     Route::resource('commissions', CommissionController::class);
     Route::resource('custom-fields', CustomFieldDefinitionController::class);
+
+    // Accounting routes
+    Route::prefix('accounting')->name('accounting.')->group(function () {
+        Route::get('/employer/{employer}', [AccountingController::class, 'employer'])->name('employer');
+    });
 
     // Report PDF routes
     Route::prefix('reports')->name('reports.')->group(function () {
