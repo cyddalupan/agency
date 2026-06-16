@@ -7,6 +7,22 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" type="image/svg+xml">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
     @vite('resources/css/app.css')
+    <style>
+        /* Print-friendly styles */
+        @media print {
+            body { background: white !important; }
+            .no-print, .navbar, .drawer-side, footer, .alert { display: none !important; }
+            .drawer-content { margin-left: 0 !important; padding: 0 !important; }
+            main { padding: 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+            .table th { background: #f5f5f5 !important; color: #000 !important; }
+            a { color: #000 !important; text-decoration: underline; }
+            @page { margin: 1.5cm; }
+            .print-only { display: block !important; }
+        }
+        .print-only { display: none; }
+        @media print { .print-only { display: block; } }
+    </style>
 </head>
 <body class="bg-base-200 bg-noise min-h-screen">
 
