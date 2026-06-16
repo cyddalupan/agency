@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Applicant;
+use App\Models\Bill;
 use App\Models\StatusCode;
 use App\Services\StatusTransitionService;
 use Illuminate\Http\Request;
@@ -203,5 +204,23 @@ class ApplicantController extends Controller
 
         return redirect()->back()
             ->with('success', 'Applicant status updated successfully.');
+    }
+
+    public function soa(Applicant $applicant)
+    {
+        if ($applicant->agency_id !== auth()->user()->agency_id) {
+            abort(404);
+        }
+
+        $bills = Bill::with('payments')
+            ->where('applicant_id', $applicant->id)
+            ->latest()
+            ->get();
+
+        $totalCost = $bills->sum('applicant_cost');
+        $totalPaid = $bills->flatMap->payments->sum('amount');
+        $balance = $totalCost - $totalPaid;
+
+        return view('applicants.soa', compact('applicant', 'bills', 'totalCost', 'totalPaid', 'balance'));
     }
 }

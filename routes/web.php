@@ -79,6 +79,7 @@ Route::middleware('auth:web')->group(function () {
     // Applicant routes
     Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
     Route::patch('applicants/{applicant}/status', [ApplicantController::class, 'updateStatus'])->name('applicants.status');
+    Route::get('applicants/{applicant}/soa', [ApplicantController::class, 'soa'])->name('applicants.soa');
     Route::resource('applicants', ApplicantController::class);
 
     // Applicant sub-table routes
