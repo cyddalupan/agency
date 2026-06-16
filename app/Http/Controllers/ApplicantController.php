@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Applicant;
 use App\Models\StatusCode;
+use App\Services\StatusTransitionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
@@ -180,5 +181,27 @@ class ApplicantController extends Controller
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename=applicants.csv',
         ]);
+    }
+
+    public function updateStatus(Request $request, Applicant $applicant, StatusTransitionService $transitionService)
+    {
+        $validated = $request->validate([
+            'status_code' => ['required', 'integer', 'exists:status_codes,code'],
+        ]);
+
+        $fromCode = $applicant->status_code;
+        $toCode = (int) $validated['status_code'];
+
+        $error = $transitionService->validateTransition($fromCode, $toCode);
+
+        if ($error) {
+            return redirect()->back()
+                ->withErrors(['status_code' => $error]);
+        }
+
+        $applicant->update(['status_code' => $toCode]);
+
+        return redirect()->back()
+            ->with('success', 'Applicant status updated successfully.');
     }
 }
