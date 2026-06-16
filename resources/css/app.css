@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+@plugin "daisyui" {
+    themes: corporate --default;
+}
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* ───────────── SMOOTH PAGE TRANSITIONS ───────────── */
+main {
+    animation: fadeSlideIn 0.35s ease-out;
+}
+
+@keyframes fadeSlideIn {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ───────────── STAT CARD ICON WRAPPER ───────────── */
+.stat-icon {
+    @apply flex items-center justify-center w-12 h-12 rounded-xl text-2xl;
+}
+
+/* ───────────── CARD HOVER LIFT ───────────── */
+.card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15);
+}
+
+/* ───────────── SIDEBAR LINK ANIMATION ───────────── */
+.sidebar-link {
+    transition: all 0.2s ease;
+    position: relative;
+}
+.sidebar-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: oklch(var(--p));
+    border-radius: 0 3px 3px 0;
+    transition: height 0.2s ease;
+}
+.sidebar-link:hover::before,
+.sidebar-link.active::before {
+    height: 60%;
+}
+
+/* ───────────── BADGE GLOW ───────────── */
+.badge-glow {
+    animation: glowPulse 2s ease-in-out infinite;
+}
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(var(--s) / 0.4); }
+    50%      { box-shadow: 0 0 0 6px oklch(var(--s) / 0); }
+}
+
+/* ───────────── STYLED SCROLLBAR ───────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: oklch(var(--b2)); }
+::-webkit-scrollbar-thumb {
+    background: oklch(var(--bc) / 0.2);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: oklch(var(--bc) / 0.4); }
+
+/* ───────────── SPARKLE DIVIDER ───────────── */
+.sparkle-divider {
+    @apply flex items-center gap-2 my-6;
+}
+.sparkle-divider::before,
+.sparkle-divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent via-base-content/20 to-transparent;
+}
+
+/* ───────────── SUBTLE BACKGROUND TEXTURE ───────────── */
+.bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
