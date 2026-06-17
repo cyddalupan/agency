@@ -6,6 +6,7 @@ use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Commission extends Model
@@ -39,5 +40,10 @@ class Commission extends Model
     public function commissionable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function commissionPayments(): HasMany
+    {
+        return $this->hasMany(CommissionPayment::class);
     }
 }

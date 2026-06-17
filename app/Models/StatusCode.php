@@ -16,4 +16,18 @@ class StatusCode extends Model
     {
         return $this->hasMany(Applicant::class, 'status_code', 'code');
     }
+
+    /**
+     * Get the display label for a given country.
+     * Uses country-specific label (e.g., label_saudi) if available,
+     * otherwise falls back to the default label.
+     */
+    public function labelForCountry(?string $countryName): string
+    {
+        if ($countryName && str_contains(strtolower($countryName), 'saudi')) {
+            return $this->label_saudi ?? $this->label;
+        }
+
+        return $this->label;
+    }
 }

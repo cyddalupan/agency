@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             ReferenceDataSeeder::class,
             StatusCodesSeeder::class,
             StatusTransitionSeeder::class,
+            InitialAgencySeeder::class,
         ]);
     }
 }

@@ -20,7 +20,14 @@ class ApplicantPortalController extends Controller
 
     public function profile()
     {
-        $applicant = Auth::guard('applicant')->user()->load('documents');
+        $applicant = Auth::guard('applicant')->user()->load([
+            'documents',
+            'education',
+            'passport',
+            'certificates',
+            'workExperiences',
+            'requirements',
+        ]);
 
         return view('portal.profile', compact('applicant'));
     }

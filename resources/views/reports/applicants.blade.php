@@ -2,12 +2,25 @@
 
 @section('title', 'Applicant Reports')
 
+@push('styles')
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .container { max-width: 100% !important; padding: 0 !important; }
+    body { font-size: 11pt; }
+    table { font-size: 9pt; width: 100%; }
+    th { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6">Applicant Reports</h1>
 
     <!-- Filters -->
-    <div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card bg-base-100 shadow-xl mb-6 no-print">
         <div class="card-body">
             <h2 class="card-title text-lg mb-4">Filters</h2>
             <form method="GET" action="{{ route('reports.applicants') }}" class="flex flex-wrap gap-4 items-end">
@@ -61,12 +74,15 @@
         <div class="card-body">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="card-title">Results ({{ $applicants->count() }})</h2>
-                <a href="{{ route('applicants.export') }}" class="btn btn-outline btn-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export CSV
-                </a>
+                <div class="flex gap-2 no-print">
+                    <a href="{{ route('applicants.export') }}" class="btn btn-outline btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export CSV
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ Print</button>
+                </div>
             </div>
 
             <div class="overflow-x-auto">

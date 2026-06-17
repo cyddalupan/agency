@@ -65,4 +65,19 @@ class OfficialReceiptShowTest extends TestCase
         $response->assertOk();
         $response->assertSee('Back');
     }
+
+    #[Test]
+    public function show_has_pdf_download_link(): void
+    {
+        $or = OfficialReceipt::factory()->create([
+            'agency_id' => $this->agency->id,
+            'or_no' => 'OR-2026-0001',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('official-receipts.show', $or));
+
+        $response->assertOk();
+        $response->assertSee(route('reports.or', $or));
+    }
 }

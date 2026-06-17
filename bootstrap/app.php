@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'employer' => \App\Http\Middleware\EnsureUserIsEmployer::class,
+            'role'     => \App\Http\Middleware\CheckRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -24,6 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $guards = $e->guards();
+
+            // For POST/PUT/DELETE requests to protected routes (like /logout),
+            // don't store the intended URL since POST URLs can't be meaningfully
+            // redirected to after login
+            if (! $request->isMethod('GET') && ! $request->isMethod('HEAD')) {
+                if (in_array('applicant', $guards)) {
+                    return redirect()->route('portal.login');
+                }
+                if (in_array('employer', $guards)) {
+                    return redirect()->route('employer.login');
+                }
+                return redirect()->route('login');
+            }
+
             if (in_array('applicant', $guards)) {
                 return redirect()->guest(route('portal.login'));
             }

@@ -22,7 +22,7 @@
                         @if($applicant->statusCode)
                             <p class="text-lg font-bold mt-1"
                                style="color: {{ $applicant->statusCode->color ?? '#374151' }}">
-                                {{ $applicant->statusCode->label }}
+                                {{ $applicant->statusCode->labelForCountry($applicant->country?->name) }}
                             </p>
                         @else
                             <p class="text-lg font-bold mt-1 opacity-50">Pending</p>

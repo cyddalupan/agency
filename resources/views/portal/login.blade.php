@@ -54,7 +54,10 @@
                 </button>
             </form>
 
-            <div class="text-center mt-6">
+            <div class="text-center mt-6 flex flex-col gap-2">
+                <a href="{{ route('portal.login.otp') }}" class="text-sm opacity-70 hover:opacity-100">
+                    Login with OTP
+                </a>
                 <a href="{{ route('login') }}" class="text-sm opacity-70 hover:opacity-100">
                     ← Staff login
                 </a>

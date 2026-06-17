@@ -31,7 +31,7 @@
     <div class="mb-6">
         <span class="badge badge-lg"
             style="background-color: {{ $applicant->statusCode->color ?? '#e5e7eb' }}20; color: {{ $applicant->statusCode->color ?? '#374151' }}">
-            📊 {{ $applicant->statusCode->label }}
+            📊 {{ $applicant->statusCode->labelForCountry($applicant->country?->name) }}
         </span>
     </div>
     @endif
@@ -113,6 +113,176 @@
     </div>
 
     {{-- Documents --}}
+
+    {{-- Education --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>🎓</span> Education
+            </h3>
+            @if($applicant->education->isNotEmpty())
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>School</th>
+                                <th>Course</th>
+                                <th>Year Graduated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($applicant->education as $edu)
+                                <tr>
+                                    <td>{{ $edu->level ?? '—' }}</td>
+                                    <td>{{ $edu->school ?? '—' }}</td>
+                                    <td>{{ $edu->course ?? '—' }}</td>
+                                    <td>{{ $edu->year_graduated ?? '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No education records yet.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Passport --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>🛂</span> Passport
+            </h3>
+            @if($applicant->passport)
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <dt class="text-xs opacity-60 uppercase tracking-wider">Passport Number</dt>
+                        <dd class="font-medium mt-1">{{ $applicant->passport->passport_number }}</dd>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <dt class="text-xs opacity-60 uppercase tracking-wider">Place of Issue</dt>
+                        <dd class="font-medium mt-1">{{ $applicant->passport->place_issue ?? '—' }}</dd>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <dt class="text-xs opacity-60 uppercase tracking-wider">Issue Date</dt>
+                        <dd class="font-medium mt-1">{{ $applicant->passport->issue_date?->format('M d, Y') ?? '—' }}</dd>
+                    </div>
+                    <div class="p-3 rounded-lg bg-base-200/50">
+                        <dt class="text-xs opacity-60 uppercase tracking-wider">Expiry Date</dt>
+                        <dd class="font-medium mt-1">{{ $applicant->passport->expiry_date?->format('M d, Y') ?? '—' }}</dd>
+                    </div>
+                </dl>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No passport information yet.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Certificates --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>🏅</span> Certificates
+            </h3>
+            @if($applicant->certificates->isNotEmpty())
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Certificate</th>
+                                <th>Institution</th>
+                                <th>Date Obtained</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($applicant->certificates as $cert)
+                                <tr>
+                                    <td>{{ $cert->certificate_name }}</td>
+                                    <td>{{ $cert->institution ?? '—' }}</td>
+                                    <td>{{ $cert->date_obtained?->format('M d, Y') ?? '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No certificates recorded yet.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Work Experience --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>💼</span> Work Experience
+            </h3>
+            @if($applicant->workExperiences->isNotEmpty())
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Position</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($applicant->workExperiences as $exp)
+                                <tr>
+                                    <td>{{ $exp->company }}</td>
+                                    <td>{{ $exp->position ?? '—' }}</td>
+                                    <td>{{ $exp->start_date?->format('M d, Y') ?? '—' }}</td>
+                                    <td>{{ $exp->end_date?->format('M d, Y') ?? 'Present' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No work experience recorded yet.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Requirements --}}
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <h3 class="card-title flex items-center gap-2 mb-4">
+                <span>📋</span> Requirements
+            </h3>
+            @if($applicant->requirements->isNotEmpty())
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($applicant->requirements as $req)
+                                <tr>
+                                    <td>{{ $req->type }}</td>
+                                    <td>
+                                        <span class="badge badge-sm {{ $req->status === 'submitted' ? 'badge-success' : 'badge-warning' }}">
+                                            {{ ucfirst($req->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-sm opacity-50 text-center py-4">No requirements submitted yet.</p>
+            @endif
+        </div>
+    </div>
+
     <div class="card bg-base-100 shadow-sm mb-6">
         <div class="card-body">
             <h3 class="card-title flex items-center gap-2 mb-4">

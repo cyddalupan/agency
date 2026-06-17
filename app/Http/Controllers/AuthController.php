@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agency;
+use App\Models\User;
+use App\Traits\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    use LoginThrottle;
+
     public function loginForm()
     {
         return view('auth.login');
@@ -22,19 +25,23 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = Str::lower('login:web:' . $request->input('email'));
+        $key = $this->loginRateLimitKey('web', $request->input('email'));
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors([
-                'email' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
-            ])->onlyInput('email');
+        // Rate-limit check
+        if ($response = $this->checkLoginRateLimit($key)) {
+            return $response;
+        }
+
+        // Check user status before attempting login
+        $user = User::where('email', $credentials['email'])->first();
+        if ($response = $this->checkUserActiveStatus($user)) {
+            return $response;
         }
 
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
-            RateLimiter::clear($key);
+            $this->clearRateLimit($key);
             $request->session()->regenerate();
 
             // If this is a super admin (no agency), go to super dashboard
@@ -48,7 +55,7 @@ class AuthController extends Controller
             return redirect()->intended(route('agency.dashboard'));
         }
 
-        RateLimiter::hit($key);
+        $this->hitRateLimit($key);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
@@ -67,19 +74,23 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = Str::lower('login:agency:' . $request->input('email'));
+        $key = $this->loginRateLimitKey('agency', $request->input('email'));
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors([
-                'email' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
-            ])->onlyInput('email');
+        // Rate-limit check
+        if ($response = $this->checkLoginRateLimit($key)) {
+            return $response;
+        }
+
+        // Check user status before attempting login
+        $user = User::where('email', $credentials['email'])->first();
+        if ($response = $this->checkUserActiveStatus($user)) {
+            return $response;
         }
 
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
-            RateLimiter::clear($key);
+            $this->clearRateLimit($key);
             $request->session()->regenerate();
 
             if (!auth()->user()->agency_id) {
@@ -95,7 +106,7 @@ class AuthController extends Controller
             return redirect()->intended(route('agency.dashboard'));
         }
 
-        RateLimiter::hit($key);
+        $this->hitRateLimit($key);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
