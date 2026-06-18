@@ -51,7 +51,64 @@
                     </span>
                 </div>
                 <div class="flex-none flex items-center gap-4">
-                    {{-- Corporate theme locked — no toggle needed --}}
+                    {{-- Notification bell with dropdown --}}
+                    <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="btn btn-ghost btn-square relative notification-bell">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            @php
+                                $unreadCount = auth()->user()->unreadNotifications()->count();
+                                $recentUnread = auth()->user()->unreadNotifications()->latest()->limit(5)->get();
+                            @endphp
+                            @if ($unreadCount > 0)
+                            <span class="notification-badge absolute -top-1 -right-1 badge badge-xs badge-error badge-outline">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                            @endif
+                        </label>
+                        <ul tabindex="0" class="dropdown-content notification-dropdown menu p-2 shadow-lg bg-base-100 rounded-box w-80 mt-2 border border-base-200">
+                            @if ($recentUnread->count() > 0)
+                                @foreach ($recentUnread as $note)
+                                <li class="mb-1 notification-item">
+                                    <div class="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-base-200 transition-colors">
+                                        <span class="text-lg shrink-0">
+                                            @switch($note->type)
+                                                @case('status_change') 🔄 @break
+                                                @case('approval') ✅ @break
+                                                @case('bill_due') 💰 @break
+                                                @default 🔔
+                                            @endswitch
+                                        </span>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm truncate">{{ $note->data['message'] ?? '' }}</p>
+                                            <p class="text-xs opacity-50">{{ $note->created_at->diffForHumans() }}</p>
+                                        </div>
+                                        <form method="POST" action="{{ route('notifications.mark-as-read', $note) }}" class="shrink-0">
+                                            @csrf
+                                            <button type="submit" class="btn btn-ghost btn-xs text-primary" title="Mark as read">✓</button>
+                                        </form>
+                                    </div>
+                                </li>
+                                @endforeach
+                                <li class="menu-title px-2 pt-2 border-t border-base-200 mt-1">
+                                    <div class="flex items-center justify-between">
+                                        <form method="POST" action="{{ route('notifications.mark-all-as-read') }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-ghost btn-xs text-primary">Mark all as read</button>
+                                        </form>
+                                        <a href="{{ route('notifications.index') }}" class="btn btn-ghost btn-xs">View all</a>
+                                    </div>
+                                </li>
+                            @else
+                                <li class="no-notifications">
+                                    <div class="text-center py-6 opacity-50">
+                                        <div class="text-3xl mb-2">🔔</div>
+                                        <p class="text-sm">No new notifications</p>
+                                    </div>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+
                     <div class="avatar placeholder">
                         <div class="w-9 h-9 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-bold">
                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}

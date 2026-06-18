@@ -32,6 +32,7 @@ use App\Http\Controllers\SubTableController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ReportsIndexController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
@@ -105,6 +106,12 @@ Route::middleware('auth:web')->group(function () {
     // Super admin dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+
+    // Notification center (all authenticated users)
+    Route::get("/notifications", [NotificationController::class, "index"])->name("notifications.index");
+    Route::get("/notifications/unread-count", [NotificationController::class, "unreadCount"])->name("notifications.unread-count");
+    Route::post("/notifications/{notification}/mark-as-read", [NotificationController::class, "markAsRead"])->name("notifications.mark-as-read");
+    Route::post("/notifications/mark-all-as-read", [NotificationController::class, "markAllAsRead"])->name("notifications.mark-all-as-read");
     // Agency dashboard
     Route::get('/agency/dashboard', [AgencyDashboardController::class, 'index'])->name('agency.dashboard');
 
