@@ -28,6 +28,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Api\CaseController;
 use App\Http\Controllers\SubTableController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ReportsIndexController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
@@ -155,6 +157,12 @@ Route::middleware('auth:web')->group(function () {
         Route::get('/marketing-agent/{marketingAgent}', [AccountingController::class, 'marketingAgent'])->name('marketing-agent');
         Route::get('/recruitment-agent/{recruitmentAgent}', [AccountingController::class, 'recruitmentAgent'])->name('recruitment-agent');
     });
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    // Reports index
+    Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');
 
     // Transaction history
     Route::get('/transactions', [ReportController::class, 'transactions'])->name('transactions.index');

@@ -165,11 +165,15 @@
 
                     <div class="pt-4 mt-4 border-t border-base-300">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
-                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-base-300/60 transition-colors opacity-60">
-                            <span class="text-lg">⚙️</span>
-                            Settings
-                        </a>
-                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-base-300/60 transition-colors opacity-60">
+                        <a href="{{ route('settings.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('settings.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                        <span class="text-lg">⚙️</span>
+                        Settings
+                    </a>
+                        <a href="{{ route('reports.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('reports.index') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
                             <span class="text-lg">📄</span>
                             Reports
                         </a>
