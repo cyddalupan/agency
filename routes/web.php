@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AgencyDashboardController;
+use App\Http\Controllers\AgencyRegistrationController;
 use App\Http\Controllers\ApplicantAuthController;
 use App\Http\Controllers\ApplicantOtpAuthController;
 use App\Http\Controllers\ApplicantController;
@@ -75,6 +76,11 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/billing/applicant/{applicant}', [EmployerBillingController::class, 'applicant'])->name('billing.applicant');
     });
 });
+
+// === Agency Public Registration ===
+Route::get('/agency/register', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register');
+Route::post('/agency/register', [AgencyRegistrationController::class, 'register'])->name('agency.register.post');
+Route::get('/agency/pending-approval', [AgencyRegistrationController::class, 'pendingApproval'])->name('agency.pending-approval');
 
 // Guest routes
 Route::middleware('guest')->group(function () {
