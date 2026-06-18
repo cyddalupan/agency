@@ -33,6 +33,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ReportsIndexController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AiAssistantController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
@@ -112,6 +113,12 @@ Route::middleware('auth:web')->group(function () {
     Route::get("/notifications/unread-count", [NotificationController::class, "unreadCount"])->name("notifications.unread-count");
     Route::post("/notifications/{notification}/mark-as-read", [NotificationController::class, "markAsRead"])->name("notifications.mark-as-read");
     Route::post("/notifications/mark-all-as-read", [NotificationController::class, "markAllAsRead"])->name("notifications.mark-all-as-read");
+
+    // AI Assistant — natural language to SQL query
+    Route::post('/ai/assistant/query', [App\Http\Controllers\AiAssistantController::class, 'query'])
+        ->name('ai.assistant.query')
+        ->middleware('throttle:30,1');
+
     // Agency dashboard
     Route::get('/agency/dashboard', [AgencyDashboardController::class, 'index'])->name('agency.dashboard');
 
