@@ -20,6 +20,7 @@ use App\Http\Controllers\EmployerBillingController;
 use App\Http\Controllers\JobPositionController;
 use App\Http\Controllers\MarketingAgencyController;
 use App\Http\Controllers\MarketingAgentController;
+use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentController;
@@ -113,6 +114,17 @@ Route::middleware('auth:web')->group(function () {
         Route::put('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::put('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::put('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+    });
+
+    // Agency management (admin, super_admin only)
+    Route::middleware('role:admin,super_admin')->group(function () {
+        Route::get('/agencies', [AgencyController::class, 'index'])->name('agencies.index');
+        Route::get('/agencies/create', [AgencyController::class, 'create'])->name('agencies.create');
+        Route::post('/agencies', [AgencyController::class, 'store'])->name('agencies.store');
+        Route::get('/agencies/{agency}/edit', [AgencyController::class, 'edit'])->name('agencies.edit');
+        Route::put('/agencies/{agency}', [AgencyController::class, 'update'])->name('agencies.update');
+        Route::put('/agencies/{agency}/deactivate', [AgencyController::class, 'deactivate'])->name('agencies.deactivate');
+        Route::put('/agencies/{agency}/activate', [AgencyController::class, 'activate'])->name('agencies.activate');
     });
 
     // Applicant routes - recruiter and other agency roles
