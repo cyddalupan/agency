@@ -43,5 +43,37 @@
             <a href="{{ route('users.index') }}" class="btn btn-ghost">Back</a>
         </div>
     </div>
+
+    {{-- Activity Log --}}
+    <div class="bg-base-100 rounded-box shadow-sm border p-6 mt-6">
+        <h3 class="text-lg font-bold mb-4">📋 Activity Log</h3>
+
+        @if (!empty($activities) && $activities->count() > 0)
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>By</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($activities as $activity)
+                            <tr>
+                                <td>
+                                    <span class="badge badge-ghost">{{ $activity->action }}</span>
+                                </td>
+                                <td>{{ $activity->user?->name ?? 'System' }}</td>
+                                <td class="text-sm opacity-60">{{ $activity->created_at?->diffForHumans() ?? 'N/A' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="opacity-60 text-sm">No activity recorded for this user.</p>
+        @endif
+    </div>
 </div>
 @endsection

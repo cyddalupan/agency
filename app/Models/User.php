@@ -33,6 +33,11 @@ class User extends Authenticatable
         return $this->hasMany(UserPermission::class);
     }
 
+    public function activities()
+    {
+        return $this->morphMany(ActivityLog::class, 'subject');
+    }
+
     protected $hidden = [
         'password',
         'remember_token',

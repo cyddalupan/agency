@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserPermission;
+use App\Models\ActivityLog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -113,7 +114,9 @@ class UserController extends Controller
     {
         $this->authorize('view', $user);
 
-        return view('users.show', compact('user'));
+        $activities = $user->activities()->latest()->get();
+
+        return view('users.show', compact('user', 'activities'));
     }
 
     /**
@@ -188,6 +191,78 @@ class UserController extends Controller
 
         return redirect()->route('users.permissions', $user)
             ->with('success', 'Permissions updated successfully.');
+    }
+
+    /**
+     * Activate a user (set status to active).
+     */
+    public function activate(User $user)
+    {
+        $this->authorize('update', $user);
+
+        $user->update(['status' => 'active']);
+
+        ActivityLog::create([
+            'agency_id'    => $user->agency_id,
+            'user_id'      => auth()->id(),
+            'subject_type' => User::class,
+            'subject_id'   => $user->id,
+            'action'       => 'activated',
+            'description'  => auth()->user()->name.' activated user '.$user->name,
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'User activated successfully.');
+    }
+
+    /**
+     * Suspend a user (set status to suspended).
+     */
+    public function suspend(User $user)
+    {
+        // Prevent self-suspension
+        if ($user->id === auth()->id()) {
+            return redirect()->route('users.index')
+                ->with('error', 'You cannot suspend your own account.');
+        }
+
+        $this->authorize('update', $user);
+
+        $user->update(['status' => 'suspended']);
+
+        ActivityLog::create([
+            'agency_id'    => $user->agency_id,
+            'user_id'      => auth()->id(),
+            'subject_type' => User::class,
+            'subject_id'   => $user->id,
+            'action'       => 'suspended',
+            'description'  => auth()->user()->name.' suspended user '.$user->name,
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'User suspended successfully.');
+    }
+
+    /**
+     * Deactivate a user (set status to inactive).
+     */
+    public function deactivate(User $user)
+    {
+        $this->authorize('update', $user);
+
+        $user->update(['status' => 'inactive']);
+
+        ActivityLog::create([
+            'agency_id'    => $user->agency_id,
+            'user_id'      => auth()->id(),
+            'subject_type' => User::class,
+            'subject_id'   => $user->id,
+            'action'       => 'deactivated',
+            'description'  => auth()->user()->name.' deactivated user '.$user->name,
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'User deactivated successfully.');
     }
 
     /**

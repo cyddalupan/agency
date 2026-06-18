@@ -108,6 +108,11 @@ Route::middleware('auth:web')->group(function () {
         // Role & permission assignment UI
         Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
         Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
+
+        // User activation / suspension
+        Route::put('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
+        Route::put('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
+        Route::put('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     });
 
     // Applicant routes - recruiter and other agency roles

@@ -71,6 +71,29 @@
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-xs btn-ghost">Edit</a>
                                 <a href="{{ route('users.permissions', $user) }}" class="btn btn-xs btn-ghost">Permissions</a>
                                 @if ($user->id !== auth()->id())
+                                    @if ($user->status === 'inactive')
+                                        <form action="{{ route('users.activate', $user) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit" class="btn btn-xs btn-ghost text-success">Activate</button>
+                                        </form>
+                                    @endif
+                                    @if ($user->status === 'active')
+                                        <form action="{{ route('users.suspend', $user) }}" method="POST" class="inline"
+                                              onsubmit="return confirm('Suspend this user?')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit" class="btn btn-xs btn-ghost text-warning">Suspend</button>
+                                        </form>
+                                    @endif
+                                    @if ($user->status === 'active' || $user->status === 'suspended')
+                                        <form action="{{ route('users.deactivate', $user) }}" method="POST" class="inline"
+                                              onsubmit="return confirm('Deactivate this user?')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit" class="btn btn-xs btn-ghost text-error">Deactivate</button>
+                                        </form>
+                                    @endif
                                     <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline"
                                           onsubmit="return confirm('Delete this user?')">
                                         @csrf
