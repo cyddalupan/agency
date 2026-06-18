@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\SensitiveActionLogger;
 use App\Traits\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,8 @@ class EmployerAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = $this->loginRateLimitKey('employer', $request->input('email'));
+        $email = $request->input('email');
+        $key = $this->loginRateLimitKey('employer', $email);
 
         // Rate-limit check
         if ($response = $this->checkLoginRateLimit($key)) {
@@ -54,10 +56,14 @@ class EmployerAuthController extends Controller
 
             $request->session()->regenerate();
 
+            SensitiveActionLogger::login($user);
+
             return redirect()->intended(route('employer.dashboard'));
         }
 
         $this->hitRateLimit($key);
+
+        SensitiveActionLogger::failedLogin($email, $user?->agency_id);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
@@ -66,6 +72,10 @@ class EmployerAuthController extends Controller
 
     public function logout(Request $request)
     {
+        if (auth()->user()) {
+            SensitiveActionLogger::logout(auth()->user());
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

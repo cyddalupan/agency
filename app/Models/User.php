@@ -38,6 +38,16 @@ class User extends Authenticatable
         return $this->morphMany(ActivityLog::class, 'subject');
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     protected $hidden = [
         'password',
         'remember_token',

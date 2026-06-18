@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agency;
+use App\Services\SensitiveActionLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -103,6 +104,8 @@ class AgencyController extends Controller
 
         $agency->update(['status' => 'inactive']);
 
+        SensitiveActionLogger::agencyStatusChange($agency, 'inactive');
+
         return redirect()->route('agencies.index')
             ->with('success', 'Agency deactivated successfully.');
     }
@@ -115,6 +118,8 @@ class AgencyController extends Controller
         $this->authorize('activate', $agency);
 
         $agency->update(['status' => 'active']);
+
+        SensitiveActionLogger::agencyStatusChange($agency, 'active');
 
         return redirect()->route('agencies.index')
             ->with('success', 'Agency activated successfully.');

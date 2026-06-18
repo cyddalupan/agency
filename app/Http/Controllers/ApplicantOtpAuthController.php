@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -27,6 +28,18 @@ class ApplicantOtpAuthController extends Controller
         ]);
 
         $email = $request->input('email');
+        $key = 'otp-send-' . Str::lower($email);
+
+        // Rate limit: 5 attempts per email per 60 minutes
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            return back()->withErrors([
+                'email' => "Too many OTP requests. Please try again in {$seconds} seconds.",
+            ])->onlyInput('email');
+        }
+
+        RateLimiter::hit($key, 3600);
+
         $otp = Str::padLeft((string) random_int(0, 999999), 6, '0');
 
         Cache::put("otp:applicant:{$email}", $otp, now()->addMinutes(10));
@@ -44,6 +57,17 @@ class ApplicantOtpAuthController extends Controller
         ]);
 
         $email = $request->input('email');
+        $key = 'otp-verify-' . Str::lower($email) . '|' . $request->ip();
+
+        // Rate limit: 5 attempts per email+IP per 60 minutes
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            return back()->withErrors([
+                'email' => 'Too many verification attempts. Please try again later.',
+            ]);
+        }
+
+        RateLimiter::hit($key, 3600);
+
         $otp = $request->input('otp');
         $cacheKey = "otp:applicant:{$email}";
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Models\ActivityLog;
+use App\Services\SensitiveActionLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -175,8 +176,15 @@ class UserController extends Controller
             'permissions.*' => ['string', Rule::in($this->getAllPermissions())],
         ]);
 
+        $oldRole = $user->user_type;
+
         // Update the user's role
         $user->update(['user_type' => $validated['user_type']]);
+
+        // Log role change if role actually changed
+        if ($oldRole !== $validated['user_type']) {
+            SensitiveActionLogger::roleChanged($user, $oldRole, $validated['user_type'], auth()->user());
+        }
 
         // Replace all permissions (delete old, create new)
         $user->permissions()->delete();
@@ -277,6 +285,9 @@ class UserController extends Controller
         }
 
         $this->authorize('delete', $user);
+
+        // Log deletion before delete
+        SensitiveActionLogger::deletion($user);
 
         $user->delete();
 

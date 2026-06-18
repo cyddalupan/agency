@@ -27,7 +27,7 @@
                 </div>
                 <div class="flex-none flex items-center gap-4">
                     <div class="avatar placeholder">
-                        <div class="w-8 rounded-full bg-primary text-primary-content text-xs font-bold">
+                        <div class="w-9 h-9 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-bold">
                             {{ strtoupper(substr($user->name, 0, 1)) }}
                         </div>
                     </div>
@@ -106,7 +106,7 @@
                 <div class="border-t border-base-300 px-3 py-3 bg-base-300/50">
                     <div class="flex items-center gap-3 px-3 py-2 text-sm">
                         <div class="avatar placeholder">
-                            <div class="w-7 rounded-full bg-primary text-primary-content text-xs font-bold">
+                            <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold">
                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                             </div>
                         </div>

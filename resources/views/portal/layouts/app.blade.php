@@ -20,7 +20,7 @@
             <div class="dropdown dropdown-end">
                 <div tabindex="0" role="button" class="flex items-center gap-2 cursor-pointer">
                     <div class="avatar placeholder">
-                        <div class="w-8 rounded-full bg-primary text-primary-content text-xs font-bold">
+                        <div class="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold">
                             {{ strtoupper(substr(Auth::guard('applicant')->user()->first_name, 0, 1)) }}{{ strtoupper(substr(Auth::guard('applicant')->user()->last_name, 0, 1)) }}
                         </div>
                     </div>

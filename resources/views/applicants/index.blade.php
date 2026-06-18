@@ -95,7 +95,7 @@
                         <tr class="hover transition-colors">
                             <td>
                                 <div class="avatar placeholder">
-                                    <div class="w-8 rounded-full bg-primary/20 text-primary text-xs font-bold">
+                                    <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
                                         {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
                                     </div>
                                 </div>

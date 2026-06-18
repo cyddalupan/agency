@@ -3,6 +3,7 @@
 namespace Tests\Feature\Notification;
 
 use App\Models\Agency;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Foundation\Testing\RefreshDatabase;

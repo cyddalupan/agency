@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Applicant;
+use App\Services\SensitiveActionLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,25 +26,18 @@ class ApplicantAuthController extends Controller
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name'  => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
             'email'      => ['required', 'string', 'email', 'max:255', 'unique:applicants'],
-            'contact'    => ['nullable', 'string', 'max:20'],
             'password'   => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $applicant = Applicant::create([
-            'agency_id'   => 1, // Default agency
-            'first_name'  => $validated['first_name'],
-            'last_name'   => $validated['last_name'],
-            'middle_name' => $validated['middle_name'] ?? null,
-            'email'       => $validated['email'],
-            'contact'     => $validated['contact'] ?? null,
-            'password'    => Hash::make($validated['password']),
+            'first_name' => $validated['first_name'],
+            'last_name'  => $validated['last_name'],
+            'email'      => $validated['email'],
+            'password'   => Hash::make($validated['password']),
         ]);
 
         Auth::guard('applicant')->login($applicant);
-
-        $request->session()->regenerate();
 
         return redirect()->route('portal.dashboard');
     }
@@ -64,12 +58,12 @@ class ApplicantAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = Str::lower('login:applicant:' . $request->input('email'));
+        $key = 'applicant-login-' . Str::lower($request->input('email')) . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
             return back()->withErrors([
-                'email' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
+                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ])->onlyInput('email');
         }
 
@@ -77,10 +71,14 @@ class ApplicantAuthController extends Controller
             RateLimiter::clear($key);
             $request->session()->regenerate();
 
+            SensitiveActionLogger::login(auth()->guard('applicant')->user());
+
             return redirect()->intended(route('portal.dashboard'));
         }
 
-        RateLimiter::hit($key);
+        RateLimiter::hit($key, 60);
+
+        SensitiveActionLogger::failedLogin($credentials['email']);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
@@ -89,8 +87,11 @@ class ApplicantAuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::guard('applicant')->logout();
+        if (auth()->guard('applicant')->user()) {
+            SensitiveActionLogger::logout(auth()->guard('applicant')->user());
+        }
 
+        Auth::guard('applicant')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

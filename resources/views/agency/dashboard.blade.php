@@ -123,7 +123,7 @@
                 <div class="py-3 flex justify-between items-center hover:bg-base-200/50 px-3 -mx-3 rounded-lg transition-colors">
                     <div class="flex items-center gap-3">
                         <div class="avatar placeholder">
-                            <div class="w-9 rounded-full bg-primary/20 text-primary text-xs font-bold">
+                            <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
                                 {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
                             </div>
                         </div>

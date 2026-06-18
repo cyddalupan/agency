@@ -8,11 +8,25 @@ use Illuminate\Database\Eloquent\Scope;
 
 class TenantScope implements Scope
 {
+    /**
+     * Prevents infinite recursion when auth()->check() triggers a User query
+     * that re-applies this scope.
+     */
+    private static bool $resolvingAuth = false;
+
     public function apply(Builder $builder, Model $model): void
     {
         // Super admin bypass — skip tenant filtering when logged in as super_admin
-        if (auth()->check() && auth()->user()->user_type === 'super_admin') {
-            return;
+        if (! self::$resolvingAuth) {
+            self::$resolvingAuth = true;
+            try {
+                $user = auth()->user();
+                if ($user && $user->user_type === 'super_admin') {
+                    return;
+                }
+            } finally {
+                self::$resolvingAuth = false;
+            }
         }
 
         // Check container-bound agency (from middleware or controller)

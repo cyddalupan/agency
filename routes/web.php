@@ -221,8 +221,12 @@ Route::middleware('auth:web')->group(function () {
 
     // Case Management API
     Route::prefix('api')->name('api.')->group(function () {
-        Route::get('cases/search', [CaseController::class, 'search'])->name('cases.search');
-        Route::resource('cases', CaseController::class)->parameters(['cases' => 'case'])->except(['create', 'edit']);
+        Route::get('cases/search', [CaseController::class, 'search'])->name('cases.search')->middleware('throttle:59,1');
+        Route::get('cases/{case}', [CaseController::class, 'show'])->name('cases.show');
+        Route::put('cases/{case}', [CaseController::class, 'update'])->name('cases.update');
+        Route::delete('cases/{case}', [CaseController::class, 'destroy'])->name('cases.destroy');
+        Route::get('cases', [CaseController::class, 'index'])->name('cases.index');
+        Route::post('cases', [CaseController::class, 'store'])->name('cases.store')->middleware('throttle:29,1');
     });
 
     // Redirect root to dashboard

@@ -13,7 +13,7 @@
             <div class="flex items-start justify-between">
                 <div class="flex items-center gap-4">
                     <div class="avatar placeholder">
-                        <div class="w-16 rounded-full bg-white/20 text-white text-2xl font-bold">
+                        <div class="w-16 h-16 rounded-full bg-white/20 text-white flex items-center justify-center text-2xl font-bold">
                             {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
                         </div>
                     </div>
