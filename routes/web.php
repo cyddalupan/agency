@@ -120,7 +120,7 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Employer routes (admin, super_admin only)
-    Route::middleware('role:admin,super_admin')->group(function () {
+    Route::middleware('role:admin,super_admin,staff')->group(function () {
         Route::get('employers/{employer}/soa', [EmployerController::class, 'soa'])->name('employers.soa');
         Route::resource('employers', EmployerController::class);
 
