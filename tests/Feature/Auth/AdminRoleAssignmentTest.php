@@ -261,4 +261,70 @@ class AdminRoleAssignmentTest extends TestCase
             'id' => $this->adminUser->id,
         ]);
     }
+
+    // ─── SEARCH / FILTER ────────────────────────────────────────────────
+
+    #[Test]
+    public function admin_can_search_users_by_name(): void
+    {
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name'      => 'UniqueNameToSearch',
+        ]);
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name'      => 'OtherPerson',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->get(route('users.index', ['search' => 'UniqueName']));
+
+        $response->assertOk();
+        $response->assertSeeText('UniqueNameToSearch');
+        $response->assertDontSeeText('OtherPerson');
+    }
+
+    #[Test]
+    public function admin_can_filter_users_by_role(): void
+    {
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'coordinator',
+            'name'      => 'CoordinatorUser',
+        ]);
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'staff',
+            'name'      => 'StaffUser',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->get(route('users.index', ['role' => 'coordinator']));
+
+        $response->assertOk();
+        $response->assertSeeText('CoordinatorUser');
+        $response->assertDontSeeText('StaffUser');
+    }
+
+    #[Test]
+    public function admin_can_filter_users_by_status(): void
+    {
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'status'    => 'suspended',
+            'name'      => 'SuspendedUser',
+        ]);
+        User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'status'    => 'active',
+            'name'      => 'ActiveUser',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->get(route('users.index', ['status' => 'suspended']));
+
+        $response->assertOk();
+        $response->assertSeeText('SuspendedUser');
+        $response->assertDontSeeText('ActiveUser');
+    }
 }
