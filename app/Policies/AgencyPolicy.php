@@ -28,7 +28,7 @@ class AgencyPolicy
      */
     public function viewAny(User $currentUser): bool
     {
-        return in_array($currentUser->user_type, ['admin', 'super_admin']);
+        return $currentUser->user_type === 'admin';
     }
 
     /**
@@ -36,7 +36,7 @@ class AgencyPolicy
      */
     public function create(User $currentUser): bool
     {
-        return in_array($currentUser->user_type, ['admin', 'super_admin']);
+        return $currentUser->user_type === 'admin';
     }
 
     /**
@@ -44,7 +44,7 @@ class AgencyPolicy
      */
     public function update(User $currentUser, Agency $agency): bool
     {
-        return in_array($currentUser->user_type, ['admin', 'super_admin']);
+        return $currentUser->user_type === 'admin';
     }
 
     /**
@@ -52,7 +52,7 @@ class AgencyPolicy
      */
     public function deactivate(User $currentUser, Agency $agency): bool
     {
-        return in_array($currentUser->user_type, ['admin', 'super_admin']);
+        return $currentUser->user_type === 'admin';
     }
 
     /**
@@ -60,6 +60,6 @@ class AgencyPolicy
      */
     public function activate(User $currentUser, Agency $agency): bool
     {
-        return in_array($currentUser->user_type, ['admin', 'super_admin']);
+        return $currentUser->user_type === 'admin';
     }
 }
