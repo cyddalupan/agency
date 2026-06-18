@@ -98,4 +98,28 @@ class EmployerIndexTest extends TestCase
         $response->assertSee('Agency One Employer');
         $response->assertDontSee('Agency Two Employer');
     }
+
+    #[Test]
+    public function non_admin_authenticated_user_returns_200_not_403_on_employers_page(): void
+    {
+        // This test documents the bug: staff users get 403 on /employers.
+        // The EmployerController is behind 'role:admin,super_admin' middleware,
+        // but sidebar navigation suggests all staff should access this page.
+        $staffUser = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'staff',
+        ]);
+
+        Employer::factory()->count(1)->create([
+            'agency_id' => $this->agency->id,
+        ]);
+
+        $response = $this->actingAs($staffUser)
+            ->get(route('employers.index'));
+
+        // Expected: 200 OK (staff should be able to view employers)
+        // Actual (bug): 403 Forbidden — middleware blocks non-admin users
+        $response->assertOk();
+        $response->assertSee('Employers');
+    }
 }
