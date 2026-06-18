@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Events;
+
+use App\Models\Bill;
+use App\Models\Payment;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class PaymentReceived
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    /**
+     * Create a new event instance.
+     */
+    public function __construct(
+        public Bill $bill,
+        public Payment $payment,
+    ) {}
+}
