@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AiAssistantController extends Controller
 {
@@ -330,5 +331,216 @@ class AiAssistantController extends Controller
             }
         }
         return false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PRE-BUILT ANALYTICS TEMPLATES
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Return the list of pre-built analytics query templates.
+     */
+    public function templates(): JsonResponse
+    {
+        $templates = $this->getTemplateDefinitions();
+
+        return response()->json([
+            'templates' => collect($templates)->map(function (array $def, string $id): array {
+                return [
+                    'id'          => $id,
+                    'name'        => $def['name'],
+                    'description' => $def['description'],
+                    'category'    => $def['category'],
+                ];
+            })->values()->all(),
+        ]);
+    }
+
+    /**
+     * Execute a named template query.
+     */
+    public function executeTemplate(string $template): JsonResponse
+    {
+        $templates = $this->getTemplateDefinitions();
+
+        if (!isset($templates[$template])) {
+            return response()->json(['error' => 'Template not found.'], 404);
+        }
+
+        $def = $templates[$template];
+        $user = auth()->user();
+        $agencyId = $user->agency_id;
+
+        $bindings = array_merge($def['bindings'] ?? [], ['agency_id' => $agencyId]);
+        $data = DB::select($def['sql'], $bindings);
+
+        return response()->json([
+            'data'        => $data,
+            'sql'         => $def['sql'],
+            'explanation' => $def['explanation'],
+            'template_id' => $template,
+        ]);
+    }
+
+    /**
+     * Export query results (natural language or template) as a CSV download.
+     */
+    public function export(Request $request): JsonResponse|\Illuminate\Http\Response
+    {
+        $user = auth()->user();
+        $agencyId = $user->agency_id;
+        $query = trim($request->query('query', ''));
+
+        if (empty($query)) {
+            return response()->json(['error' => 'Query parameter is required.'], 422);
+        }
+
+        // Check if it's a template query
+        if (str_starts_with($query, 'template:')) {
+            $templateId = substr($query, 9);
+            $templates = $this->getTemplateDefinitions();
+
+            if (!isset($templates[$templateId])) {
+                return response()->json(['error' => 'Template not found.'], 404);
+            }
+
+            $def = $templates[$templateId];
+            $bindings = array_merge($def['bindings'] ?? [], ['agency_id' => $agencyId]);
+            $data = DB::select($def['sql'], $bindings);
+        } else {
+            // Parse natural language query, same as the POST endpoint
+            $naturalQuery = trim($query);
+
+            // Block dangerous patterns
+            foreach (self::FORBIDDEN_PATTERNS as $pattern) {
+                if (preg_match($pattern, $naturalQuery)) {
+                    return response()->json(['error' => 'Only SELECT queries are allowed.'], 422);
+                }
+            }
+
+            $result = $this->parseToSql($naturalQuery, $user);
+
+            if (isset($result['error'])) {
+                return response()->json(['error' => $result['error']], 422);
+            }
+
+            $data = DB::select($result['sql'], array_merge(
+                $result['bindings'] ?? [],
+                ['agency_id' => $agencyId]
+            ));
+
+            // Keep the raw SQL for header extraction later
+            $raw_sql = $result['sql'];
+        }
+
+        $data = collect($data);
+
+        // Determine headers — from data if present, otherwise parse from SQL SELECT clause
+        if ($data->isNotEmpty()) {
+            $headers = array_keys((array) $data->first());
+        } elseif (isset($raw_sql)) {
+            $headers = $this->extractSelectColumns($raw_sql);
+        } else {
+            $headers = [];
+        }
+
+        // Build CSV as string
+        $csv = '';
+        $handle = fopen('php://temp', 'w+b');
+
+        if (!empty($headers)) {
+            fputcsv($handle, $headers);
+        }
+
+        foreach ($data as $row) {
+            fputcsv($handle, (array) $row);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="ai-query-results.csv"',
+        ]);
+    }
+
+    /**
+     * Extract column names from a SELECT SQL statement.
+     */
+    private function extractSelectColumns(string $sql): array
+    {
+        // Match everything between SELECT and FROM (or INTO)
+        if (preg_match('/\bSELECT\s+(.*?)\s+FROM\s+/is', $sql, $m)) {
+            $cols = trim($m[1]);
+
+            // Split by commas, handling AS clauses
+            $parts = explode(',', $cols);
+            $columns = [];
+
+            foreach ($parts as $part) {
+                $part = trim($part);
+
+                // If has alias (AS or just trailing identifier), use alias
+                if (preg_match('/\s+AS\s+([`"]?)(\w+)\1$/i', $part, $am)) {
+                    $columns[] = $am[2];
+                } elseif (preg_match('/\s+([a-zA-Z_]\w*)$/', $part, $fm)) {
+                    $columns[] = $fm[1];
+                } elseif (preg_match('/\b(\w+)$/', $part, $cm)) {
+                    $columns[] = $cm[1];
+                } else {
+                    $columns[] = $part;
+                }
+            }
+
+            return $columns;
+        }
+
+        return [];
+    }
+
+    /**
+     * Return the full template definitions array.
+     */
+    private function getTemplateDefinitions(): array
+    {
+        return [
+            'top_applicants_by_status' => [
+                'name'        => 'Top Applicants by Status',
+                'description' => 'Group and count applicants by their current status code.',
+                'category'    => 'applicants',
+                'sql'         => 'SELECT status_code, COUNT(*) as total FROM applicants WHERE agency_id = :agency_id GROUP BY status_code ORDER BY total DESC',
+                'explanation' => 'Shows how many applicants are in each status stage.',
+            ],
+            'monthly_deployment_stats' => [
+                'name'        => 'Monthly Deployment Stats',
+                'description' => 'Count of deployed applicants grouped by month.',
+                'category'    => 'deployments',
+                'sql'         => "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total FROM applicants WHERE agency_id = :agency_id AND status_code = 8 GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC",
+                'explanation' => 'Number of deployed applicants per month (status_code = 8).',
+            ],
+            'billing_summary' => [
+                'name'        => 'Billing Summary',
+                'description' => 'Summary of billing data including total employer cost, deposits, and payments.',
+                'category'    => 'billing',
+                'sql'         => 'SELECT COUNT(*) as total_bills, COALESCE(SUM(employer_cost), 0) as total_employer_cost, COALESCE(SUM(applicant_cost), 0) as total_applicant_cost FROM bills WHERE agency_id = :agency_id',
+                'explanation' => 'Total bills, employer cost, and applicant cost from your billing records.',
+            ],
+            'employer_rankings' => [
+                'name'        => 'Employer Rankings',
+                'description' => 'Employers ranked by number of applicants placed.',
+                'category'    => 'employers',
+                'sql'         => 'SELECT e.id, e.name, e.company_no, COUNT(a.id) as applicant_count FROM employers e LEFT JOIN applicants a ON a.employer_id = e.id AND a.agency_id = e.agency_id WHERE e.agency_id = :agency_id GROUP BY e.id, e.name, e.company_no ORDER BY applicant_count DESC',
+                'explanation' => 'Employers listed by the number of applicants they have, highest first.',
+            ],
+            'status_pipeline_breakdown' => [
+                'name'        => 'Status Pipeline Breakdown',
+                'description' => 'Full pipeline breakdown showing count of applicants at each stage.',
+                'category'    => 'applicants',
+                'sql'         => 'SELECT status_code, COUNT(*) as total FROM applicants WHERE agency_id = :agency_id GROUP BY status_code ORDER BY status_code ASC',
+                'explanation' => 'Complete breakdown of applicants across every stage of the pipeline.',
+            ],
+        ];
     }
 }

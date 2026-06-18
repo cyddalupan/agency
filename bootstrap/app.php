@@ -18,8 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
         $middleware->alias([
-            'employer' => \App\Http\Middleware\EnsureUserIsEmployer::class,
-            'role'     => \App\Http\Middleware\CheckRole::class,
+            'employer'    => \App\Http\Middleware\EnsureUserIsEmployer::class,
+            'role'        => \App\Http\Middleware\CheckRole::class,
+            'ai.rate'     => \App\Http\Middleware\AiQueryRateLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

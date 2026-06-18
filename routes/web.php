@@ -117,7 +117,19 @@ Route::middleware('auth:web')->group(function () {
     // AI Assistant — natural language to SQL query
     Route::post('/ai/assistant/query', [App\Http\Controllers\AiAssistantController::class, 'query'])
         ->name('ai.assistant.query')
-        ->middleware('throttle:30,1');
+        ->middleware('ai.rate');
+
+    // AI Assistant — pre-built analytics templates
+    Route::get('/ai/assistant/templates', [App\Http\Controllers\AiAssistantController::class, 'templates'])
+        ->name('ai.assistant.templates');
+
+    // AI Assistant — execute a pre-built template query
+    Route::get('/ai/assistant/template/{template}', [App\Http\Controllers\AiAssistantController::class, 'executeTemplate'])
+        ->name('ai.assistant.template');
+
+    // AI Assistant — export query results as CSV
+    Route::get('/ai/assistant/export', [App\Http\Controllers\AiAssistantController::class, 'export'])
+        ->name('ai.assistant.export');
 
     // Agency dashboard
     Route::get('/agency/dashboard', [AgencyDashboardController::class, 'index'])->name('agency.dashboard');
