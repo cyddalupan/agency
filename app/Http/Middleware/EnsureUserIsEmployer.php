@@ -16,7 +16,7 @@ class EnsureUserIsEmployer
             return redirect()->route('login');
         }
 
-        if (! $user->employer_id) {
+        if ($user->user_type !== 'employer') {
             return redirect()->route('dashboard');
         }
 

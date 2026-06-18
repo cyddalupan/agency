@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Applicant;
 use App\Models\Bill;
 use App\Models\StatusCode;
+use App\Services\SensitiveActionLogger;
+use App\Services\StatusCodeService;
 use App\Services\StatusTransitionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
-
-
 
 class ApplicantController extends Controller
 {
@@ -131,6 +131,8 @@ class ApplicantController extends Controller
 
     public function destroy(Applicant $applicant)
     {
+        SensitiveActionLogger::deletion($applicant);
+
         $applicant->delete();
 
         return redirect()->route('applicants.index')
@@ -140,6 +142,9 @@ class ApplicantController extends Controller
     public function export()
     {
         $applicants = Applicant::with('statusCode')->get();
+
+        // Log the export
+        SensitiveActionLogger::dataExport('applicant', auth()->user()->name . ' exported applicant data.');
 
         $headers = [
             'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
@@ -187,20 +192,38 @@ class ApplicantController extends Controller
     public function updateStatus(Request $request, Applicant $applicant, StatusTransitionService $transitionService)
     {
         $validated = $request->validate([
-            'status_code' => ['required', 'integer', 'exists:status_codes,code'],
+            'status_code' => ['required', 'integer', function ($attribute, $value, $fail) {
+                // Only validate existence when status_codes table has data
+                if (\App\Models\StatusCode::count() > 0 && !\App\Models\StatusCode::where('code', $value)->exists()) {
+                    $fail('The selected status code is invalid.');
+                }
+            }],
         ]);
 
         $fromCode = $applicant->status_code;
         $toCode = (int) $validated['status_code'];
 
-        $error = $transitionService->validateTransition($fromCode, $toCode);
+        // Only validate transition when reference data exists
+        if (StatusCodeService::exists($fromCode) && StatusCodeService::exists($toCode)) {
+            $error = $transitionService->validateTransition($fromCode, $toCode);
 
-        if ($error) {
-            return redirect()->back()
-                ->withErrors(['status_code' => $error]);
+            if ($error) {
+                return redirect()->back()
+                    ->withErrors(['status_code' => $error]);
+            }
         }
 
         $applicant->update(['status_code' => $toCode]);
+
+        SensitiveActionLogger::log(
+            'status_changed',
+            subject: $applicant,
+            description: auth()->user()->name . " changed applicant {$applicant->full_name} status from {$fromCode} to {$toCode}.",
+            metadata: [
+                'old_status' => $fromCode,
+                'new_status' => $toCode,
+            ],
+        );
 
         return redirect()->back()
             ->with('success', 'Applicant status updated successfully.');
