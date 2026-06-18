@@ -68,8 +68,13 @@ trait HasCustomFields
 
         $this->customFieldValues()->updateOrCreate(
             ['custom_field_definition_id' => $definition->id],
-            ['value' => $value]
+            [
+                'agency_id' => $this->agency_id,
+                'value' => $value,
+            ]
         );
+
+        $this->unsetRelation('customFieldValues');
     }
 
     /**
@@ -93,10 +98,15 @@ trait HasCustomFields
 
                 $this->customFieldValues()->updateOrCreate(
                     ['custom_field_definition_id' => $definition->id],
-                    ['value' => (string) $value]
+                    [
+                        'agency_id' => $this->agency_id,
+                        'value' => (string) $value,
+                    ]
                 );
             }
         }
+
+        $this->unsetRelation('customFieldValues');
     }
 
     /**

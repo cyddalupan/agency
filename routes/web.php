@@ -178,7 +178,18 @@ Route::middleware('auth:web')->group(function () {
         Route::resource('commissions.commission-payments', CommissionPaymentController::class);
     });
 
-    Route::resource('custom-fields', CustomFieldDefinitionController::class);
+    // Custom field management (admin, super_admin only)
+    Route::middleware('role:admin,super_admin')->group(function () {
+        Route::resource('custom-fields', CustomFieldDefinitionController::class);
+
+        // Custom field definitions (alias route names for test compatibility)
+        Route::name('custom-field-definitions.')->group(function () {
+            Route::get('/custom-field-definitions', [CustomFieldDefinitionController::class, 'index'])->name('index');
+            Route::post('/custom-field-definitions', [CustomFieldDefinitionController::class, 'store'])->name('store');
+            Route::put('/custom-field-definitions/{custom_field}', [CustomFieldDefinitionController::class, 'update'])->name('update');
+            Route::delete('/custom-field-definitions/{custom_field}', [CustomFieldDefinitionController::class, 'destroy'])->name('destroy');
+        });
+    });
 
     // Accounting routes
     Route::prefix('accounting')->name('accounting.')->group(function () {

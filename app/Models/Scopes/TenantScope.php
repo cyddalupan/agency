@@ -10,6 +10,11 @@ class TenantScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
+        // Super admin bypass — skip tenant filtering when logged in as super_admin
+        if (auth()->check() && auth()->user()->user_type === 'super_admin') {
+            return;
+        }
+
         // Check container-bound agency (from middleware or controller)
         $agency = app()->has('tenant_agency') ? app('tenant_agency') : null;
 

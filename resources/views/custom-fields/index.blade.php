@@ -25,7 +25,7 @@
         </div>
     @endif
 
-    @if($fields->count())
+    @if($definitions->count())
         <div class="card bg-base-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="table table-zebra">
@@ -41,7 +41,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($fields as $field)
+                        @foreach($definitions as $field)
                         <tr class="hover transition-colors">
                             <td class="font-medium">{{ $field->name }}</td>
                             <td class="font-mono text-sm opacity-70">{{ $field->key }}</td>
@@ -86,7 +86,7 @@
         </div>
 
         <div class="mt-4">
-            {{ $fields->links() }}
+            {{ $definitions->links() }}
         </div>
     @else
         <div class="card bg-base-100 shadow-sm card-lift">

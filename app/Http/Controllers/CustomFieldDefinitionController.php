@@ -9,15 +9,20 @@ use Illuminate\View\View;
 
 class CustomFieldDefinitionController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $fields = CustomFieldDefinition::where('agency_id', auth()->user()->agency_id)
-            ->orderBy('model_type')
+        $query = CustomFieldDefinition::where('agency_id', auth()->user()->agency_id);
+
+        if ($request->filled('model_type')) {
+            $query->where('model_type', $request->model_type);
+        }
+
+        $definitions = $query->orderBy('model_type')
             ->orderBy('order')
             ->orderBy('name')
             ->paginate(15);
 
-        return view('custom-fields.index', compact('fields'));
+        return view('custom-fields.index', compact('definitions'));
     }
 
     public function create(): View
@@ -30,6 +35,23 @@ class CustomFieldDefinitionController extends Controller
         $validated = $request->validate([
             'model_type' => 'required|string|max:100',
             'name'       => 'required|string|max:255',
+            'key'        => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($request) {
+                    if (! $value) {
+                        return;
+                    }
+                    $exists = CustomFieldDefinition::where('agency_id', auth()->user()->agency_id)
+                        ->where('model_type', $request->model_type)
+                        ->where('key', $value)
+                        ->exists();
+                    if ($exists) {
+                        $fail('The key has already been taken for this model type in your agency.');
+                    }
+                },
+            ],
             'type'       => 'required|string|in:text,textarea,number,date,select,checkbox,url',
             'options'    => 'nullable|string',
             'required'   => 'nullable|boolean',
@@ -64,9 +86,9 @@ class CustomFieldDefinitionController extends Controller
     public function update(Request $request, CustomFieldDefinition $customField): RedirectResponse
     {
         $validated = $request->validate([
-            'model_type' => 'required|string|max:100',
+            'model_type' => 'sometimes|required|string|max:100',
             'name'       => 'required|string|max:255',
-            'type'       => 'required|string|in:text,textarea,number,date,select,checkbox,url',
+            'type'       => 'sometimes|required|string|in:text,textarea,number,date,select,checkbox,url',
             'options'    => 'nullable|string',
             'required'   => 'nullable|boolean',
             'order'      => 'nullable|integer|min:0',
