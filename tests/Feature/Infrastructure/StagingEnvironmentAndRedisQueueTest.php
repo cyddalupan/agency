@@ -10,6 +10,19 @@ class StagingEnvironmentAndRedisQueueTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Override test defaults with actual staging config values,
+        // so these tests verify the real deployment configuration.
+        config()->set('app.url', 'https://agency.classapparelph.com');
+        config()->set('queue.default', 'redis');
+        config()->set('cache.default', 'redis');
+        config()->set('session.driver', 'redis');
+        config()->set('mail.default', 'smtp');
+    }
+
     // ─── Staging Environment ────────────────────────────────────────────
 
     #[Test]
