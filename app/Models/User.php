@@ -28,6 +28,11 @@ class User extends Authenticatable
         return $this->belongsTo(Employer::class);
     }
 
+    public function permissions()
+    {
+        return $this->hasMany(UserPermission::class);
+    }
+
     protected $hidden = [
         'password',
         'remember_token',

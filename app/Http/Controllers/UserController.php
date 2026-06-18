@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserPermission;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,17 +14,53 @@ class UserController extends Controller
     use AuthorizesRequests;
 
     /**
+     * All known permissions in the system.
+     */
+    private function getAllPermissions(): array
+    {
+        return [
+            'view_applicants',
+            'edit_applicants',
+            'view_bills',
+            'edit_bills',
+            'view_employers',
+            'edit_employers',
+            'view_reports',
+            'manage_users',
+        ];
+    }
+
+    /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
 
         $query = User::orderBy('name');
-        
+
         // Super admin sees users across all agencies; others are scoped
         if (auth()->user()->user_type !== 'super_admin') {
             $query->where('agency_id', auth()->user()->agency_id);
+        }
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by role (user_type)
+        if ($request->filled('role')) {
+            $query->where('user_type', $request->role);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $users = $query->paginate(20);
@@ -107,6 +144,50 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * Show the permissions/roles management page for a user.
+     */
+    public function permissions(User $user)
+    {
+        $this->authorize('view', $user);
+
+        $allPermissions = $this->getAllPermissions();
+        $userPermissions = $user->permissions()->pluck('permission')->toArray();
+
+        return view('users.permissions', compact('user', 'userPermissions') + ['permissions' => $allPermissions]);
+    }
+
+    /**
+     * Update the user's role and granular permissions.
+     */
+    public function updatePermissions(Request $request, User $user)
+    {
+        $this->authorize('update', $user);
+
+        $validated = $request->validate([
+            'user_type'   => ['required', 'string', 'max:50'],
+            'permissions'  => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in($this->getAllPermissions())],
+        ]);
+
+        // Update the user's role
+        $user->update(['user_type' => $validated['user_type']]);
+
+        // Replace all permissions (delete old, create new)
+        $user->permissions()->delete();
+
+        if (! empty($validated['permissions'])) {
+            foreach ($validated['permissions'] as $permission) {
+                $user->permissions()->create([
+                    'permission' => $permission,
+                ]);
+            }
+        }
+
+        return redirect()->route('users.permissions', $user)
+            ->with('success', 'Permissions updated successfully.');
     }
 
     /**

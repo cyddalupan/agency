@@ -104,6 +104,10 @@ Route::middleware('auth:web')->group(function () {
     // User management (admin, super_admin only)
     Route::middleware('role:admin,super_admin')->group(function () {
         Route::resource('users', UserController::class);
+
+        // Role & permission assignment UI
+        Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
+        Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
     });
 
     // Applicant routes - recruiter and other agency roles
