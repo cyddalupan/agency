@@ -131,6 +131,10 @@ Route::middleware('auth:web')->group(function () {
         Route::put('/agencies/{agency}', [AgencyController::class, 'update'])->name('agencies.update');
         Route::put('/agencies/{agency}/deactivate', [AgencyController::class, 'deactivate'])->name('agencies.deactivate');
         Route::put('/agencies/{agency}/activate', [AgencyController::class, 'activate'])->name('agencies.activate');
+
+        // Agency branding (logos, colors, favicon)
+        Route::get('/agencies/{agency}/branding', App\Http\Controllers\AgencyBrandingController::class)->name('agencies.branding');
+        Route::put('/agencies/{agency}/branding', [App\Http\Controllers\AgencyBrandingController::class, 'update'])->name('agencies.branding.update');
     });
 
     // Applicant routes - recruiter and other agency roles

@@ -62,4 +62,12 @@ class AgencyPolicy
     {
         return $currentUser->user_type === 'admin';
     }
+
+    /**
+     * Determine whether the user can manage branding for an agency.
+     */
+    public function branding(User $currentUser, Agency $agency): bool
+    {
+        return $currentUser->user_type === 'admin';
+    }
 }
