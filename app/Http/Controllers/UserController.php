@@ -19,9 +19,14 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::where('agency_id', auth()->user()->agency_id)
-            ->orderBy('name')
-            ->paginate(20);
+        $query = User::orderBy('name');
+        
+        // Super admin sees users across all agencies; others are scoped
+        if (auth()->user()->user_type !== 'super_admin') {
+            $query->where('agency_id', auth()->user()->agency_id);
+        }
+
+        $users = $query->paginate(20);
 
         return view('users.index', compact('users'));
     }
