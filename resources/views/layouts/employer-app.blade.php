@@ -1,10 +1,15 @@
+@php $universe = config('app.universe', 1); @endphp
 <!DOCTYPE html>
-<html lang="en" data-theme="corporate">
+<html lang="en" data-theme="{{ $universe == 2 ? 'universe-2' : 'corporate' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Employer Portal') — {{ $employer->name ?? 'Employer' }}</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>" type="image/svg+xml">
+    @if($universe == 2)
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>" type="image/svg+xml">
+    @else
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>" type="image/svg+xml">
+    @endif
     @vite('resources/css/app.css')
 </head>
 <body class="bg-base-200 bg-noise min-h-screen">
@@ -90,16 +95,25 @@
                         Dashboard
                     </a>
 
-                    <a href="{{ route('employer.dashboard') }}"
-                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-base-300/60 transition-colors opacity-60">
+                    <a href="{{ route('employer.applicants') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('employer.applicants') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
                         <span class="text-lg">👥</span>
                         Applicants
                     </a>
 
-                    <a href="{{ route('employer.dashboard') }}"
-                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-base-300/60 transition-colors opacity-60">
-                        <span class="text-lg">📄</span>
-                        Reports
+                    <a href="{{ route('employer.job-positions.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('employer.job-positions.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                        <span class="text-lg">💼</span>
+                        Job Positions
+                    </a>
+
+                    <a href="{{ route('employer.billing.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('employer.billing.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                        <span class="text-lg">💰</span>
+                        Billing
                     </a>
                 </nav>
 

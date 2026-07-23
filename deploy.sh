@@ -19,6 +19,9 @@ composer install --no-dev --optimize-autoloader
 echo "--- Running migrations ---"
 php artisan migrate --force
 
+echo "--- Clearing old caches ---"
+php artisan optimize:clear
+
 echo "--- Caching config ---"
 php artisan config:cache
 

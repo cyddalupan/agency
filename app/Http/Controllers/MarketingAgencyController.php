@@ -32,7 +32,8 @@ class MarketingAgencyController extends Controller
             'status'          => 'nullable|string|max:50',
         ]);
 
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
+        if (! $validated['agency_id']) { return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput(); }
 
         MarketingAgency::create($validated);
 

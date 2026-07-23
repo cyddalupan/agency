@@ -48,7 +48,7 @@ trait LoginThrottle
      */
     protected function checkUserActiveStatus(?User $user): ?RedirectResponse
     {
-        if ($user && $user->status !== 'active') {
+        if ($user && $user->status !== 'active' && $user->status !== '1') {
             $status = $user->status;
 
             return back()->withErrors([

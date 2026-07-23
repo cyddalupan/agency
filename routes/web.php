@@ -6,6 +6,7 @@ use App\Http\Controllers\AgencyRegistrationController;
 use App\Http\Controllers\ApplicantAuthController;
 use App\Http\Controllers\ApplicantOtpAuthController;
 use App\Http\Controllers\ApplicantController;
+use App\Http\Controllers\ApplicantDocumentController;
 use App\Http\Controllers\ApplicantJobController;
 use App\Http\Controllers\ApplicantPortalController;
 use App\Http\Controllers\AuthController;
@@ -64,8 +65,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
 // === Employer Portal ===
 Route::prefix('employer')->name('employer.')->group(function () {
     // Guest
-    Route::get('/login', [EmployerAuthController::class, 'loginForm'])->name('login');
-    Route::post('/login', [EmployerAuthController::class, 'login'])->name('login.post');
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [EmployerAuthController::class, 'loginForm'])->name('login');
+        Route::post('/login', [EmployerAuthController::class, 'login'])->name('login.post');
+    });
 
     // Authenticated
     Route::middleware(['auth:web', 'employer'])->group(function () {
@@ -76,12 +79,120 @@ Route::prefix('employer')->name('employer.')->group(function () {
         Route::get('/billing', [EmployerBillingController::class, 'index'])->name('billing.index');
         Route::get('/billing/soa', [EmployerBillingController::class, 'soa'])->name('billing.soa');
         Route::get('/billing/applicant/{applicant}', [EmployerBillingController::class, 'applicant'])->name('billing.applicant');
+
+        // Employer Job Positions
+        Route::get('/job-positions', [JobPositionController::class, 'employerIndex'])->name('job-positions.index');
+        Route::get('/job-positions/create', [JobPositionController::class, 'employerCreate'])->name('job-positions.create');
+        Route::post('/job-positions', [JobPositionController::class, 'employerStore'])->name('job-positions.store');
+        Route::get('/job-positions/{jobPosition}', [JobPositionController::class, 'employerShow'])->name('job-positions.show');
+        Route::get('/job-positions/{jobPosition}/edit', [JobPositionController::class, 'employerEdit'])->name('job-positions.edit');
+        Route::put('/job-positions/{jobPosition}', [JobPositionController::class, 'employerUpdate'])->name('job-positions.update');
+        Route::delete('/job-positions/{jobPosition}', [JobPositionController::class, 'employerDestroy'])->name('job-positions.destroy');
+
+        // Employer Applicants
+        Route::get('/applicants', [EmployerDashboardController::class, 'applicants'])->name('applicants');
     });
+});
+
+// === FRA (Foreign Recruitment Agency) Portal ===
+Route::prefix('fra')->name('fra.')->group(function () {
+    // Public (no auth required)
+    Route::get('/language/{locale}', function ($locale) {
+        if (array_key_exists($locale, config('app.supported_languages', []))) {
+            session(['locale' => $locale]);
+            app()->setLocale($locale);
+        }
+        return redirect()->back();
+    })->name('language.switch');
+
+    // Guest
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [\App\Http\Controllers\FraAuthController::class, 'loginForm'])->name('login');
+        Route::post('/login', [\App\Http\Controllers\FraAuthController::class, 'login'])->name('login.post');
+        Route::get('/password/reset', [\App\Http\Controllers\PasswordResetController::class, 'fraRequestForm'])->name('password.request');
+        Route::post('/password/email', [\App\Http\Controllers\PasswordResetController::class, 'fraSendResetLink'])->name('password.email');
+        Route::get('/password/reset/{token}', [\App\Http\Controllers\PasswordResetController::class, 'fraResetForm'])->name('password.reset');
+        Route::post('/password/reset', [\App\Http\Controllers\PasswordResetController::class, 'fraReset'])->name('password.update');
+    });
+
+    // Authenticated
+    Route::middleware(['fra'])->group(function () {
+        Route::post('/logout', [\App\Http\Controllers\FraAuthController::class, 'logout'])->name('logout');
+        Route::get('/dashboard', [\App\Http\Controllers\FraDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/line-up/export', [\App\Http\Controllers\FraDashboardController::class, 'lineupExport'])->name('lineup.export');
+        Route::get('/line-up', [\App\Http\Controllers\FraDashboardController::class, 'lineup'])->name('lineup');
+        Route::post('/line-up/{applicant}/select', [\App\Http\Controllers\FraDashboardController::class, 'selectApplicant'])->name('lineup.select');
+        Route::get('/line-up/{applicant}', [\App\Http\Controllers\FraDashboardController::class, 'viewApplicant'])->name('lineup.view');
+        Route::get('/selected', [\App\Http\Controllers\FraDashboardController::class, 'selected'])->name('selected');
+        Route::post('/selected/bulk-remove', [\App\Http\Controllers\FraDashboardController::class, 'bulkRemoveSelected'])->name('selected.bulk-remove');
+        Route::get('/on-process/export', [\App\Http\Controllers\FraDashboardController::class, 'onprocessExport'])->name('onprocess.export');
+        Route::get('/on-process', [\App\Http\Controllers\FraDashboardController::class, 'onprocess'])->name('onprocess');
+        Route::get('/cancelled', [\App\Http\Controllers\FraDashboardController::class, 'cancelled'])->name('cancelled');
+        Route::get('/account', [\App\Http\Controllers\FraDashboardController::class, 'account'])->name('account');
+        Route::post('/account/language', [\App\Http\Controllers\FraDashboardController::class, 'updateLanguage'])->name('account.language.update');
+    });
+
+    // Dashboard if logged in, login if not
+    Route::get('/', function () {
+        if (auth()->check() && auth()->user()->user_type === 'employer') {
+            return redirect()->route('fra.dashboard');
+        }
+        return redirect()->route('fra.login');
+    });
+});
+
+// === Sponsor Portal ===
+Route::prefix('sponsor')->name('sponsor.')->group(function () {
+    // Public (no auth required)
+    Route::get('/language/{locale}', function ($locale) {
+        if (array_key_exists($locale, config('app.supported_languages', []))) {
+            session(['locale' => $locale]);
+            app()->setLocale($locale);
+        }
+        return redirect()->back();
+    })->name('language.switch');
+
+    // Guest (no auth required) — custom middleware to avoid redirecting to /agency
+    Route::middleware('sponsor.guest')->group(function () {
+        Route::get('/register', [\App\Http\Controllers\SponsorAuthController::class, 'registerForm'])->name('register');
+        Route::post('/register', [\App\Http\Controllers\SponsorAuthController::class, 'register'])->name('register.post');
+        Route::get('/login', [\App\Http\Controllers\SponsorAuthController::class, 'loginForm'])->name('login');
+        Route::post('/login', [\App\Http\Controllers\SponsorAuthController::class, 'login'])->name('login.post');
+        Route::get('/forgot-password', [\App\Http\Controllers\SponsorAuthController::class, 'forgotPasswordForm'])->name('password.request');
+        Route::post('/forgot-password', [\App\Http\Controllers\SponsorAuthController::class, 'sendResetLink'])->name('password.email');
+        Route::get('/reset-password/{token}', [\App\Http\Controllers\SponsorAuthController::class, 'resetForm'])->name('password.reset');
+        Route::post('/reset-password', [\App\Http\Controllers\SponsorAuthController::class, 'resetPassword'])->name('password.update');
+    });
+
+    // Authenticated
+    Route::middleware('sponsor')->group(function () {
+        Route::post('/logout', [\App\Http\Controllers\SponsorAuthController::class, 'logout'])->name('logout');
+        Route::get('/dashboard', [\App\Http\Controllers\SponsorDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/line-up/export', [\App\Http\Controllers\SponsorDashboardController::class, 'lineupExport'])->name('lineup.export');
+        Route::post('/select', [\App\Http\Controllers\SponsorDashboardController::class, 'select'])->name('select');
+        Route::post('/unselect', [\App\Http\Controllers\SponsorDashboardController::class, 'unselect'])->name('unselect');
+        Route::get('/my-applicants', [\App\Http\Controllers\SponsorDashboardController::class, 'myApplicants'])->name('my-applicants');
+        Route::post('/account/language', [\App\Http\Controllers\SponsorDashboardController::class, 'updateLanguage'])->name('account.language.update');
+    });
+
+    // Dashboard if logged in, login if not
+    Route::get('/', function () {
+        if (auth()->check() && auth()->user()->user_type === 'sponsor') {
+            return redirect()->route('sponsor.dashboard');
+        }
+        return redirect()->route('sponsor.login');
+    });
+});
+
+// === Public Landing Page (before auth redirect) ===
+Route::get('/', function () {
+    return view('welcome');
 });
 
 // === Agency Public Registration ===
 Route::get('/agency/register', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register');
 Route::post('/agency/register', [AgencyRegistrationController::class, 'register'])->name('agency.register.post');
+Route::get('/agency-register', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register.alt');
 Route::get('/agency/pending-approval', [AgencyRegistrationController::class, 'pendingApproval'])->name('agency.pending-approval');
 
 // Guest routes
@@ -170,6 +281,12 @@ Route::middleware('auth:web')->group(function () {
         Route::get('applicants/{applicant}/soa', [ApplicantController::class, 'soa'])->name('applicants.soa');
         Route::resource('applicants', ApplicantController::class);
 
+        // Applicant document uploads (before wildcard sub-store routes)
+        Route::prefix('applicants/{applicant}')->name('applicants.')->group(function () {
+            Route::post('/documents', [ApplicantDocumentController::class, 'store'])->name('documents.store');
+            Route::delete('/documents/{document}', [ApplicantDocumentController::class, 'destroy'])->name('documents.destroy');
+        });
+
         // Applicant sub-table routes
         Route::prefix('applicants/{applicant}')->name('applicants.')->group(function () {
             Route::post('/{type}', [SubTableController::class, 'store'])->name('sub.store');
@@ -253,13 +370,5 @@ Route::middleware('auth:web')->group(function () {
         Route::delete('cases/{case}', [CaseController::class, 'destroy'])->name('cases.destroy');
         Route::get('cases', [CaseController::class, 'index'])->name('cases.index');
         Route::post('cases', [CaseController::class, 'store'])->name('cases.store')->middleware('throttle:29,1');
-    });
-
-    // Redirect root to dashboard
-    Route::get('/', function () {
-        if (auth()->user()->agency_id) {
-            return redirect()->route('agency.dashboard');
-        }
-        return redirect()->route('dashboard');
     });
 });

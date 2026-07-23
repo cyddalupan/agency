@@ -135,4 +135,69 @@ class PasswordResetController extends Controller
             ? redirect()->route('login')->with('status', __($status))
             : back()->withErrors(['email' => [__($status)]]);
     }
+
+    // ─── FRA Portal Methods ────────────────────────────────────────
+
+    /**
+     * Show the FRA password reset request form.
+     */
+    public function fraRequestForm()
+    {
+        return view('fra.auth.passwords.email');
+    }
+
+    /**
+     * Send a password reset link from the FRA portal.
+     */
+    public function fraSendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with(['status' => __($status)])
+            : back()->withErrors(['email' => [__($status)]]);
+    }
+
+    /**
+     * Show the FRA password reset form.
+     */
+    public function fraResetForm(string $token)
+    {
+        return view('fra.auth.passwords.reset', ['token' => $token]);
+    }
+
+    /**
+     * Reset password from the FRA portal.
+     */
+    public function fraReset(Request $request)
+    {
+        $request->validate([
+            'token'    => ['required'],
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('fra.login')->with('status', __($status))
+            : back()->withErrors(['email' => [__($status)]]);
+    }
 }

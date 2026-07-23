@@ -123,4 +123,41 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Supported Languages
+    |--------------------------------------------------------------------------
+    |
+    | List of languages available in the FRA Portal for multi-language support.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Universe (Visual Theme)
+    |--------------------------------------------------------------------------
+    |
+    | 1 = Corporate (current default) — light, clean, 💼 icon
+    | 2 = Landas/Shrine — dark navy + gold, ⛩️ icon
+    |
+    */
+
+    'universe' => env('APP_UNIVERSE', 1),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supported Languages
+    |--------------------------------------------------------------------------
+    |
+    | List of languages available in the FRA Portal for multi-language support.
+    |
+    */
+
+    'supported_languages' => [
+        'en' => 'English',
+        'ar' => 'العربية',
+        'zh' => '中文',
+        'ja' => '日本語',
+    ],
+
 ];

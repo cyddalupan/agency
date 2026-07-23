@@ -58,22 +58,25 @@ class ApplicantExportTest extends TestCase
     #[Test]
     public function export_includes_csv_headers(): void
     {
+        app()->instance('tenant_agency', $this->agency);
+
         $response = $this->actingAs($this->user)
             ->get(route('applicants.export'));
 
         $response->assertOk();
-        $response->assertSeeTextInOrder([
-            'First Name',
-            'Last Name',
-            'Email',
-            'Contact',
-            'Status',
-        ]);
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('First Name', $content);
+        $this->assertStringContainsString('Last Name', $content);
+        $this->assertStringContainsString('Email', $content);
+        $this->assertStringContainsString('Contact', $content);
+        $this->assertStringContainsString('Status', $content);
     }
 
     #[Test]
     public function export_includes_applicant_data(): void
     {
+        app()->instance('tenant_agency', $this->agency);
+
         Applicant::factory()->create([
             'agency_id' => $this->agency->id,
             'first_name' => 'Maria',
@@ -85,14 +88,17 @@ class ApplicantExportTest extends TestCase
             ->get(route('applicants.export'));
 
         $response->assertOk();
-        $response->assertSeeText('Maria');
-        $response->assertSeeText('Santos');
-        $response->assertSeeText('maria@example.com');
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Maria', $content);
+        $this->assertStringContainsString('Santos', $content);
+        $this->assertStringContainsString('maria@example.com', $content);
     }
 
     #[Test]
     public function export_is_scoped_to_tenant_agency(): void
     {
+        app()->instance('tenant_agency', $this->agency);
+
         Applicant::factory()->create([
             'agency_id' => $this->agency->id,
             'first_name' => 'Tenant',
@@ -108,8 +114,9 @@ class ApplicantExportTest extends TestCase
             ->get(route('applicants.export'));
 
         $response->assertOk();
-        $response->assertSeeText('Tenant');
-        $response->assertSeeText('User');
-        $response->assertDontSeeText('Other');
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Tenant', $content);
+        $this->assertStringContainsString('User', $content);
+        $this->assertStringNotContainsString('Other', $content);
     }
 }

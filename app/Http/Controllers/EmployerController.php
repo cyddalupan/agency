@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Country;
 use App\Models\Employer;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Str;
 
 class EmployerController extends Controller
 {
@@ -37,11 +39,25 @@ class EmployerController extends Controller
             'country_id'    => 'nullable|exists:countries,id',
         ]);
 
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
+        if (! $validated['agency_id']) { return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput(); }
 
         $employer = Employer::create($validated);
 
         $employer->syncCustomFields($request->all());
+
+        // Auto-create employer login user if email is set and no user exists
+        if ($employer->email && ! User::where('email', $employer->email)->exists()) {
+            $password = $request->filled('password') ? $request->password : Str::random(12);
+            User::create([
+                'name'        => $employer->contact_person ?? $employer->name,
+                'email'       => $employer->email,
+                'password'    => bcrypt($password),
+                'user_type'   => 'employer',
+                'employer_id' => $employer->id,
+                'agency_id'   => $employer->agency_id,
+            ]);
+        }
 
         return redirect()->route('employers.index')
             ->with('success', 'Employer created successfully.');

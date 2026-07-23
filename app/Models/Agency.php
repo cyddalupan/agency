@@ -9,7 +9,7 @@ class Agency extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'subdomain', 'logo', 'settings', 'status'];
+    protected $fillable = ['name', 'subdomain', 'logo', 'settings', 'status', 'address', 'city', 'email', 'contact_person', 'num_branches'];
 
     protected $casts = [
         'settings' => 'json',

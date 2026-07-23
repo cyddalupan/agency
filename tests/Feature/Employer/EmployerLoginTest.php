@@ -96,7 +96,7 @@ class EmployerLoginTest extends TestCase
         $response = $this->actingAs($nonEmployer)
             ->get(route('employer.dashboard'));
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('employer.login'));
     }
 
     #[Test]

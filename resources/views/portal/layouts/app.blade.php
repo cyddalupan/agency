@@ -1,5 +1,6 @@
+@php $universe = config('app.universe', 1); @endphp
 <!DOCTYPE html>
-<html lang="en" data-theme="corporate">
+<html lang="en" data-theme="{{ $universe == 2 ? 'universe-2' : 'corporate' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

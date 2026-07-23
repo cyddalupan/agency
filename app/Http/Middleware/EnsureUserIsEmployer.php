@@ -13,11 +13,11 @@ class EnsureUserIsEmployer
         $user = $request->user();
 
         if (! $user) {
-            return redirect()->route('login');
+            return redirect()->route('employer.login');
         }
 
         if ($user->user_type !== 'employer') {
-            return redirect()->route('dashboard');
+            return redirect()->route('employer.login');
         }
 
         return $next($request);

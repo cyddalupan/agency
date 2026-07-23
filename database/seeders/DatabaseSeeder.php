@@ -12,7 +12,8 @@ class DatabaseSeeder extends Seeder
             ReferenceDataSeeder::class,
             StatusCodesSeeder::class,
             StatusTransitionSeeder::class,
-            InitialAgencySeeder::class,
+            // InitialAgencySeeder::class, // DISABLED — was overwriting existing users
+            SponsorSeeder::class,
         ]);
     }
 }

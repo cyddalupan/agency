@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -18,9 +19,11 @@ class User extends Authenticatable
         'employer_id',
         'name',
         'email',
+        'username',
         'password',
         'user_type',
         'status',
+        'locale',
     ];
 
     public function employer()
@@ -57,8 +60,40 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'locale'            => 'string',
         ];
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        ResetPasswordNotification::createUrlUsing(function ($notifiable, $token) {
+            return url(route('fra.password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+        });
+
+        ResetPasswordNotification::toMailUsing(function ($notifiable, $token) {
+            $url = url(route('fra.password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject('Reset Your Password — Agency App')
+                ->greeting('Hello!')
+                ->line('You are receiving this email because we received a password reset request for your account.')
+                ->action('Reset Password', $url)
+                ->line('This password reset link will expire in ' . config('auth.passwords.' . config('auth.defaults.passwords') . '.expire') . ' minutes.')
+                ->line('If you did not request a password reset, no further action is required.');
+        });
+
+        $this->notify(new ResetPasswordNotification($token));
+
+        // Reset static callbacks so other models don't inherit
+        ResetPasswordNotification::$createUrlCallback = null;
+        ResetPasswordNotification::$toMailCallback = null;
     }
 
     public function isSuperAdmin(): bool

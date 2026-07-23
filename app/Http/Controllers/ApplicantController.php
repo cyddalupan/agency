@@ -68,7 +68,10 @@ class ApplicantController extends Controller
         ]);
 
         $validated['status_code'] = 0; // Default: Pending
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
+        if (! $validated['agency_id']) {
+            return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account to add applicants.'])->withInput();
+        }
 
         $applicant = Applicant::create($validated);
 
@@ -119,6 +122,7 @@ class ApplicantController extends Controller
             'remarks'     => 'nullable|string',
             'source'      => 'nullable|string|max:255',
             'status_code' => 'nullable|integer|exists:status_codes,code',
+            'employer_id'  => 'nullable|integer|exists:employers,id',
         ]);
 
         $applicant->update($validated);

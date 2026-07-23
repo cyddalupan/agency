@@ -132,7 +132,27 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('applicants.show', $applicant) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>
                                     <a href="{{ route('applicants.edit', $applicant) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">✏️</a>
+                                    <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Delete"
+                                        onclick="document.getElementById('delete-applicant-{{ $applicant->id }}').showModal()">🗑️</button>
                                 </div>
+                                <dialog id="delete-applicant-{{ $applicant->id }}" class="modal">
+                                    <div class="modal-box">
+                                        <h3 class="font-bold text-lg mb-2">Delete Applicant</h3>
+                                        <p>Are you sure you want to delete <strong>{{ $applicant->first_name }} {{ $applicant->last_name }}</strong>?</p>
+                                        <p class="text-sm opacity-60 mt-2">This action cannot be undone. All associated data (education, work history, documents, etc.) will also be removed.</p>
+                                        <div class="modal-action">
+                                            <form method="POST" action="{{ route('applicants.destroy', $applicant) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-error">🗑️ Delete</button>
+                                            </form>
+                                            <button class="btn btn-ghost" onclick="document.getElementById('delete-applicant-{{ $applicant->id }}').close()">Cancel</button>
+                                        </div>
+                                    </div>
+                                    <form method="dialog" class="modal-backdrop">
+                                        <button>close</button>
+                                    </form>
+                                </dialog>
                             </td>
                         </tr>
                         @endforeach

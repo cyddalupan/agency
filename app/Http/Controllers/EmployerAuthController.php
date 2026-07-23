@@ -58,7 +58,7 @@ class EmployerAuthController extends Controller
 
             SensitiveActionLogger::login($user);
 
-            return redirect()->intended(route('employer.dashboard'));
+            return redirect()->route('employer.dashboard');
         }
 
         $this->hitRateLimit($key);

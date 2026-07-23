@@ -18,3 +18,7 @@
     <input type="text" name="place_of_issue" value="{{ old('place_of_issue', $record->place_of_issue ?? '') }}"
            class="input w-full" placeholder="e.g. DFA Manila">
 </fieldset>
+<fieldset class="fieldset">
+    <legend class="fieldset-legend">Upload File (image or PDF)</legend>
+    <input type="file" name="file" accept="image/*,.pdf" class="file-input file-input-bordered w-full">
+</fieldset>

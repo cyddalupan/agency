@@ -28,7 +28,7 @@ class CaseController extends Controller
             'priority' => 'nullable|in:low,normal,high,urgent',
         ]);
 
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
 
         $case = Cases::create($validated);
 

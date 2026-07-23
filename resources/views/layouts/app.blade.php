@@ -1,11 +1,17 @@
+@php $universe = config('app.universe', 1); @endphp
 <!DOCTYPE html>
-<html lang="en" data-theme="corporate">
+<html lang="en" data-theme="{{ $universe == 2 ? 'universe-2' : 'corporate' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Agency Super') — {{ tenant_agency()?->name ?? 'Super Admin' }}</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+    @if($universe == 2)
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>">
+    @else
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+    @endif
     @vite('resources/css/app.css')
     <style>
         /* Print-friendly styles */
@@ -22,6 +28,23 @@
         }
         .print-only { display: none; }
         @media print { .print-only { display: block; } }
+    </style>
+    <style>
+        /* ───────────── NOTIFICATION DROPDOWN FIX ───────────── */
+        /* Force notification dropdown into correct absolute/overlay positioning */
+        .navbar .dropdown:has(> .notification-dropdown) {
+            position: static;
+        }
+        .notification-dropdown {
+            position: absolute !important;
+            top: 100% !important;
+            right: 0 !important;
+            left: auto !important;
+            z-index: 9999 !important;
+            max-height: 70vh;
+            min-width: 320px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-base-200 bg-noise min-h-screen">
@@ -65,7 +88,7 @@
                             <span class="notification-badge absolute -top-1 -right-1 badge badge-xs badge-error badge-outline">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
                             @endif
                         </label>
-                        <ul tabindex="0" class="dropdown-content notification-dropdown menu p-2 shadow-lg bg-base-100 rounded-box w-80 mt-2 border border-base-200">
+                        <ul tabindex="0" class="dropdown-content notification-dropdown menu p-2 shadow-lg bg-base-100 rounded-box w-screen max-w-sm sm:w-80 mt-2 border border-base-200">
                             @if ($recentUnread->count() > 0)
                                 @foreach ($recentUnread as $note)
                                 <li class="mb-1 notification-item">

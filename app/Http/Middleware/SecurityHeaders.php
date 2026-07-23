@@ -18,7 +18,7 @@ class SecurityHeaders
         'Referrer-Policy'         => 'strict-origin-when-cross-origin',
         'Permissions-Policy'      => 'camera=(), microphone=(), geolocation=()',
         'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains',
-        'Content-Security-Policy' => "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; form-action 'self'; frame-ancestors 'none';",
+        'Content-Security-Policy' => "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://picsum.photos https://fastly.picsum.photos https://images.unsplash.com; font-src 'self' https://fonts.gstatic.com; form-action 'self'; frame-ancestors 'none';",
     ];
 
     /**

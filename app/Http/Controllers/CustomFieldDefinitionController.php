@@ -58,7 +58,8 @@ class CustomFieldDefinitionController extends Controller
             'order'      => 'nullable|integer|min:0',
         ]);
 
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
+        if (! $validated['agency_id']) { return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput(); }
 
         // Convert newline-separated options into array
         if (! empty($validated['options']) && is_string($validated['options'])) {

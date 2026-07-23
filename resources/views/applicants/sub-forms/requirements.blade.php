@@ -31,6 +31,11 @@
            class="input w-full">
 </fieldset>
 <fieldset class="fieldset">
+    <legend class="fieldset-legend">File {{ isset($record) && $record->file_path ? '(replace)' : '' }}</legend>
+    <input type="file" name="file" class="file-input file-input-bordered w-full" accept="image/*,.pdf">
+    <label class="fieldset-label">JPG, PNG, WebP, or GIF (max 2MB)</label>
+</fieldset>
+<fieldset class="fieldset">
     <legend class="fieldset-legend">Remarks</legend>
     <input type="text" name="remarks" value="{{ old('remarks', $record->remarks ?? '') }}"
            class="input w-full" placeholder="Optional notes">

@@ -45,7 +45,8 @@ class BillController extends Controller
             'notes'            => 'nullable|string|max:1000',
         ]);
 
-        $validated['agency_id'] = auth()->user()->agency_id;
+        $validated['agency_id'] = $this->resolveAgencyId();
+        if (! $validated['agency_id']) { return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput(); }
         $validated['status'] = 'pending';
 
         Bill::create($validated);

@@ -3,10 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\CustomFieldDefinition;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 abstract class Controller
 {
+    /**
+     * Resolve the agency ID from the authenticated user or tenant context.
+     * Returns null if neither is available.
+     */
+    protected function resolveAgencyId(): ?int
+    {
+        return auth()->user()->agency_id ?? tenant_agency()?->id;
+    }
+
+    /**
+     * Validate that the current user has an agency context.
+     * Redirects back with error if not.
+     */
+    protected function requireAgencyContext(): ?RedirectResponse
+    {
+        if (! $this->resolveAgencyId()) {
+            return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput();
+        }
+        return null;
+    }
+
     /**
      * Validate required custom fields for a given model type.
      */

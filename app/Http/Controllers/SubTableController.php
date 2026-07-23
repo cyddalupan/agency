@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Applicant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SubTableController extends Controller
@@ -26,12 +27,15 @@ class SubTableController extends Controller
                 'issue_date'     => 'nullable|date',
                 'expiry_date'    => 'nullable|date|after:issue_date',
                 'place_of_issue' => 'nullable|string|max:255',
+                'file'           => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:2048',
+                'file_path'      => 'nullable|string|max:255',
             ],
             'certificates' => [
                 'type'           => 'required|string|max:100',
                 'certificate_no' => 'nullable|string|max:100',
                 'issue_date'     => 'nullable|date',
                 'expiry_date'    => 'nullable|date',
+                'file'           => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:2048',
                 'file_path'      => 'nullable|string|max:255',
                 'remarks'        => 'nullable|string',
             ],
@@ -41,6 +45,7 @@ class SubTableController extends Controller
                 'status'         => 'nullable|string|in:pending,submitted,approved,rejected',
                 'submitted_date' => 'nullable|date',
                 'approved_date'  => 'nullable|date',
+                'file'           => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:2048',
                 'file_path'      => 'nullable|string|max:255',
                 'remarks'        => 'nullable|string',
             ],
@@ -78,7 +83,7 @@ class SubTableController extends Controller
     {
         return match ($type) {
             'education'        => ['agency_id', 'applicant_id', 'level', 'school', 'degree', 'year_graduated', 'remarks'],
-            'passport'         => ['agency_id', 'applicant_id', 'passport_no', 'issue_date', 'expiry_date', 'place_of_issue'],
+            'passport'         => ['agency_id', 'applicant_id', 'passport_no', 'issue_date', 'expiry_date', 'place_of_issue', 'file_path'],
             'certificates'     => ['agency_id', 'applicant_id', 'type', 'certificate_no', 'issue_date', 'expiry_date', 'file_path', 'remarks'],
             'requirements'     => ['agency_id', 'applicant_id', 'type', 'reference_no', 'status', 'submitted_date', 'approved_date', 'file_path', 'remarks'],
             'work-experiences' => ['agency_id', 'applicant_id', 'company', 'position', 'from_date', 'to_date', 'responsibilities'],
@@ -117,7 +122,22 @@ class SubTableController extends Controller
 
         $data = $request->only($this->fillableFor($type));
         $data['applicant_id'] = $applicant->id;
-        $data['agency_id'] = auth()->user()->agency_id;
+        $data['agency_id'] = $this->resolveAgencyId();
+        if (! $data['agency_id']) { return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account.'])->withInput(); }
+
+        // Handle file upload for certificates / requirements (and now passport)
+        if ($request->hasFile('file')) {
+            // Delete old file if replacing (passport is hasOne)
+            if ($type === 'passport') {
+                $existing = $modelClass::where('applicant_id', $applicant->id)->first();
+                if ($existing && $existing->file_path) {
+                    Storage::disk('public')->delete($existing->file_path);
+                }
+            }
+            $file = $request->file('file');
+            $path = $file->store('applicant-sub-files', 'public');
+            $data['file_path'] = $path;
+        }
 
         // Passport is hasOne — overwrite instead of create duplicate
         if ($type === 'passport') {
@@ -146,6 +166,18 @@ class SubTableController extends Controller
         }
 
         $data = $request->only($this->fillableFor($type));
+
+        // Handle file upload for certificates / requirements
+        if ($request->hasFile('file')) {
+            // Delete old file
+            if ($record->file_path) {
+                Storage::disk('public')->delete($record->file_path);
+            }
+            $file = $request->file('file');
+            $path = $file->store('applicant-sub-files', 'public');
+            $data['file_path'] = $path;
+        }
+
         $record->update($data);
 
         return redirect()->route('applicants.show', $applicant)

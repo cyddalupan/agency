@@ -25,6 +25,9 @@
                         @if($applicant->contact)
                             <p class="opacity-80 text-sm">📱 {{ $applicant->contact }}</p>
                         @endif
+                        @if($applicant->employer)
+                            <p class="opacity-80 text-sm mt-1">🏢 <span class="font-medium">{{ $applicant->employer->name }}</span></p>
+                        @endif
                     </div>
                 </div>
                 <a href="{{ route('applicants.edit', $applicant) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
@@ -38,6 +41,17 @@
         <div role="alert" class="alert alert-success mb-4 text-sm shadow-sm">
             <span>✅</span>
             <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div role="alert" class="alert alert-error mb-4 text-sm shadow-sm">
+            <span>❌</span>
+            <ul class="list-disc ml-2">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
@@ -121,11 +135,13 @@
             ['skills',           '🛠️ Skills',           false, 'skills'],
             ['references',       '👥 References',       false, 'references'],
             ['salary-records',   '💰 Salary Records',   false, 'salaryRecords'],
+            ['documents',        '📁 Documents',         false, 'documents'],
         ];
 
         $data = $applicant->load([
             'passport', 'education', 'certificates', 'requirements',
             'workExperiences', 'skills', 'references', 'salaryRecords',
+            'documents', 'employer',
         ]);
     @endphp
 
@@ -138,16 +154,26 @@
         <div class="card-body">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="card-title text-lg">{{ $label }}</h3>
-                @if (!$isSingle || !$data->passport)
+                @if (!$isSingle || !$related)
                     <button class="btn btn-primary btn-sm" onclick="document.getElementById('form-{{ $routeKey }}').classList.toggle('hidden')">
                         ➕ Add
+                    </button>
+                @else
+                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('form-{{ $routeKey }}').classList.toggle('hidden')">
+                        ✏️ Edit
                     </button>
                 @endif
             </div>
 
             {{-- Add Form (hidden by default) --}}
             <div id="form-{{ $routeKey }}" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
-                <form action="{{ route('applicants.sub.store', [$applicant, $routeKey]) }}" method="POST">
+                @php
+                    $actionRoute = $routeKey === 'documents'
+                        ? route('applicants.documents.store', $applicant)
+                        : route('applicants.sub.store', [$applicant, $routeKey]);
+                @endphp
+                <form action="{{ $actionRoute }}" method="POST"
+                      @if(in_array($routeKey, ['passport', 'certificates', 'requirements', 'documents'])) enctype="multipart/form-data" @endif>
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @include("applicants.sub-forms.{$routeKey}", ['record' => null])

@@ -103,6 +103,18 @@
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏢 Employer</legend>
+                    <select name="employer_id" class="select w-full">
+                        <option value="">No Employer</option>
+                        @foreach (\App\Models\Employer::where('agency_id', auth()->user()->agency_id)->get() as $emp)
+                            <option value="{{ $emp->id }}" @selected(old('employer_id', $applicant->employer_id) == $emp->id)>{{ $emp->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <fieldset class="fieldset">
                     <legend class="fieldset-legend">📝 Remarks</legend>
                     <textarea name="remarks" rows="2" class="textarea w-full">{{ old('remarks', $applicant->remarks) }}</textarea>
                 </fieldset>
