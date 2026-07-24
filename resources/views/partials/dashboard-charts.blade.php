@@ -117,14 +117,14 @@
         const total = d3.sum(data, d => d.count);
         const width = container.clientWidth || 500;
         const height = 260;
-        const radius = Math.min(width, height * 1.2) / 2.2;
+        // Use 40% of the narrower dimension for the donut so legend fits beside it
+        const radius = Math.min(width, height) * 0.38;
         const svg = d3.select(container).append('svg')
             .attr('width', width).attr('height', height)
-            .append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+            .append('g').attr('transform', `translate(${radius + 20},${height / 2})`);
 
         const pie = d3.pie().value(d => d.count).sort(null);
         const arc = d3.arc().innerRadius(radius * 0.55).outerRadius(radius);
-        const outerArc = d3.arc().innerRadius(radius * 0.65).outerRadius(radius * 0.65);
 
         // Arcs
         svg.selectAll('.arc').data(pie(data)).join('path')
@@ -135,15 +135,16 @@
             .attr('opacity', 0.9);
 
         // Center total
-        svg.append('text').attr('text-anchor', 'middle').attr('y', -6)
-            .attr('font-size', '24px').attr('font-weight', 'bold').attr('fill', '#333')
+        svg.append('text').attr('text-anchor', 'middle').attr('y', -5)
+            .attr('font-size', '22px').attr('font-weight', 'bold').attr('fill', '#333')
             .text(total);
-        svg.append('text').attr('text-anchor', 'middle').attr('y', 14)
+        svg.append('text').attr('text-anchor', 'middle').attr('y', 12)
             .attr('font-size', '11px').attr('fill', '#888')
             .text('Total');
 
-        // Legend
-        const legendG = svg.append('g').attr('transform', `translate(${radius + 20}, ${-radius * 0.7})`);
+        // Legend — right of the donut
+        const legendX = radius + 24;
+        const legendG = svg.append('g').attr('transform', `translate(${legendX}, ${-50})`);
         data.forEach((d, i) => {
             const row = legendG.append('g').attr('transform', `translate(0, ${i * 22})`);
             row.append('rect').attr('width', 12).attr('height', 12).attr('rx', 2)
