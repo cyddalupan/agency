@@ -2,10 +2,6 @@
 
 @section('title', 'Dashboard')
 
-@push('head')
-<script src="{{ asset('d3.min.js') }}"></script>
-@endpush
-
 @section('content')
 <div class="max-w-7xl mx-auto">
     {{-- Welcome Banner --}}

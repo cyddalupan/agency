@@ -22,11 +22,7 @@
                 <span>🕐 {{ now()->format('h:i A') }}</span>
             </div>
 
-            @if (!is_tenant_request())
-                <div role="alert" class="alert alert-warning mt-4 text-sm shadow-md">
-                    <span>⚠️ Testing mode — you're logged in via the main domain. In production, this would use <strong class="font-bold">{{ $agency->subdomain }}.agency.classapparelph.com</strong>.</span>
-                </div>
-            @endif
+
         </div>
     </div>
 
