@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Applicant;
 use App\Models\StatusCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -29,6 +30,41 @@ class DashboardController extends Controller
 
         $statusCodes = StatusCode::orderBy('sort_order')->get();
 
-        return view('dashboard', compact('agency', 'user', 'statusCodes', 'statusCounts', 'recentApplicants'));
+        // Monthly applicant totals (last 12 months) — MySQL/SQLite compatible
+        $dbDriver = DB::connection()->getDriverName();
+        $dateFormat = $dbDriver === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $monthlyTotals = Applicant::query()
+            ->selectRaw("{$dateFormat} as month, count(*) as total")
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        // Employer growth
+        $employerGrowth = \App\Models\Employer::query()
+            ->selectRaw("{$dateFormat} as month, count(*) as total")
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        // Chart-safe status data
+        $chartStatusData = $statusCodes->filter(fn($sc) => ($statusCounts->get($sc->code, 0)) > 0)
+            ->values()
+            ->map(fn($sc) => [
+                'label' => $sc->label,
+                'count' => (int)($statusCounts->get($sc->code, 0)),
+                'color' => $sc->color ?? '#3b82f6',
+            ]);
+
+        return view('dashboard', compact(
+            'agency', 'user', 'statusCodes', 'statusCounts', 'recentApplicants',
+            'monthlyTotals', 'employerGrowth', 'chartStatusData'
+        ));
     }
 }
