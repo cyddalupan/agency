@@ -6,6 +6,7 @@ use App\Models\Applicant;
 use App\Models\Employer;
 use App\Models\JobPosition;
 use App\Models\StatusCode;
+use Illuminate\Support\Facades\DB;
 
 class AgencyDashboardController extends Controller
 {
@@ -37,6 +38,39 @@ class AgencyDashboardController extends Controller
 
         $statusCodes = StatusCode::orderBy('sort_order')->get();
 
-        return view('agency.dashboard', compact('user', 'agency', 'stats', 'statusCodes', 'statusCounts'));
+        // Chart data
+        $dbDriver = DB::connection()->getDriverName();
+        $dateFormat = $dbDriver === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $monthlyTotals = Applicant::query()
+            ->selectRaw("{$dateFormat} as month, count(*) as total")
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        $employerGrowth = Employer::query()
+            ->selectRaw("{$dateFormat} as month, count(*) as total")
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        $chartStatusData = $statusCodes->filter(fn($sc) => ($statusCounts->get($sc->code, 0)) > 0)
+            ->values()
+            ->map(fn($sc) => [
+                'label' => $sc->label,
+                'count' => (int)($statusCounts->get($sc->code, 0)),
+                'color' => $sc->color ?? '#3b82f6',
+            ]);
+
+        return view('agency.dashboard', compact(
+            'user', 'agency', 'stats', 'statusCodes', 'statusCounts',
+            'monthlyTotals', 'employerGrowth', 'chartStatusData'
+        ));
     }
 }

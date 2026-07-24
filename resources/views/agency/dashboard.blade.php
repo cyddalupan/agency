@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    {{-- Quick Actions --}}
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
@@ -121,6 +121,11 @@
                 <p class="text-sm opacity-50 mt-3">📊 Click a status to filter recent applicants below.</p>
             </div>
         </div>
+    </div>
+
+    {{-- D3 Charts Section --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        @include('partials.dashboard-charts')
     </div>
 
     {{-- Recent Applicants --}}
