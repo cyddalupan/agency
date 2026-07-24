@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agency Super — Recruitment Agency Management</title>
+    <title>{{ app_brand_name() }} — Recruitment Agency Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">AS</div>
-                    <span class="font-bold text-lg">Agency Super</span>
+                    <span class="font-bold text-lg">{{ app_brand_name() }}</span>
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="{{ route('login') }}" class="text-gray-300 hover:text-white transition text-sm font-medium">Sign In</a>
@@ -143,7 +143,7 @@
     <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <div class="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/20 rounded-3xl p-12 glow">
             <h2 class="text-3xl font-bold mb-4">Ready to Streamline Your Agency?</h2>
-            <p class="text-gray-400 mb-8 max-w-lg mx-auto">Join agencies already using Agency Super to manage recruitment operations.</p>
+            <p class="text-gray-400 mb-8 max-w-lg mx-auto">Join agencies already using {{ app_brand_name() }} to manage recruitment operations.</p>
             <a href="{{ route('agency.register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl text-lg font-semibold transition inline-flex items-center gap-2">
                 Register Free
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
@@ -153,7 +153,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-white/10 py-8 text-center text-gray-500 text-sm">
-        <p>&copy; {{ date('Y') }} Agency Super. All rights reserved.</p>
+        <p>&copy; {{ date('Y') }} {{ app_brand_name() }}. All rights reserved.</p>
     </footer>
 
 </body>

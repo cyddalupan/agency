@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'sponsor'     => \App\Http\Middleware\EnsureUserIsSponsor::class,
             'sponsor.guest' => \App\Http\Middleware\RedirectIfSponsorAuthenticated::class,
             'role'        => \App\Http\Middleware\CheckRole::class,
+            'agent'       => \App\Http\Middleware\EnsureUserIsAgent::class,
             'ai.rate'     => \App\Http\Middleware\AiQueryRateLimit::class,
         ]);
     })

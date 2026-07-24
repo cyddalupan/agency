@@ -156,7 +156,7 @@
                     <div class="flex items-start gap-3 p-3 rounded-lg bg-base-200/50">
                         <span class="text-xl">👋</span>
                         <div>
-                            <p class="text-sm font-medium">Welcome to Agency Super!</p>
+                            <p class="text-sm font-medium">Welcome to {{ app_brand_name() }}!</p>
                             <p class="text-xs opacity-50 mt-0.5">Start by adding applicants and employers</p>
                         </div>
                     </div>
@@ -187,13 +187,41 @@
         <div class="card-body">
             <h3 class="card-title text-lg mb-4">📈 Deployment Pipeline</h3>
             <div class="flex flex-wrap gap-2">
-                <span class="badge badge-lg badge-ghost">📋 Pending</span>
-                <span class="badge badge-lg badge-info">🔍 Interview</span>
-                <span class="badge badge-lg badge-warning">📄 Processing</span>
-                <span class="badge badge-lg badge-success">✅ Deployed</span>
-                <span class="badge badge-lg badge-error">🚫 Cancelled</span>
+                <a href="{{ route('applicants.index') }}"
+                   class="badge badge-lg {{ request()->query('status') === null ? 'badge-primary' : 'badge-ghost' }}">
+                    📋 All
+                    <span class="ml-1">{{ $statusCounts->sum() }}</span>
+                </a>
+                @foreach($statusCodes as $sc)
+                    @php $count = $statusCounts->get($sc->code, 0); @endphp
+                    @if($count > 0)
+                    <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+                       class="badge badge-lg {{ request('status') === (string)$sc->code ? 'badge-primary' : '' }}" style="{{ request('status') === (string)$sc->code ? '' : 'background-color: ' . ($sc->color ?? '#e5e7eb') . '; color: #fff;' }}">
+                        {{ $sc->label }}
+                        <span class="ml-1">{{ $count }}</span>
+                    </a>
+                    @endif
+                @endforeach
             </div>
-            <p class="text-sm opacity-50 mt-4">📊 Add applicants to see pipeline statistics here.</p>
+            @if($recentApplicants->isNotEmpty())
+            <div class="mt-4 space-y-2">
+                @foreach($recentApplicants as $app)
+                <div class="flex justify-between items-center py-1 text-sm">
+                    <a href="{{ route('applicants.show', $app) }}" class="link link-primary">
+                        {{ $app->first_name }} {{ $app->last_name }}
+                    </a>
+                    @if($app->statusCode)
+                    <span class="badge badge-sm"
+                        style="background-color: {{ $app->statusCode->color ?? '#e5e7eb' }}20; color: {{ $app->statusCode->color ?? '#374151' }}">
+                        {{ $app->statusCode->label }}
+                    </span>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            @else
+            <p class="text-sm opacity-50 mt-4">📊 No applicants yet.</p>
+            @endif
         </div>
     </div>
     @endif

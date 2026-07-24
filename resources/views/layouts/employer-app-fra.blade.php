@@ -9,7 +9,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', __('messages.fra_portal')) — {{ __('messages.fra_portal') }}</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>" type="image/svg+xml">
+    @if($universe == 2)
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>" type="image/svg+xml">
+    @else
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" type="image/svg+xml">
+    @endif
     @vite('resources/css/app.css')
     @yield('head')
 </head>
@@ -208,7 +212,7 @@
         </main>
 
         <footer class="px-6 py-3 text-center text-xs opacity-40 border-t border-gray-200 bg-white">
-            🌍 FRA Portal &bull; Powered by Agency Super
+            🌍 FRA Portal &bull; Powered by {{ app_brand_name() }}
         </footer>
     </div>
 

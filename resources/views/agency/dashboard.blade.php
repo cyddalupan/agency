@@ -102,13 +102,23 @@
             <div class="card-body">
                 <h3 class="card-title text-lg mb-2">📋 Deployment Pipeline</h3>
                 <div class="flex flex-wrap gap-2">
-                    <span class="badge badge-lg badge-ghost">📋 Pending</span>
-                    <span class="badge badge-lg badge-info">🔍 Interview</span>
-                    <span class="badge badge-lg badge-warning">📄 Processing</span>
-                    <span class="badge badge-lg badge-success">✅ Deployed</span>
-                    <span class="badge badge-lg badge-error">🚫 Cancelled</span>
+                    <a href="{{ route('applicants.index') }}"
+                       class="badge badge-lg {{ request()->query('status') === null ? 'badge-primary' : 'badge-ghost' }}">
+                        📋 All
+                        <span class="ml-1">{{ $statusCounts->sum() }}</span>
+                    </a>
+                    @foreach($statusCodes as $sc)
+                        @php $count = $statusCounts->get($sc->code, 0); @endphp
+                        @if($count > 0)
+                        <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+                           class="badge badge-lg {{ request('status') === (string)$sc->code ? 'badge-primary' : '' }}" style="{{ request('status') === (string)$sc->code ? '' : 'background-color: ' . ($sc->color ?? '#e5e7eb') . '; color: #fff;' }}">
+                            {{ $sc->label }}
+                            <span class="ml-1">{{ $count }}</span>
+                        </a>
+                        @endif
+                    @endforeach
                 </div>
-                <p class="text-sm opacity-50 mt-4">📊 Track your applicant pipeline here as you add more data.</p>
+                <p class="text-sm opacity-50 mt-3">📊 Click a status to filter recent applicants below.</p>
             </div>
         </div>
     </div>

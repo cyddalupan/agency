@@ -12,9 +12,13 @@
             </a>
             <div class="flex items-start justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="avatar placeholder">
-                        <div class="w-16 h-16 rounded-full bg-white/20 text-white flex items-center justify-center text-2xl font-bold">
-                            {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
+                    <div class="avatar">
+                        <div class="w-16 h-16 rounded-full bg-white/20 text-white flex items-center justify-center text-2xl font-bold overflow-hidden">
+                            @if ($applicant->photo)
+                                <img src="{{ Storage::url($applicant->photo) }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
+                            @else
+                                {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
+                            @endif
                         </div>
                     </div>
                     <div>
@@ -28,10 +32,16 @@
                         @if($applicant->employer)
                             <p class="opacity-80 text-sm mt-1">🏢 <span class="font-medium">{{ $applicant->employer->name }}</span></p>
                         @endif
+                        @if($applicant->agent)
+                            <p class="opacity-80 text-sm mt-1">🎯 <span class="font-medium">{{ $applicant->agent->name }}</span></p>
+                        @endif
                     </div>
                 </div>
                 <a href="{{ route('applicants.edit', $applicant) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
                     ✏️ Edit
+                </a>
+                <a href="{{ route('reports.resume', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                    📄 Generate CV
                 </a>
             </div>
         </div>
@@ -105,6 +115,13 @@
                     <dd class="font-medium mt-1">{{ $applicant->address ?? '—' }}</dd>
                 </div>
             </dl>
+            @if($applicant->has_passport === 'without')
+            <div class="mt-4 pt-4 border-t border-base-200">
+                <div class="badge badge-error gap-1">
+                    ❌ Without Passport
+                </div>
+            </div>
+            @endif
             @if($applicant->remarks)
             <div class="mt-4 pt-4 border-t border-base-200">
                 <dt class="text-sm opacity-60">📝 Remarks</dt>
@@ -149,11 +166,22 @@
     @php
         $related = $data->$relationName ?? null;
         $records = $isSingle ? collect($related ? [$related] : []) : (collect($related) ?? collect());
+
+        // Skip passport section if applicant marked as "without passport"
+        $hidePassport = $routeKey === 'passport' && $applicant->has_passport === 'without';
     @endphp
+    @continue($hidePassport)
     <div class="card bg-base-100 shadow-sm mb-6 card-lift">
         <div class="card-body">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="card-title text-lg">{{ $label }}</h3>
+                <h3 class="card-title text-lg">
+                    {{ $label }}
+                    @if ($routeKey === 'passport' && $applicant->has_passport === 'with')
+                        <span class="badge badge-success badge-sm text-xs">With Passport</span>
+                    @elseif ($routeKey === 'passport' && $applicant->has_passport === 'without')
+                        <span class="badge badge-error badge-sm text-xs">Without Passport</span>
+                    @endif
+                </h3>
                 @if (!$isSingle || !$related)
                     <button class="btn btn-primary btn-sm" onclick="document.getElementById('form-{{ $routeKey }}').classList.toggle('hidden')">
                         ➕ Add

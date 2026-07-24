@@ -28,7 +28,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('applicants.store') }}" class="card bg-base-100 shadow-sm card-lift">
+    <form method="POST" action="{{ route('applicants.store') }}" enctype="multipart/form-data" class="card bg-base-100 shadow-sm card-lift">
         <div class="card-body space-y-4">
             @csrf
 
@@ -71,15 +71,32 @@
                 </fieldset>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🛂 Passport <span class="text-xs opacity-60">(has passport?)</span></legend>
+                    <select name="has_passport" class="select w-full">
+                        <option value="">-- Select --</option>
+                        <option value="with" @selected(old('has_passport') === 'with')>✅ With Passport</option>
+                        <option value="without" @selected(old('has_passport') === 'without')>❌ Without Passport</option>
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📸 2x2 Photo</legend>
+                    <input type="file" name="photo" accept="image/jpeg,image/png" class="file-input w-full">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📸 Full Body Photo <span class="text-xs opacity-60">(for CV)</span></legend>
+                    <input type="file" name="full_body_photo" accept="image/jpeg,image/png" class="file-input w-full">
+                </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">✉️ Email</legend>
-                    <input type="email" name="email" value="{{ old('email') }}"
+                    <input type="email" name="email" value="{ old('email') }"
                         class="input w-full" placeholder="email@example.com">
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">📱 Contact Number</legend>
-                    <input type="text" name="contact" value="{{ old('contact') }}"
+                    <input type="text" name="contact" value="{ old('contact') }"
                         class="input w-full" placeholder="09XX-XXX-XXXX">
                 </fieldset>
             </div>
@@ -89,16 +106,54 @@
                 <textarea name="address" rows="2" class="textarea w-full" placeholder="Complete address">{{ old('address') }}</textarea>
             </fieldset>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🌍 Preferred Country</legend>
+                    <select name="country_id" class="select w-full">
+                        <option value="">-- Select --</option>
+                        @foreach (App\Models\Country::orderBy('name')->get() as $ctry)
+                            <option value="{{ $ctry->id }}" @selected(old('country_id') == $ctry->id)>{{ $ctry->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">💼 Preferred Position</legend>
+                    <select name="position_id" class="select w-full">
+                        <option value="">-- Select --</option>
+                        @foreach (App\Models\Position::orderBy('name')->get() as $pos)
+                            <option value="{{ $pos->id }}" @selected(old('position_id') == $pos->id)>{{ $pos->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📊 Status</legend>
+                    <select name="status_code" class="select w-full">
+                        @foreach (App\Models\StatusCode::orderBy('sort_order')->get() as $sc)
+                            <option value="{{ $sc->code }}" @selected(old('status_code', 0) == $sc->code)>{{ $sc->label }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">📱 Source</legend>
-                    <select name="source" class="select w-full">
+                    <select name="source" class="select w-full" id="source-select">
                         <option value="">Select</option>
                         <option value="Facebook" @selected(old('source') === 'Facebook')>📘 Facebook</option>
                         <option value="Referral" @selected(old('source') === 'Referral')>🤝 Referral</option>
                         <option value="Walk-in" @selected(old('source') === 'Walk-in')>🚶 Walk-in</option>
                         <option value="Website" @selected(old('source') === 'Website')>🌐 Website</option>
                         <option value="Other" @selected(old('source') === 'Other')>📌 Other</option>
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset agent-dropdown" id="agent-field" style="{{ old('source') === 'Referral' ? '' : 'display: none;' }}">
+                    <legend class="fieldset-legend">🎯 Referred By (Agent)</legend>
+                    <select name="agent_id" class="select w-full" id="agent-select">
+                        <option value="">-- Select Agent --</option>
+                        @foreach (App\Models\Agent::where('agency_id', resolve_agency_id())->where('status', 'active')->orderBy('name')->get() as $agt)
+                            <option value="{{ $agt->id }}" @selected(old('agent_id') == $agt->id)>{{ $agt->name }}</option>
+                        @endforeach
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
@@ -118,4 +173,27 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sourceSelect = document.getElementById('source-select');
+    const agentField = document.getElementById('agent-field');
+
+    if (sourceSelect && agentField) {
+        function toggleAgentField() {
+            if (sourceSelect.value === 'Referral') {
+                agentField.style.display = '';
+            } else {
+                agentField.style.display = 'none';
+                document.getElementById('agent-select').value = '';
+            }
+        }
+
+        sourceSelect.addEventListener('change', toggleAgentField);
+        toggleAgentField();
+    }
+});
+</script>
+@endpush
 @endsection

@@ -98,6 +98,7 @@ main {
    ─────────────────────────────────────────── */
 @plugin "daisyui/theme" {
     name: "universe-2";
+    /* Light mode with midnight blue sidebar + gold accents */
     default: false;
     prefersdark: false;
     color-scheme: "light";
@@ -106,23 +107,23 @@ main {
     --color-primary: oklch(0.65 0.14 95);
     --color-primary-content: oklch(0.98 0.01 95);
 
-    /* ── Secondary (Warm tan) ── */
-    --color-secondary: oklch(0.70 0.08 75);
-    --color-secondary-content: oklch(0.20 0.03 260);
+    /* ── Secondary (Teal) ── */
+    --color-secondary: oklch(0.60 0.06 200);
+    --color-secondary-content: oklch(0.98 0.01 95);
 
-    /* ── Accent (Warm coral / shrine gate) ── */
+    /* ── Accent (Warm coral) ── */
     --color-accent: oklch(0.55 0.16 35);
-    --color-accent-content: oklch(0.95 0.01 35);
+    --color-accent-content: oklch(0.98 0.01 35);
 
-    /* ── Neutral ── */
-    --color-neutral: oklch(0.50 0.02 260);
-    --color-neutral-content: oklch(0.95 0.01 80);
+    /* ── Neutral (midnight blue — sidebar + dark panels) ── */
+    --color-neutral: oklch(0.22 0.04 260);
+    --color-neutral-content: oklch(0.90 0.01 90);
 
-    /* ── Base (Light backgrounds) ── */
-    --color-base-100: oklch(0.99 0.01 90);   /* cream-white base */
-    --color-base-200: oklch(0.94 0.01 85);   /* light warm gray */
-    --color-base-300: oklch(0.88 0.012 80);  /* slightly deeper warm gray */
-    --color-base-content: oklch(0.20 0.03 260); /* dark text */
+    /* ── Base (light mode) ── */
+    --color-base-100: oklch(0.995 0 90);            /* bright white — cards, modals */
+    --color-base-200: oklch(0.93 0.005 90);         /* light warm-gray — main bg */
+    --color-base-300: oklch(0.86 0.008 90);         /* slightly deeper — borders */
+    --color-base-content: oklch(0.22 0.03 260);     /* dark navy text */
 
     /* ── Info / Success / Warning / Error ── */
     --color-info: oklch(0.60 0.12 230);

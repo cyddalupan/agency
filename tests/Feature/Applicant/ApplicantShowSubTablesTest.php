@@ -33,7 +33,8 @@ class ApplicantShowSubTablesTest extends TestCase
         ]);
 
         $this->applicant = Applicant::factory()->create([
-            'agency_id' => $this->agency->id,
+            'agency_id'    => $this->agency->id,
+            'has_passport' => 'with',
         ]);
 
         app()->instance('tenant_agency', $this->agency);

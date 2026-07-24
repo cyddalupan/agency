@@ -4,13 +4,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Agency Super') — {{ tenant_agency()?->name ?? 'Super Admin' }}</title>
+    <title>@yield('title', app_brand_name()) — {{ tenant_agency()?->name ?? 'Super Admin' }}</title>
     @if($universe == 2)
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>" type="image/svg+xml">
         <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>">
     @else
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     @endif
     @vite('resources/css/app.css')
     <style>
@@ -70,7 +70,7 @@
                         </svg>
                     </label>
                     <span class="font-semibold text-lg truncate">
-                        @yield('title', 'Agency Super')
+                        @yield('title', app_brand_name())
                     </span>
                 </div>
                 <div class="flex-none flex items-center gap-4">
@@ -170,7 +170,7 @@
 
             {{-- Footer --}}
             <footer class="px-4 lg:px-6 py-3 text-center text-xs opacity-40 border-t border-base-300">
-                ⚡ Agency Super &bull; Powered by TOYBITS
+                {{ app_brand_icon() }} {{ app_brand_name() }} &bull; Powered by TOYBITS
             </footer>
         </div>
 
@@ -181,13 +181,13 @@
             {{-- Overlay backdrop (click to close on mobile) --}}
             <label for="sidebar-drawer" class="drawer-overlay"></label>
 
-            <div class="flex flex-col min-h-full w-64 bg-gradient-to-b from-base-200 to-base-300 text-base-content">
+            <div class="flex flex-col min-h-full w-64 bg-gradient-to-b from-[#1a2744] to-[#131e33] text-neutral-content">
                 {{-- Sidebar brand with gradient accent --}}
-                <div class="px-6 py-5 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-300">
+                <div class="px-6 py-5 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-white/10">
                     <a href="{{ auth()->user()->agency_id ? route('agency.dashboard') : route('dashboard') }}" class="flex items-center gap-2">
-                        <span class="text-2xl">⚡</span>
+                        <span class="text-2xl">{{ app_brand_icon() }}</span>
                         <span class="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            {{ tenant_agency()?->name ?? 'Agency Super' }}
+                            {{ tenant_agency()?->name ?? app_brand_name() }}
                         </span>
                     </a>
                 </div>
@@ -198,21 +198,21 @@
 
                     <a href="{{ auth()->user()->agency_id ? route('agency.dashboard') : route('dashboard') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('dashboard') || request()->routeIs('agency.dashboard') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                              {{ request()->routeIs('dashboard') || request()->routeIs('agency.dashboard') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">🏠</span>
                         Dashboard
                     </a>
 
                     <a href="{{ route('applicants.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('applicants.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                              {{ request()->routeIs('applicants.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">👥</span>
                         Applicants
                     </a>
 
                     <a href="{{ route('employers.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('employers.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                              {{ request()->routeIs('employers.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">🏢</span>
                         Employers
                     </a>
@@ -226,7 +226,7 @@
 
                     {{-- Only show for agency users --}}
                     @if (auth()->user()->agency_id || tenant_agency())
-                    <div class="pt-4 mt-4 border-t border-base-300">
+                    <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">🏢 Agency</p>
                         <a href="{{ route('agency.dashboard') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -243,8 +243,18 @@
                     </div>
                     @endif
 
-                    <div class="pt-4 mt-4 border-t border-base-300">
+                    <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
+
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        <a href="{{ route('agents.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('agents.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                            <span class="text-lg">🔌</span>
+                            Agents
+                        </a>
+                        @endif
+
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('settings.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
@@ -261,7 +271,7 @@
                 </nav>
 
                 {{-- Sidebar footer --}}
-                <div class="border-t border-base-300 px-3 py-3 bg-base-300/50">
+                <div class="border-t border-white/10 px-3 py-3 bg-[#0f1724]/50">
                     <div class="flex items-center gap-3 px-3 py-2 text-sm">
                         <div class="avatar placeholder">
                             <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-xs font-bold">
@@ -285,5 +295,6 @@
         @yield('content')
     </main>
     @endguest
+@stack('scripts')
 </body>
 </html>

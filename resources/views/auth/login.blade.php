@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>🔐 Login — Agency Super</title>
+    <title>🔐 Login — {{ app_brand_name() }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@
             <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-lg mb-4">
                 <span class="text-3xl">🏢</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-gray-900">Agency Super</h1>
+            <h1 class="text-2xl font-extrabold text-gray-900">{{ app_brand_name() }}</h1>
             <p class="text-sm text-gray-500 mt-1">👋 Welcome back! Sign in to continue</p>
         </div>
 

@@ -9,6 +9,7 @@ use App\Services\SensitiveActionLogger;
 use App\Services\StatusCodeService;
 use App\Services\StatusTransitionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 
 class ApplicantController extends Controller
@@ -38,9 +39,17 @@ class ApplicantController extends Controller
         }
 
         $statusCodes = StatusCode::orderBy('sort_order')->get();
+
+        // Get status counts for all applicants (ignoring filters)
+        $statusCounts = Applicant::query()
+            ->selectRaw('status_code, count(*) as total')
+            ->whereNotNull('status_code')
+            ->groupBy('status_code')
+            ->pluck('total', 'status_code');
+
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('applicants.index', compact('applicants', 'statusCodes'));
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts'));
     }
 
     public function create()
@@ -54,20 +63,36 @@ class ApplicantController extends Controller
         $this->validateCustomFields($request, 'Applicant');
 
         $validated = $request->validate([
-            'first_name'  => 'required|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'suffix'      => 'nullable|string|max:50',
-            'email'       => 'nullable|email|max:255',
-            'contact'     => 'nullable|string|max:50',
-            'gender'      => 'nullable|string|max:20',
-            'birthdate'   => 'nullable|date',
-            'address'     => 'nullable|string',
-            'remarks'     => 'nullable|string',
-            'source'      => 'nullable|string|max:255',
+            'first_name'   => 'required|string|max:255',
+            'last_name'    => 'required|string|max:255',
+            'middle_name'  => 'nullable|string|max:255',
+            'suffix'       => 'nullable|string|max:50',
+            'email'        => 'nullable|email|max:255',
+            'contact'      => 'nullable|string|max:50',
+            'gender'       => 'nullable|string|max:20',
+            'has_passport' => 'nullable|string|in:with,without',
+            'birthdate'    => 'nullable|date',
+            'address'      => 'nullable|string',
+            'remarks'      => 'nullable|string',
+            'source'       => 'nullable|string|max:255',
+            'country_id'   => 'nullable|integer|exists:countries,id',
+            'position_id'  => 'nullable|integer|exists:positions,id',
+            'agent_id'     => 'nullable|integer|exists:agents,id',
+            'status_code'  => 'nullable|integer|exists:status_codes,code',
+            'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
+            'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
         ]);
 
-        $validated['status_code'] = 0; // Default: Pending
+        $validated['status_code'] = $validated['status_code'] ?? 0; // Default: Pending if not provided
+
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = resize_and_save_photo($request->file('photo'));
+        }
+        if ($request->hasFile('full_body_photo')) {
+            $validated['full_body_photo'] = resize_and_save_photo($request->file('full_body_photo'), 'applicant-full-body-photos', 1024);
+        }
+
         $validated['agency_id'] = $this->resolveAgencyId();
         if (! $validated['agency_id']) {
             return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account to add applicants.'])->withInput();
@@ -110,20 +135,41 @@ class ApplicantController extends Controller
         $this->validateCustomFields($request, 'Applicant');
 
         $validated = $request->validate([
-            'first_name'  => 'required|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'suffix'      => 'nullable|string|max:50',
-            'email'       => 'nullable|email|max:255',
-            'contact'     => 'nullable|string|max:50',
-            'gender'      => 'nullable|string|max:20',
-            'birthdate'   => 'nullable|date',
-            'address'     => 'nullable|string',
-            'remarks'     => 'nullable|string',
-            'source'      => 'nullable|string|max:255',
-            'status_code' => 'nullable|integer|exists:status_codes,code',
+            'first_name'   => 'required|string|max:255',
+            'last_name'    => 'required|string|max:255',
+            'middle_name'  => 'nullable|string|max:255',
+            'suffix'       => 'nullable|string|max:50',
+            'email'        => 'nullable|email|max:255',
+            'contact'      => 'nullable|string|max:50',
+            'gender'       => 'nullable|string|max:20',
+            'has_passport' => 'nullable|string|in:with,without',
+            'birthdate'    => 'nullable|date',
+            'address'      => 'nullable|string',
+            'remarks'      => 'nullable|string',
+            'source'       => 'nullable|string|max:255',
+            'country_id'   => 'nullable|integer|exists:countries,id',
+            'position_id'  => 'nullable|integer|exists:positions,id',
+            'agent_id'     => 'nullable|integer|exists:agents,id',
+            'status_code'  => 'nullable|integer|exists:status_codes,code',
+            'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
+            'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
             'employer_id'  => 'nullable|integer|exists:employers,id',
         ]);
+
+        // Handle photo upload — delete old photo if replaced
+        if ($request->hasFile('photo')) {
+            if ($applicant->photo) {
+                Storage::disk('public')->delete($applicant->photo);
+            }
+            $validated['photo'] = resize_and_save_photo($request->file('photo'));
+        }
+        // Handle full body photo upload
+        if ($request->hasFile('full_body_photo')) {
+            if ($applicant->full_body_photo) {
+                Storage::disk('public')->delete($applicant->full_body_photo);
+            }
+            $validated['full_body_photo'] = resize_and_save_photo($request->file('full_body_photo'), 'applicant-full-body-photos', 1024);
+        }
 
         $applicant->update($validated);
 
@@ -137,6 +183,14 @@ class ApplicantController extends Controller
     {
         SensitiveActionLogger::deletion($applicant);
 
+        // Delete photo file if exists
+        if ($applicant->photo) {
+            Storage::disk('public')->delete($applicant->photo);
+        }
+        if ($applicant->full_body_photo) {
+            Storage::disk('public')->delete($applicant->full_body_photo);
+        }
+
         $applicant->delete();
 
         return redirect()->route('applicants.index')
@@ -145,16 +199,16 @@ class ApplicantController extends Controller
 
     public function export()
     {
-        $applicants = Applicant::with('statusCode')->get();
+$applicants = Applicant::with(['statusCode', 'country', 'position', 'agent'])->get();
 
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name . ' exported applicant data.');
 
         $headers = [
             'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
-            'Date of Birth', 'Gender', 'Nationality',
+            'Date of Birth', 'Gender', 'Has Passport', 'Nationality',
             'Street', 'City', 'State', 'Postal Code', 'Country',
-            'Status', 'Created At',
+            'Preferred Position', 'Referred By', 'Status', 'Created At',
         ];
 
         $callback = function () use ($applicants, $headers) {
@@ -173,12 +227,16 @@ class ApplicantController extends Controller
                     $applicant->contact,
                     $applicant->date_of_birth?->format('Y-m-d'),
                     $applicant->gender,
+                    $applicant->has_passport ?? 'N/A',
                     $applicant->nationality,
                     $applicant->street,
                     $applicant->city,
                     $applicant->state,
                     $applicant->postal_code,
-                    $applicant->country,
+                    $applicant->country?->name ?? 'N/A',
+                    $applicant->position?->name ?? 'N/A',
+                    $applicant->position?->name ?? 'N/A',
+                    $applicant->agent?->name ?? 'N/A',
                     $applicant->statusCode?->name ?? 'N/A',
                     $applicant->created_at->format('Y-m-d H:i:s'),
                 ]);

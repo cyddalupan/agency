@@ -16,10 +16,13 @@ class ApplicantFactory extends Factory
             'last_name'   => fake()->lastName(),
             'birthdate'   => fake()->date(max: '-18 years'),
             'gender'      => fake()->randomElement(['male', 'female']),
+            'has_passport' => fake()->randomElement(['with', 'without']),
             'contact'     => fake()->phoneNumber(),
             'email'       => fake()->safeEmail(),
+            'agent_id'    => null,
             'status_code' => 0,
             'status'      => 'active',
+            'full_body_photo' => null,
         ];
     }
 

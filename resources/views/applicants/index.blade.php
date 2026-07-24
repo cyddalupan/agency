@@ -26,6 +26,26 @@
         </div>
     @endif
 
+    {{-- Status Pipeline Chips --}}
+    <div class="flex flex-wrap gap-2 mb-3">
+        <a href="{{ route('applicants.index') }}"
+           class="btn btn-xs gap-1 {{ request()->query('status') === null ? 'btn-primary' : 'btn-ghost' }}">
+            All
+            <span class="badge badge-xs {{ request()->query('status') === null ? 'badge-outline' : '' }}">{{ $statusCounts->sum() }}</span>
+        </a>
+        @foreach($statusCodes as $sc)
+            @php $count = $statusCounts->get($sc->code, 0); @endphp
+            @if($count > 0)
+            <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+               class="btn btn-xs gap-1 {{ request('status') === (string)$sc->code ? 'btn-primary' : 'btn-ghost' }}"
+               @if(request('status') !== (string)$sc->code) style="background-color: {{ $sc->color ?? '#e5e7eb' }}15;" @endif>
+                {{ $sc->label }}
+                <span class="badge badge-xs {{ request('status') === (string)$sc->code ? 'badge-outline' : '' }}">{{ $count }}</span>
+            </a>
+            @endif
+        @endforeach
+    </div>
+
     @if($applicants->count())
         {{-- Search & Filters --}}
         <form method="GET" action="{{ route('applicants.index') }}" class="mb-4" id="filter-form">
@@ -40,18 +60,6 @@
                             <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
-                </div>
-
-                {{-- Status filter --}}
-                <div class="form-control w-full sm:w-48">
-                    <select name="status" class="select select-bordered" onchange="this.form.submit()">
-                        <option value="">📊 All Statuses</option>
-                        @foreach($statusCodes as $sc)
-                            <option value="{{ $sc->code }}" {{ request('status') == $sc->code ? 'selected' : '' }}>
-                                {{ $sc->label }}
-                            </option>
-                        @endforeach
-                    </select>
                 </div>
 
                 {{-- Gender filter --}}
@@ -94,9 +102,13 @@
                         @foreach($applicants as $applicant)
                         <tr class="hover transition-colors">
                             <td>
-                                <div class="avatar placeholder">
-                                    <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                                        {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
+                                <div class="avatar">
+                                    <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold overflow-hidden">
+                                        @if ($applicant->photo)
+                                            <img src="{{ Storage::url($applicant->photo) }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
+                                        @else
+                                            {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
+                                        @endif
                                     </div>
                                 </div>
                             </td>

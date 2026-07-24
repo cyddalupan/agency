@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Submitted — Agency Super</title>
+    <title>Registration Submitted — {{ app_brand_name() }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
             <div class="flex items-center justify-between h-16">
                 <a href="{{ url('/') }}" class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">AS</div>
-                    <span class="font-bold text-lg">Agency Super</span>
+                    <span class="font-bold text-lg">{{ app_brand_name() }}</span>
                 </a>
             </div>
         </div>
@@ -40,7 +40,7 @@
         </a>
     </div>
     <footer class="border-t border-white/10 py-8 text-center text-gray-500 text-sm fixed bottom-0 w-full">
-        <p>&copy; {{ date('Y') }} Agency Super. All rights reserved.</p>
+        <p>&copy; {{ date('Y') }} {{ app_brand_name() }}. All rights reserved.</p>
     </footer>
 </body>
 </html>

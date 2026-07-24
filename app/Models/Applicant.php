@@ -15,9 +15,9 @@ class Applicant extends Model implements AuthenticatableContract
 
     protected $fillable = [
         'agency_id', 'first_name', 'middle_name', 'last_name', 'suffix',
-        'birthdate', 'gender', 'contact', 'email', 'address', 'photo',
+        'birthdate', 'gender', 'has_passport', 'contact', 'email', 'address', 'photo', 'full_body_photo',
         'remarks', 'source', 'nationality_id', 'religion_id', 'civil_status_id',
-        'country_id', 'position_id', 'expected_salary', 'employer_id',
+        'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
         'job_id', 'status_code', 'password', 'status',
     ];
 
@@ -109,6 +109,11 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     // === HELPERS ===
+
+    public function agent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Agent::class);
+    }
 
     public function getFullNameAttribute(): string
     {

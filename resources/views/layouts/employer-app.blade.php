@@ -8,7 +8,7 @@
     @if($universe == 2)
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛩️</text></svg>" type="image/svg+xml">
     @else
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>" type="image/svg+xml">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" type="image/svg+xml">
     @endif
     @vite('resources/css/app.css')
 </head>
@@ -68,7 +68,7 @@
             </main>
 
             <footer class="px-4 lg:px-6 py-3 text-center text-xs opacity-40 border-t border-base-300">
-                🏢 Employer Portal &bull; Powered by Agency Super
+                🏢 Employer Portal &bull; Powered by {{ app_brand_name() }}
             </footer>
         </div>
 

@@ -195,6 +195,19 @@ Route::post('/agency/register', [AgencyRegistrationController::class, 'register'
 Route::get('/agency-register', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register.alt');
 Route::get('/agency/pending-approval', [AgencyRegistrationController::class, 'pendingApproval'])->name('agency.pending-approval');
 
+// Agent routes (guest)
+Route::prefix('agent')->name('agent.')->group(function () {
+    Route::middleware('guest:agent')->group(function () {
+        Route::get('/login', [\App\Http\Controllers\AgentAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [\App\Http\Controllers\AgentAuthController::class, 'login'])->name('login.submit');
+    });
+
+    Route::middleware('agent')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\AgentAuthController::class, 'dashboard'])->name('dashboard');
+        Route::post('/logout', [\App\Http\Controllers\AgentAuthController::class, 'logout'])->name('logout');
+    });
+});
+
 // Guest routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
@@ -323,7 +336,10 @@ Route::middleware('auth:web')->group(function () {
 
     // Custom field management (admin, super_admin only)
     Route::middleware('role:admin,super_admin')->group(function () {
-        Route::resource('custom-fields', CustomFieldDefinitionController::class);
+        // Agent management
+    Route::resource('agents', \App\Http\Controllers\AgentController::class);
+
+    Route::resource('custom-fields', CustomFieldDefinitionController::class);
 
         // Custom field definitions (alias route names for test compatibility)
         Route::name('custom-field-definitions.')->group(function () {
