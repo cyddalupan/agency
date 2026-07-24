@@ -8,6 +8,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Applicant extends Model implements AuthenticatableContract
 {
@@ -113,6 +114,30 @@ class Applicant extends Model implements AuthenticatableContract
     public function agent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\Agent::class);
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! $this->photo) {
+            return null;
+        }
+        // If it's already a full URL (http/https), use it directly
+        if (str_starts_with($this->photo, 'http://') || str_starts_with($this->photo, 'https://')) {
+            return $this->photo;
+        }
+        // Otherwise resolve through storage (local file)
+        return Storage::url($this->photo);
+    }
+
+    public function getFullBodyPhotoUrlAttribute(): ?string
+    {
+        if (! $this->full_body_photo) {
+            return null;
+        }
+        if (str_starts_with($this->full_body_photo, 'http://') || str_starts_with($this->full_body_photo, 'https://')) {
+            return $this->full_body_photo;
+        }
+        return Storage::url($this->full_body_photo);
     }
 
     public function getFullNameAttribute(): string

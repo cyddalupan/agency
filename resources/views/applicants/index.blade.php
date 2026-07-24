@@ -105,7 +105,7 @@
                                 <div class="avatar">
                                     <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold overflow-hidden">
                                         @if ($applicant->photo)
-                                            <img src="{{ Storage::url($applicant->photo) }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
+                                            <img src="{{ $applicant->photo_url }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
                                         @else
                                             {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
                                         @endif

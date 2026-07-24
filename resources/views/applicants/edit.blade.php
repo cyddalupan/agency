@@ -94,7 +94,7 @@
                     <input type="file" name="photo" accept="image/jpeg,image/png" class="file-input w-full">
                     @if ($applicant->photo)
                         <div class="mt-2">
-                            <img src="{{ Storage::url($applicant->photo) }}" class="w-16 h-16 object-cover rounded" alt="Current photo">
+                            <img src="{{ $applicant->photo_url }}" class="w-16 h-16 object-cover rounded" alt="Current photo">
                             <p class="text-xs opacity-60 mt-1">Current photo. Upload to replace.</p>
                         </div>
                     @endif
@@ -104,7 +104,7 @@
                     <input type="file" name="full_body_photo" accept="image/jpeg,image/png" class="file-input w-full">
                     @if ($applicant->full_body_photo)
                         <div class="mt-2">
-                            <img src="{{ Storage::url($applicant->full_body_photo) }}" class="w-24 object-cover rounded" alt="Full body photo">
+                            <img src="{{ $applicant->full_body_photo_url }}" class="w-24 object-cover rounded" alt="Full body photo">
                             <p class="text-xs opacity-60 mt-1">Current full body photo. Upload to replace.</p>
                         </div>
                     @endif
