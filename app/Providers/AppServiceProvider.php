@@ -66,7 +66,8 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Prevent destructive artisan commands from running on this server.
-     * Override each command with a no-op that prints a warning.
+     * Overrides them with custom command classes that block execution.
+     * Skips in testing so CI/tests can run normally.
      */
     private function blockDestructiveCommands(): void
     {
@@ -75,10 +76,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->commands([
-            \App\Console\Commands\SafeMigrateFresh::class,
-            \App\Console\Commands\SafeMigrateRefresh::class,
-            \App\Console\Commands\SafeMigrateReset::class,
-            \App\Console\Commands\SafeDbWipe::class,
+            \App\Console\SafeCommands\_SafeMigrateFresh::class,
+            \App\Console\SafeCommands\_SafeMigrateRefresh::class,
+            \App\Console\SafeCommands\_SafeMigrateReset::class,
+            \App\Console\SafeCommands\_SafeDbWipe::class,
         ]);
     }
 }

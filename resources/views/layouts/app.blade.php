@@ -224,27 +224,15 @@
                         Marketing
                     </a>
 
-                    {{-- Only show for agency users --}}
-                    @if (auth()->user()->agency_id || tenant_agency())
                     <div class="pt-4 mt-4 border-t border-white/10">
-                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">🏢 Agency</p>
-                        <a href="{{ route('agency.dashboard') }}"
-                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('agency.dashboard') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
-                            <span class="text-lg">📊</span>
-                            Agency Dashboard
-                        </a>
+                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
+
                         <a href="{{ route('custom-fields.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('custom-fields.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
                             <span class="text-lg">⚙️</span>
                             Custom Fields
                         </a>
-                    </div>
-                    @endif
-
-                    <div class="pt-4 mt-4 border-t border-white/10">
-                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
 
                         @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('agents.index') }}"

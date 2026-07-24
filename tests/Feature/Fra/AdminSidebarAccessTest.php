@@ -42,7 +42,6 @@ class AdminSidebarAccessTest extends TestCase
     {
         $routes = [
             'Dashboard'          => route('dashboard'),
-            'Agency Dashboard'   => route('agency.dashboard'),
             'Applicants'         => route('applicants.index'),
             'Employers'          => route('employers.index'),
             'Marketing Agencies' => route('marketing-agencies.index'),

@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\SafeCommands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 
-class SafeDbWipe extends Command
+class _SafeDbWipe extends Command
 {
     protected $signature = 'db:wipe
         {--database= : The database connection to use}
@@ -17,6 +18,11 @@ class SafeDbWipe extends Command
 
     public function handle(): int
     {
+        if (app()->environment('testing')) {
+            Artisan::call('db:wipe', $this->option());
+            return 0;
+        }
+
         $this->error('🚫 db:wipe is disabled on this server for safety.');
         $this->line('   Restore from a backup instead if you need to reset the database.');
         return 0;
