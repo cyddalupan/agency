@@ -6,6 +6,12 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureUserIsEmployer;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
+use Illuminate\Database\Console\Migrations\FreshCommand;
+use Illuminate\Database\Console\Migrations\RefreshCommand;
+use Illuminate\Database\Console\Migrations\ResetCommand;
+use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
+use Illuminate\Foundation\Console\EnvironmentCommand;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
@@ -46,11 +52,33 @@ class AppServiceProvider extends ServiceProvider
         // Register User policy for agency-scoped user management.
         Gate::policy(User::class, UserPolicy::class);
 
+        // 🔒 Block destructive artisan commands in non-production when .env is 'local' but
+        // this is a production server. Only allow them when APP_ENV is explicitly 'testing'.
+        $this->blockDestructiveCommands();
+
         // Ensure middleware aliases are registered in both HTTP and Console/testing contexts.
         // bootstrap/app.php aliases are synced to the HTTP kernel, but the test framework
         // boots via the Console kernel which doesn't sync HTTP middleware aliases.
         $router = $this->app['router'];
         $router->aliasMiddleware('employer', EnsureUserIsEmployer::class);
         $router->aliasMiddleware('role', CheckRole::class);
+    }
+
+    /**
+     * Prevent destructive artisan commands from running on this server.
+     * Override each command with a no-op that prints a warning.
+     */
+    private function blockDestructiveCommands(): void
+    {
+        if ($this->app->environment('testing')) {
+            return;
+        }
+
+        $this->commands([
+            \App\Console\Commands\SafeMigrateFresh::class,
+            \App\Console\Commands\SafeMigrateRefresh::class,
+            \App\Console\Commands\SafeMigrateReset::class,
+            \App\Console\Commands\SafeDbWipe::class,
+        ]);
     }
 }

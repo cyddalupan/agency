@@ -51,7 +51,7 @@
                 </fieldset>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🔤 Suffix</legend>
                     <input type="text" name="suffix" value="{{ old('suffix', $applicant->suffix) }}"
@@ -63,6 +63,14 @@
                         <option value="">Select</option>
                         <option value="male" @selected(old('gender', $applicant->gender) === 'male')>♂️ Male</option>
                         <option value="female" @selected(old('gender', $applicant->gender) === 'female')>♀️ Female</option>
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🛂 Passport</legend>
+                    <select name="has_passport" class="select w-full">
+                        <option value="">-- Select --</option>
+                        <option value="with" @selected(old('has_passport', $applicant->has_passport) === 'with')>✅ With Passport</option>
+                        <option value="without" @selected(old('has_passport', $applicant->has_passport) === 'without')>❌ Without Passport</option>
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
