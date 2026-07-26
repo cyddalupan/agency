@@ -369,6 +369,8 @@ Route::middleware('auth:web')->group(function () {
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');
     Route::get('/reports/preview/{reportTemplate}', [ReportsIndexController::class, 'preview'])->name('reports.preview');
+    Route::get('/reports/pdf/{reportTemplate}', [ReportsIndexController::class, 'downloadPdf'])->name('reports.pdf');
+    Route::get('/reports/csv/{reportTemplate}', [ReportsIndexController::class, 'downloadCsv'])->name('reports.csv');
 
     // Transaction history
     Route::get('/transactions', [ReportController::class, 'transactions'])->name('transactions.index');

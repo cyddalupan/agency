@@ -154,6 +154,18 @@
                 </select>
             </div>
 
+            {{-- Sort Order (template ordering) --}}
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Sort Order</span>
+                </label>
+                <input type="number" name="template_sort_order" class="input input-bordered"
+                       value="{{ old('template_sort_order', $template->sort_order ?? 0) }}" min="0" max="999">
+                <label class="label">
+                    <span class="label-text-alt opacity-60">Templates are displayed in ascending order (0 = first).</span>
+                </label>
+            </div>
+
             {{-- Is Active --}}
             <div class="form-control">
                 <label class="label cursor-pointer justify-start gap-3">

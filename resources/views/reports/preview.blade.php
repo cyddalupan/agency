@@ -12,7 +12,8 @@
         </div>
         <div class="flex gap-2">
             <a href="{{ route('report-templates.edit', $template) }}" class="btn btn-ghost btn-sm">Edit Template</a>
-            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ PDF</button>
+            <a href="{{ route('reports.pdf', $template) }}" class="btn btn-primary btn-sm">📄 PDF</a>
+            <a href="{{ route('reports.csv', $template) }}" class="btn btn-secondary btn-sm">📊 CSV</a>
         </div>
     </div>
 
@@ -27,7 +28,7 @@
                 </div>
             </div>
         </div>
-    @elseif($rows instanceof \Illuminate\Support\Collection && $rows->isEmpty())
+    @elseif($rows instanceof \Illuminate\Pagination\AbstractPaginator && $rows->isEmpty())
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body text-center py-10">
                 <span class="text-5xl mb-4 block">📭</span>
@@ -47,27 +48,13 @@
                             <th class="text-xs uppercase tracking-wider opacity-60">#</th>
                             @foreach($columns as $col)
                                 <th class="text-xs uppercase tracking-wider opacity-60">
-                                    {{ [
-                                        'name' => 'Name',
-                                        'email' => 'Email',
-                                        'phone' => 'Phone',
-                                        'gender' => 'Gender',
-                                        'country' => 'Country',
-                                        'status' => 'Status',
-                                        'position' => 'Position',
-                                        'employer' => 'Employer',
-                                        'salary' => 'Salary',
-                                        'source' => 'Source',
-                                        'agent' => 'Agent',
-                                        'created_at' => 'Date Created',
-                                        'updated_at' => 'Last Updated',
-                                    ][$col] ?? ucfirst($col) }}
+                                    {{ ['name'=>'Name','email'=>'Email','phone'=>'Phone','gender'=>'Gender','country'=>'Country','status'=>'Status','position'=>'Position','employer'=>'Employer','salary'=>'Salary','source'=>'Source','agent'=>'Agent','created_at'=>'Date Created','updated_at'=>'Last Updated'][$col] ?? ucfirst($col) }}
                                 </th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
-                        @php $i = 1; @endphp
+                        @php $i = $rows->firstItem() ?? 1; @endphp
                         @foreach($rows as $row)
                         <tr>
                             <td class="text-xs opacity-40">{{ $i++ }}</td>
@@ -80,6 +67,11 @@
                 </table>
             </div>
         </div>
+        @if($rows->hasPages())
+        <div class="bg-base-200 px-4 py-3 border-t border-base-300">
+            {{ $rows->links('pagination::tailwind') }}
+        </div>
+        @endif
     @endif
 </div>
 @endsection

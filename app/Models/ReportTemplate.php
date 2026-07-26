@@ -16,6 +16,7 @@ class ReportTemplate extends Model
         'type',
         'config',
         'is_active',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -42,5 +43,15 @@ class ReportTemplate extends Model
     public function scopeByType($query, string $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    public function generatedLogs()
+    {
+        return $this->hasMany(ReportGeneratedLog::class);
     }
 }

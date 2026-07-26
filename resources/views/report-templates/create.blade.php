@@ -160,6 +160,17 @@
                 </label>
             </div>
 
+            {{-- Sort Order (template ordering) --}}
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Sort Order</span>
+                </label>
+                <input type="number" name="template_sort_order" class="input input-bordered" value="0" min="0" max="999">
+                <label class="label">
+                    <span class="label-text-alt opacity-60">Templates are displayed in ascending order (0 = first).</span>
+                </label>
+            </div>
+
             <div class="card-actions justify-end pt-2 border-t border-base-200">
                 <a href="{{ route('report-templates.index') }}" class="btn btn-ghost">Cancel</a>
                 <button type="submit" class="btn btn-primary">Create Template</button>

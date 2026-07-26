@@ -45,6 +45,7 @@ class ReportTemplateController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
             'date_preset' => 'nullable|string|in:' . implode(',', self::DATE_PRESETS),
             'is_active' => 'nullable|boolean',
+            'template_sort_order' => 'nullable|integer|min:0|max:999',
         ]);
 
         $data = [
@@ -52,6 +53,7 @@ class ReportTemplateController extends Controller
             'name' => $validated['name'],
             'type' => $validated['type'],
             'is_active' => $request->boolean('is_active', true),
+            'sort_order' => $validated['template_sort_order'] ?? 0,
         ];
 
         $data['config'] = [
@@ -89,12 +91,14 @@ class ReportTemplateController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
             'date_preset' => 'nullable|string|in:' . implode(',', self::DATE_PRESETS),
             'is_active' => 'nullable|boolean',
+            'template_sort_order' => 'nullable|integer|min:0|max:999',
         ]);
 
         $data = [
             'name' => $validated['name'],
             'type' => $validated['type'],
             'is_active' => $request->boolean('is_active', $reportTemplate->is_active),
+            'sort_order' => $validated['template_sort_order'] ?? $reportTemplate->sort_order ?? 0,
         ];
 
         $data['config'] = [
