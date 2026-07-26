@@ -12,7 +12,7 @@ class ReportTemplateFactory extends Factory
         return [
             'agency_id' => Agency::factory(),
             'name' => fake()->sentence(3),
-            'type' => fake()->randomElement(['applicant_report', 'statistics', 'transactions']),
+            'type' => 'applicant_report',
             'config' => [
                 'columns' => ['name', 'status', 'country', 'created_at'],
                 'group_by' => null,

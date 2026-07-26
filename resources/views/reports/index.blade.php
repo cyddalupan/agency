@@ -6,6 +6,33 @@
 <div class="max-w-4xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">📄 Reports</h1>
 
+    @if(isset($templates) && $templates->isNotEmpty())
+    <div class="mb-8">
+        <h2 class="text-lg font-semibold mb-4">📋 Report Templates</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($templates as $t)
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="card-body">
+                    <h3 class="card-title text-base">{{ $t->name }}</h3>
+                    <p class="text-xs opacity-60">Type: {{ $t->type }}</p>
+                    <div class="card-actions mt-3">
+                        <a href="{{ route('reports.preview', $t) }}" class="btn btn-primary btn-sm">
+                            🚀 Generate
+                        </a>
+                        <a href="{{ route('report-templates.edit', $t) }}" class="btn btn-ghost btn-sm">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        <div class="mt-2">
+            <a href="{{ route('report-templates.index') }}" class="text-sm link link-primary">Manage Templates →</a>
+        </div>
+    </div>
+    @endif
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <a href="{{ route('reports.applicants') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body">

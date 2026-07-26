@@ -368,6 +368,7 @@ Route::middleware('auth:web')->group(function () {
 
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');
+    Route::get('/reports/preview/{reportTemplate}', [ReportsIndexController::class, 'preview'])->name('reports.preview');
 
     // Transaction history
     Route::get('/transactions', [ReportController::class, 'transactions'])->name('transactions.index');
