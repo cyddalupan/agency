@@ -97,9 +97,11 @@
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h3 class="card-title text-lg mb-2">📋 Deployment Pipeline</h3>
+
+                <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2">By Status</p>
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('applicants.index') }}"
-                       class="badge badge-lg {{ request()->query('status') === null ? 'badge-primary' : 'badge-ghost' }}">
+                       class="badge badge-lg {{ request()->query('status') === null && request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">
                         📋 All
                         <span class="ml-1">{{ $statusCounts->sum() }}</span>
                     </a>
@@ -114,7 +116,27 @@
                         @endif
                     @endforeach
                 </div>
-                <p class="text-sm opacity-50 mt-3">📊 Click a status to filter recent applicants below.</p>
+
+                @if(isset($employerCounts) && $employerCounts->isNotEmpty())
+                <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2 mt-4">By Employer</p>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('applicants.index', ['status' => request('status')]) }}"
+                       class="badge badge-lg {{ request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">
+                        🏢 All
+                    </a>
+                    @foreach($employerCounts as $ec)
+                        @if($ec->applicants_count > 0)
+                        <a href="{{ route('applicants.index', ['employer' => $ec->id, 'status' => request('status')]) }}"
+                           class="badge badge-lg {{ (int)request('employer') === $ec->id ? 'badge-secondary' : 'badge-ghost' }}">
+                            {{ $ec->name }}
+                            <span class="ml-1">{{ $ec->applicants_count }}</span>
+                        </a>
+                        @endif
+                    @endforeach
+                </div>
+                @endif
+
+                <p class="text-sm opacity-50 mt-3">📊 Click a status or employer to filter applicants below.</p>
             </div>
         </div>
     </div>

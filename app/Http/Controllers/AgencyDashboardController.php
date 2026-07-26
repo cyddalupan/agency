@@ -22,10 +22,18 @@ class AgencyDashboardController extends Controller
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
-        // Get recent applicants, optionally filtered by status
+        // Get employer counts for pipeline
+        $employerCounts = Employer::select(['id', 'name'])
+            ->withCount(['applicants' => fn($q) => $q->whereNotNull('status_code'),
+        ])->orderByDesc('applicants_count')->limit(10)->get();
+
+        // Get recent applicants, optionally filtered by status and/or employer
         $recentQuery = Applicant::with('statusCode');
         if (request()->filled('status')) {
             $recentQuery->where('status_code', request()->integer('status'));
+        }
+        if (request()->filled('employer')) {
+            $recentQuery->where('employer_id', request()->integer('employer'));
         }
         $recentApplicants = $recentQuery->latest()->take(5)->get();
 
@@ -70,7 +78,7 @@ class AgencyDashboardController extends Controller
 
         return view('agency.dashboard', compact(
             'user', 'agency', 'stats', 'statusCodes', 'statusCounts',
-            'monthlyTotals', 'employerGrowth', 'chartStatusData'
+            'monthlyTotals', 'employerGrowth', 'chartStatusData', 'employerCounts'
         ));
     }
 }
