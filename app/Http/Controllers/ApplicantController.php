@@ -38,6 +38,11 @@ class ApplicantController extends Controller
             $query->where('gender', $request->input('gender'));
         }
 
+        // Filter by employer
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
         $statusCodes = StatusCode::orderBy('sort_order')->get();
 
         // Get status counts for all applicants (ignoring filters)

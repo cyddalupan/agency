@@ -56,7 +56,7 @@
                         <span>🔍</span>
                         <input type="text" name="search" class="grow" placeholder="Search by name..."
                                value="{{ request('search') }}" />
-                        @if(request('search') || request('status') || request('gender'))
+                        @if(request('search') || request('status') || request('gender') || request('employer'))
                             <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
@@ -79,7 +79,7 @@
         {{-- Stats summary --}}
         <div class="flex flex-wrap gap-2 mb-4 text-sm">
             <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
-            @if(request('search') || request('status') || request('gender'))
+            @if(request('search') || request('status') || request('gender') || request('employer'))
                 <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
             @endif
         </div>
