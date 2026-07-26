@@ -9,6 +9,16 @@ use Illuminate\View\View;
 
 class ReportTemplateController extends Controller
 {
+    private const AVAILABLE_COLUMNS = [
+        'name', 'email', 'phone', 'gender', 'country', 'status',
+        'position', 'employer', 'salary', 'source', 'agent',
+        'created_at', 'updated_at',
+    ];
+
+    private const DATE_PRESETS = [
+        'today', 'this_week', 'this_month', 'last_month', 'this_quarter', 'this_year',
+    ];
+
     public function index(): View
     {
         $templates = ReportTemplate::where('agency_id', auth()->user()->agency_id)
@@ -28,7 +38,12 @@ class ReportTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:applicant_report,statistics,transactions',
-            'config' => 'nullable|json',
+            'columns' => 'nullable|array',
+            'columns.*' => 'string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'group_by' => 'nullable|string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'sort_by' => 'nullable|string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'sort_order' => 'nullable|string|in:asc,desc',
+            'date_preset' => 'nullable|string|in:' . implode(',', self::DATE_PRESETS),
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -36,14 +51,15 @@ class ReportTemplateController extends Controller
             'agency_id' => auth()->user()->agency_id,
             'name' => $validated['name'],
             'type' => $validated['type'],
-            'config' => $request->has('config') ? json_decode($validated['config'], true) : [
-                'columns' => ['name', 'status', 'country', 'created_at'],
-                'group_by' => null,
-                'sort_by' => 'created_at',
-                'sort_order' => 'desc',
-                'date_preset' => null,
-            ],
             'is_active' => $request->boolean('is_active', true),
+        ];
+
+        $data['config'] = [
+            'columns' => $validated['columns'] ?? ['name', 'status', 'country', 'created_at'],
+            'group_by' => $validated['group_by'] ?? null,
+            'sort_by' => $validated['sort_by'] ?? 'created_at',
+            'sort_order' => $validated['sort_order'] ?? 'desc',
+            'date_preset' => $validated['date_preset'] ?? null,
         ];
 
         ReportTemplate::create($data);
@@ -66,15 +82,27 @@ class ReportTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:applicant_report,statistics,transactions',
-            'config' => 'nullable|json',
+            'columns' => 'nullable|array',
+            'columns.*' => 'string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'group_by' => 'nullable|string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'sort_by' => 'nullable|string|in:' . implode(',', self::AVAILABLE_COLUMNS),
+            'sort_order' => 'nullable|string|in:asc,desc',
+            'date_preset' => 'nullable|string|in:' . implode(',', self::DATE_PRESETS),
             'is_active' => 'nullable|boolean',
         ]);
 
         $data = [
             'name' => $validated['name'],
             'type' => $validated['type'],
-            'config' => $request->has('config') ? json_decode($validated['config'], true) : $reportTemplate->config,
             'is_active' => $request->boolean('is_active', $reportTemplate->is_active),
+        ];
+
+        $data['config'] = [
+            'columns' => $validated['columns'] ?? $reportTemplate->config['columns'] ?? ['name', 'status', 'country', 'created_at'],
+            'group_by' => $validated['group_by'] ?? $reportTemplate->config['group_by'] ?? null,
+            'sort_by' => $validated['sort_by'] ?? $reportTemplate->config['sort_by'] ?? 'created_at',
+            'sort_order' => $validated['sort_order'] ?? $reportTemplate->config['sort_order'] ?? 'desc',
+            'date_preset' => $validated['date_preset'] ?? $reportTemplate->config['date_preset'] ?? null,
         ];
 
         $reportTemplate->update($data);
@@ -93,9 +121,6 @@ class ReportTemplateController extends Controller
             ->with('success', 'Report template deleted successfully.');
     }
 
-    /**
-     * Authorize that the authenticated user's agency owns the template.
-     */
     private function authorizeAccess(ReportTemplate $template): void
     {
         if ($template->agency_id !== auth()->user()->agency_id) {

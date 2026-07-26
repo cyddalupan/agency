@@ -75,13 +75,11 @@ class ReportTemplateSettingsCrudTest extends TestCase
             ->post(route('report-templates.store'), [
                 'name' => 'Applicant Summary',
                 'type' => 'applicant_report',
-                'config' => json_encode([
-                    'columns' => ['name', 'status', 'country'],
-                    'group_by' => 'status',
-                    'sort_by' => 'created_at',
-                    'sort_order' => 'desc',
-                    'date_preset' => 'this_month',
-                ]),
+                'columns' => ['name', 'status', 'country'],
+                'group_by' => 'status',
+                'sort_by' => 'created_at',
+                'sort_order' => 'desc',
+                'date_preset' => 'this_month',
                 'is_active' => true,
             ]);
 
@@ -155,7 +153,9 @@ class ReportTemplateSettingsCrudTest extends TestCase
             ->put(route('report-templates.update', $template), [
                 'name' => 'Updated Name',
                 'type' => $template->type,
-                'config' => json_encode($template->config),
+                'columns' => $template->config['columns'] ?? ['name', 'status'],
+                'sort_by' => $template->config['sort_by'] ?? 'created_at',
+                'sort_order' => $template->config['sort_order'] ?? 'desc',
             ]);
 
         $response->assertRedirect(route('report-templates.index'));
