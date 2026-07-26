@@ -24,6 +24,17 @@ class ReportsIndexController extends Controller
             abort(404);
         }
 
+        $supportedTypes = ['applicant_report'];
+        if (!in_array($reportTemplate->type, $supportedTypes)) {
+            $rows = collect();
+            return view('reports.preview', [
+                'template' => $reportTemplate,
+                'rows' => $rows,
+                'columns' => $reportTemplate->config['columns'] ?? [],
+                'unsupported_type' => true,
+            ]);
+        }
+
         $builder = new ReportBuilder($reportTemplate);
         $rows = $builder->get();
 

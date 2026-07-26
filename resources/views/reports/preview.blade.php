@@ -16,7 +16,18 @@
         </div>
     </div>
 
-    @if($rows instanceof \Illuminate\Support\Collection && $rows->isEmpty())
+    @if(isset($unsupported_type) && $unsupported_type)
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body text-center py-10">
+                <span class="text-5xl mb-4 block">🚧</span>
+                <h3 class="text-lg font-medium mb-2">Preview coming soon</h3>
+                <p class="opacity-60">This report type ({{ $template->type }}) doesn't support live preview yet.</p>
+                <div class="mt-4">
+                    <a href="{{ route('reports.index') }}" class="btn btn-primary btn-sm">Back to Reports</a>
+                </div>
+            </div>
+        </div>
+    @elseif($rows instanceof \Illuminate\Support\Collection && $rows->isEmpty())
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body text-center py-10">
                 <span class="text-5xl mb-4 block">📭</span>

@@ -179,4 +179,19 @@ class ReportPreviewPageTest extends TestCase
         $response->assertOk();
         $response->assertSee('No data');
     }
+
+    #[Test]
+    public function preview_shows_coming_soon_for_unsupported_type(): void
+    {
+        $template = ReportTemplate::factory()->create([
+            'agency_id' => $this->agency->id,
+            'type' => 'statistics',
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('reports.preview', $template));
+
+        $response->assertOk();
+        $response->assertSee('coming soon');
+    }
 }
