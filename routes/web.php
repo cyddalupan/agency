@@ -35,6 +35,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ReportsIndexController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AiAssistantController;
+use App\Http\Controllers\ReportTemplateController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
@@ -358,6 +359,9 @@ Route::middleware('auth:web')->group(function () {
         Route::get('/marketing-agent/{marketingAgent}', [AccountingController::class, 'marketingAgent'])->name('marketing-agent');
         Route::get('/recruitment-agent/{recruitmentAgent}', [AccountingController::class, 'recruitmentAgent'])->name('recruitment-agent');
     });
+
+    // Report Template CRUD
+    Route::resource('report-templates', ReportTemplateController::class)->except(['show']);
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

@@ -251,6 +251,12 @@
                         <span class="text-lg">⚙️</span>
                         Settings
                     </a>
+                        <a href="{{ route('report-templates.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('report-templates.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                            <span class="text-lg">📋</span>
+                            Report Templates
+                        </a>
                         <a href="{{ route('reports.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('reports.index') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
