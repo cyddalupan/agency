@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Applicant;
+use App\Models\Employer;
 use App\Models\StatusCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,10 +22,18 @@ class DashboardController extends Controller
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
-        // Get recent applicants, optionally filtered by status
+        // Get employer counts for pipeline
+        $employerCounts = Employer::select(['id', 'name'])
+            ->withCount(['applicants' => fn($q) => $q->whereNotNull('status_code'),
+        ])->orderByDesc('applicants_count')->limit(10)->get();
+
+        // Get recent applicants, optionally filtered by status and/or employer
         $recentApplicants = Applicant::with('statusCode');
         if (request()->filled('status')) {
             $recentApplicants->where('status_code', request()->integer('status'));
+        }
+        if (request()->filled('employer')) {
+            $recentApplicants->where('employer_id', request()->integer('employer'));
         }
         $recentApplicants = $recentApplicants->latest()->take(10)->get();
 
@@ -64,7 +73,7 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'agency', 'user', 'statusCodes', 'statusCounts', 'recentApplicants',
-            'monthlyTotals', 'employerGrowth', 'chartStatusData'
+            'monthlyTotals', 'employerGrowth', 'chartStatusData', 'employerCounts'
         ));
     }
 }
