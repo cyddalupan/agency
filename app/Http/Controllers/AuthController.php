@@ -139,15 +139,17 @@ class AuthController extends Controller
             SensitiveActionLogger::logout(auth()->user());
         }
 
-        // Determine where to redirect before clearing session
-        $isAgencyUser = auth()->user()?->agency_id || session()->has('tenant_agency_id');
-
         $request->session()->forget('tenant_agency_id');
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route($isAgencyUser ? 'agency.login' : 'login');
+        // Everyone returns to /login — it auto-detects role & tenant:
+        // super-admin goes to the main dashboard, agency users to their
+        // agency dashboard. On a tenant subdomain this is also the
+        // agency-branded login page. `/agency-login` remains only as a
+        // restricted non-subdomain fallback for testing.
+        return redirect()->route('login');
     }
 
     private function bindTenantFromUser(): void

@@ -14,9 +14,28 @@ if (!function_exists('is_tenant_request')) {
     }
 }
 
+if (!function_exists('resolve_agency')) {
+    function resolve_agency(): ?\App\Models\Agency
+    {
+        // Prefer the authenticated user's agency (agency-scoped dashboard).
+        $user = auth()->user();
+        if ($user && $user->agency_id) {
+            return \App\Models\Agency::find($user->agency_id);
+        }
+
+        // Fall back to the tenanted (subdomain) agency.
+        return tenant_agency();
+    }
+}
+
 if (!function_exists('app_brand_name')) {
     function app_brand_name(): string
     {
+        $agency = resolve_agency();
+        if ($agency && $agency->name) {
+            return $agency->name;
+        }
+
         return config('app.universe', 1) == 2 ? 'LANDAS' : 'Agency Super';
     }
 }
@@ -25,6 +44,82 @@ if (!function_exists('app_brand_icon')) {
     function app_brand_icon(): string
     {
         return config('app.universe', 1) == 2 ? '⛩️' : '⚡';
+    }
+}
+
+if (!function_exists('app_brand_logo')) {
+    function app_brand_logo(): ?string
+    {
+        $agency = resolve_agency();
+        if ($agency && $agency->logo) {
+            return \Illuminate\Support\Facades\Storage::url($agency->logo);
+        }
+        return null;
+    }
+}
+
+if (!function_exists('app_brand_has_logo')) {
+    function app_brand_has_logo(): bool
+    {
+        $agency = resolve_agency();
+        return $agency && !empty($agency->logo);
+    }
+}
+
+if (!function_exists('app_brand_show_icon')) {
+    function app_brand_show_icon(): bool
+    {
+        return !app_brand_has_logo();
+    }
+}
+
+if (!function_exists('app_brand_logo_url')) {
+    function app_brand_logo_url(): ?string
+    {
+        return app_brand_logo();
+    }
+}
+
+if (!function_exists('app_applicant_form_defaults')) {
+    /**
+     * Resolve the per-agency applicant-form defaults (no hardcoded lists).
+     *
+     * Reads agencies.settings['applicant_form_defaults'] for the given agency
+     * (or the resolved authenticated/tenant agency). Falls back to safe defaults
+     * when none configured. Keys: position_ids[], status_codes[], sources[],
+     * enable_firstimer(bool), firstimer_options[].
+     */
+    function app_applicant_form_defaults(?\App\Models\Agency $agency = null): array
+    {
+        $agency = $agency ?? resolve_agency();
+
+        $defaults = [
+            'position_ids'     => [],
+            'status_codes'     => [],
+            'sources'          => ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'],
+            'enable_firstimer' => true,
+            'firstimer_options'=> ['Firstimer', 'Ex-Abroad'],
+        ];
+
+        if (! $agency) {
+            return $defaults;
+        }
+
+        $settings   = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
+        $configured = $settings['applicant_form_defaults'] ?? [];
+
+        return array_merge($defaults, (array) $configured);
+    }
+}
+
+if (!function_exists('app_source_options')) {
+    /**
+     * Known, canonical source options (used by the settings selector UI).
+     * Agencies enable a subset; unknown/typo values are never rendered.
+     */
+    function app_source_options(): array
+    {
+        return ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'];
     }
 }
 

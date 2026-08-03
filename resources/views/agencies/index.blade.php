@@ -62,8 +62,18 @@
             </thead>
             <tbody>
                 @forelse ($agencies as $agency)
-                    <tr>
-                        <td class="font-medium">{{ $agency->name }}</td>
+                    <tr class="cursor-pointer hover:bg-base-200/50"
+                        onclick="window.location='{{ route('agencies.show', $agency) }}'">
+                        <td>
+                            {{-- Whole row is clickable → agency detail page --}}
+                            <span class="font-medium">{{ $agency->name }}</span>
+                            @if ($agency->logo)
+                                <div class="mt-1">
+                                    <img src="{{ Storage::url($agency->logo) }}" alt="{{ $agency->name }} icon"
+                                         class="w-10 h-10 object-contain border rounded p-0.5">
+                                </div>
+                            @endif
+                        </td>
                         <td><code>{{ $agency->subdomain }}</code></td>
                         <td>
                             @if ($agency->status === 'active')
@@ -75,7 +85,7 @@
                             @endif
                         </td>
                         <td>{{ $agency->created_at?->format('M d, Y') ?? '—' }}</td>
-                        <td>
+                        <td onclick="event.stopPropagation()">
                             <div class="flex gap-1">
                                 <a href="{{ route('agencies.edit', $agency) }}" class="btn btn-xs btn-ghost">Edit</a>
                                 @if ($agency->status === 'active')

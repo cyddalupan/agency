@@ -9,8 +9,14 @@
         <div class="card-body p-6 lg:p-8">
             <div class="flex items-start justify-between">
                 <div>
-                    <h1 class="text-2xl lg:text-3xl font-bold mb-1">
-                        🏢 {{ $agency->name }}
+                    <h1 class="text-2xl lg:text-3xl font-bold mb-1 flex items-center gap-3">
+                        @if ($agency->logo)
+                            <img src="{{ Storage::url($agency->logo) }}" alt="{{ $agency->name }} icon"
+                                 class="w-10 h-10 lg:w-12 lg:h-12 object-contain bg-white/90 rounded-lg p-1 shadow-sm">
+                        @else
+                            <span>🏢</span>
+                        @endif
+                        {{ $agency->name }}
                     </h1>
                     <p class="opacity-80 text-lg">Welcome back, {{ $user->name }}! 👋</p>
                 </div>
@@ -44,7 +50,7 @@
         <div class="card bg-base-100 shadow-sm card-lift border-l-4 border-secondary">
             <div class="card-body">
                 <div class="flex items-center justify-between">
-                    <p class="text-sm opacity-60 uppercase tracking-wider font-semibold">🏢 Employers</p>
+                    <p class="text-sm opacity-60 uppercase tracking-wider font-semibold">🏢 FRAs</p>
                     <div class="stat-icon bg-secondary/10 text-secondary">🏢</div>
                 </div>
                 <p class="text-4xl font-bold text-secondary mt-1">{{ $stats['total_employers'] }}</p>
@@ -62,7 +68,7 @@
                 </div>
                 <p class="text-4xl font-bold text-accent mt-1">{{ $stats['total_job_positions'] }}</p>
                 <div class="mt-3">
-                    <a href="{{ route('employers.index') }}" class="link link-accent text-sm">View employers &rarr;</a>
+                    <a href="{{ route('employers.index') }}" class="link link-accent text-sm">View FRAs &rarr;</a>
                 </div>
             </div>
         </div>
@@ -80,7 +86,7 @@
                     </a>
                     <a href="{{ route('employers.create') }}" class="btn btn-outline btn-secondary btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">🏢</span>
-                        <span class="text-xs">New Employer</span>
+                        <span class="text-xs">New FRA</span>
                     </a>
                     <a href="{{ route('applicants.index') }}" class="btn btn-outline btn-accent btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">👥</span>
@@ -88,7 +94,7 @@
                     </a>
                     <a href="{{ route('employers.index') }}" class="btn btn-outline btn-info btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">🏢</span>
-                        <span class="text-xs">Browse Employers</span>
+                        <span class="text-xs">Browse FRAs</span>
                     </a>
                 </div>
             </div>

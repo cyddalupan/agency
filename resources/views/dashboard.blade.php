@@ -9,8 +9,12 @@
         <div class="card-body p-6 lg:p-8">
             <div class="flex items-start justify-between">
                 <div>
-                    <h1 class="text-2xl lg:text-3xl font-bold mb-1">
+                    <h1 class="text-2xl lg:text-3xl font-bold mb-1 flex items-center gap-3">
                         @if ($agency)
+                            @if ($agency->logo)
+                                <img src="{{ Storage::url($agency->logo) }}" alt="{{ $agency->name }} icon"
+                                     class="w-10 h-10 lg:w-12 lg:h-12 object-contain bg-white/90 rounded-lg p-1 shadow-sm">
+                            @endif
                             {{ $agency->name }}
                         @else
                             🌟 Super Admin Dashboard
@@ -47,11 +51,11 @@
             <div class="card bg-base-100 shadow-sm card-lift border-l-4 border-secondary">
                 <div class="card-body">
                     <div class="flex items-center justify-between">
-                        <h3 class="card-title text-sm uppercase tracking-wider opacity-60">🏢 Employers</h3>
+                        <h3 class="card-title text-sm uppercase tracking-wider opacity-60">🏢 FRAs</h3>
                         <div class="stat-icon bg-secondary/10 text-secondary">🏢</div>
                     </div>
                     <p class="text-4xl font-bold mt-2">0</p>
-                    <p class="text-xs opacity-60 mt-1">Active employers</p>
+                    <p class="text-xs opacity-60 mt-1">Active FRAs</p>
                     <div class="mt-3">
                         <a href="{{ route('employers.index') }}" class="link link-secondary text-sm">View all →</a>
                     </div>
@@ -101,11 +105,11 @@
             <div class="card bg-base-100 shadow-sm card-lift border-l-4 border-accent">
                 <div class="card-body">
                     <div class="flex items-center justify-between">
-                        <h3 class="card-title text-sm uppercase tracking-wider opacity-60">🏢 Employers</h3>
+                        <h3 class="card-title text-sm uppercase tracking-wider opacity-60">🏢 FRAs</h3>
                         <div class="stat-icon bg-accent/10 text-accent">🏢</div>
                     </div>
                     <p class="text-4xl font-bold mt-2">{{ \App\Models\Employer::count() }}</p>
-                    <p class="text-xs opacity-60 mt-1">Total employers</p>
+                    <p class="text-xs opacity-60 mt-1">Total FRAs</p>
                 </div>
             </div>
             <div class="card bg-base-100 shadow-sm card-lift border-l-4 border-warning">
@@ -134,7 +138,7 @@
                     </a>
                     <a href="{{ route('employers.create') }}" class="btn btn-outline btn-secondary btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">🏢</span>
-                        <span class="text-xs">New Employer</span>
+                        <span class="text-xs">New FRA</span>
                     </a>
                     <a href="{{ route('applicants.index') }}" class="btn btn-outline btn-accent btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">👥</span>
@@ -142,7 +146,7 @@
                     </a>
                     <a href="{{ route('employers.index') }}" class="btn btn-outline btn-info btn-block h-auto py-4 flex-col gap-1">
                         <span class="text-2xl">🏢</span>
-                        <span class="text-xs">Browse Employers</span>
+                        <span class="text-xs">Browse FRAs</span>
                     </a>
                 </div>
             </div>
@@ -157,14 +161,14 @@
                         <span class="text-xl">👋</span>
                         <div>
                             <p class="text-sm font-medium">Welcome to {{ app_brand_name() }}!</p>
-                            <p class="text-xs opacity-50 mt-0.5">Start by adding applicants and employers</p>
+                            <p class="text-xs opacity-50 mt-0.5">Start by adding applicants and FRAs</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3 p-3 rounded-lg bg-base-200/50">
                         <span class="text-xl">💡</span>
                         <div>
                             <p class="text-sm font-medium">Pro Tip</p>
-                            <p class="text-xs opacity-50 mt-0.5">Add an employer first, then create job positions for them</p>
+                            <p class="text-xs opacity-50 mt-0.5">Add an FRA first, then create job positions for them</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3 p-3 rounded-lg bg-base-200/50">
@@ -208,7 +212,7 @@
             </div>
 
             @if(isset($employerCounts) && $employerCounts->isNotEmpty())
-            <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2 mt-4">By Employer</p>
+            <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2 mt-4">By FRA</p>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('applicants.index', ['status' => request('status')]) }}"
                    class="badge badge-lg {{ request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">

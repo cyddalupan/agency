@@ -14,6 +14,7 @@ class Agent extends Authenticatable
 
     protected $fillable = [
         'agency_id',
+        'branch_id',
         'name',
         'email',
         'contact',
@@ -30,6 +31,11 @@ class Agent extends Authenticatable
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function applicants(): HasMany

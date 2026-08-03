@@ -39,7 +39,9 @@
                 <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Role</th>
+                    <th>Contact</th>
+                    <th>Branch</th>
+                    <th>Access</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -49,12 +51,14 @@
                     <tr>
                         <td>
                             <a href="{{ route('users.show', $user) }}" class="link link-hover font-medium">
-                                {{ $user->name }}
+                                {{ $user->full_name }}
                             </a>
                         </td>
                         <td>{{ $user->email }}</td>
+                        <td>{{ $user->contact ?? '—' }}</td>
+                        <td>{{ $user->branch?->name ?? '—' }}</td>
                         <td>
-                            <span class="badge badge-ghost">{{ $user->user_type }}</span>
+                            <span class="badge badge-ghost">{{ \App\Models\User::accessLabel($user->user_type) }}</span>
                         </td>
                         <td>
                             @if ($user->status === 'active')
@@ -106,7 +110,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center py-8 opacity-60">No users found.</td>
+                        <td colspan="7" class="text-center py-8 opacity-60">No users found.</td>
                     </tr>
                 @endforelse
             </tbody>

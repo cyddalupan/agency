@@ -26,6 +26,7 @@ use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PersonalInformationBasicController;
 use App\Http\Controllers\PortalDocumentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Api\CaseController;
@@ -227,7 +228,7 @@ Route::middleware('guest')->group(function () {
 
 // Authenticated routes
 Route::middleware('auth:web')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::match(['GET', 'POST'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Super admin dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -278,6 +279,7 @@ Route::middleware('auth:web')->group(function () {
         Route::get('/agencies', [AgencyController::class, 'index'])->name('agencies.index');
         Route::get('/agencies/create', [AgencyController::class, 'create'])->name('agencies.create');
         Route::post('/agencies', [AgencyController::class, 'store'])->name('agencies.store');
+        Route::get('/agencies/{agency}', [AgencyController::class, 'show'])->name('agencies.show');
         Route::get('/agencies/{agency}/edit', [AgencyController::class, 'edit'])->name('agencies.edit');
         Route::put('/agencies/{agency}', [AgencyController::class, 'update'])->name('agencies.update');
         Route::put('/agencies/{agency}/deactivate', [AgencyController::class, 'deactivate'])->name('agencies.deactivate');
@@ -286,6 +288,10 @@ Route::middleware('auth:web')->group(function () {
         // Agency branding (logos, colors, favicon)
         Route::get('/agencies/{agency}/branding', App\Http\Controllers\AgencyBrandingController::class)->name('agencies.branding');
         Route::put('/agencies/{agency}/branding', [App\Http\Controllers\AgencyBrandingController::class, 'update'])->name('agencies.branding.update');
+
+        // Agency-scoped user management (users belonging to the given agency)
+        Route::resource('agencies.users', App\Http\Controllers\AgencyUserController::class)
+            ->except(['show']);
     });
 
     // Applicant routes - recruiter and other agency roles
@@ -303,6 +309,9 @@ Route::middleware('auth:web')->group(function () {
 
         // Applicant sub-table routes
         Route::prefix('applicants/{applicant}')->name('applicants.')->group(function () {
+            // Basic Information tab "Save Update" (before wildcard sub-store routes)
+            Route::patch('/personal-information/basic', [PersonalInformationBasicController::class, 'update'])->name('basic.update');
+
             Route::post('/{type}', [SubTableController::class, 'store'])->name('sub.store');
             Route::put('/{type}/{id}', [SubTableController::class, 'update'])->name('sub.update');
             Route::delete('/{type}/{id}', [SubTableController::class, 'destroy'])->name('sub.destroy');
@@ -349,6 +358,14 @@ Route::middleware('auth:web')->group(function () {
             Route::put('/custom-field-definitions/{custom_field}', [CustomFieldDefinitionController::class, 'update'])->name('update');
             Route::delete('/custom-field-definitions/{custom_field}', [CustomFieldDefinitionController::class, 'destroy'])->name('destroy');
         });
+
+        // Reference CRUD modules (admin/super_admin)
+        Route::resource('branches', \App\Http\Controllers\BranchController::class);
+        Route::resource('languages', \App\Http\Controllers\LanguageController::class);
+        Route::resource('skills', \App\Http\Controllers\SkillController::class);
+        Route::resource('countries', \App\Http\Controllers\CountryController::class);
+        Route::resource('positions', \App\Http\Controllers\PositionController::class);
+        Route::resource('status-codes', \App\Http\Controllers\StatusCodeController::class);
     });
 
     // Accounting routes
@@ -365,6 +382,8 @@ Route::middleware('auth:web')->group(function () {
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::get('/settings/applicant-form-defaults', [SettingsController::class, 'applicantFormDefaults'])->name('settings.applicant-form-defaults');
+    Route::post('/settings/applicant-form-defaults', [SettingsController::class, 'updateApplicantFormDefaults'])->name('settings.applicant-form-defaults.update');
 
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');
@@ -378,6 +397,9 @@ Route::middleware('auth:web')->group(function () {
     // Report PDF routes
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/applicants', [ReportController::class, 'applicants'])->name('applicants');
+        Route::get('/applicants/export', [ReportController::class, 'applicantsExport'])->name('applicants.export');
+        Route::get('/agents', [ReportController::class, 'agents'])->name('agents');
+        Route::get('/agents/export', [ReportController::class, 'agentsExport'])->name('agents.export');
         Route::get('/bill/{bill}', [ReportController::class, 'bill'])->name('bill');
         Route::get('/or/{or}', [ReportController::class, 'or'])->name('or');
         Route::get('/commission/{commission}', [ReportController::class, 'commission'])->name('commission');

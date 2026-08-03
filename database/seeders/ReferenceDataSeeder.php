@@ -48,6 +48,7 @@ class ReferenceDataSeeder extends Seeder
             'Security Guard', 'Office Staff', 'Administrative Assistant',
             'Hairdresser', 'Beautician', 'Massage Therapist',
             'Seaman', 'Steward', 'Messman',
+            'Houseboy', 'Load and Unload Worker',
         ];
         foreach ($positions as $p) {
             DB::table('positions')->insert([

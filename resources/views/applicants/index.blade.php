@@ -49,39 +49,89 @@
     @if($applicants->count())
         {{-- Search & Filters --}}
         <form method="GET" action="{{ route('applicants.index') }}" class="mb-4" id="filter-form">
-            <div class="flex flex-col sm:flex-row gap-3 items-end">
-                {{-- Search --}}
+            {{-- Row 1: Search bar full width --}}
+            <div class="flex gap-3 items-end mb-3">
                 <div class="form-control flex-1">
                     <label class="input input-bordered flex items-center gap-2">
                         <span>🔍</span>
-                        <input type="text" name="search" class="grow" placeholder="Search by name..."
+                        <input type="text" name="search" class="grow" placeholder="Search by name, email, or contact..."
                                value="{{ request('search') }}" />
-                        @if(request('search') || request('status') || request('gender') || request('employer'))
+                        @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
                             <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
                 </div>
+            </div>
+
+            {{-- Row 2: Filters in a responsive grid --}}
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 items-end">
+                {{-- Status filter (from pipeline chips) --}}
+                <div class="form-control w-full">
+                    <select name="status" class="select select-bordered select-sm" onchange="this.form.submit()">
+                        <option value="">📊 All Status</option>
+                        @foreach($statusCodes as $sc)
+                            <option value="{{ $sc->code }}" {{ request('status') === (string)$sc->code ? 'selected' : '' }}>
+                                {{ $sc->label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
                 {{-- Gender filter --}}
-                <div class="form-control w-full sm:w-36">
-                    <select name="gender" class="select select-bordered" onchange="this.form.submit()">
-                        <option value="">⚤ All Genders</option>
+                <div class="form-control w-full">
+                    <select name="gender" class="select select-bordered select-sm" onchange="this.form.submit()">
+                        <option value="">⚤ Gender</option>
                         <option value="male" {{ request('gender') == 'male' ? 'selected' : '' }}>👨 Male</option>
                         <option value="female" {{ request('gender') == 'female' ? 'selected' : '' }}>👩 Female</option>
                     </select>
                 </div>
 
-                {{-- Submit button (visible on mobile, hidden when selects auto-submit) --}}
-                <button type="submit" class="btn btn-primary sm:hidden">🔍 Search</button>
+                {{-- Employer filter --}}
+                <div class="form-control w-full">
+                    <select name="employer" class="select select-bordered select-sm" onchange="this.form.submit()">
+                        <option value="">🏢 Employer</option>
+                        @foreach($employers as $employer)
+                            <option value="{{ $employer->id }}" {{ request('employer') == $employer->id ? 'selected' : '' }}>
+                                {{ $employer->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Country filter --}}
+                <div class="form-control w-full">
+                    <select name="country" class="select select-bordered select-sm" onchange="this.form.submit()">
+                        <option value="">🌍 Country</option>
+                        @foreach($countries as $country)
+                            <option value="{{ $country->id }}" {{ request('country') == $country->id ? 'selected' : '' }}>
+                                {{ $country->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Submit / Clear --}}
+                <div class="flex gap-2 items-end">
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
+                    @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
+                        <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                    @endif
+                </div>
             </div>
         </form>
 
-        {{-- Stats summary --}}
-        <div class="flex flex-wrap gap-2 mb-4 text-sm">
-            <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
-            @if(request('search') || request('status') || request('gender') || request('employer'))
-                <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
-            @endif
+        {{-- Stats summary + Export --}}
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm">
+            <div class="flex flex-wrap gap-2">
+                <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
+                @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
+                    <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
+                @endif
+            </div>
+            <a href="{{ route('applicants.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
+               class="btn btn-sm btn-outline btn-success gap-1">
+                <span>📥</span> Export to CSV
+            </a>
         </div>
 
         {{-- Table --}}
@@ -91,11 +141,18 @@
                     <thead>
                         <tr class="bg-base-200/80">
                             <th class="w-10"></th>
+                            <th>📅 Date Applied</th>
                             <th>Name</th>
-                            <th>📞 Contact</th>
                             <th>📊 Status</th>
-                            <th>📅 Date Added</th>
-                            <th class="text-right">Actions</th>
+                            <th>🎂 Age</th>
+                            <th>📞 Contact#</th>
+                            <th>💼 Position</th>
+                            <th>🏢 Branch</th>
+                            <th>🎯 Agent</th>
+                            <th>📄 Contract</th>
+                            <th>✅ Contract Received</th>
+                            <th>🧑‍💻 Encoder</th>
+                            <th class="text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,21 +169,13 @@
                                     </div>
                                 </div>
                             </td>
+                            <td class="text-sm whitespace-nowrap">{{ $applicant->created_at->format('M d, Y') }}</td>
                             <td>
                                 <a href="{{ route('applicants.show', $applicant) }}" class="link link-primary font-medium">
                                     {{ $applicant->first_name }} {{ $applicant->last_name }}
                                 </a>
                                 @if($applicant->middle_name)
                                     <span class="opacity-40 text-sm"> {{ $applicant->middle_name }}</span>
-                                @endif
-                            </td>
-                            <td class="text-sm">
-                                @if($applicant->contact)
-                                    📱 {{ $applicant->contact }}
-                                @elseif($applicant->email)
-                                    ✉️ {{ $applicant->email }}
-                                @else
-                                    <span class="opacity-40">—</span>
                                 @endif
                             </td>
                             <td>
@@ -139,7 +188,45 @@
                                     <span class="badge badge-sm badge-ghost">📋 Pending</span>
                                 @endif
                             </td>
-                            <td class="text-sm opacity-60">{{ $applicant->created_at->format('M d, Y') }}</td>
+                            <td class="text-sm opacity-70">
+                                {{ $applicant->age ?? '—' }}
+                            </td>
+                            <td class="text-sm">
+                                @if($applicant->contact)
+                                    {{ $applicant->contact }}
+                                @elseif($applicant->email)
+                                    {{ $applicant->email }}
+                                @else
+                                    <span class="opacity-40">—</span>
+                                @endif
+                            </td>
+                            <td class="text-sm">
+                                {{ $applicant->position?->name ?? '—' }}
+                            </td>
+                            <td class="text-sm">
+                                {{ $applicant->branch ?? '—' }}
+                            </td>
+                            <td class="text-sm">
+                                {{ $applicant->agent?->name ?? '—' }}
+                            </td>
+                            <td class="text-sm">
+                                @if ($applicant->contract)
+                                    <a href="{{ Storage::url($applicant->contract) }}" target="_blank"
+                                       class="link link-primary text-sm" title="View contract">📄 View</a>
+                                @else
+                                    <span class="opacity-40">—</span>
+                                @endif
+                            </td>
+                            <td class="text-sm">
+                                @if ($applicant->contract_received_date)
+                                    <span class="text-success font-medium">{{ $applicant->contract_received_date->format('M d, Y') }}</span>
+                                @else
+                                    <span class="opacity-40">—</span>
+                                @endif
+                            </td>
+                            <td class="text-sm">
+                                {{ $applicant->encoder ?? '—' }}
+                            </td>
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('applicants.show', $applicant) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>

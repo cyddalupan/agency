@@ -23,7 +23,35 @@
     </div>
     @endif
 
+    {{-- Filters --}}
+    <form method="GET" action="{{ route('agents.index') }}" class="flex flex-wrap gap-3 items-end mb-4">
+        <div class="form-control flex-1 min-w-40">
+            <label class="input input-bordered flex items-center gap-2">
+                <span>🔍</span>
+                <input type="text" name="search" class="grow" placeholder="Search by name or email..."
+                       value="{{ request('search') }}" />
+            </label>
+        </div>
+        <div class="form-control w-full sm:w-36">
+            <select name="status" class="select select-bordered" onchange="this.form.submit()">
+                <option value="">📊 All Status</option>
+                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>✅ Active</option>
+                <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>❌ Inactive</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
+        @if(request('search') || request('status'))
+            <a href="{{ route('agents.index') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+        @endif
+    </form>
+
     <div class="card bg-base-100 shadow-sm">
+        <div class="flex justify-between items-center px-4 pt-4">
+            <span class="text-sm opacity-60">{{ $agents->total() }} agent(s)</span>
+            <a href="{{ route('reports.agents', request()->only(['search', 'status'])) }}" class="btn btn-sm btn-outline btn-info gap-1">
+                <span>📊</span> View Report
+            </a>
+        </div>
         <div class="card-body p-0">
             @if ($agents->count() > 0)
             <div class="overflow-x-auto">

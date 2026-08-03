@@ -45,19 +45,15 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🔑 New Password <span class="text-xs opacity-60">(leave blank to keep)</span></legend>
-                    <input type="password" name="password"
-                        class="input w-full" placeholder="Min. 8 characters">
-                    @error('password') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+                    <legend class="fieldset-legend">🏢 Branch</legend>
+                    <select name="branch_id" class="select w-full">
+                        <option value="">Select branch...</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(old('branch_id', $agent->branch_id) == $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('branch_id') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
                 </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🔑 Confirm Password</legend>
-                    <input type="password" name="password_confirmation"
-                        class="input w-full" placeholder="Repeat password">
-                </fieldset>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">💰 Commission Rate (%)</legend>
                     <input type="number" name="commission_rate" value="{{ old('commission_rate', $agent->commission_rate) }}"

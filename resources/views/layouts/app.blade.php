@@ -187,9 +187,13 @@
                 {{-- Sidebar brand with gradient accent --}}
                 <div class="px-6 py-5 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-white/10">
                     <a href="{{ auth()->user()->agency_id ? route('agency.dashboard') : route('dashboard') }}" class="flex items-center gap-2">
-                        <span class="text-2xl">{{ app_brand_icon() }}</span>
+                        @if (app_brand_has_logo())
+                            <img src="{{ app_brand_logo() }}" alt="{{ app_brand_name() }}" class="h-9 w-9 object-contain rounded">
+                        @else
+                            <span class="text-2xl">{{ app_brand_icon() }}</span>
+                        @endif
                         <span class="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            {{ tenant_agency()?->name ?? app_brand_name() }}
+                            {{ app_brand_name() }}
                         </span>
                     </a>
                 </div>
@@ -216,22 +220,59 @@
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('employers.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">🏢</span>
-                        Employers
+                        FRA
                     </a>
 
+                    {{-- Marketing nav item HIDDEN (2026-08-03 per Cyd) --}}
+                    {{--
                     <a href="{{ route('marketing-agencies.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('marketing-agencies.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                              {{ request()->routeIs('marketing-agencies.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">📢</span>
                         Marketing
+                    </a>
+                    --}}
+
+                    <a href="{{ route('reports.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('reports.*') || request()->routeIs('report-templates.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                        <span class="text-lg">📄</span>
+                        Reports
                     </a>
 
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
 
+                        @if (auth()->user()->user_type === 'super_admin')
+                        <a href="{{ route('agencies.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('agencies.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span>🏢</span>
+                            Agencies
+                        </a>
+                        @php $managedAgency = \App\Models\Agency::where('subdomain', 'gulf')->first(); @endphp
+                        @if ($managedAgency)
+                        <a href="{{ route('agencies.show', $managedAgency) }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('agencies.show') && request()->route('agency')?->id === $managedAgency->id ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span>🌐</span>
+                            Manage: {{ $managedAgency->name }}
+                        </a>
+                        @endif
+                        @endif
+
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        <a href="{{ route('users.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('users.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span>👤</span>
+                            Users
+                        </a>
+                        @endif
+
                         <a href="{{ route('custom-fields.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('custom-fields.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                                  {{ request()->routeIs('custom-fields.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">⚙️</span>
                             Custom Fields
                         </a>
@@ -239,7 +280,7 @@
                         @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('agents.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('agents.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                                  {{ request()->routeIs('agents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">🔌</span>
                             Agents
                         </a>
@@ -247,21 +288,56 @@
 
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('settings.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                              {{ request()->routeIs('settings.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">⚙️</span>
                         Settings
                     </a>
+
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Reference Data</div>
+                        <a href="{{ route('branches.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('branches.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🏢</span>
+                            Branches
+                        </a>
+                        <a href="{{ route('languages.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('languages.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🌐</span>
+                            Languages
+                        </a>
+                        <a href="{{ route('skills.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('skills.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🛠️</span>
+                            Skills
+                        </a>
+                        <a href="{{ route('countries.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('countries.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🌍</span>
+                            Countries
+                        </a>
+                        <a href="{{ route('positions.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('positions.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">💼</span>
+                            Positions
+                        </a>
+                        <a href="{{ route('status-codes.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('status-codes.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🚦</span>
+                            Status Codes
+                        </a>
+                        @endif
+
                         <a href="{{ route('report-templates.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('report-templates.*') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
+                                  {{ request()->routeIs('report-templates.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📋</span>
                             Report Templates
-                        </a>
-                        <a href="{{ route('reports.index') }}"
-                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('reports.index') ? 'active bg-base-300 shadow-sm' : 'hover:bg-base-300/60' }}">
-                            <span class="text-lg">📄</span>
-                            Reports
                         </a>
                     </div>
                 </nav>

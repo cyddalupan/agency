@@ -55,6 +55,14 @@ class StatusCodesSeeder extends Seeder
             [42, 'Visa Stamped', 'Visa Stamped', 'Visa stamped', '#3b82f6', 42],
             [43, 'For Exit Clearance', 'For Exit Clearance', 'Exit clearance', '#6366f1', 43],
             [44, 'Exit Cleared', 'Exit Cleared', 'Exit clearance done', '#8b5cf6', 44],
+            [45, 'For OWWA Make-Up Class', 'For OWWA Make-Up Class', 'OWWA make-up class', '#a855f7', 45],
+            [46, 'For Tesda', 'For Tesda', 'TESDA training', '#06b6d4', 46],
+            [47, 'For Biometric', 'For Biometric', 'Biometric capture', '#0ea5e9', 47],
+            [48, 'Fit To Work', 'Fit To Work', 'Fit to work certified', '#22c55e', 48],
+            [49, 'Unfit', 'Unfit', 'Unfit to work', '#ef4444', 49],
+            [50, 'Backout', 'Backout', 'Withdrew from deployment', '#f97316', 50],
+            [51, 'For Passporting', 'For Passporting', 'Passport processing', '#3b82f6', 51],
+            [52, 'Passport for Buy-out', 'Passport for Buy-out', 'Passport buy-out', '#8b5cf6', 52],
         ];
 
         foreach ($statuses as $s) {

@@ -60,6 +60,14 @@ class SubTableController extends Controller
                 'skill_name'  => 'required|string|max:255',
                 'proficiency' => 'nullable|string|in:beginner,intermediate,expert',
             ],
+            'languages' => [
+                'name'        => 'required|string|max:255',
+                'proficiency' => 'nullable|string|in:beginner,intermediate,expert',
+            ],
+            'contacts' => [
+                'contact' => 'nullable|string|max:100',
+                'type'    => 'nullable|string|max:50',
+            ],
             'references' => [
                 'name'     => 'required|string|max:255',
                 'contact'  => 'nullable|string|max:100',
@@ -71,6 +79,52 @@ class SubTableController extends Controller
                 'currency' => 'nullable|string|size:3',
                 'type'     => 'nullable|string|max:100',
                 'notes'    => 'nullable|string',
+            ],
+            'spouse' => [
+                'partner_name'      => 'required|string|max:255',
+                'number_of_children' => 'nullable|integer|min:0',
+            ],
+            'family' => [
+                'name'       => 'required|string|max:255',
+                'relation'   => 'nullable|string|max:100',
+                'occupation' => 'nullable|string|max:255',
+            ],
+            'emergency' => [
+                'name'         => 'required|string|max:255',
+                'relationship' => 'nullable|string|max:100',
+                'contact'      => 'nullable|string|max:100',
+            ],
+            'nbi' => [
+                'nbi_no'      => 'nullable|string|max:100',
+                'issue_date'  => 'nullable|date',
+                'expiry_date' => 'nullable|date|after:issue_date',
+            ],
+            'oec' => [
+                'oec_no'      => 'nullable|string|max:100',
+                'oec_release' => 'nullable|date',
+            ],
+            'visa' => [
+                'visa_no'          => 'nullable|string|max:100',
+                'visa_type'        => 'nullable|string|max:100',
+                'received_date'    => 'nullable|date',
+                'stamped_date'     => 'nullable|date',
+                'expiry_date'      => 'nullable|date',
+                'approved_musaned' => 'nullable|string|max:10',
+            ],
+            'contract' => [
+                'rfp'               => 'nullable|string|max:100',
+                'sponsor'           => 'nullable|string|max:255',
+                'sponsor_id'        => 'nullable|string|max:100',
+                'contact'           => 'nullable|string|max:100',
+                'address'           => 'nullable|string|max:255',
+                'contract_received' => 'nullable|date',
+                'contract_signed'   => 'nullable|date',
+            ],
+            'ticket' => [
+                'airline'        => 'nullable|string|max:255',
+                'flight_date'    => 'nullable|date',
+                'flight_time'    => 'nullable|string|max:20',
+                'flight_remarks' => 'nullable|string',
             ],
             default => [],
         };
@@ -88,8 +142,18 @@ class SubTableController extends Controller
             'requirements'     => ['agency_id', 'applicant_id', 'type', 'reference_no', 'status', 'submitted_date', 'approved_date', 'file_path', 'remarks'],
             'work-experiences' => ['agency_id', 'applicant_id', 'company', 'position', 'from_date', 'to_date', 'responsibilities'],
             'skills'           => ['agency_id', 'applicant_id', 'skill_name', 'proficiency'],
+            'languages'        => ['agency_id', 'applicant_id', 'name', 'proficiency'],
+            'contacts'         => ['agency_id', 'applicant_id', 'contact', 'type'],
             'references'       => ['agency_id', 'applicant_id', 'name', 'contact', 'relation', 'position'],
             'salary-records'   => ['agency_id', 'applicant_id', 'amount', 'currency', 'type', 'notes'],
+            'spouse'           => ['agency_id', 'applicant_id', 'partner_name', 'number_of_children'],
+            'family'           => ['agency_id', 'applicant_id', 'name', 'relation', 'occupation'],
+            'emergency'        => ['agency_id', 'applicant_id', 'name', 'relationship', 'contact'],
+            'nbi'              => ['agency_id', 'applicant_id', 'nbi_no', 'issue_date', 'expiry_date'],
+            'oec'              => ['agency_id', 'applicant_id', 'oec_no', 'oec_release'],
+            'visa'             => ['agency_id', 'applicant_id', 'visa_no', 'visa_type', 'received_date', 'stamped_date', 'expiry_date', 'approved_musaned'],
+            'contract'         => ['agency_id', 'applicant_id', 'rfp', 'sponsor', 'sponsor_id', 'contact', 'address', 'contract_received', 'contract_signed'],
+            'ticket'           => ['agency_id', 'applicant_id', 'airline', 'flight_date', 'flight_time', 'flight_remarks'],
             default            => [],
         };
     }
@@ -103,9 +167,19 @@ class SubTableController extends Controller
             'requirements'     => \App\Models\ApplicantRequirement::class,
             'work-experiences'  => \App\Models\ApplicantWorkExperience::class,
             'skills'           => \App\Models\ApplicantSkill::class,
+            'languages'        => \App\Models\ApplicantLanguage::class,
+            'contacts'         => \App\Models\ApplicantContact::class,
             'references'       => \App\Models\ApplicantReference::class,
             'salary-records'   => \App\Models\ApplicantSalaryRecord::class,
-            default            => abort(404, "Unknown sub-table: {$type}"),
+            'spouse'          => \App\Models\ApplicantSpouse::class,
+            'family'          => \App\Models\ApplicantFamilyMember::class,
+            'emergency'       => \App\Models\ApplicantEmergencyContact::class,
+            'nbi'             => \App\Models\ApplicantNbi::class,
+            'oec'             => \App\Models\ApplicantOec::class,
+            'visa'            => \App\Models\ApplicantVisa::class,
+            'contract'        => \App\Models\ApplicantContract::class,
+            'ticket'          => \App\Models\ApplicantTicket::class,
+            default           => abort(404, "Unknown sub-table: {$type}"),
         };
     }
 

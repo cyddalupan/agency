@@ -19,11 +19,15 @@ class Applicant extends Model implements AuthenticatableContract
         'birthdate', 'gender', 'has_passport', 'contact', 'email', 'address', 'photo', 'full_body_photo',
         'remarks', 'source', 'nationality_id', 'religion_id', 'civil_status_id',
         'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
-        'job_id', 'status_code', 'password', 'status',
+        'job_id', 'status_code', 'password', 'status', 'firstimer_type',
+        'branch', 'encoder', 'contract', 'contract_received_date',
+        'number_of_siblings',
     ];
 
     protected $casts = [
         'birthdate' => 'date',
+        'contract_received_date' => 'date',
+        'number_of_siblings' => 'integer',
         'expected_salary' => 'decimal:2',
     ];
 
@@ -40,6 +44,21 @@ class Applicant extends Model implements AuthenticatableContract
     public function country()
     {
         return $this->belongsTo(Country::class);
+    }
+
+    public function nationality()
+    {
+        return $this->belongsTo(Nationality::class);
+    }
+
+    public function religion()
+    {
+        return $this->belongsTo(Religion::class);
+    }
+
+    public function civilStatus()
+    {
+        return $this->belongsTo(CivilStatus::class);
     }
 
     public function position()
@@ -89,6 +108,16 @@ class Applicant extends Model implements AuthenticatableContract
         return $this->hasMany(ApplicantSkill::class);
     }
 
+    public function languages()
+    {
+        return $this->hasMany(ApplicantLanguage::class);
+    }
+
+    public function contacts()
+    {
+        return $this->hasMany(ApplicantContact::class);
+    }
+
     public function references()
     {
         return $this->hasMany(ApplicantReference::class);
@@ -102,6 +131,48 @@ class Applicant extends Model implements AuthenticatableContract
     public function documents()
     {
         return $this->hasMany(ApplicantDocument::class);
+    }
+
+    // === LANDAS PERSONAL INFORMATION (PI:8) SUB-TABLE RELATIONSHIPS ===
+
+    public function spouse()
+    {
+        return $this->hasMany(ApplicantSpouse::class);
+    }
+
+    public function family()
+    {
+        return $this->hasMany(ApplicantFamilyMember::class);
+    }
+
+    public function emergencyContacts()
+    {
+        return $this->hasMany(ApplicantEmergencyContact::class);
+    }
+
+    public function nbi()
+    {
+        return $this->hasMany(ApplicantNbi::class);
+    }
+
+    public function oec()
+    {
+        return $this->hasMany(ApplicantOec::class);
+    }
+
+    public function visa()
+    {
+        return $this->hasMany(ApplicantVisa::class);
+    }
+
+    public function contract()
+    {
+        return $this->hasMany(ApplicantContract::class);
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(ApplicantTicket::class);
     }
 
     public function logs()
@@ -143,5 +214,13 @@ class Applicant extends Model implements AuthenticatableContract
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
+    }
+
+    public function getAgeAttribute(): ?int
+    {
+        if (! $this->birthdate) {
+            return null;
+        }
+        return (int) \Illuminate\Support\Carbon::parse($this->birthdate)->age;
     }
 }

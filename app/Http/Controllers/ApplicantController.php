@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Applicant;
 use App\Models\Bill;
+use App\Models\Country;
+use App\Models\Employer;
 use App\Models\StatusCode;
 use App\Services\SensitiveActionLogger;
 use App\Services\StatusCodeService;
@@ -16,7 +18,7 @@ class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Applicant::with('statusCode');
+        $query = Applicant::with(['statusCode', 'position', 'agent']);
 
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
@@ -43,6 +45,11 @@ class ApplicantController extends Controller
             $query->where('employer_id', $request->integer('employer'));
         }
 
+        // Filter by country
+        if ($request->filled('country')) {
+            $query->where('country_id', $request->integer('country'));
+        }
+
         $statusCodes = StatusCode::orderBy('sort_order')->get();
 
         // Get status counts for all applicants (ignoring filters)
@@ -52,15 +59,32 @@ class ApplicantController extends Controller
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
+        $employers = Employer::orderBy('name')->get(['id', 'name']);
+        $countries = Country::orderBy('name')->get(['id', 'name']);
+
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts'));
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
     }
 
     public function create()
     {
-        $statusCodes = StatusCode::orderBy('sort_order')->get();
-        return view('applicants.create', compact('statusCodes'));
+        $defaults     = app_applicant_form_defaults();
+        $agencyId     = resolve_agency_id();
+
+        // Positions and statuses always show the FULL list on the Add Applicant form.
+        // (Per Mjolnir "For Fixing" card: restricting to only the agency's newly-added
+        // options caused "Data Missing" — users expected all options available.)
+        $positions = \App\Models\Position::orderBy('name')->get();
+        $statusCodes = \App\Models\StatusCode::orderBy('sort_order')->get();
+
+        $sources   = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        $branches  = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
+        $agents    = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+
+        return view('applicants.create', compact(
+            'positions', 'statusCodes', 'sources', 'branches', 'agents', 'defaults'
+        ));
     }
 
     public function store(Request $request)
@@ -80,9 +104,27 @@ class ApplicantController extends Controller
             'address'      => 'nullable|string',
             'remarks'      => 'nullable|string',
             'source'       => 'nullable|string|max:255',
+            'firstimer_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in(['firstimer', 'ex-abroad'])],
             'country_id'   => 'nullable|integer|exists:countries,id',
             'position_id'  => 'nullable|integer|exists:positions,id',
-            'agent_id'     => 'nullable|integer|exists:agents,id',
+            'agent_id'     => ['nullable', 'integer', 'exists:agents,id', function ($attribute, $value, $fail) use ($request) {
+                if (blank($value)) {
+                    return;
+                }
+                // When Source = Branch and an agent is selected, the agent must
+                // belong to the selected branch (prevents cross-branch assignment).
+                if ($request->input('source') === 'Branch' && $request->filled('branch_id')) {
+                    $agent = \App\Models\Agent::find($value);
+                    if (! $agent || (int) $agent->branch_id !== (int) $request->input('branch_id')) {
+                        $fail('The selected agent does not belong to the selected branch.');
+                    }
+                }
+            }],
+            'branch_id'    => 'nullable|integer|exists:branches,id',
+            'branch'       => 'nullable|string|max:255',
+            'encoder'      => 'nullable|string|max:255',
+            'contract'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
+            'contract_received_date' => 'nullable|date',
             'status_code'  => 'nullable|integer|exists:status_codes,code',
             'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
             'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
@@ -96,6 +138,10 @@ class ApplicantController extends Controller
         }
         if ($request->hasFile('full_body_photo')) {
             $validated['full_body_photo'] = resize_and_save_photo($request->file('full_body_photo'), 'applicant-full-body-photos', 1024);
+        }
+
+        if ($request->hasFile('contract')) {
+            $validated['contract'] = $request->file('contract')->store('contracts', 'public');
         }
 
         $validated['agency_id'] = $this->resolveAgencyId();
@@ -155,6 +201,10 @@ class ApplicantController extends Controller
             'country_id'   => 'nullable|integer|exists:countries,id',
             'position_id'  => 'nullable|integer|exists:positions,id',
             'agent_id'     => 'nullable|integer|exists:agents,id',
+            'branch'       => 'nullable|string|max:255',
+            'encoder'      => 'nullable|string|max:255',
+            'contract'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
+            'contract_received_date' => 'nullable|date',
             'status_code'  => 'nullable|integer|exists:status_codes,code',
             'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
             'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
@@ -174,6 +224,14 @@ class ApplicantController extends Controller
                 Storage::disk('public')->delete($applicant->full_body_photo);
             }
             $validated['full_body_photo'] = resize_and_save_photo($request->file('full_body_photo'), 'applicant-full-body-photos', 1024);
+        }
+
+        // Handle contract file upload — delete old contract if replaced
+        if ($request->hasFile('contract')) {
+            if ($applicant->contract && Storage::disk('public')->exists($applicant->contract)) {
+                Storage::disk('public')->delete($applicant->contract);
+            }
+            $validated['contract'] = $request->file('contract')->store('contracts', 'public');
         }
 
         $applicant->update($validated);
@@ -202,9 +260,30 @@ class ApplicantController extends Controller
             ->with('success', 'Applicant deleted successfully.');
     }
 
-    public function export()
+    public function export(Request $request)
     {
-$applicants = Applicant::with(['statusCode', 'country', 'position', 'agent'])->get();
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer'])->orderBy('created_at', 'desc');
+
+        // Apply the same filters as index()
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('middle_name', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('status')) {
+            $query->where('status_code', $request->integer('status'));
+        }
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->input('gender'));
+        }
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
+        $applicants = $query->get();
 
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name . ' exported applicant data.');
@@ -213,7 +292,7 @@ $applicants = Applicant::with(['statusCode', 'country', 'position', 'agent'])->g
             'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
             'Date of Birth', 'Gender', 'Has Passport', 'Nationality',
             'Street', 'City', 'State', 'Postal Code', 'Country',
-            'Preferred Position', 'Referred By', 'Status', 'Created At',
+            'Employer', 'Preferred Position', 'Referred By', 'Status', 'Created At',
         ];
 
         $callback = function () use ($applicants, $headers) {
@@ -239,7 +318,7 @@ $applicants = Applicant::with(['statusCode', 'country', 'position', 'agent'])->g
                     $applicant->state,
                     $applicant->postal_code,
                     $applicant->country?->name ?? 'N/A',
-                    $applicant->position?->name ?? 'N/A',
+                    $applicant->employer?->name ?? 'N/A',
                     $applicant->position?->name ?? 'N/A',
                     $applicant->agent?->name ?? 'N/A',
                     $applicant->statusCode?->name ?? 'N/A',

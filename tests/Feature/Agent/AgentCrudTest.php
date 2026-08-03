@@ -52,6 +52,43 @@ class AgentCrudTest extends TestCase
     }
 
     #[Test]
+    public function create_agent_form_does_not_require_password_fields(): void
+    {
+        // Agents do not log in — the create form must not ask for a password.
+        // Regression: previously the form had no password fields while the controller
+        // required one, so creation always failed. Now both are removed.
+        $response = $this->actingAs($this->admin)
+            ->get(route('agents.create'));
+
+        $response->assertOk();
+        $response->assertDontSee('name="password"', false);
+        $response->assertDontSee('name="password_confirmation"', false);
+    }
+
+    #[Test]
+    public function agent_can_be_stored_without_password(): void
+    {
+        // Agents do not log in — creating one must not require a password.
+        $response = $this->actingAs($this->admin)
+            ->post(route('agents.store'), [
+                'name'            => 'No Login Agent',
+                'email'           => 'nologinagent@test.com',
+                'contact'         => '09171234567',
+                'commission_rate' => 10,
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('agents.index'));
+
+        $this->assertDatabaseHas('agents', [
+            'name'            => 'No Login Agent',
+            'email'           => 'nologinagent@test.com',
+            'agency_id'       => $this->admin->agency_id,
+            'password'        => null,
+        ]);
+    }
+
+    #[Test]
     public function admin_can_store_new_agent(): void
     {
         $response = $this->actingAs($this->admin)

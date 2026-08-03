@@ -42,19 +42,16 @@
                 </fieldset>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🔑 Password <span class="text-error">*</span></legend>
-                    <input type="password" name="password" required
-                        class="input w-full" placeholder="Min. 8 characters">
-                    @error('password') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🔑 Confirm Password <span class="text-error">*</span></legend>
-                    <input type="password" name="password_confirmation" required
-                        class="input w-full" placeholder="Repeat password">
-                </fieldset>
-            </div>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🏢 Branch</legend>
+                <select name="branch_id" class="select w-full">
+                    <option value="">Select branch...</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" @selected(old('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+                @error('branch_id') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+            </fieldset>
 
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">💰 Commission Rate (%)</legend>

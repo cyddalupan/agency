@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Employers')
+@section('title', 'FRAs')
 
 @section('content')
 <div class="max-w-7xl mx-auto">
@@ -8,13 +8,13 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold flex items-center gap-2">
-                <span>🏢</span> Employers
+                <span>🏢</span> FRAs
             </h2>
             <p class="opacity-60 text-sm mt-1">Manage client companies hiring overseas workers</p>
         </div>
         <div class="flex gap-2">
             <a href="{{ route('employers.create') }}" class="btn btn-primary">
-                <span>➕</span> Add Employer
+                <span>➕</span> Add FRA
             </a>
         </div>
     </div>
@@ -92,9 +92,9 @@
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">
                 <span class="text-6xl mb-4">🏢</span>
-                <h3 class="text-xl font-bold mb-2">No Employers Yet</h3>
+                <h3 class="text-xl font-bold mb-2">No FRAs Yet</h3>
                 <p class="opacity-60 mb-6 max-w-md">
-                    Employers are the companies hiring workers. Add one to start creating job positions and matching applicants.
+                    FRAs are the companies hiring workers. Add one to start creating job positions and matching applicants.
                 </p>
                 <div class="flex flex-wrap justify-center gap-3">
                     <a href="{{ route('employers.create') }}" class="btn btn-primary btn-lg">

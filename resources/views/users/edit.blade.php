@@ -33,36 +33,58 @@
             @csrf
             @method('PUT')
 
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">👤 Name <span class="text-error">*</span></legend>
-                <input type="text" name="name" value="{{ old('name', $user->name) }}" required
-                    class="input w-full" placeholder="Full name">
-            </fieldset>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👤 First Name <span class="text-error">*</span></legend>
+                    <input type="text" name="name" value="{{ old('name', $user->name) }}" required
+                        class="input w-full" placeholder="First name">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">✳️ Middle Name</legend>
+                    <input type="text" name="middle_name" value="{{ old('middle_name', $user->middle_name) }}"
+                        class="input w-full" placeholder="Middle name (optional)">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📛 Surname</legend>
+                    <input type="text" name="surname" value="{{ old('surname', $user->surname) }}"
+                        class="input w-full" placeholder="Surname (optional)">
+                </fieldset>
+            </div>
 
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">📧 Email <span class="text-error">*</span></legend>
-                <input type="email" name="email" value="{{ old('email', $user->email) }}" required
-                    class="input w-full" placeholder="email@example.com">
-            </fieldset>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📧 Email <span class="text-error">*</span></legend>
+                    <input type="email" name="email" value="{{ old('email', $user->email) }}" required
+                        class="input w-full" placeholder="email@example.com">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📞 Contact #</legend>
+                    <input type="text" name="contact" value="{{ old('contact', $user->contact) }}"
+                        class="input w-full" placeholder="e.g. 0917-xxx-xxxx">
+                </fieldset>
+            </div>
 
-            <fieldset class="fieldset">
-                <legend class="fieldset-legend">🎭 User Type <span class="text-error">*</span></legend>
-                <select name="user_type" required class="select w-full">
-                    <option value="admin" @selected(old('user_type', $user->user_type) === 'admin')>Admin</option>
-                    <option value="super_admin" @selected(old('user_type', $user->user_type) === 'super_admin')>Super Admin</option>
-                    <option value="employer" @selected(old('user_type', $user->user_type) === 'employer')>Employer</option>
-                    <option value="manager" @selected(old('user_type', $user->user_type) === 'manager')>Manager</option>
-                    <option value="staff" @selected(old('user_type', $user->user_type) === 'staff')>Staff</option>
-                    <option value="coordinator" @selected(old('user_type', $user->user_type) === 'coordinator')>Coordinator</option>
-                    <option value="recruiter" @selected(old('user_type', $user->user_type) === 'recruiter')>Recruiter</option>
-                    <option value="processor" @selected(old('user_type', $user->user_type) === 'processor')>Processor</option>
-                    <option value="interviewer" @selected(old('user_type', $user->user_type) === 'interviewer')>Interviewer</option>
-                    <option value="billing" @selected(old('user_type', $user->user_type) === 'billing')>Billing</option>
-                    <option value="report_viewer" @selected(old('user_type', $user->user_type) === 'report_viewer')>Report Viewer</option>
-                    <option value="director" @selected(old('user_type', $user->user_type) === 'director')>Director</option>
-                    <option value="marketer" @selected(old('user_type', $user->user_type) === 'marketer')>Marketer</option>
-                </select>
-            </fieldset>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🎭 Access Level <span class="text-error">*</span></legend>
+                    <select name="user_type" required class="select w-full">
+                        @foreach(\App\Models\User::ACCESS_PRESETS as $val => $label)
+                            <option value="{{ $val }}" @selected(old('user_type', $user->user_type) === $val)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs opacity-60">Super Admin, Admin, Accounting, Receptionist, Processing</p>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏢 Branch</legend>
+                    <select name="branch_id" class="select w-full">
+                        <option value="">Select branch...</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(old('branch_id', $user->branch_id) == $branch->id)>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('branch_id') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+                </fieldset>
+            </div>
 
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">📊 Status <span class="text-error">*</span></legend>

@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Add Employer')
+@section('title', 'Add FRA')
 
 @section('content')
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
         <a href="{{ route('employers.index') }}" class="link link-secondary text-sm flex items-center gap-1">
-            <span>←</span> Back to Employers
+            <span>←</span> Back to FRAs
         </a>
     </div>
 
     <div class="card bg-gradient-to-br from-secondary/10 to-accent/10 border border-secondary/20 mb-6 p-4">
         <h2 class="text-2xl font-bold flex items-center gap-2">
-            <span>➕</span> Add New Employer
+            <span>➕</span> Add New FRA
         </h2>
         <p class="opacity-60 text-sm mt-1">Register a new client company hiring overseas workers.</p>
     </div>
@@ -93,7 +93,7 @@
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">
-                    <span>💾</span> Save Employer
+                    <span>💾</span> Save FRA
                 </button>
                 <a href="{{ route('employers.index') }}" class="link link-neutral text-sm">❌ Cancel</a>
             </div>

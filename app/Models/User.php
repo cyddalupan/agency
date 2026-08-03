@@ -17,8 +17,12 @@ class User extends Authenticatable
     protected $fillable = [
         'agency_id',
         'employer_id',
+        'branch_id',
         'name',
+        'middle_name',
+        'surname',
         'email',
+        'contact',
         'username',
         'password',
         'user_type',
@@ -26,9 +30,40 @@ class User extends Authenticatable
         'locale',
     ];
 
+    /**
+     * The 5 friendly "Access Level" presets the client expects,
+     * mapped to the underlying granular roles. Keeps all roles intact.
+     */
+    public const ACCESS_PRESETS = [
+        'super_admin' => 'Super Admin',
+        'admin'       => 'Admin',
+        'billing'     => 'Accounting',
+        'staff'       => 'Receptionist',
+        'processor'   => 'Processing',
+    ];
+
+    /** Display label for a user_type (presets first, fall back to raw role). */
+    public static function accessLabel(string $userType): string
+    {
+        return self::ACCESS_PRESETS[$userType] ?? ucwords(str_replace('_', ' ', $userType));
+    }
+
+    /**
+     * Full name assembled from name + middle name + surname (the "Name" column).
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim(collect([$this->name, $this->middle_name, $this->surname])->filter()->implode(' '));
+    }
+
     public function employer()
     {
         return $this->belongsTo(Employer::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function permissions()

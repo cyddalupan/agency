@@ -30,11 +30,21 @@ class AgencyBrandingController extends Controller
         $this->authorize('branding', $agency);
 
         $validated = $request->validate([
+            'name'            => ['nullable', 'string', 'max:255'],
+            'address'         => ['nullable', 'string', 'max:255'],
             'logo'            => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
             'favicon'         => ['nullable', 'mimes:ico,png,jpg,jpeg,svg', 'max:512'],
             'primary_color'   => ['nullable', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
             'secondary_color' => ['nullable', 'regex:/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/'],
         ]);
+
+        // Update company name & address (Company settings)
+        if ($request->filled('name')) {
+            $agency->name = $request->name;
+        }
+        if ($request->filled('address')) {
+            $agency->address = $request->address;
+        }
 
         // Handle logo upload
         if ($request->hasFile('logo')) {

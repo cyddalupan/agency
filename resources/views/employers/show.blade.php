@@ -8,7 +8,7 @@
     <div class="card bg-gradient-to-br from-secondary via-secondary/80 to-accent text-secondary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6">
             <a href="{{ route('employers.index') }}" class="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 mb-2">
-                <span>←</span> Back to Employers
+                <span>←</span> Back to FRAs
             </a>
             <div class="flex items-start justify-between">
                 <div class="flex items-center gap-4">

@@ -6,13 +6,13 @@
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
         <a href="{{ route('employers.show', $employer) }}" class="link link-secondary text-sm flex items-center gap-1">
-            <span>←</span> Back to Employer
+            <span>←</span> Back to FRA
         </a>
     </div>
 
     <div class="card bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 mb-6 p-4">
         <h2 class="text-2xl font-bold flex items-center gap-2">
-            <span>✏️</span> Edit Employer
+            <span>✏️</span> Edit FRA
         </h2>
         <p class="opacity-60 text-sm mt-1">Updating: <strong>{{ $employer->name }}</strong></p>
     </div>

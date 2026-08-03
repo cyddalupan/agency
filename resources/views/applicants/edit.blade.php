@@ -196,6 +196,22 @@
 
             @include('partials.custom-fields-form', ['modelType' => 'Applicant', 'model' => $applicant])
 
+            {{-- Browse Applicant columns: Branch note + Encoder --}}
+            {{-- Contract / Contract Received moved to the tabbed Personal Information section --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏷️ Branch (note / custom field)</legend>
+                    <textarea name="branch" rows="3" class="textarea textarea-lg w-full" placeholder="e.g. Alabang Branch" maxlength="255">{{ old('branch', $applicant->branch) }}</textarea>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🧑‍💻 Encoder</legend>
+                    <input type="text" name="encoder"
+                           value="{{ old('encoder', $applicant->encoder ?? (auth()->user()?->name . ' - ' . now()->format('M d, Y h:i A'))) }}"
+                           class="input w-full" maxlength="255">
+                    <p class="text-xs opacity-60 mt-1">Who entered / last edited this record. Editable.</p>
+                </fieldset>
+            </div>
+
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">
                     <span>💾</span> Update Applicant

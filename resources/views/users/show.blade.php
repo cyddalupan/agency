@@ -9,20 +9,28 @@
     </div>
 
     <div class="bg-base-100 rounded-box shadow-sm border p-6">
-        <h2 class="text-2xl font-bold mb-6">{{ $user->name }}</h2>
+        <h2 class="text-2xl font-bold mb-6">{{ $user->full_name }}</h2>
 
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <dt class="text-sm opacity-60">Name</dt>
-                <dd class="font-medium">{{ $user->name }}</dd>
+                <dd class="font-medium">{{ $user->full_name }}</dd>
             </div>
             <div>
                 <dt class="text-sm opacity-60">Email</dt>
                 <dd class="font-medium">{{ $user->email }}</dd>
             </div>
             <div>
-                <dt class="text-sm opacity-60">Role</dt>
-                <dd><span class="badge badge-ghost">{{ $user->user_type }}</span></dd>
+                <dt class="text-sm opacity-60">Contact #</dt>
+                <dd class="font-medium">{{ $user->contact ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm opacity-60">Branch</dt>
+                <dd class="font-medium">{{ $user->branch?->name ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm opacity-60">Access</dt>
+                <dd><span class="badge badge-ghost">{{ \App\Models\User::accessLabel($user->user_type) }}</span></dd>
             </div>
             <div>
                 <dt class="text-sm opacity-60">Status</dt>

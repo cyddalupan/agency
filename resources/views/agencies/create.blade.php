@@ -45,15 +45,15 @@
 
             <div class="form-control mb-4">
                 <label class="label" for="subdomain">
-                    <span class="label-text">Subdomain</span>
+                    <span class="label-text">Subdomain or URL</span>
                     <span class="label-text-alt text-error">*</span>
                 </label>
                 <div class="join w-full">
                     <input type="text" name="subdomain" id="subdomain"
-                           class="input input-bordered join-item flex-1 @error('subdomain') input-error @enderror"
-                           value="{{ old('subdomain') }}" required placeholder="my-agency">
-                    <span class="join-item bg-base-200 px-3 flex items-center text-sm opacity-60">.{{ request()->getHost() }}</span>
+                           class="input input-bordered w-full @error('subdomain') input-error @enderror"
+                           value="{{ old('subdomain') }}" required placeholder="my-agency or https://my-agency.landas.fixitautoservices.com">
                 </div>
+                <p class="text-xs opacity-50 mt-1">Type just the subdomain slug (e.g. <code>my-agency</code>) or paste the full URL — we'll extract just the subdomain part automatically.</p>
                 @error('subdomain')
                     <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
                 @enderror

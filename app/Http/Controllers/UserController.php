@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Branch;
 use App\Models\UserPermission;
 use App\Models\ActivityLog;
 use App\Services\SensitiveActionLogger;
@@ -77,7 +78,9 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        return view('users.create');
+        $branches = Branch::where('agency_id', auth()->user()->agency_id)->orderBy('name')->get();
+
+        return view('users.create', compact('branches'));
     }
 
     /**
@@ -88,24 +91,72 @@ class UserController extends Controller
         $this->authorize('create', User::class);
 
         $validated = $request->validate([
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email', 'max:255', Rule::unique('users')],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
-            'user_type'             => ['required', 'string', 'max:50'],
-            'status'                => ['required', 'string', 'in:active,inactive,suspended'],
+            'name'        => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'surname'     => ['nullable', 'string', 'max:255'],
+            'email'       => ['required', 'email', 'max:255', Rule::unique('users')],
+            'contact'     => ['nullable', 'string', 'max:50'],
+            'password'    => ['required', 'string', 'min:8', 'confirmed'],
+            'user_type'   => ['required', 'string', 'max:50', Rule::in(array_keys(\App\Models\User::ACCESS_PRESETS))],
+            'branch_id'   => ['nullable', Rule::exists('branches', 'id')->where(function ($q) {
+                $q->where('agency_id', auth()->user()->agency_id);
+            })],
+            'status'      => ['required', 'string', 'in:active,inactive,suspended'],
         ]);
 
         User::create([
-            'agency_id' => auth()->user()->agency_id,
-            'name'      => $validated['name'],
-            'email'     => $validated['email'],
-            'password'  => Hash::make($validated['password']),
-            'user_type' => $validated['user_type'],
-            'status'    => $validated['status'],
+            'agency_id'   => auth()->user()->agency_id,
+            'name'        => $validated['name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'surname'     => $validated['surname'] ?? null,
+            'contact'     => $validated['contact'] ?? null,
+            'branch_id'   => $validated['branch_id'] ?? null,
+            'email'       => $validated['email'],
+            'password'    => Hash::make($validated['password']),
+            'user_type'   => $validated['user_type'],
+            'status'      => $validated['status'],
         ]);
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully.');
+    }
+
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user)
+    {
+        $this->authorize('update', $user);
+
+        $branches = Branch::where('agency_id', $user->agency_id ?? auth()->user()->agency_id)->orderBy('name')->get();
+
+        return view('users.edit', compact('user', 'branches'));
+    }
+
+    /**
+     * Update the specified user.
+     */
+    public function update(Request $request, User $user)
+    {
+        $this->authorize('update', $user);
+
+        $validated = $request->validate([
+            'name'      => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'surname'     => ['nullable', 'string', 'max:255'],
+            'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'contact'   => ['nullable', 'string', 'max:50'],
+            'user_type' => ['required', 'string', 'max:50', Rule::in(array_merge(array_keys(\App\Models\User::ACCESS_PRESETS), ['employer', 'manager', 'coordinator', 'recruiter', 'interviewer', 'report_viewer', 'director', 'marketer']))],
+            'branch_id' => ['nullable', Rule::exists('branches', 'id')->where(function ($q) use ($user) {
+                $q->where('agency_id', $user->agency_id);
+            })],
+            'status'    => ['required', 'string', 'in:active,inactive,suspended'],
+        ]);
+
+        $user->update($validated);
+
+        return redirect()->route('users.index')
+            ->with('success', 'User updated successfully.');
     }
 
     /**
@@ -118,36 +169,6 @@ class UserController extends Controller
         $activities = $user->activities()->latest()->get();
 
         return view('users.show', compact('user', 'activities'));
-    }
-
-    /**
-     * Show the form for editing the specified user.
-     */
-    public function edit(User $user)
-    {
-        $this->authorize('update', $user);
-
-        return view('users.edit', compact('user'));
-    }
-
-    /**
-     * Update the specified user.
-     */
-    public function update(Request $request, User $user)
-    {
-        $this->authorize('update', $user);
-
-        $validated = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'user_type' => ['required', 'string', 'max:50'],
-            'status'    => ['required', 'string', 'in:active,inactive,suspended'],
-        ]);
-
-        $user->update($validated);
-
-        return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
     }
 
     /**

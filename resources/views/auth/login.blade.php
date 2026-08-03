@@ -21,10 +21,16 @@
     </div>
 
     <div class="w-full max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 relative z-10 animate-fade-in">
-        {{-- Logo --}}
+        {{-- Logo: agency icon if uploaded, otherwise fallback emoji --}}
         <div class="text-center mb-6">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-lg mb-4">
-                <span class="text-3xl">🏢</span>
+            @php $brandLogo = app_brand_logo(); @endphp
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-lg mb-4 overflow-hidden{{ $brandLogo ? ' bg-transparent' : ' bg-gradient-to-br from-blue-600 to-purple-600' }}">
+                @if ($brandLogo)
+                    <img src="{{ $brandLogo }}" alt="{{ app_brand_name() }} icon"
+                         class="w-full h-full object-contain p-1">
+                @else
+                    <span class="text-3xl">🏢</span>
+                @endif
             </div>
             <h1 class="text-2xl font-extrabold text-gray-900">{{ app_brand_name() }}</h1>
             <p class="text-sm text-gray-500 mt-1">👋 Welcome back! Sign in to continue</p>

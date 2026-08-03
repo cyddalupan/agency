@@ -34,6 +34,13 @@
                 <p class="text-sm opacity-70">Agency logo, colors, and customizations.</p>
             </div>
         </div>
+
+        <a href="{{ route('settings.applicant-form-defaults') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">📋 Applicant Form Defaults</h2>
+                <p class="text-sm opacity-70">Choose which positions, statuses, and sources appear on the Add Applicant form.</p>
+            </div>
+        </a>
     </div>
 </div>
 @endsection

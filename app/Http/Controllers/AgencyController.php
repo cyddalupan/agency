@@ -32,6 +32,20 @@ class AgencyController extends Controller
     }
 
     /**
+     * Show a single agency's management page.
+     */
+    public function show(Agency $agency)
+    {
+        $this->authorize('viewAny', Agency::class);
+
+        $users = $agency->users()
+            ->orderBy('name')
+            ->get();
+
+        return view('agencies.show', compact('agency', 'users'));
+    }
+
+    /**
      * Show the form for creating a new agency.
      */
     public function create()
@@ -44,14 +58,42 @@ class AgencyController extends Controller
     /**
      * Store a newly created agency.
      */
+    /**
+     * Extract a clean subdomain slug from whatever the user typed.
+     * Accepts: "myagency", "my-agency.landas.fixitautoservices.com",
+     * "https://my-agency.landas.fixitautoservices.com", etc.
+     */
+    private function parseSubdomain(string $input): string
+    {
+        // Strip protocol & path
+        $host = parse_url($input, PHP_URL_HOST) ?? $input;
+
+        // Everything before the first dot is the subdomain slug
+        return strtolower(explode('.', $host)[0]);
+    }
+
+    /**
+     * Store a newly created agency.
+     */
     public function store(Request $request)
     {
         $this->authorize('create', Agency::class);
 
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
+            'subdomain' => ['required', 'string', 'max:255'],
+        ]);
+
+        // Normalise: extract just the subdomain slug
+        $validated['subdomain'] = $this->parseSubdomain($validated['subdomain']);
+
+        // Validate the extracted slug
+        $validator = validator(['subdomain' => $validated['subdomain']], [
             'subdomain' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('agencies')],
         ]);
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $validated['status'] = 'active';
 
@@ -80,14 +122,28 @@ class AgencyController extends Controller
 
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
-            'subdomain' => [
-                'required',
-                'string',
-                'max:255',
-                'alpha_dash',
-                Rule::unique('agencies')->ignore($agency->id),
-            ],
+            'subdomain' => ['required', 'string', 'max:255'],
+            'logo'      => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
         ]);
+
+        // Normalise: extract just the subdomain slug
+        $validated['subdomain'] = $this->parseSubdomain($validated['subdomain']);
+
+        // Validate the extracted slug
+        $validator = validator(['subdomain' => $validated['subdomain']], [
+            'subdomain' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('agencies')->ignore($agency->id)],
+        ]);
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        // Handle icon (logo) upload
+        if ($request->hasFile('logo')) {
+            if ($agency->logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($agency->logo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($agency->logo);
+            }
+            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+        }
 
         $agency->update($validated);
 

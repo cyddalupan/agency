@@ -27,9 +27,31 @@
 
     {{-- Form --}}
     <div class="bg-base-100 rounded-box shadow-sm border p-6">
-        <form action="{{ route('agencies.update', $agency) }}" method="POST">
+        <form action="{{ route('agencies.update', $agency) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
+
+            {{-- Agency Icon --}}
+            <div class="form-control mb-4">
+                <label class="label">
+                    <span class="label-text">Agency Icon (Logo)</span>
+                    <span class="label-text-alt opacity-60">PNG, JPG, SVG, WebP (max 2MB)</span>
+                </label>
+                <div class="flex items-center gap-4">
+                    @if ($agency->logo)
+                        <img src="{{ Storage::url($agency->logo) }}" alt="Current icon"
+                             class="w-16 h-16 object-contain border rounded p-1">
+                    @else
+                        <div class="w-16 h-16 rounded flex items-center justify-center opacity-30 border">No icon</div>
+                    @endif
+                    <input type="file" name="logo" id="logo"
+                           accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                           class="file-input file-input-bordered file-input-sm flex-1 @error('logo') input-error @enderror">
+                </div>
+                @error('logo')
+                    <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
+                @enderror
+            </div>
 
             <div class="form-control mb-4">
                 <label class="label" for="name">

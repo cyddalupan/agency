@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\Applicant;
 use App\Models\ApplicantCertificate;
 use App\Models\ApplicantEducation;
@@ -10,21 +11,28 @@ use App\Models\ApplicantWorkExperience;
 use App\Models\Bill;
 use App\Models\Commission;
 use App\Models\Country;
+use App\Models\Employer;
 use App\Models\OfficialReceipt;
 use App\Models\Payment;
 use App\Models\StatusCode;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 use Illuminate\View\View;
 
 class ReportController extends Controller
 {
     public function applicants(Request $request): View
     {
+        $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $query = Applicant::where('agency_id', $agencyId)->with(['statusCode', 'country']);
+        $query = Applicant::with(['statusCode', 'country', 'employer']);
+
+        if (!$isSuperAdmin) {
+            $query->where('agency_id', $agencyId);
+        }
 
         if ($request->filled('status_code')) {
             $query->where('status_code', $request->status_code);
@@ -32,6 +40,10 @@ class ReportController extends Controller
 
         if ($request->filled('country_id')) {
             $query->where('country_id', $request->country_id);
+        }
+
+        if ($request->filled('employer_id')) {
+            $query->where('employer_id', $request->integer('employer_id'));
         }
 
         if ($request->filled('date_from')) {
@@ -44,11 +56,15 @@ class ReportController extends Controller
 
         $applicants = $query->latest()->get();
         $statusCodes = StatusCode::orderBy('sort_order')->get();
-        $countries = Country::whereIn('id', function ($q) use ($agencyId) {
-            $q->select('country_id')->from('applicants')->where('agency_id', $agencyId)->whereNotNull('country_id');
+        $countries = Country::whereIn('id', function ($q) use ($agencyId, $isSuperAdmin) {
+            $query = $q->select('country_id')->from('applicants')->whereNotNull('country_id');
+            if (!$isSuperAdmin) {
+                $query->where('agency_id', $agencyId);
+            }
         })->orderBy('name')->get();
+        $employers = Employer::orderBy('name')->get(['id', 'name']);
 
-        return view('reports.applicants', compact('applicants', 'statusCodes', 'countries'));
+        return view('reports.applicants', compact('applicants', 'statusCodes', 'countries', 'employers'));
     }
 
     public function transactions(): View
@@ -107,17 +123,152 @@ class ReportController extends Controller
             ->header('Content-Disposition', 'inline; filename="resume-' . $applicant->id . '.pdf"');
     }
 
-    public function statistics(): View
+    public function applicantsExport(Request $request): \Illuminate\Http\Response
     {
+        $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $totalApplicants = Applicant::where('agency_id', $agencyId)->count();
+        $query = Applicant::with(['statusCode', 'country']);
+
+        if (!$isSuperAdmin) {
+            $query->where('agency_id', $agencyId);
+        }
+
+        if ($request->filled('status_code')) {
+            $query->where('status_code', $request->status_code);
+        }
+        if ($request->filled('country_id')) {
+            $query->where('country_id', $request->country_id);
+        }
+        if ($request->filled('employer_id')) {
+            $query->where('employer_id', $request->integer('employer_id'));
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $applicants = $query->latest()->get();
+
+        $headers = [
+            'First Name', 'Last Name', 'Email', 'Contact',
+            'Gender', 'Country', 'Status', 'Employer', 'Created At',
+        ];
+
+        $callback = function () use ($applicants, $headers) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($applicants as $applicant) {
+                fputcsv($file, [
+                    $applicant->first_name,
+                    $applicant->last_name,
+                    $applicant->email,
+                    $applicant->contact,
+                    $applicant->gender,
+                    $applicant->country?->name ?? 'N/A',
+                    $applicant->statusCode?->name ?? 'N/A',
+                    $applicant->employer?->name ?? 'N/A',
+                    $applicant->created_at->format('Y-m-d'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=applicants-report.csv',
+        ]);
+    }
+
+    public function agents(Request $request): \Illuminate\Contracts\View\View
+    {
+        $query = Agent::with('agency')->orderBy('name');
+
+        // Filtering
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $agents = $query->paginate(20);
+
+        return view('reports.agents', compact('agents'));
+    }
+
+    public function agentsExport(Request $request): \Illuminate\Http\Response
+    {
+        $query = Agent::with('agency')->orderBy('name');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $agents = $query->get();
+
+        $headers = [
+            'Name', 'Email', 'Contact', 'Commission Rate', 'Agency', 'Status', 'Created At',
+        ];
+
+        $callback = function () use ($agents, $headers) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($agents as $agent) {
+                fputcsv($file, [
+                    $agent->name,
+                    $agent->email,
+                    $agent->contact ?? '',
+                    $agent->commission_rate ? $agent->commission_rate . '%' : '',
+                    $agent->agency?->name ?? '',
+                    $agent->status,
+                    $agent->created_at->format('Y-m-d'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=agents-report.csv',
+        ]);
+    }
+
+    public function statistics(): View
+    {
+        $isSuperAdmin = auth()->user()->user_type === 'super_admin';
+        $agencyId = auth()->user()->agency_id;
+
+        $totalApplicants = $isSuperAdmin
+            ? Applicant::count()
+            : Applicant::where('agency_id', $agencyId)->count();
 
         $applicantsByStatus = StatusCode::select(['status_codes.code', 'status_codes.label', 'status_codes.color'])
             ->selectRaw('COUNT(applicants.id) as total')
-            ->join('applicants', function ($join) use ($agencyId) {
-                $join->on('status_codes.code', '=', 'applicants.status_code')
-                    ->where('applicants.agency_id', '=', $agencyId);
+            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin) {
+                $join->on('status_codes.code', '=', 'applicants.status_code');
+                if (!$isSuperAdmin) {
+                    $join->where('applicants.agency_id', '=', $agencyId);
+                }
             })
             ->groupBy('status_codes.code', 'status_codes.label', 'status_codes.color')
             ->orderBy('status_codes.sort_order')
@@ -125,9 +276,11 @@ class ReportController extends Controller
 
         $topDestinations = Country::select(['countries.id', 'countries.name'])
             ->selectRaw('COUNT(applicants.id) as total')
-            ->join('applicants', function ($join) use ($agencyId) {
-                $join->on('countries.id', '=', 'applicants.country_id')
-                    ->where('applicants.agency_id', '=', $agencyId);
+            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin) {
+                $join->on('countries.id', '=', 'applicants.country_id');
+                if (!$isSuperAdmin) {
+                    $join->where('applicants.agency_id', '=', $agencyId);
+                }
             })
             ->groupBy('countries.id', 'countries.name')
             ->orderByDesc('total')
@@ -139,7 +292,16 @@ class ReportController extends Controller
             ? "strftime('%Y-%m', updated_at) as month"
             : "DATE_FORMAT(updated_at, '%Y-%m') as month";
 
-        $monthlyDeployments = Applicant::where('agency_id', $agencyId)
+        $monthlyDeployments = $isSuperAdmin
+            ? Applicant::whereNotNull('status_code')
+                ->whereIn('status_code', [8, 34])
+                ->selectRaw($dateExpr)
+                ->selectRaw('COUNT(*) as total')
+                ->groupBy('month')
+                ->orderBy('month')
+                ->limit(12)
+                ->get()
+            : Applicant::where('agency_id', $agencyId)
             ->whereNotNull('status_code')
             ->whereIn('status_code', [8, 34])
             ->selectRaw($dateExpr)

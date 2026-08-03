@@ -77,6 +77,36 @@
             @csrf
             @method('PUT')
 
+            {{-- Company Name & Address --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div class="form-control">
+                    <label class="label" for="name">
+                        <span class="label-text">Company Name</span>
+                        <span class="label-text-alt opacity-60">Shown on dashboard</span>
+                    </label>
+                    <input type="text" name="name" id="name"
+                           class="input input-bordered @error('name') input-error @enderror"
+                           value="{{ old('name', $agency->name) }}"
+                           placeholder="Company Name">
+                    @error('name')
+                        <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
+                    @enderror
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="address">
+                        <span class="label-text">Company Address</span>
+                    </label>
+                    <input type="text" name="address" id="address"
+                           class="input input-bordered @error('address') input-error @enderror"
+                           value="{{ old('address', $agency->address) }}"
+                           placeholder="Address">
+                    @error('address')
+                        <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
+                    @enderror
+                </div>
+            </div>
+
             {{-- Logo Upload --}}
             <div class="form-control mb-6">
                 <label class="label" for="logo">
