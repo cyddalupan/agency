@@ -80,7 +80,7 @@ class UserController extends Controller
 
         $branches = Branch::where('agency_id', auth()->user()->agency_id)->orderBy('name')->get();
 
-        return view('users.create', compact('branches'));
+        return view('users.create', compact('branches') + ['assignableRoles' => $this->assignableRoles()]);
     }
 
     /**
@@ -89,6 +89,8 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $this->authorize('create', User::class);
+
+        $this->ensureCanAssignRole($request->input('user_type'));
 
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
@@ -130,7 +132,7 @@ class UserController extends Controller
 
         $branches = Branch::where('agency_id', $user->agency_id ?? auth()->user()->agency_id)->orderBy('name')->get();
 
-        return view('users.edit', compact('user', 'branches'));
+        return view('users.edit', compact('user', 'branches') + ['assignableRoles' => $this->assignableRoles()]);
     }
 
     /**
@@ -139,6 +141,8 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $this->authorize('update', $user);
+
+        $this->ensureCanAssignRole($request->input('user_type'));
 
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
@@ -190,6 +194,8 @@ class UserController extends Controller
     public function updatePermissions(Request $request, User $user)
     {
         $this->authorize('update', $user);
+
+        $this->ensureCanAssignRole($request->input('user_type'));
 
         $validated = $request->validate([
             'user_type'   => ['required', 'string', 'max:50'],
@@ -314,5 +320,35 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * Roles the current user is allowed to assign to others.
+     *
+     * Only super admins may create/promote other super admins. Agency admins
+     * can assign every other preset role (admin, billing, staff, processor).
+     *
+     * @return array<string,string>
+     */
+    private function assignableRoles(): array
+    {
+        $roles = \App\Models\User::ACCESS_PRESETS;
+
+        if (auth()->user()->user_type !== 'super_admin') {
+            unset($roles['super_admin']);
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Abort 403 when the current user is not a super admin but tries to
+     * create or promote a user to the super_admin role.
+     */
+    private function ensureCanAssignRole(?string $role): void
+    {
+        if ($role === 'super_admin' && auth()->user()->user_type !== 'super_admin') {
+            abort(403, 'Only Super Admins can assign the Super Admin role.');
+        }
     }
 }

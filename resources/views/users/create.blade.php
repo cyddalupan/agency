@@ -80,11 +80,11 @@
                     <legend class="fieldset-legend">🎭 Access Level <span class="text-error">*</span></legend>
                     <select name="user_type" required class="select w-full">
                         <option value="">Select access level...</option>
-                        @foreach(\App\Models\User::ACCESS_PRESETS as $val => $label)
+                        @foreach($assignableRoles as $val => $label)
                             <option value="{{ $val }}" @selected(old('user_type') === $val)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <p class="mt-1 text-xs opacity-60">Super Admin, Admin, Accounting, Receptionist, Processing</p>
+                    <p class="mt-1 text-xs opacity-60">{{ collect($assignableRoles)->values()->join(', ') }}</p>
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🏢 Branch</legend>
