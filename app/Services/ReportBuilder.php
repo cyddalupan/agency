@@ -96,6 +96,7 @@ class ReportBuilder
         $columns = $config['columns'] ?? ['name', 'status', 'country', 'created_at'];
 
         $query = Applicant::where('agency_id', $agencyId)
+            ->forBranchUser()
             ->with(['statusCode', 'country', 'employer']);
 
         // Apply date preset filter

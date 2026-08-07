@@ -29,7 +29,7 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $query = Applicant::with(['statusCode', 'country', 'employer']);
+        $query = Applicant::with(['statusCode', 'country', 'employer'])->forBranchUser();
 
         if (!$isSuperAdmin) {
             $query->where('agency_id', $agencyId);
@@ -129,7 +129,7 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $query = Applicant::with(['statusCode', 'country']);
+        $query = Applicant::with(['statusCode', 'country'])->forBranchUser();
 
         if (!$isSuperAdmin) {
             $query->where('agency_id', $agencyId);
@@ -274,17 +274,21 @@ class ReportController extends Controller
     {
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
+        $userBranchId = (int) auth()->user()->branch_id > 0 ? (int) auth()->user()->branch_id : null;
 
         $totalApplicants = $isSuperAdmin
             ? Applicant::count()
-            : Applicant::where('agency_id', $agencyId)->count();
+            : Applicant::where('agency_id', $agencyId)->forBranchUser()->count();
 
         $applicantsByStatus = StatusCode::select(['status_codes.code', 'status_codes.label', 'status_codes.color'])
             ->selectRaw('COUNT(applicants.id) as total')
-            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin) {
+            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin, $userBranchId) {
                 $join->on('status_codes.code', '=', 'applicants.status_code');
                 if (!$isSuperAdmin) {
                     $join->where('applicants.agency_id', '=', $agencyId);
+                    if ($userBranchId) {
+                        $join->where('applicants.branch_id', '=', $userBranchId);
+                    }
                 }
             })
             ->groupBy('status_codes.code', 'status_codes.label', 'status_codes.color')
@@ -293,10 +297,13 @@ class ReportController extends Controller
 
         $topDestinations = Country::select(['countries.id', 'countries.name'])
             ->selectRaw('COUNT(applicants.id) as total')
-            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin) {
+            ->join('applicants', function ($join) use ($agencyId, $isSuperAdmin, $userBranchId) {
                 $join->on('countries.id', '=', 'applicants.country_id');
                 if (!$isSuperAdmin) {
                     $join->where('applicants.agency_id', '=', $agencyId);
+                    if ($userBranchId) {
+                        $join->where('applicants.branch_id', '=', $userBranchId);
+                    }
                 }
             })
             ->groupBy('countries.id', 'countries.name')
@@ -319,6 +326,7 @@ class ReportController extends Controller
                 ->limit(12)
                 ->get()
             : Applicant::where('agency_id', $agencyId)
+            ->forBranchUser()
             ->whereNotNull('status_code')
             ->whereIn('status_code', [8, 34])
             ->selectRaw($dateExpr)
