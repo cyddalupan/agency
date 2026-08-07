@@ -168,7 +168,7 @@
             <div class="sb-item"><strong>Gender:</strong> {{ ucfirst($applicant->gender ?? '—') }}</div>
             <div class="sb-item"><strong>Age:</strong> {{ $applicant->age ?? '—' }}</div>
             <div class="sb-item"><strong>Birthdate:</strong> {{ $applicant->birthdate ? date('M d, Y', strtotime($applicant->birthdate)) : '—' }}</div>
-            <div class="sb-item"><strong>Branch:</strong> {{ $applicant->branch ?? '—' }}</div>
+            <div class="sb-item"><strong>Branch:</strong> {{ $applicant->branch?->name ?? '—' }}</div>
             @if($applicant->agent)
             <div class="sb-item"><strong>Agent:</strong> {{ $applicant->agent->name }}</div>
             @endif

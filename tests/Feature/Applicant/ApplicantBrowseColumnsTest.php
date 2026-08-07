@@ -4,6 +4,7 @@ namespace Tests\Feature\Applicant;
 
 use App\Models\Agency;
 use App\Models\Applicant;
+use App\Models\Branch;
 use App\Models\User;
 use Database\Seeders\StatusCodesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +19,7 @@ class ApplicantBrowseColumnsTest extends TestCase
 
     private Agency $agency;
     private User $user;
+    private Branch $branch;
 
     protected function setUp(): void
     {
@@ -26,6 +28,7 @@ class ApplicantBrowseColumnsTest extends TestCase
         $this->seed(StatusCodesSeeder::class);
 
         $this->agency = Agency::factory()->create();
+        $this->branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Alabang Branch']);
         $this->user = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
@@ -42,7 +45,7 @@ class ApplicantBrowseColumnsTest extends TestCase
                 'last_name'            => 'Reyes',
                 'birthdate'            => '1995-06-15',
                 'contact'              => '09171231234',
-                'branch'               => 'Alabang Branch',
+                'branch_id'            => $this->branch->id,
                 'encoder'              => 'Cyd Gulf',
                 'contract'             => UploadedFile::fake()->create('andrea_contract.pdf', 10, 'application/pdf'),
                 'contract_received_date' => '2026-07-01',
@@ -52,7 +55,7 @@ class ApplicantBrowseColumnsTest extends TestCase
             'agency_id'             => $this->agency->id,
             'first_name'            => 'Andrea',
             'last_name'             => 'Reyes',
-            'branch'                => 'Alabang Branch',
+            'branch_id'             => $this->branch->id,
             'encoder'               => 'Cyd Gulf',
         ]);
 
@@ -76,7 +79,7 @@ class ApplicantBrowseColumnsTest extends TestCase
                 'last_name'            => 'Tan',
                 'birthdate'            => '1990-03-12',
                 'contact'              => '09175556666',
-                'branch'               => 'Makati Branch',
+                'branch_id'               => $this->branch->id,
                 'encoder'              => 'Cyd Gulf',
                 'contract'             => UploadedFile::fake()->create('signed_contract.pdf', 200, 'application/pdf'),
             ])
@@ -105,7 +108,7 @@ class ApplicantBrowseColumnsTest extends TestCase
         $this->assertDatabaseHas('applicants', [
             'first_name'           => 'Juan',
             'last_name'            => 'Dela Cruz',
-            'branch'               => null,
+            'branch_id'            => null,
             'contract'             => null,
             'contract_received_date' => null,
             'created_by'           => $this->user->id,
@@ -135,7 +138,7 @@ class ApplicantBrowseColumnsTest extends TestCase
             'last_name'    => 'Santos',
             'birthdate'    => '1995-06-15',
             'contact'      => '09170000000',
-            'branch'       => 'QC Branch',
+            'branch_id'    => $this->branch->id,
             'encoder'      => 'Cyd Gulf',
             'contract'     => 'contracts/maria.pdf',
             'contract_received_date' => '2026-07-10',
@@ -155,7 +158,7 @@ class ApplicantBrowseColumnsTest extends TestCase
 
         // Row data visible.
         $response->assertSee('Maria');
-        $response->assertSee('QC Branch');
+        $response->assertSee($this->branch->name);
         $response->assertSee('Cyd Gulf');
     }
 

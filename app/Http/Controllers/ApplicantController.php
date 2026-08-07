@@ -18,7 +18,7 @@ class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Applicant::with(['statusCode', 'position', 'agent']);
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch']);
 
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
@@ -266,6 +266,7 @@ class ApplicantController extends Controller
             'country_id'   => 'nullable|integer|exists:countries,id',
             'position_id'  => 'nullable|integer|exists:positions,id',
             'agent_id'     => 'nullable|integer|exists:agents,id',
+            'branch_id'    => 'nullable|integer|exists:branches,id',
             'branch'       => 'nullable|string|max:255',
             'encoder'      => 'nullable|string|max:255',
             'contract'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
@@ -327,7 +328,7 @@ class ApplicantController extends Controller
 
     public function export(Request $request)
     {
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer'])->orderBy('created_at', 'desc');
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])->orderBy('created_at', 'desc');
 
         // Apply the same filters as index()
         if ($request->filled('search')) {

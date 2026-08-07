@@ -213,14 +213,7 @@
 
             @include('partials.custom-fields-form', ['modelType' => 'Applicant', 'model' => null])
 
-            {{-- Browse Applicant columns: Branch note + Encoder (pre-filled) --}}
             {{-- Contract / Contract Received moved to the tabbed Personal Information section --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🏷️ Branch (note / custom field)</legend>
-                    <textarea name="branch" rows="3" class="textarea textarea-lg w-full" placeholder="e.g. Alabang Branch" maxlength="255">{{ old('branch') }}</textarea>
-                </fieldset>
-            </div>
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">

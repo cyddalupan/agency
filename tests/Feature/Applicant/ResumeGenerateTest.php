@@ -5,6 +5,7 @@ namespace Tests\Feature\Applicant;
 use App\Models\Agency;
 use App\Models\Agent;
 use App\Models\Applicant;
+use App\Models\Branch;
 use App\Models\Country;
 use App\Models\Position;
 use App\Models\User;
@@ -47,6 +48,7 @@ class ResumeGenerateTest extends TestCase
 
         $position = \App\Models\Position::factory()->create(['name' => 'Domestic Helper']);
         $country = \App\Models\Country::factory()->create(['name' => 'Saudi Arabia']);
+        $branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Manila']);
 
         $this->applicant = Applicant::factory()->create([
             'agency_id'     => $this->agency->id,
@@ -56,7 +58,7 @@ class ResumeGenerateTest extends TestCase
             'birthdate'     => '1990-05-14',
             'gender'        => 'Male',
             'contact'       => '09171234567',
-            'branch'        => 'Manila',
+            'branch_id'     => $branch->id,
             'agent_id'      => $agent->id,
             'position_id'   => $position->id,
             'country_id'    => $country->id,

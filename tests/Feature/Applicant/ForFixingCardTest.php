@@ -100,10 +100,12 @@ class ForFixingCardTest extends TestCase
     }
 
     #[Test]
-    public function branch_field_renders_as_textarea(): void
+    public function branch_renders_as_dropdown_not_free_text_textarea(): void
     {
         $html = $this->getCreateHtml();
 
-        $this->assertMatchesRegularExpression('/<textarea[^>]*name="branch"/', $html);
+        // Branch must be the dropdown (single source of truth), never a free-text textarea.
+        $this->assertStringContainsString('name="branch_id"', $html);
+        $this->assertDoesNotMatchRegularExpression('/<textarea[^>]*name="branch"/', $html);
     }
 }

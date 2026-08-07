@@ -206,7 +206,7 @@
                                 {{ $applicant->position?->name ?? '—' }}
                             </td>
                             <td class="text-sm">
-                                {{ $applicant->branch ?? '—' }}
+                                {{ $applicant->branch?->name ?? '—' }}
                             </td>
                             <td class="text-sm">
                                 {{ $applicant->agent?->name ?? '—' }}

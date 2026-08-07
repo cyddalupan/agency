@@ -21,12 +21,17 @@ class Applicant extends Model implements AuthenticatableContract
         'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
         'job_id', 'status_code', 'password', 'status', 'firstimer_type',
         'applicant_no', 'fra', 'status_date', 'repat', 'repat_date',
-        'branch', 'encoder', 'contract', 'contract_received_date',
+        'branch_id', 'encoder', 'contract', 'contract_received_date',
         'created_by',
         'number_of_siblings',
         'mother_name', 'mother_occupation', 'father_name', 'father_occupation',
         'e_reg', 'peos', 'info_sheet', 'birth_certificate', 'marriage_certificate',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     protected $casts = [
         'birthdate' => 'date',
