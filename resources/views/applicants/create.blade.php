@@ -286,13 +286,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const agents = Array.from(document.querySelectorAll('#agent-select option')).filter(o => o.value !== '');
 
     function toggleExtraFields() {
-        const showBranch = sourceSelect && sourceSelect.value === 'Branch';
+        // (Branch feature) Branch is ALWAYS visible & independent — never clear it.
         const showAgent = sourceSelect && sourceSelect.value !== '';
 
         if (branchField) branchField.style.display = '';
         if (agentField) agentField.style.display = showAgent ? '' : 'none';
 
-        if (!showBranch && branchSelect) branchSelect.value = '';
         if (!showAgent && agentSelect) agentSelect.value = '';
 
         filterAgentsByBranch();
