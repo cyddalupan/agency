@@ -133,6 +133,56 @@
                 <textarea name="address" rows="2" class="textarea w-full" placeholder="Complete address">{{ old('address') }}</textarea>
             </fieldset>
 
+            {{-- (PI card) Family Information --}}
+            <div class="divider mt-6">👪 Family Information</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👩 Mother's Name</legend>
+                    <input type="text" name="mother_name" value="{{ old('mother_name') }}" class="input w-full" placeholder="Mother's name">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👩 Mother's Occupation</legend>
+                    <input type="text" name="mother_occupation" value="{{ old('mother_occupation') }}" class="input w-full" placeholder="Mother's occupation">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👨 Father's Name</legend>
+                    <input type="text" name="father_name" value="{{ old('father_name') }}" class="input w-full" placeholder="Father's name">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👨 Father's Occupation</legend>
+                    <input type="text" name="father_occupation" value="{{ old('father_occupation') }}" class="input w-full" placeholder="Father's occupation">
+                </fieldset>
+            </div>
+
+            {{-- (PI card) Skills & Languages, restricted to the Settings-configured lists --}}
+            <div class="divider mt-6">🛠️ Skills</div>
+            <div class="flex flex-wrap gap-3">
+                @forelse ($skills ?? [] as $skill)
+                    <label class="label cursor-pointer gap-2">
+                        <input type="checkbox" name="skills[]" value="{{ $skill->name }}" class="checkbox checkbox-sm"
+                            @checked(in_array($skill->name, old('skills', [])))>
+                        <span class="label-text">{{ $skill->name }}</span>
+                    </label>
+                @empty
+                    <p class="text-sm opacity-60">No skills configured in Settings yet.</p>
+                @endforelse
+            </div>
+            <p class="text-xs opacity-60 mt-1">Only skills configured in Settings are allowed.</p>
+
+            <div class="divider mt-6">🗣️ Languages</div>
+            <div class="flex flex-wrap gap-3">
+                @forelse ($languages ?? [] as $language)
+                    <label class="label cursor-pointer gap-2">
+                        <input type="checkbox" name="languages[]" value="{{ $language->name }}" class="checkbox checkbox-sm"
+                            @checked(in_array($language->name, old('languages', [])))>
+                        <span class="label-text">{{ $language->name }}</span>
+                    </label>
+                @empty
+                    <p class="text-sm opacity-60">No languages configured in Settings yet.</p>
+                @endforelse
+            </div>
+            <p class="text-xs opacity-60 mt-1">Only languages configured in Settings are allowed.</p>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🌍 Preferred Country</legend>
@@ -173,7 +223,7 @@
                         @endforeach
                     </select>
                 </fieldset>
-                <fieldset class="fieldset" id="branch-field" style="display:none;">
+                <fieldset class="fieldset" id="branch-field">
                     <legend class="fieldset-legend">🏢 Branch</legend>
                     <select name="branch_id" class="select w-full" id="branch-select">
                         <option value="">-- Select Branch --</option>
@@ -239,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const showBranch = sourceSelect && sourceSelect.value === 'Branch';
         const showAgent = sourceSelect && sourceSelect.value !== '';
 
-        if (branchField) branchField.style.display = showBranch ? '' : 'none';
+        if (branchField) branchField.style.display = '';
         if (agentField) agentField.style.display = showAgent ? '' : 'none';
 
         if (!showBranch && branchSelect) branchSelect.value = '';

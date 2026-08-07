@@ -72,6 +72,37 @@
                 </fieldset>
             </div>
 
+            {{-- (PI card) Civil Status / Nationality / Religion on Edit too --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">💍 Civil Status</legend>
+                    <select name="civil_status_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($civilStatuses ?? [] as $cs)
+                            <option value="{{ $cs->id }}" @selected(old('civil_status_id', $applicant->civil_status_id) == $cs->id)>{{ $cs->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🌏 Nationality</legend>
+                    <select name="nationality_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($nationalities ?? [] as $n)
+                            <option value="{{ $n->id }}" @selected(old('nationality_id', $applicant->nationality_id) == $n->id)>{{ $n->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">⛪ Religion</legend>
+                    <select name="religion_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($religions ?? [] as $r)
+                            <option value="{{ $r->id }}" @selected(old('religion_id', $applicant->religion_id) == $r->id)>{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🛂 Passport</legend>
@@ -157,7 +188,7 @@
                         @endforeach
                     </select>
                 </fieldset>
-                <fieldset class="fieldset" id="branch-field" style="display:none;">
+                <fieldset class="fieldset" id="branch-field">
                     <legend class="fieldset-legend">🏢 Branch</legend>
                     <select name="branch_id" class="select w-full" id="branch-select">
                         <option value="">-- Select Branch --</option>
@@ -193,6 +224,56 @@
                 </fieldset>
             </div>
 
+            {{-- (PI card) Family Information on Edit too --}}
+            <div class="divider mt-6">👪 Family Information</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👩 Mother's Name</legend>
+                    <input type="text" name="mother_name" value="{{ old('mother_name', $applicant->mother_name) }}" class="input w-full" placeholder="Mother's name">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👩 Mother's Occupation</legend>
+                    <input type="text" name="mother_occupation" value="{{ old('mother_occupation', $applicant->mother_occupation) }}" class="input w-full" placeholder="Mother's occupation">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👨 Father's Name</legend>
+                    <input type="text" name="father_name" value="{{ old('father_name', $applicant->father_name) }}" class="input w-full" placeholder="Father's name">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👨 Father's Occupation</legend>
+                    <input type="text" name="father_occupation" value="{{ old('father_occupation', $applicant->father_occupation) }}" class="input w-full" placeholder="Father's occupation">
+                </fieldset>
+            </div>
+
+            {{-- (PI card) Skills & Languages on Edit too, restricted to Settings lists --}}
+            <div class="divider mt-6">🛠️ Skills</div>
+            <div class="flex flex-wrap gap-3">
+                @forelse ($skills ?? [] as $skill)
+                    <label class="label cursor-pointer gap-2">
+                        <input type="checkbox" name="skills[]" value="{{ $skill->name }}" class="checkbox checkbox-sm"
+                            @checked(in_array($skill->name, $applicant->skills->pluck('skill_name')->all()))>
+                        <span class="label-text">{{ $skill->name }}</span>
+                    </label>
+                @empty
+                    <p class="text-sm opacity-60">No skills configured in Settings yet.</p>
+                @endforelse
+            </div>
+            <p class="text-xs opacity-60 mt-1">Only skills configured in Settings are allowed.</p>
+
+            <div class="divider mt-6">🗣️ Languages</div>
+            <div class="flex flex-wrap gap-3">
+                @forelse ($languages ?? [] as $language)
+                    <label class="label cursor-pointer gap-2">
+                        <input type="checkbox" name="languages[]" value="{{ $language->name }}" class="checkbox checkbox-sm"
+                            @checked(in_array($language->name, $applicant->languages->pluck('name')->all()))>
+                        <span class="label-text">{{ $language->name }}</span>
+                    </label>
+                @empty
+                    <p class="text-sm opacity-60">No languages configured in Settings yet.</p>
+                @endforelse
+            </div>
+            <p class="text-xs opacity-60 mt-1">Only languages configured in Settings are allowed.</p>
+
             @include('partials.custom-fields-form', ['modelType' => 'Applicant', 'model' => $applicant])
 
             {{-- Contract / Contract Received moved to the tabbed Personal Information section --}}
@@ -220,13 +301,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const agents = Array.from(document.querySelectorAll('#agent-select option')).filter(o => o.value !== '');
 
     function toggleExtraFields() {
-        const showBranch = sourceSelect && sourceSelect.value === 'Branch';
+        // (PI card) Branch dropdown is ALWAYS visible on Edit — not gated behind
+        // Source = Branch. Only the agent field remains gated.
         const showAgent = sourceSelect && sourceSelect.value !== '';
 
-        if (branchField) branchField.style.display = showBranch ? '' : 'none';
+        if (branchField) branchField.style.display = '';
         if (agentField) agentField.style.display = showAgent ? '' : 'none';
 
-        if (!showBranch && branchSelect) branchSelect.value = '';
         if (!showAgent && agentSelect) agentSelect.value = '';
 
         filterAgentsByBranch();

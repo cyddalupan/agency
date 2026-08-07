@@ -86,9 +86,13 @@ class ApplicantController extends Controller
         $branches  = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
         $agents    = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
 
+        // (PI card) Skills & Languages restricted to the Settings-configured lists.
+        $skills    = \App\Models\Skill::orderBy('name')->get();
+        $languages = \App\Models\Language::orderBy('name')->get();
+
         return view('applicants.create', compact(
             'positions', 'statusCodes', 'nationalities', 'religions', 'civilStatuses',
-            'sources', 'branches', 'agents', 'defaults'
+            'sources', 'branches', 'agents', 'defaults', 'skills', 'languages'
         ));
     }
 
@@ -108,6 +112,14 @@ class ApplicantController extends Controller
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
             'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
             'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
+            'mother_name'      => 'nullable|string|max:255',
+            'mother_occupation'=> 'nullable|string|max:255',
+            'father_name'      => 'nullable|string|max:255',
+            'father_occupation'=> 'nullable|string|max:255',
+            'skills'           => 'nullable|array',
+            'skills.*'         => 'nullable|string|max:255|exists:skills,name',
+            'languages'        => 'nullable|array',
+            'languages.*'      => 'nullable|string|max:255|exists:languages,name',
             'birthdate'    => 'nullable|date',
             'address'      => 'nullable|string',
             'remarks'      => 'nullable|string',
@@ -166,6 +178,7 @@ class ApplicantController extends Controller
         $applicant = Applicant::create($validated);
 
         $applicant->syncCustomFields($request->all());
+        $this->syncSkillsLanguages($applicant);
 
         return redirect()->route('applicants.index')
             ->with('success', 'Applicant created successfully.');
@@ -238,8 +251,19 @@ class ApplicantController extends Controller
         $branches = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
         $agents   = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
 
+        // (PI card) Same Settings-backed dropdowns as Add Applicant, so Edit is in sync.
+        $nationalities = \App\Models\Nationality::orderBy('name')->get();
+        $religions     = \App\Models\Religion::orderBy('name')->get();
+        $civilStatuses = \App\Models\CivilStatus::orderBy('name')->get();
+
+        // (PI card) Skills & Languages restricted to the Settings-configured lists.
+        $applicant->load(['skills', 'languages']);
+        $skills    = \App\Models\Skill::orderBy('name')->get();
+        $languages = \App\Models\Language::orderBy('name')->get();
+
         return view('applicants.edit', compact(
-            'applicant', 'statusCodes', 'sources', 'branches', 'agents'
+            'applicant', 'statusCodes', 'sources', 'branches', 'agents',
+            'nationalities', 'religions', 'civilStatuses', 'skills', 'languages'
         ));
     }
 
@@ -259,6 +283,14 @@ class ApplicantController extends Controller
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
             'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
             'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
+            'mother_name'      => 'nullable|string|max:255',
+            'mother_occupation'=> 'nullable|string|max:255',
+            'father_name'      => 'nullable|string|max:255',
+            'father_occupation'=> 'nullable|string|max:255',
+            'skills'           => 'nullable|array',
+            'skills.*'         => 'nullable|string|max:255|exists:skills,name',
+            'languages'        => 'nullable|array',
+            'languages.*'      => 'nullable|string|max:255|exists:languages,name',
             'birthdate'    => 'nullable|date',
             'address'      => 'nullable|string',
             'remarks'      => 'nullable|string',
@@ -303,9 +335,41 @@ class ApplicantController extends Controller
         $applicant->update($validated);
 
         $applicant->syncCustomFields($request->all());
+        $this->syncSkillsLanguages($applicant);
 
         return redirect()->route('applicants.index')
             ->with('success', 'Applicant updated successfully.');
+    }
+
+    /**
+     * (PI card) Sync the Skills & Languages selections from the Add/Edit form
+     * with the Settings-configured lists. Clears existing rows, then re-creates
+     * them from the submitted skill/language names.
+     */
+    private function syncSkillsLanguages(\App\Models\Applicant $applicant): void
+    {
+        $agencyId = $applicant->agency_id ?: $this->resolveAgencyId();
+
+        $applicant->skills()->delete();
+        $applicant->languages()->delete();
+
+        foreach (request('skills', []) as $skillName) {
+            if (is_string($skillName) && trim($skillName) !== '') {
+                $applicant->skills()->create([
+                    'agency_id'  => $agencyId,
+                    'skill_name' => trim($skillName),
+                ]);
+            }
+        }
+
+        foreach (request('languages', []) as $langName) {
+            if (is_string($langName) && trim($langName) !== '') {
+                $applicant->languages()->create([
+                    'agency_id' => $agencyId,
+                    'name'      => trim($langName),
+                ]);
+            }
+        }
     }
 
     public function destroy(Applicant $applicant)
