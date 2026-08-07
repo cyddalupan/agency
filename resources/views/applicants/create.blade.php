@@ -228,7 +228,7 @@
                     <select name="branch_id" class="select w-full" id="branch-select">
                         <option value="">-- Select Branch --</option>
                         @foreach ($branches as $br)
-                            <option value="{{ $br->id }}" @selected(old('branch_id') == $br->id)>{{ $br->name }}</option>
+                            <option value="{{ $br->id }}" @selected(old('branch_id', $defaultBranchId) == $br->id)>{{ $br->name }}</option>
                         @endforeach
                     </select>
                 </fieldset>

@@ -33,6 +33,32 @@ class Applicant extends Model implements AuthenticatableContract
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * (Branch feature) Scope an applicant query to a given branch for a branch
+     * account. When the passed user has a non-null branch_id, only applicants
+     * belonging to that branch are returned. A user with no branch (agency
+     * admin) is unaffected and still sees the whole agency.
+     */
+    public function scopeForBranchUser($query, ?\Illuminate\Contracts\Auth\Authenticatable $user = null)
+    {
+        $user = $user ?? auth()->user();
+
+        if ($user && (int) $user->branch_id > 0) {
+            $query->where($this->getTable() . '.branch_id', $user->branch_id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * True when the given user is branch-scoped (has a branch_id).
+     */
+    public static function isBranchUser(?\Illuminate\Contracts\Auth\Authenticatable $user = null): bool
+    {
+        $user = $user ?? auth()->user();
+        return $user && (int) $user->branch_id > 0;
+    }
+
     protected $casts = [
         'birthdate' => 'date',
         'contract_received_date' => 'date',

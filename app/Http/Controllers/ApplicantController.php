@@ -18,7 +18,8 @@ class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch']);
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch'])
+            ->forBranchUser();
 
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
@@ -54,6 +55,7 @@ class ApplicantController extends Controller
 
         // Get status counts for all applicants (ignoring filters)
         $statusCounts = Applicant::query()
+            ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
             ->groupBy('status_code')
@@ -90,9 +92,13 @@ class ApplicantController extends Controller
         $skills    = \App\Models\Skill::orderBy('name')->get();
         $languages = \App\Models\Language::orderBy('name')->get();
 
+        // (Branch feature) Branch dropdown default: the logged-in branch user's
+        // own branch; null for agency admins (they pick freely).
+        $defaultBranchId = $this->defaultBranchId();
+
         return view('applicants.create', compact(
             'positions', 'statusCodes', 'nationalities', 'religions', 'civilStatuses',
-            'sources', 'branches', 'agents', 'defaults', 'skills', 'languages'
+            'sources', 'branches', 'agents', 'defaults', 'skills', 'languages', 'defaultBranchId'
         ));
     }
 
@@ -152,6 +158,11 @@ class ApplicantController extends Controller
 
         $validated['status_code'] = $validated['status_code'] ?? 0; // Default: Pending if not provided
 
+        // (Branch feature) Enforce branch ownership on create: a branch account
+        // may only create applicants in its own branch. If omitted, default to
+        // the logged-in branch user's branch.
+        $this->applyBranchDefaults($validated);
+
         // Handle photo upload
         if ($request->hasFile('photo')) {
             $validated['photo'] = resize_and_save_photo($request->file('photo'));
@@ -186,6 +197,9 @@ class ApplicantController extends Controller
 
     public function show(Applicant $applicant)
     {
+        // (Branch feature) A branch account may only view applicants of its own branch.
+        $this->authorizeBranchAccess($applicant);
+
         $applicant->load([
             'statusCode',
             'country',
@@ -240,6 +254,9 @@ class ApplicantController extends Controller
 
     public function edit(Applicant $applicant)
     {
+        // (Branch feature) A branch account may only edit applicants of its own branch.
+        $this->authorizeBranchAccess($applicant);
+
         $defaults     = app_applicant_form_defaults();
         $agencyId     = resolve_agency_id();
         $statusCodes  = StatusCode::orderBy('sort_order')->get();
@@ -261,14 +278,21 @@ class ApplicantController extends Controller
         $skills    = \App\Models\Skill::orderBy('name')->get();
         $languages = \App\Models\Language::orderBy('name')->get();
 
+        // (Branch feature) Branch dropdown default: logged-in branch user's
+        // branch; for agency admins fall back to the applicant's current branch.
+        $defaultBranchId = $this->defaultBranchId() ?? $applicant->branch_id;
+
         return view('applicants.edit', compact(
             'applicant', 'statusCodes', 'sources', 'branches', 'agents',
-            'nationalities', 'religions', 'civilStatuses', 'skills', 'languages'
+            'nationalities', 'religions', 'civilStatuses', 'skills', 'languages', 'defaultBranchId'
         ));
     }
 
     public function update(Request $request, Applicant $applicant)
     {
+        // (Branch feature) A branch account may only update its own branch's applicants.
+        $this->authorizeBranchAccess($applicant);
+
         $this->validateCustomFields($request, 'Applicant');
 
         $validated = $request->validate([
@@ -332,6 +356,9 @@ class ApplicantController extends Controller
             $validated['contract'] = $request->file('contract')->store('contracts', 'public');
         }
 
+        // (Branch feature) On update, enforce the same branch rules as create.
+        $this->applyBranchDefaults($validated);
+
         $applicant->update($validated);
 
         $applicant->syncCustomFields($request->all());
@@ -372,8 +399,62 @@ class ApplicantController extends Controller
         }
     }
 
+    /**
+     * Branch dropdown default: the logged-in branch user's branch_id, or null
+     * for agency admins / non-branch users (they pick freely).
+     */
+    private function defaultBranchId(): ?int
+    {
+        $user = auth()->user();
+        return ($user && (int) $user->branch_id > 0) ? (int) $user->branch_id : null;
+    }
+
+    /**
+     * (Branch feature) Enforce branch ownership rules when persisting an
+     * applicant. A branch account's branch_id is locked to their own branch:
+     * if omitted it defaults to their branch; if set to some other branch it is
+     * rejected. Agency admins (no branch) are unaffected.
+     */
+    private function applyBranchDefaults(array &$validated): void
+    {
+        $user = auth()->user();
+        $isBranchUser = $user && (int) $user->branch_id > 0;
+
+        if (! $isBranchUser) {
+            return;
+        }
+
+        $submitted = $validated['branch_id'] ?? null;
+
+        if (blank($submitted)) {
+            $validated['branch_id'] = $user->branch_id;
+            return;
+        }
+
+        if ((int) $submitted !== (int) $user->branch_id) {
+            abort(403, 'You can only assign applicants to your own branch.');
+        }
+    }
+
+    /**
+     * (Branch feature) Authorize that a branch account may view/edit an
+     * applicant only when it belongs to their branch. Agency admins pass.
+     */
+    private function authorizeBranchAccess(Applicant $applicant): void
+    {
+        $user = auth()->user();
+        $isBranchUser = $user && (int) $user->branch_id > 0;
+
+        if ($isBranchUser && (int) $applicant->branch_id !== (int) $user->branch_id) {
+            abort(403, 'This applicant belongs to another branch.');
+        }
+    }
+
     public function destroy(Applicant $applicant)
     {
+        // (Branch feature) A branch account may only delete its own branch's applicants.
+        $this->authorizeBranchAccess($applicant);
+
         SensitiveActionLogger::deletion($applicant);
 
         // Delete photo file if exists

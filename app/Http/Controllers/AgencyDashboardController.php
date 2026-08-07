@@ -17,18 +17,19 @@ class AgencyDashboardController extends Controller
 
         // Get status counts
         $statusCounts = Applicant::query()
+            ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
-        // Get employer counts for pipeline
+        // Get employer counts for pipeline (branch-scoped for branch accounts)
         $employerCounts = Employer::select(['id', 'name'])
-            ->withCount(['applicants' => fn($q) => $q->whereNotNull('status_code'),
+            ->withCount(['applicants' => fn($q) => $q->forBranchUser()->whereNotNull('status_code'),
         ])->orderByDesc('applicants_count')->limit(10)->get();
 
         // Get recent applicants, optionally filtered by status and/or employer
-        $recentQuery = Applicant::with('statusCode');
+        $recentQuery = Applicant::with('statusCode')->forBranchUser();
         if (request()->filled('status')) {
             $recentQuery->where('status_code', request()->integer('status'));
         }
@@ -38,7 +39,7 @@ class AgencyDashboardController extends Controller
         $recentApplicants = $recentQuery->latest()->take(5)->get();
 
         $stats = [
-            'total_applicants'    => Applicant::count(),
+            'total_applicants'    => Applicant::forBranchUser()->count(),
             'total_employers'     => Employer::count(),
             'total_job_positions' => JobPosition::count(),
             'recent_applicants'   => $recentApplicants,
@@ -53,6 +54,7 @@ class AgencyDashboardController extends Controller
             : "DATE_FORMAT(created_at, '%Y-%m')";
 
         $monthlyTotals = Applicant::query()
+            ->forBranchUser()
             ->selectRaw("{$dateFormat} as month, count(*) as total")
             ->where('created_at', '>=', now()->subYear())
             ->groupBy('month')

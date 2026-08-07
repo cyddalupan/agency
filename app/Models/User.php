@@ -66,6 +66,16 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * (Branch feature) True when this user is a branch account, i.e. bound to a
+     * specific agency branch via branch_id. Branch accounts are auto-scoped to
+     * their branch and get a trimmed-down sidebar.
+     */
+    public function isBranchAccount(): bool
+    {
+        return (int) $this->branch_id > 0;
+    }
+
     public function permissions()
     {
         return $this->hasMany(UserPermission::class);

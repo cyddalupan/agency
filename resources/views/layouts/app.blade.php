@@ -240,7 +240,7 @@
                         Reports
                     </a>
 
-                    @if(in_array(auth()->user()->user_type, ['admin','super_admin','billing']))
+                    @if(!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['admin','super_admin','billing']))
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Finance</p>
                         <a href="{{ route('accounting.dashboard') }}"
@@ -287,7 +287,7 @@
                         @endif
                         @endif
 
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('users.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('users.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -296,14 +296,16 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount())
                         <a href="{{ route('custom-fields.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('custom-fields.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">⚙️</span>
                             Custom Fields
                         </a>
+                        @endif
 
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('agents.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('agents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -312,14 +314,16 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount())
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('settings.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">⚙️</span>
                         Settings
                     </a>
+                        @endif
 
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('accounts.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('accounts.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -335,18 +339,6 @@
                                   {{ request()->routeIs('branches.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">🏢</span>
                             Branches
-                        </a>
-                        <a href="{{ route('languages.index') }}"
-                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('languages.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
-                            <span class="text-lg">🌐</span>
-                            Languages
-                        </a>
-                        <a href="{{ route('skills.index') }}"
-                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('skills.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
-                            <span class="text-lg">🛠️</span>
-                            Skills
                         </a>
                         <a href="{{ route('countries.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -368,12 +360,31 @@
                         </a>
                         @endif
 
+                        {{-- Languages & Skills are needed by branch accounts to encode applicants --}}
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']) || auth()->user()->isBranchAccount())
+                        <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Lookups</div>
+                        <a href="{{ route('languages.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('languages.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🌐</span>
+                            Languages
+                        </a>
+                        <a href="{{ route('skills.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('skills.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🛠️</span>
+                            Skills
+                        </a>
+                        @endif
+
+                        @if (!auth()->user()->isBranchAccount())
                         <a href="{{ route('report-templates.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('report-templates.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📋</span>
                             Report Templates
                         </a>
+                        @endif
                     </div>
                 </nav>
 
