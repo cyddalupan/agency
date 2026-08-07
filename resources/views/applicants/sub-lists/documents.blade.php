@@ -14,6 +14,10 @@
         <div class="card-body p-2 text-xs">
             <p class="font-semibold truncate" title="{{ $doc->file_name }}">{{ $doc->file_name }}</p>
             <p class="opacity-60 truncate">{{ str_replace('_', ' ', $doc->document_type) }}</p>
+            <div class="mt-1 text-[10px] opacity-60 leading-tight">
+                <p><span class="font-medium opacity-80">Encoder:</span> {{ $doc->encoder?->name ?? '—' }}</p>
+                <p><span class="font-medium opacity-80">Date:</span> {{ $doc->created_at?->format('M d, Y') ?? '—' }}</p>
+            </div>
             <div class="flex justify-between items-center mt-1">
                 <a href="{{ Storage::url($doc->file_path) }}" target="_blank" class="link link-primary text-xs">View</a>
                 <form action="{{ route('applicants.documents.destroy', [$doc->applicant_id, $doc]) }}" method="POST"

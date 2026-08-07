@@ -57,11 +57,11 @@ class SubTableController extends Controller
                 'responsibilities' => 'nullable|string',
             ],
             'skills' => [
-                'skill_name'  => 'required|string|max:255',
+                'skill_name'  => 'required|string|max:255|exists:skills,name',
                 'proficiency' => 'nullable|string|in:beginner,intermediate,expert',
             ],
             'languages' => [
-                'name'        => 'required|string|max:255',
+                'name'        => 'required|string|max:255|exists:languages,name',
                 'proficiency' => 'nullable|string|in:beginner,intermediate,expert',
             ],
             'contacts' => [
@@ -126,6 +126,17 @@ class SubTableController extends Controller
                 'flight_time'    => 'nullable|string|max:20',
                 'flight_remarks' => 'nullable|string',
             ],
+            'oma' => [
+                'from_date'     => 'nullable|date',
+                'to_date'       => 'nullable|date|after_or_equal:from_date',
+                'released_date' => 'nullable|date',
+            ],
+            'owwa' => [
+                'from_date'        => 'nullable|date',
+                'to_date'          => 'nullable|date|after_or_equal:from_date',
+                'released_date'    => 'nullable|date',
+                'local_flight_date' => 'nullable|date',
+            ],
             default => [],
         };
     }
@@ -154,6 +165,8 @@ class SubTableController extends Controller
             'visa'             => ['agency_id', 'applicant_id', 'visa_no', 'visa_type', 'received_date', 'stamped_date', 'expiry_date', 'approved_musaned'],
             'contract'         => ['agency_id', 'applicant_id', 'rfp', 'sponsor', 'sponsor_id', 'contact', 'address', 'contract_received', 'contract_signed'],
             'ticket'           => ['agency_id', 'applicant_id', 'airline', 'flight_date', 'flight_time', 'flight_remarks'],
+            'oma'              => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date'],
+            'owwa'             => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date', 'local_flight_date'],
             default            => [],
         };
     }
@@ -179,6 +192,8 @@ class SubTableController extends Controller
             'visa'            => \App\Models\ApplicantVisa::class,
             'contract'        => \App\Models\ApplicantContract::class,
             'ticket'          => \App\Models\ApplicantTicket::class,
+            'oma'             => \App\Models\ApplicantOma::class,
+            'owwa'            => \App\Models\ApplicantOwWa::class,
             default           => abort(404, "Unknown sub-table: {$type}"),
         };
     }

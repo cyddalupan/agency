@@ -9,10 +9,15 @@ class ApplicantDocument extends Model
 {
     use HasTenant;
 
-    protected $fillable = ['agency_id', 'applicant_id', 'document_type', 'file_name', 'file_path', 'mime_type', 'file_size', 'notes'];
+    protected $fillable = ['agency_id', 'user_id', 'applicant_id', 'document_type', 'file_name', 'file_path', 'mime_type', 'file_size', 'notes'];
 
     public function applicant()
     {
         return $this->belongsTo(Applicant::class);
+    }
+
+    public function encoder()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

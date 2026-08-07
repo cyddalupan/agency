@@ -166,7 +166,29 @@
             {{-- Personal Details --}}
             <div class="sb-title">Details</div>
             <div class="sb-item"><strong>Gender:</strong> {{ ucfirst($applicant->gender ?? '—') }}</div>
+            <div class="sb-item"><strong>Age:</strong> {{ $applicant->age ?? '—' }}</div>
             <div class="sb-item"><strong>Birthdate:</strong> {{ $applicant->birthdate ? date('M d, Y', strtotime($applicant->birthdate)) : '—' }}</div>
+            <div class="sb-item"><strong>Branch:</strong> {{ $applicant->branch ?? '—' }}</div>
+            @if($applicant->agent)
+            <div class="sb-item"><strong>Agent:</strong> {{ $applicant->agent->name }}</div>
+            @endif
+            <div class="sb-item"><strong>FRA:</strong>
+                @switch($applicant->fra)
+                    @case('for_fra') For FRA @break
+                    @case('fra_completed') FRA Completed @break
+                    @case('none') No FRA @break
+                    @default —
+                @endswitch
+            </div>
+            <div class="sb-item"><strong>Status:</strong> {{ $applicant->statusCode?->label ?? $applicant->status ?? '—' }}</div>
+            <div class="sb-item"><strong>Firstimer/Ex-Abroad:</strong>
+                @switch($applicant->firstimer_type)
+                    @case('firstimer') Firstimer @break
+                    @case('ex-abroad') Ex-Abroad @break
+                    @default —
+                @endswitch
+            </div>
+            <div class="sb-item"><strong>Encoder:</strong> {{ $applicant->encoder ?? '—' }}</div>
             <div class="sb-item"><strong>Civil Status:</strong> {{ $applicant->civilStatus?->label ?? '—' }}</div>
             <div class="sb-item"><strong>Nationality:</strong> {{ $applicant->nationality?->name ?? '—' }}</div>
             @if($applicant->religion)

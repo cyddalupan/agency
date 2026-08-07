@@ -1,7 +1,12 @@
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Language <span class="text-error">*</span></legend>
-    <input type="text" name="name" value="{{ old('name', $record->name ?? '') }}"
-           class="input w-full" placeholder="e.g. English, Filipino, Arabic">
+    <select name="name" class="select w-full">
+        <option value="">-- Select Language --</option>
+        @foreach ($languages ?? [] as $language)
+            <option value="{{ $language->name }}" @selected(old('name', $record->name ?? '') === $language->name)>{{ $language->name }}</option>
+        @endforeach
+    </select>
+    <p class="text-xs opacity-60 mt-1">Only languages configured in Settings are allowed.</p>
 </fieldset>
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Proficiency</legend>

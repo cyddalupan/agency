@@ -1,7 +1,12 @@
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Skill Name <span class="text-error">*</span></legend>
-    <input type="text" name="skill_name" value="{{ old('skill_name', $record->skill_name ?? '') }}"
-           class="input w-full" placeholder="e.g. Caregiving">
+    <select name="skill_name" class="select w-full">
+        <option value="">-- Select Skill --</option>
+        @foreach ($skills ?? [] as $skill)
+            <option value="{{ $skill->name }}" @selected(old('skill_name', $record->skill_name ?? '') === $skill->name)>{{ $skill->name }}</option>
+        @endforeach
+    </select>
+    <p class="text-xs opacity-60 mt-1">Only skills configured in Settings are allowed.</p>
 </fieldset>
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Proficiency</legend>

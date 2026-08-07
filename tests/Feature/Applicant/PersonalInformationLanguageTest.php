@@ -90,6 +90,9 @@ class PersonalInformationLanguageTest extends TestCase
     #[Test]
     public function language_can_be_stored_via_sub_store_route(): void
     {
+        // The language must exist in the Settings list (item 5 restriction).
+        \App\Models\Language::create(['name' => 'Arabic']);
+
         $this->actingAs($this->user)
             ->post(route('applicants.sub.store', [$this->applicant, 'languages']), [
                 'name'        => 'Arabic',

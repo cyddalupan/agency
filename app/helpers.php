@@ -99,6 +99,7 @@ if (!function_exists('app_applicant_form_defaults')) {
             'sources'          => ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'],
             'enable_firstimer' => true,
             'firstimer_options'=> ['Firstimer', 'Ex-Abroad'],
+            'fra_options'      => ['none', 'for_fra', 'fra_completed'],
         ];
 
         if (! $agency) {
@@ -120,6 +121,22 @@ if (!function_exists('app_source_options')) {
     function app_source_options(): array
     {
         return ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'];
+    }
+}
+
+if (!function_exists('app_fra_options')) {
+    /**
+     * Known, canonical FRA options (value => label). Per-agency FRA dropdowns
+     * (Status tab) render only the subset an agency enables via
+     * applicant_form_defaults.fra_options; unknown/typo values are never shown.
+     */
+    function app_fra_options(): array
+    {
+        return [
+            'none'          => 'No FRA',
+            'for_fra'       => 'For FRA',
+            'fra_completed' => 'FRA Completed',
+        ];
     }
 }
 

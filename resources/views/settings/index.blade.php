@@ -7,6 +7,15 @@
     <h1 class="text-2xl font-bold mb-6">⚙️ Settings</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+        <a href="{{ route('accounts.index') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">📒 Accounts</h2>
+                <p class="text-sm opacity-70">Manage your income and expense account categories.</p>
+            </div>
+        </a>
+        @endif
+
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">👤 Profile</h2>

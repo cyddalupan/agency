@@ -27,6 +27,7 @@ use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PersonalInformationBasicController;
+use App\Http\Controllers\PersonalInformationRequirementsController;
 use App\Http\Controllers\PortalDocumentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Api\CaseController;
@@ -37,6 +38,10 @@ use App\Http\Controllers\ReportsIndexController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AiAssistantController;
 use App\Http\Controllers\ReportTemplateController;
+use App\Http\Controllers\ReceivablesController;
+use App\Http\Controllers\ReceivableController;
+use App\Http\Controllers\AgentReportController;
+use App\Http\Controllers\ExpenseRequestController;
 use Illuminate\Support\Facades\Route;
 
 // === Applicant Portal ===
@@ -312,6 +317,8 @@ Route::middleware('auth:web')->group(function () {
             // Basic Information tab "Save Update" (before wildcard sub-store routes)
             Route::patch('/personal-information/basic', [PersonalInformationBasicController::class, 'update'])->name('basic.update');
 
+            Route::patch('/personal-information/requirements', [PersonalInformationRequirementsController::class, 'update'])->name('requirements.update');
+
             Route::post('/{type}', [SubTableController::class, 'store'])->name('sub.store');
             Route::put('/{type}/{id}', [SubTableController::class, 'update'])->name('sub.update');
             Route::delete('/{type}/{id}', [SubTableController::class, 'destroy'])->name('sub.destroy');
@@ -360,6 +367,7 @@ Route::middleware('auth:web')->group(function () {
         });
 
         // Reference CRUD modules (admin/super_admin)
+        Route::resource('expenses', \App\Http\Controllers\ExpenseController::class)->except('show');
         Route::resource('branches', \App\Http\Controllers\BranchController::class);
         Route::resource('languages', \App\Http\Controllers\LanguageController::class);
         Route::resource('skills', \App\Http\Controllers\SkillController::class);
@@ -370,6 +378,13 @@ Route::middleware('auth:web')->group(function () {
 
     // Accounting routes
     Route::prefix('accounting')->name('accounting.')->group(function () {
+        // Agency finance dashboard — restricted to admin/super_admin/billing
+        Route::get('/', [AccountingController::class, 'dashboard'])->name('dashboard')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/export', [AccountingController::class, 'export'])->name('export')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/receivables', [ReceivablesController::class, 'receivables'])->name('receivables')
+            ->middleware('role:admin,super_admin,billing');
         Route::get('/employer/{employer}', [AccountingController::class, 'employer'])->name('employer');
         Route::get('/worker/{applicant}', [AccountingController::class, 'worker'])->name('worker');
         Route::get('/marketing-agency/{marketingAgency}', [AccountingController::class, 'marketingAgency'])->name('marketing-agency');
@@ -377,11 +392,52 @@ Route::middleware('auth:web')->group(function () {
         Route::get('/recruitment-agent/{recruitmentAgent}', [AccountingController::class, 'recruitmentAgent'])->name('recruitment-agent');
     });
 
+    // Receivable & Payments module — Tab 1: Receivable
+    Route::prefix('receivable')->name('receivable.')->group(function () {
+        Route::get('/', [ReceivableController::class, 'index'])->name('index')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/create', [ReceivableController::class, 'create'])->name('create')
+            ->middleware('role:admin,super_admin,billing');
+        Route::post('/', [ReceivableController::class, 'store'])->name('store')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/{receivable}', [ReceivableController::class, 'show'])->name('show')
+            ->middleware('role:admin,super_admin,billing');
+        Route::patch('/{receivable}/status', [ReceivableController::class, 'updateStatus'])->name('status')
+            ->middleware('role:admin,super_admin,billing');
+    });
+
+    // Receivable & Payments module — Tab 2: Expenses & Payments
+    Route::prefix('expense-request')->name('expense_request.')->group(function () {
+        Route::get('/', [ExpenseRequestController::class, 'index'])->name('index')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/create', [ExpenseRequestController::class, 'create'])->name('create')
+            ->middleware('role:admin,super_admin,billing');
+        Route::post('/', [ExpenseRequestController::class, 'store'])->name('store')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/{expense_request}', [ExpenseRequestController::class, 'show'])->name('show')
+            ->middleware('role:admin,super_admin,billing');
+        Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
+            ->middleware('role:admin,super_admin,billing');
+    });
+
+    // Receivable & Payments module — Tab 3: Agents Report
+    Route::prefix('agents-report')->name('agent_report.')->group(function () {
+        Route::get('/', [AgentReportController::class, 'index'])->name('index')
+            ->middleware('role:admin,super_admin,billing');
+    });
+
     // Report Template CRUD
     Route::resource('report-templates', ReportTemplateController::class)->except(['show']);
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    // Accounts module — renamed from "Chart of Accounts", now lives inside Settings.
+    // URI nested under /settings but resource route names stay accounts.* for compatibility.
+    Route::prefix('settings')->middleware('role:admin,super_admin')->group(function () {
+        Route::resource('accounts', \App\Http\Controllers\AccountController::class)->except('show');
+    });
+
     Route::get('/settings/applicant-form-defaults', [SettingsController::class, 'applicantFormDefaults'])->name('settings.applicant-form-defaults');
     Route::post('/settings/applicant-form-defaults', [SettingsController::class, 'updateApplicantFormDefaults'])->name('settings.applicant-form-defaults.update');
 

@@ -101,26 +101,29 @@ class ApplicantBrowseColumnsTest extends TestCase
                 'last_name'  => 'Dela Cruz',
             ]);
 
+        // encoder is auto-derived; created_by = auth user (item 7).
         $this->assertDatabaseHas('applicants', [
             'first_name'           => 'Juan',
             'last_name'            => 'Dela Cruz',
             'branch'               => null,
-            'encoder'              => null,
             'contract'             => null,
             'contract_received_date' => null,
+            'created_by'           => $this->user->id,
         ]);
+
+        $a = \App\Models\Applicant::where('first_name', 'Juan')->first();
+        $this->assertNotNull($a->encoder, 'encoder should be auto-derived on create');
     }
 
     #[Test]
-    public function create_form_prefills_encoder_with_logged_in_user_and_today(): void
+    public function create_form_does_not_expose_encoder_input(): void
     {
         $response = $this->actingAs($this->user)
             ->get(route('applicants.create'));
 
         $response->assertOk();
-        // The encoder field should be pre-filled with the logged-in user's name + current datetime.
-        $response->assertSee('Cyd Gulf');
-        $response->assertSee('name="encoder"', false);
+        // Item 7: encoder is stored in DB but NOT visible to users as an input.
+        $response->assertDontSee('name="encoder"', false);
     }
 
     #[Test]

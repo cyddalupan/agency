@@ -20,8 +20,12 @@ class Applicant extends Model implements AuthenticatableContract
         'remarks', 'source', 'nationality_id', 'religion_id', 'civil_status_id',
         'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
         'job_id', 'status_code', 'password', 'status', 'firstimer_type',
+        'applicant_no', 'fra', 'status_date', 'repat', 'repat_date',
         'branch', 'encoder', 'contract', 'contract_received_date',
+        'created_by',
         'number_of_siblings',
+        'mother_name', 'mother_occupation', 'father_name', 'father_occupation',
+        'e_reg', 'peos', 'info_sheet', 'birth_certificate', 'marriage_certificate',
     ];
 
     protected $casts = [
@@ -29,6 +33,14 @@ class Applicant extends Model implements AuthenticatableContract
         'contract_received_date' => 'date',
         'number_of_siblings' => 'integer',
         'expected_salary' => 'decimal:2',
+        'e_reg' => 'boolean',
+        'peos' => 'boolean',
+        'info_sheet' => 'boolean',
+        'birth_certificate' => 'boolean',
+        'marriage_certificate' => 'boolean',
+        'status_date' => 'date',
+        'repat' => 'boolean',
+        'repat_date' => 'date',
     ];
 
     public function agency()
@@ -175,6 +187,16 @@ class Applicant extends Model implements AuthenticatableContract
         return $this->hasMany(ApplicantTicket::class);
     }
 
+    public function oma()
+    {
+        return $this->hasMany(ApplicantOma::class);
+    }
+
+    public function owwa()
+    {
+        return $this->hasMany(ApplicantOwWa::class);
+    }
+
     public function logs()
     {
         return $this->hasMany(ApplicantLog::class);
@@ -185,6 +207,11 @@ class Applicant extends Model implements AuthenticatableContract
     public function agent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(\App\Models\Agent::class);
+    }
+
+    public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
     }
 
     public function getPhotoUrlAttribute(): ?string

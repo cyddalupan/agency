@@ -65,6 +65,33 @@
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
+                    <legend class="fieldset-legend">💍 Civil Status</legend>
+                    <select name="civil_status_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($civilStatuses as $cs)
+                            <option value="{{ $cs->id }}" @selected(old('civil_status_id') == $cs->id)>{{ $cs->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🌏 Nationality</legend>
+                    <select name="nationality_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($nationalities as $n)
+                            <option value="{{ $n->id }}" @selected(old('nationality_id') == $n->id)>{{ $n->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">⛪ Religion</legend>
+                    <select name="religion_id" class="select w-full">
+                        <option value="">Select</option>
+                        @foreach ($religions as $r)
+                            <option value="{{ $r->id }}" @selected(old('religion_id') == $r->id)>{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
                     <legend class="fieldset-legend">🎂 Birthdate</legend>
                     <input type="date" name="birthdate" value="{{ old('birthdate') }}"
                         class="input w-full">
@@ -192,13 +219,6 @@
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🏷️ Branch (note / custom field)</legend>
                     <textarea name="branch" rows="3" class="textarea textarea-lg w-full" placeholder="e.g. Alabang Branch" maxlength="255">{{ old('branch') }}</textarea>
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🧑‍💻 Encoder</legend>
-                    <input type="text" name="encoder"
-                           value="{{ old('encoder', auth()->user()?->name . ' - ' . now()->format('M d, Y h:i A')) }}"
-                           class="input w-full" maxlength="255">
-                    <p class="text-xs opacity-60 mt-1">Pre-filled with the logged-in user + timestamp. Editable.</p>
                 </fieldset>
             </div>
 

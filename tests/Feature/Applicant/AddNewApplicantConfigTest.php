@@ -4,6 +4,7 @@ namespace Tests\Feature\Applicant;
 
 use App\Models\Agency;
 use App\Models\Agent;
+use App\Models\Applicant;
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\StatusCode;
@@ -169,6 +170,71 @@ class AddNewApplicantConfigTest extends TestCase
 
         $this->assertStringContainsString('Facebook', $html);
         $this->assertStringNotContainsString('NOT_A_REAL_SOURCE', $html);
+    }
+
+    // ---- EDIT form uses the same configurable sources (no hardcoded list) ----
+
+    #[Test]
+    public function edit_form_renders_only_agencys_enabled_sources(): void
+    {
+        $applicant = Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'source'    => 'Branch',
+        ]);
+        $this->setDefaults(['sources' => ['Facebook', 'Branch']]);
+
+        $html = $this->actingAs($this->user)
+            ->get(route('applicants.edit', $applicant))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('value="Facebook"', $html);
+        $this->assertStringContainsString('value="Branch"', $html);
+        // Hardcoded options NOT in the agency's enabled sources must not render.
+        $this->assertStringNotContainsString('value="Walk-in"', $html);
+        $this->assertStringNotContainsString('value="Website"', $html);
+        $this->assertStringNotContainsString('value="Other"', $html);
+    }
+
+    #[Test]
+    public function edit_form_preselects_the_applicants_existing_source_from_configurable_list(): void
+    {
+        // Regression: an applicant saved with Source=Branch (via create) must
+        // show Branch as selected on the edit form. The old hardcoded edit
+        // dropdown had no Branch option, so it fell back to blank.
+        $applicant = Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'source'    => 'Branch',
+        ]);
+        $this->setDefaults(['sources' => ['Facebook', 'Referral', 'Branch']]);
+
+        $html = $this->actingAs($this->user)
+            ->get(route('applicants.edit', $applicant))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('<option value="Branch" selected', $html);
+    }
+
+    #[Test]
+    public function edit_form_renders_branch_and_branch_scoped_agents_when_branch_enabled(): void
+    {
+        $branchA = Branch::factory()->create(['agency_id' => $this->agency->id]);
+        $agentA  = Agent::factory()->create(['agency_id' => $this->agency->id, 'branch_id' => $branchA->id, 'status' => 'active']);
+        $applicant = Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'source'    => 'Branch',
+        ]);
+        $this->setDefaults(['sources' => ['Branch']]);
+
+        $html = $this->actingAs($this->user)
+            ->get(route('applicants.edit', $applicant))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($branchA->name, $html);
+        $this->assertStringContainsString($agentA->name, $html);
+        $this->assertStringContainsString('data-branch="' . $branchA->id . '"', $html);
     }
 
     // ---- Source = Branch -> branch-select -> branch-scoped agent ----

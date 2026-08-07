@@ -66,14 +66,6 @@
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🛂 Passport</legend>
-                    <select name="has_passport" class="select w-full">
-                        <option value="">-- Select --</option>
-                        <option value="with" @selected(old('has_passport', $applicant->has_passport) === 'with')>✅ With Passport</option>
-                        <option value="without" @selected(old('has_passport', $applicant->has_passport) === 'without')>❌ Without Passport</option>
-                    </select>
-                </fieldset>
-                <fieldset class="fieldset">
                     <legend class="fieldset-legend">🎂 Birthdate</legend>
                     <input type="date" name="birthdate" value="{{ old('birthdate', $applicant->birthdate?->format('Y-m-d')) }}"
                         class="input w-full">
@@ -160,19 +152,26 @@
                     <legend class="fieldset-legend">📱 Source</legend>
                     <select name="source" class="select w-full" id="source-select">
                         <option value="">Select</option>
-                        <option value="Facebook" @selected(old('source', $applicant->source) === 'Facebook')>📘 Facebook</option>
-                        <option value="Referral" @selected(old('source', $applicant->source) === 'Referral')>🤝 Referral</option>
-                        <option value="Walk-in" @selected(old('source', $applicant->source) === 'Walk-in')>🚶 Walk-in</option>
-                        <option value="Website" @selected(old('source', $applicant->source) === 'Website')>🌐 Website</option>
-                        <option value="Other" @selected(old('source', $applicant->source) === 'Other')>📌 Other</option>
+                        @foreach ($sources as $src)
+                            <option value="{{ $src }}" @selected(old('source', $applicant->source) === $src)>{{ $src }}</option>
+                        @endforeach
                     </select>
                 </fieldset>
-                <fieldset class="fieldset agent-dropdown" id="agent-field" style="{{ old('source', $applicant->source) === 'Referral' ? '' : 'display: none;' }}">
-                    <legend class="fieldset-legend">🎯 Referred By (Agent)</legend>
+                <fieldset class="fieldset" id="branch-field" style="display:none;">
+                    <legend class="fieldset-legend">🏢 Branch</legend>
+                    <select name="branch_id" class="select w-full" id="branch-select">
+                        <option value="">-- Select Branch --</option>
+                        @foreach ($branches as $br)
+                            <option value="{{ $br->id }}" @selected(old('branch_id') == $br->id)>{{ $br->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset agent-dropdown" id="agent-field" style="display:none;">
+                    <legend class="fieldset-legend">🎯 Select Agent</legend>
                     <select name="agent_id" class="select w-full" id="agent-select">
                         <option value="">-- Select Agent --</option>
-                        @foreach (\App\Models\Agent::where('agency_id', resolve_agency_id())->where('status', 'active')->orderBy('name')->get() as $agt)
-                            <option value="{{ $agt->id }}" @selected(old('agent_id', $applicant->agent_id) == $agt->id)>{{ $agt->name }}</option>
+                        @foreach ($agents as $agt)
+                            <option value="{{ $agt->id }}" data-branch="{{ $agt->branch_id }}" @selected(old('agent_id', $applicant->agent_id) == $agt->id)>{{ $agt->name }}</option>
                         @endforeach
                     </select>
                 </fieldset>
@@ -203,13 +202,6 @@
                     <legend class="fieldset-legend">🏷️ Branch (note / custom field)</legend>
                     <textarea name="branch" rows="3" class="textarea textarea-lg w-full" placeholder="e.g. Alabang Branch" maxlength="255">{{ old('branch', $applicant->branch) }}</textarea>
                 </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🧑‍💻 Encoder</legend>
-                    <input type="text" name="encoder"
-                           value="{{ old('encoder', $applicant->encoder ?? (auth()->user()?->name . ' - ' . now()->format('M d, Y h:i A'))) }}"
-                           class="input w-full" maxlength="255">
-                    <p class="text-xs opacity-60 mt-1">Who entered / last edited this record. Editable.</p>
-                </fieldset>
             </div>
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
@@ -226,21 +218,42 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const sourceSelect = document.getElementById('source-select');
+    const branchField = document.getElementById('branch-field');
+    const branchSelect = document.getElementById('branch-select');
     const agentField = document.getElementById('agent-field');
+    const agentSelect = document.getElementById('agent-select');
+    const agents = Array.from(document.querySelectorAll('#agent-select option')).filter(o => o.value !== '');
 
-    if (sourceSelect && agentField) {
-        function toggleAgentField() {
-            if (sourceSelect.value === 'Referral') {
-                agentField.style.display = '';
-            } else {
-                agentField.style.display = 'none';
-                document.getElementById('agent-select').value = '';
-            }
-        }
+    function toggleExtraFields() {
+        const showBranch = sourceSelect && sourceSelect.value === 'Branch';
+        const showAgent = sourceSelect && sourceSelect.value !== '';
 
-        sourceSelect.addEventListener('change', toggleAgentField);
-        toggleAgentField();
+        if (branchField) branchField.style.display = showBranch ? '' : 'none';
+        if (agentField) agentField.style.display = showAgent ? '' : 'none';
+
+        if (!showBranch && branchSelect) branchSelect.value = '';
+        if (!showAgent && agentSelect) agentSelect.value = '';
+
+        filterAgentsByBranch();
     }
+
+    function filterAgentsByBranch() {
+        if (!agentSelect || !branchSelect) return;
+        const selectedBranch = branchSelect.value;
+        const isBranchMode = sourceSelect && sourceSelect.value === 'Branch';
+        agents.forEach(o => {
+            const branch = o.getAttribute('data-branch');
+            const visible = !isBranchMode || !selectedBranch || branch === selectedBranch;
+            o.style.display = visible ? '' : 'none';
+        });
+        // If current selection hidden by filter, clear it.
+        const sel = agentSelect.selectedOptions[0];
+        if (sel && sel.style.display === 'none') agentSelect.value = '';
+    }
+
+    if (sourceSelect) sourceSelect.addEventListener('change', toggleExtraFields);
+    if (branchSelect) branchSelect.addEventListener('change', filterAgentsByBranch);
+    toggleExtraFields();
 });
 </script>
 @endpush

@@ -22,6 +22,7 @@ class ApplicantDocumentController extends Controller
 
         $applicant->documents()->create([
             'agency_id'     => $applicant->agency_id,
+            'user_id'       => auth()->id(),
             'document_type' => $request->document_type,
             'file_name'     => $file->getClientOriginalName(),
             'file_path'     => $path,

@@ -20,6 +20,10 @@ class PersonalInformationBasicController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'number_of_siblings' => 'nullable|integer|min:0',
+            'mother_name'        => 'nullable|string|max:255',
+            'mother_occupation'  => 'nullable|string|max:255',
+            'father_name'        => 'nullable|string|max:255',
+            'father_occupation'  => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -28,7 +32,11 @@ class PersonalInformationBasicController extends Controller
                 ->withInput();
         }
 
-        $applicant->number_of_siblings = $request->input('number_of_siblings');
+        $applicant->number_of_siblings  = $request->input('number_of_siblings');
+        $applicant->mother_name         = $request->input('mother_name');
+        $applicant->mother_occupation   = $request->input('mother_occupation');
+        $applicant->father_name         = $request->input('father_name');
+        $applicant->father_occupation   = $request->input('father_occupation');
         $applicant->save();
 
         return redirect()->route('applicants.show', $applicant)

@@ -240,6 +240,32 @@
                         Reports
                     </a>
 
+                    @if(in_array(auth()->user()->user_type, ['admin','super_admin','billing']))
+                    <div class="pt-4 mt-4 border-t border-white/10">
+                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Finance</p>
+                        <a href="{{ route('accounting.dashboard') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('accounting.dashboard') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📊</span>
+                            Accounting
+                        </a>
+                        <a href="{{ route('receivable.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('receivable.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🧾</span>
+                            Receivable
+                        </a>
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        <a href="{{ route('expenses.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('expenses.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">💸</span>
+                            Expenses and Payments
+                        </a>
+                        @endif
+                    </div>
+                    @endif
+
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">⚙️ System</p>
 
@@ -292,6 +318,15 @@
                         <span class="text-lg">⚙️</span>
                         Settings
                     </a>
+
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        <a href="{{ route('accounts.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('accounts.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📒</span>
+                            Accounts
+                        </a>
+                        @endif
 
                         @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Reference Data</div>

@@ -91,6 +91,22 @@
                 </label>
             </fieldset>
 
+            {{-- FRA options (Status tab) — enabled subset from canonical list --}}
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🛂 FRA (Status tab)</legend>
+                <p class="text-xs opacity-60 mb-2">Choose which FRA options appear on applicants' Status tab.</p>
+                <div class="grid grid-cols-1 gap-1">
+                    @foreach ($fraOpts ?? [] as $value => $label)
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="fra_options[]" value="{{ $value }}"
+                                   class="checkbox checkbox-sm"
+                                   @checked(in_array($value, $defaults['fra_options'] ?? []))>
+                            {{ $label }}
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary"><span>💾</span> Save Defaults</button>
                 <a href="{{ route('settings.index') }}" class="link link-neutral text-sm">❌ Cancel</a>

@@ -6,6 +6,7 @@
      */
     $pi = $applicant->load([
         'passport', 'education', 'certificates', 'requirements',
+        'nbi', 'contract', 'tickets', 'visa', 'oec',
         'workExperiences', 'skills', 'references', 'salaryRecords', 'documents',
         'languages', 'contacts',
         'spouse', 'family', 'emergencyContacts',
@@ -117,7 +118,23 @@
                         @csrf @method('PATCH')
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Number of Siblings</legend>
+                                <legend class="fieldset-legend">👩 Mother's Name</legend>
+                                <input type="text" name="mother_name" value="{{ old('mother_name', $applicant->mother_name ?? '') }}" class="input w-full" placeholder="Mother's name">
+                            </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">👩‍💼 Mother's Occupation</legend>
+                                <input type="text" name="mother_occupation" value="{{ old('mother_occupation', $applicant->mother_occupation ?? '') }}" class="input w-full" placeholder="Mother's occupation">
+                            </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">👨 Father's Name</legend>
+                                <input type="text" name="father_name" value="{{ old('father_name', $applicant->father_name ?? '') }}" class="input w-full" placeholder="Father's name">
+                            </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">👨‍🔧 Father's Occupation</legend>
+                                <input type="text" name="father_occupation" value="{{ old('father_occupation', $applicant->father_occupation ?? '') }}" class="input w-full" placeholder="Father's occupation">
+                            </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">👨‍👩‍👧 Number of Siblings</legend>
                                 <input type="number" name="number_of_siblings" min="0" value="{{ old('number_of_siblings', $applicant->number_of_siblings ?? '') }}" class="input w-full" placeholder="e.g. 3">
                             </fieldset>
                         </div>
@@ -197,47 +214,216 @@
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <h4 class="font-semibold">📄 Requirements</h4>
-                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-requirements').classList.toggle('hidden')">➕ Add</button>
                     </div>
-                    <div id="form-requirements" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                    <p class="text-sm opacity-60 mb-3">Requirement documents are uploaded under the <strong>Upload Files</strong> tab.</p>
+                    @php $r = $pi->requirements ?? collect(); @endphp
+                    @if ($r->count() > 0) @include('applicants.sub-lists.requirements', ['records' => $r, 'routeKey' => 'requirements']) @else <p class="text-sm opacity-50 py-2">No requirements recorded yet.</p> @endif
+                </div>
+
+                {{-- Resume / CV --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">📄 Resume/CV</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-resume').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-resume" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
                         <form action="{{ route('applicants.sub.store', [$applicant, 'requirements']) }}" method="POST" enctype="multipart/form-data">
                             @csrf
+                            <input type="hidden" name="type" value="resume">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.requirements', ['record' => null])</div>
                             <div class="flex items-center gap-2 mt-3">
-                                <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-requirements').classList.add('hidden')">❌ Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save Resume</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-resume').classList.add('hidden')">❌ Cancel</button>
                             </div>
                         </form>
                     </div>
-                    @php $r = $pi->requirements ?? collect(); @endphp
-                    @if ($r->count() > 0) @include('applicants.sub-lists.requirements', ['records' => $r, 'routeKey' => 'requirements']) @else <p class="text-sm opacity-50 py-2">No records yet.</p> @endif
+                    @php $resume = $pi->requirements->where('type', 'resume') ?? collect(); @endphp
+                    @if ($resume->count() > 0) @include('applicants.sub-lists.requirements', ['records' => $resume, 'routeKey' => 'requirements']) @else <p class="text-sm opacity-50 py-2">No resume uploaded yet.</p> @endif
                 </div>
-            </section>
 
-            {{-- ============ TAB: Certifications ============ --}}
-            <section data-pi-panel="cert" class="hidden">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-semibold">📜 Certifications</h4>
-                    <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-certificates').classList.toggle('hidden')">➕ Add</button>
+                {{-- NBI --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🎫 NBI</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-nbi').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-nbi" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'nbi']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">@include('applicants.sub-forms.nbi', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-nbi').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $nbiRecs = $pi->nbi ?? collect(); @endphp
+                    @if ($nbiRecs->count() > 0) @include('applicants.sub-lists.nbi', ['records' => $nbiRecs, 'routeKey' => 'nbi']) @else <p class="text-sm opacity-50 py-2">No NBI record yet.</p> @endif
                 </div>
-                <div id="form-certificates" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
-                    <form action="{{ route('applicants.sub.store', [$applicant, 'certificates']) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.certificates', ['record' => null])</div>
+
+                {{-- Requirement checklists + Save Requirements --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <h4 class="font-semibold mb-3">✅ Requirement Checklists</h4>
+                    <form action="{{ route('applicants.requirements.update', $applicant) }}" method="POST">
+                        @csrf @method('PATCH')
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2 border rounded-lg p-3 bg-base-200/50 cursor-pointer">
+                                <input type="checkbox" name="e_reg" value="1" @checked($applicant->e_reg) class="checkbox checkbox-sm"> E-REG
+                            </label>
+                            <label class="flex items-center gap-2 border rounded-lg p-3 bg-base-200/50 cursor-pointer">
+                                <input type="checkbox" name="peos" value="1" @checked($applicant->peos) class="checkbox checkbox-sm"> PEOS
+                            </label>
+                            <label class="flex items-center gap-2 border rounded-lg p-3 bg-base-200/50 cursor-pointer">
+                                <input type="checkbox" name="info_sheet" value="1" @checked($applicant->info_sheet) class="checkbox checkbox-sm"> Info sheet
+                            </label>
+                            <label class="flex items-center gap-2 border rounded-lg p-3 bg-base-200/50 cursor-pointer">
+                                <input type="checkbox" name="birth_certificate" value="1" @checked($applicant->birth_certificate) class="checkbox checkbox-sm"> Birth Certificate
+                            </label>
+                            <label class="flex items-center gap-2 border rounded-lg p-3 bg-base-200/50 cursor-pointer">
+                                <input type="checkbox" name="marriage_certificate" value="1" @checked($applicant->marriage_certificate) class="checkbox checkbox-sm"> Marriage Certificate
+                            </label>
+                        </div>
                         <div class="flex items-center gap-2 mt-3">
-                            <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
-                            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-certificates').classList.add('hidden')">❌ Cancel</button>
+                            <button type="submit" class="btn btn-primary btn-sm">💾 Save Requirements</button>
                         </div>
                     </form>
                 </div>
-                @php $c = $pi->certificates ?? collect(); @endphp
-                @if ($c->count() > 0) @include('applicants.sub-lists.certificates', ['records' => $c, 'routeKey' => 'certificates']) @else <p class="text-sm opacity-50 py-2">No records yet.</p> @endif
             </section>
 
-            {{-- ============ TAB: Documents ============ --}}
+            {{-- ============ TAB: Certifications (PI: 3) ============ --}}
+            <section data-pi-panel="cert" class="hidden">
+                <h4 class="font-semibold mb-3">📜 Certifications</h4>
+
+                {{-- OMA --}}
+                <div class="mt-2 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🛢️ OMA Certification</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-oma').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-oma" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'oma']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">@include('applicants.sub-forms.oma', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save OMA</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-oma').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $omaRecs = $applicant->oma()->get(); @endphp
+                    @if ($omaRecs->count() > 0) @include('applicants.sub-lists.oma', ['records' => $omaRecs, 'routeKey' => 'oma']) @else <p class="text-sm opacity-50 py-2">No OMA record yet.</p> @endif
+                </div>
+
+                {{-- OWWA --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🤝 OWWA Certification</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-owwa').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-owwa" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'owwa']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.owwa', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save OWWA</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-owwa').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $owwaRecs = $applicant->owwa()->get(); @endphp
+                    @if ($owwaRecs->count() > 0) @include('applicants.sub-lists.owwa', ['records' => $owwaRecs, 'routeKey' => 'owwa']) @else <p class="text-sm opacity-50 py-2">No OWWA record yet.</p> @endif
+                </div>
+            </section>
+
+            {{-- ============ TAB: Documents (PI: 4) ============ --}}
             <section data-pi-panel="docs" class="hidden">
+                <h4 class="font-semibold mb-3">📋 Documents</h4>
+
+                {{-- OEC --}}
+                <div class="mt-2 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🛂 OEC</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-oec').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-oec" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'oec']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.oec', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save OEC</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-oec').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $oecRecs = $pi->oec ?? collect(); @endphp
+                    @if ($oecRecs->count() > 0) @include('applicants.sub-lists.oec', ['records' => $oecRecs, 'routeKey' => 'oec']) @else <p class="text-sm opacity-50 py-2">No OEC record yet.</p> @endif
+                </div>
+
+                {{-- VISA --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">✈️ VISA</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-visa').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-visa" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'visa']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">@include('applicants.sub-forms.visa', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save VISA</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-visa').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $visaRecs = $pi->visa ?? collect(); @endphp
+                    @if ($visaRecs->count() > 0) @include('applicants.sub-lists.visa', ['records' => $visaRecs, 'routeKey' => 'visa']) @else <p class="text-sm opacity-50 py-2">No VISA record yet.</p> @endif
+                </div>
+
+                {{-- Contract --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">📄 Contract</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-contract').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-contract" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'contract']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">@include('applicants.sub-forms.contract', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save Contract</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-contract').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $contractRecs = $applicant->contract()->get(); @endphp
+                    @if ($contractRecs->count() > 0) @include('applicants.sub-lists.contract', ['records' => $contractRecs, 'routeKey' => 'contract']) @else <p class="text-sm opacity-50 py-2">No contract record yet.</p> @endif
+                </div>
+
+                {{-- Ticket --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🎟️ Ticket</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-ticket').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-ticket" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'ticket']) }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.ticket', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save Ticket</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-ticket').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $ticketRecs = $pi->tickets ?? collect(); @endphp
+                    @if ($ticketRecs->count() > 0) @include('applicants.sub-lists.ticket', ['records' => $ticketRecs, 'routeKey' => 'ticket']) @else <p class="text-sm opacity-50 py-2">No ticket record yet.</p> @endif
+                </div>
+            </section>
+
+            {{-- ============ TAB: Upload Files (PI: 5) ============ --}}
+            <section data-pi-panel="uploads" class="hidden">
                 <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-semibold">📁 Documents</h4>
+                    <h4 class="font-semibold">📁 Upload Files</h4>
                     <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-documents').classList.toggle('hidden')">➕ Add</button>
                 </div>
                 <div id="form-documents" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
@@ -254,20 +440,43 @@
                 @if ($d->count() > 0) @include('applicants.sub-lists.documents', ['records' => $d, 'routeKey' => 'documents']) @else <p class="text-sm opacity-50 py-2">No records yet.</p> @endif
             </section>
 
-            {{-- ============ TAB: Upload Files ============ --}}
-            <section data-pi-panel="uploads" class="hidden">
-                <p class="text-sm opacity-60 py-4">Upload Files module — coming in a later step (Type of Document, upload, encoder + date list).</p>
-            </section>
-
             {{-- ============ TAB: Status ============ --}}
             <section data-pi-panel="status" class="hidden">
-                <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-3 rounded-lg bg-base-200/50">
-                        <dt class="text-xs opacity-60 uppercase tracking-wider">📊 Status</dt>
-                        <dd class="font-medium mt-1">{{ $applicant->statusCode?->label ?? $applicant->status ?? '—' }}</dd>
+                <form action="{{ route('applicants.status', $applicant) }}" method="POST" class="border rounded-lg p-4 bg-base-200/40">
+                    @csrf
+                    @method('PATCH')
+
+                    <h4 class="font-semibold mb-3">📊 Applicant Status</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        @include('applicants.sub-forms.status')
                     </div>
-                </dl>
-                <p class="text-sm opacity-60 py-4">FRA / Repat / Status Date details coming with the Status module.</p>
+
+                    <div class="flex items-center gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-sm">💾 Save Status</button>
+                    </div>
+                </form>
+
+                @if (isset($statusHistory) && $statusHistory->count() > 0)
+                <div class="mt-6">
+                    <h4 class="font-semibold mb-3">📜 Status History</h4>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm w-full">
+                            <thead>
+                                <tr><th>Encoder</th><th>Status Change</th><th>When</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($statusHistory as $entry)
+                                <tr>
+                                    <td class="font-medium">{{ $entry->user?->name ?? '—' }}</td>
+                                    <td>{{ $entry->description }}</td>
+                                    <td class="whitespace-nowrap text-sm">{{ $entry->created_at?->format('M d, Y h:i A') ?? '—' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
             </section>
         </div>
     </div>

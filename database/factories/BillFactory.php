@@ -23,6 +23,7 @@ class BillFactory extends Factory
             'employer_deposit' => $this->faker->randomFloat(2, 0, 50000),
             'applicant_deposit' => $this->faker->randomFloat(2, 0, 5000),
             'status' => 'pending',
+            'due_date' => $this->faker->optional()->date(),
             'notes' => $this->faker->optional()->sentence(),
         ];
     }

@@ -21,6 +21,7 @@ class Bill extends Model
         'employer_deposit',
         'applicant_deposit',
         'status',
+        'due_date',
         'notes',
     ];
 

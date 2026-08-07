@@ -78,12 +78,17 @@ class ApplicantController extends Controller
         $positions = \App\Models\Position::orderBy('name')->get();
         $statusCodes = \App\Models\StatusCode::orderBy('sort_order')->get();
 
+        $nationalities = \App\Models\Nationality::orderBy('name')->get();
+        $religions     = \App\Models\Religion::orderBy('name')->get();
+        $civilStatuses = \App\Models\CivilStatus::orderBy('name')->get();
+
         $sources   = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
         $branches  = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
         $agents    = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
 
         return view('applicants.create', compact(
-            'positions', 'statusCodes', 'sources', 'branches', 'agents', 'defaults'
+            'positions', 'statusCodes', 'nationalities', 'religions', 'civilStatuses',
+            'sources', 'branches', 'agents', 'defaults'
         ));
     }
 
@@ -100,6 +105,9 @@ class ApplicantController extends Controller
             'contact'      => 'nullable|string|max:50',
             'gender'       => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
+            'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
+            'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
+            'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
             'birthdate'    => 'nullable|date',
             'address'      => 'nullable|string',
             'remarks'      => 'nullable|string',
@@ -149,6 +157,12 @@ class ApplicantController extends Controller
             return back()->withErrors(['agency' => 'No agency context. Please log in with an agency account to add applicants.'])->withInput();
         }
 
+        // Encoder is auto-derived (stored in DB, not editable by users) and
+        // created_by uses Laravel's default convention (auth user id).
+        $validated['encoder'] = $validated['encoder']
+            ?? (auth()->user()->name.' - '.now()->format('M d, Y h:i A'));
+        $validated['created_by'] = auth()->id();
+
         $applicant = Applicant::create($validated);
 
         $applicant->syncCustomFields($request->all());
@@ -172,13 +186,61 @@ class ApplicantController extends Controller
             'references',
             'salaryRecords',
         ]);
-        return view('applicants.show', compact('applicant'));
+
+        // Per-agency Status-tab dropdown options (PI: 8 item 3), reusing the
+        // applicant_form_defaults pattern: Status shows only the agency's
+        // enabled status_codes (all when none configured) and FRA shows only
+        // the agency's enabled fra_options.
+        $defaults = app_applicant_form_defaults();
+
+        $allStatuses = \App\Models\StatusCode::orderBy('sort_order')->get();
+        $configuredStatuses = $defaults['status_codes'] ?? [];
+        $statusCodes = $configuredStatuses
+            ? $allStatuses->whereIn('code', $configuredStatuses)->values()
+            : $allStatuses;
+
+        $fraOptions = array_values(array_intersect(
+            array_keys(app_fra_options()),
+            $defaults['fra_options'] ?? []
+        ));
+        if (empty($fraOptions)) {
+            $fraOptions = array_keys(app_fra_options());
+        }
+
+        // Settings-sourced dropdowns for the Skills & Language tabs (PI items 4 & 5).
+        $skills    = \App\Models\Skill::orderBy('name')->get();
+        $languages = \App\Models\Language::orderBy('name')->get();
+
+        // Status history for the Status tab (PI item 8): past status_changed
+        // activity with the encoder name + timestamp.
+        $statusHistory = \App\Models\ActivityLog::with('user')
+            ->where('subject_type', \App\Models\Applicant::class)
+            ->where('subject_id', $applicant->id)
+            ->where('action', 'status_changed')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('applicants.show', compact(
+            'applicant', 'statusCodes', 'fraOptions', 'skills', 'languages', 'statusHistory'
+        ));
     }
 
     public function edit(Applicant $applicant)
     {
-        $statusCodes = StatusCode::orderBy('sort_order')->get();
-        return view('applicants.edit', compact('applicant', 'statusCodes'));
+        $defaults     = app_applicant_form_defaults();
+        $agencyId     = resolve_agency_id();
+        $statusCodes  = StatusCode::orderBy('sort_order')->get();
+
+        // Same configurable source list as the Add Applicant form — never a
+        // hardcoded list. This keeps Add and Edit in sync so sources like
+        // "Branch" (and any agency-enabled source) render and stay selected.
+        $sources  = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        $branches = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
+        $agents   = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+
+        return view('applicants.edit', compact(
+            'applicant', 'statusCodes', 'sources', 'branches', 'agents'
+        ));
     }
 
     public function update(Request $request, Applicant $applicant)
@@ -194,6 +256,9 @@ class ApplicantController extends Controller
             'contact'      => 'nullable|string|max:50',
             'gender'       => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
+            'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
+            'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
+            'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
             'birthdate'    => 'nullable|date',
             'address'      => 'nullable|string',
             'remarks'      => 'nullable|string',
@@ -344,13 +409,23 @@ class ApplicantController extends Controller
                     $fail('The selected status code is invalid.');
                 }
             }],
+            // PI: 6 Status tab fields
+            'applicant_no' => ['nullable', 'string', 'max:255'],
+            'fra'          => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::in($this->fraOptionValues())],
+            'status_date'  => ['nullable', 'date'],
+            'repat'        => ['nullable', 'in:0,1'],
+            'repat_date'   => ['nullable', 'date'],
         ]);
 
         $fromCode = $applicant->status_code;
         $toCode = (int) $validated['status_code'];
 
-        // Only validate transition when reference data exists
-        if (StatusCodeService::exists($fromCode) && StatusCodeService::exists($toCode)) {
+        // Only run transition validation when the status actually changes.
+        // A same-status Save on the Status tab (e.g. filling FRA/Repat while keeping
+        // the status) is a valid no-op for the transition rules.
+        if ($fromCode !== $toCode
+            && StatusCodeService::exists($fromCode)
+            && StatusCodeService::exists($toCode)) {
             $error = $transitionService->validateTransition($fromCode, $toCode);
 
             if ($error) {
@@ -359,7 +434,14 @@ class ApplicantController extends Controller
             }
         }
 
-        $applicant->update(['status_code' => $toCode]);
+        $applicant->update([
+            'status_code'  => $toCode,
+            'applicant_no' => $validated['applicant_no'] ?? null,
+            'fra'          => $validated['fra'] ?? null,
+            'status_date'  => $validated['status_date'] ?? null,
+            'repat'        => isset($validated['repat']) ? (bool) $validated['repat'] : false,
+            'repat_date'   => $validated['repat_date'] ?? null,
+        ]);
 
         SensitiveActionLogger::log(
             'status_changed',
@@ -373,6 +455,19 @@ class ApplicantController extends Controller
 
         return redirect()->back()
             ->with('success', 'Applicant status updated successfully.');
+    }
+
+    /**
+     * The FRA values allowed for this agency's Status tab (PI: 8 item 3).
+     * Falls back to the full canonical list when the agency hasn't configured
+     * any fra_options.
+     */
+    protected function fraOptionValues(): array
+    {
+        $configured = app_applicant_form_defaults()['fra_options'] ?? [];
+        return empty($configured)
+            ? array_keys(app_fra_options())
+            : array_values(array_intersect(array_keys(app_fra_options()), $configured));
     }
 
     public function soa(Applicant $applicant)

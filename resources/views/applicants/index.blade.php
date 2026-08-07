@@ -152,6 +152,8 @@
                             <th>📄 Contract</th>
                             <th>✅ Contract Received</th>
                             <th>🧑‍💻 Encoder</th>
+                            <th>🧑🎤 Created By</th>
+                            <th>🗓️ Created At</th>
                             <th class="text-right">Action</th>
                         </tr>
                     </thead>
@@ -180,12 +182,12 @@
                             </td>
                             <td>
                                 @if($applicant->statusCode)
-                                    <span class="badge badge-sm"
+                                    <span class="badge badge-sm whitespace-nowrap"
                                         style="background-color: {{ $applicant->statusCode->color ?? '#e5e7eb' }}20; color: {{ $applicant->statusCode->color ?? '#374151' }}">
                                         {{ $applicant->statusCode->label }}
                                     </span>
                                 @else
-                                    <span class="badge badge-sm badge-ghost">📋 Pending</span>
+                                    <span class="badge badge-sm badge-ghost whitespace-nowrap">📋 Pending</span>
                                 @endif
                             </td>
                             <td class="text-sm opacity-70">
@@ -227,6 +229,8 @@
                             <td class="text-sm">
                                 {{ $applicant->encoder ?? '—' }}
                             </td>
+                            <td class="text-sm">{{ $applicant->creator?->name ?? '—' }}</td>
+                            <td class="text-sm whitespace-nowrap">{{ $applicant->created_at?->format('M d, Y h:i A') ?? '—' }}</td>
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('applicants.show', $applicant) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>

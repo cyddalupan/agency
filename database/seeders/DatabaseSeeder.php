@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             StatusTransitionSeeder::class,
             // InitialAgencySeeder::class, // DISABLED — was overwriting existing users
             SponsorSeeder::class,
+            AccountSeeder::class, // default chart of accounts per agency (idempotent)
         ]);
     }
 }

@@ -103,59 +103,72 @@ class ReportResumePdfTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
+    private function renderResumeView(): string
+    {
+        // Mirror ReportController::loadResumeRelations so the view renders the
+        // same data the real CV PDF shows (sub-relations bypass the global scope).
+        $this->applicant->setRelation('education', ApplicantEducation::withoutGlobalScopes()
+            ->where('applicant_id', $this->applicant->id)
+            ->orderBy('year_start')->orderBy('year_end')
+            ->get());
+        $this->applicant->setRelation('workExperiences', ApplicantWorkExperience::withoutGlobalScopes()
+            ->where('applicant_id', $this->applicant->id)
+            ->orderBy('date_to', 'desc')->orderBy('to_date', 'desc')
+            ->get());
+        $this->applicant->setRelation('certificates', ApplicantCertificate::withoutGlobalScopes()
+            ->where('applicant_id', $this->applicant->id)
+            ->get());
+        $this->applicant->setRelation('references', ApplicantReference::withoutGlobalScopes()
+            ->where('applicant_id', $this->applicant->id)
+            ->get());
+
+        return view('reports.resume', ['applicant' => $this->applicant])->render();
+    }
+
     #[Test]
     public function resume_pdf_includes_applicant_personal_info(): void
     {
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.resume', $this->applicant));
+        // The CV PDF is built from this view; assert on the rendered content
+        // because dompdf encodes glyphs in the binary stream (raw bytes are not
+        // plain-text searchable). This feeds exactly what Pdf::loadView gets.
+        $html = $this->renderResumeView();
 
-        $response->assertOk();
-
-        // Should contain personal details
-        $response->assertSeeText('Juan');
-        $response->assertSeeText('Dela Cruz');
+        $this->assertStringContainsString('Juan', $html);
+        $this->assertStringContainsString('Dela Cruz', $html);
     }
 
     #[Test]
     public function resume_pdf_includes_education(): void
     {
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.resume', $this->applicant));
+        $html = $this->renderResumeView();
 
-        $response->assertOk();
-        $response->assertSeeText('University of the Philippines');
-        $response->assertSeeText('BS Computer Science');
+        $this->assertStringContainsString('University of the Philippines', $html);
+        $this->assertStringContainsString('BS Computer Science', $html);
     }
 
     #[Test]
     public function resume_pdf_includes_work_experience(): void
     {
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.resume', $this->applicant));
+        $html = $this->renderResumeView();
 
-        $response->assertOk();
-        $response->assertSeeText('Tech Corp');
-        $response->assertSeeText('Software Engineer');
+        $this->assertStringContainsString('Tech Corp', $html);
+        $this->assertStringContainsString('Software Engineer', $html);
     }
 
     #[Test]
     public function resume_pdf_includes_certificates(): void
     {
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.resume', $this->applicant));
+        $html = $this->renderResumeView();
 
-        $response->assertOk();
-        $response->assertSeeText('TESDA NC II');
+        $this->assertStringContainsString('TESDA NC II', $html);
     }
 
     #[Test]
     public function resume_pdf_includes_references(): void
     {
-        $response = $this->actingAs($this->user)
-            ->get(route('reports.resume', $this->applicant));
+        $html = $this->renderResumeView();
 
-        $response->assertOk();
-        $response->assertSeeText('Maria Santos');
+        $this->assertStringContainsString('Maria Santos', $html);
     }
 
     #[Test]

@@ -68,7 +68,7 @@
     {{-- Status badge --}}
     @if($applicant->statusCode)
     <div class="mb-6">
-        <span class="badge badge-lg"
+        <span class="badge badge-lg whitespace-nowrap"
             style="background-color: {{ $applicant->statusCode->color ?? '#e5e7eb' }}20; color: {{ $applicant->statusCode->color ?? '#374151' }}">
             📊 {{ $applicant->statusCode->label }}
         </span>

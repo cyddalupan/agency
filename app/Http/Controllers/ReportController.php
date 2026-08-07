@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -112,7 +113,7 @@ class ReportController extends Controller
     {
         $this->authorizeAgencyAccess($applicant);
 
-        $applicant->load(['country']);
+        $applicant->load(['country', 'agent', 'statusCode', 'skills']);
         $this->loadResumeRelations($applicant);
 
         $pdf = Pdf::loadView('reports.resume', ['applicant' => $applicant])
@@ -123,7 +124,7 @@ class ReportController extends Controller
             ->header('Content-Disposition', 'inline; filename="resume-' . $applicant->id . '.pdf"');
     }
 
-    public function applicantsExport(Request $request): \Illuminate\Http\Response
+    public function applicantsExport(Request $request): StreamedResponse
     {
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
@@ -187,7 +188,15 @@ class ReportController extends Controller
 
     public function agents(Request $request): \Illuminate\Contracts\View\View
     {
+        $isSuperAdmin = auth()->user()->user_type === 'super_admin';
+        $agencyId     = auth()->user()->agency_id;
+
         $query = Agent::with('agency')->orderBy('name');
+
+        // Agency users must ONLY see their own agency's agents.
+        if (! $isSuperAdmin) {
+            $query->where('agency_id', $agencyId);
+        }
 
         // Filtering
         if ($request->filled('search')) {
@@ -206,9 +215,17 @@ class ReportController extends Controller
         return view('reports.agents', compact('agents'));
     }
 
-    public function agentsExport(Request $request): \Illuminate\Http\Response
+    public function agentsExport(Request $request): StreamedResponse
     {
+        $isSuperAdmin = auth()->user()->user_type === 'super_admin';
+        $agencyId     = auth()->user()->agency_id;
+
         $query = Agent::with('agency')->orderBy('name');
+
+        // Agency users must ONLY see their own agency's agents.
+        if (! $isSuperAdmin) {
+            $query->where('agency_id', $agencyId);
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
