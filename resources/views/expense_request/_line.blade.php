@@ -66,7 +66,7 @@
         {{-- Agent (only for charge=agent) --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-agent-row="{{ $index }}">
             <div class="form-control">
-                <label class="label"><span class="label-text">Agent (branch-scoped)</span></label>
+                <label class="label"><span class="label-text">Agent Name</span></label>
                 <select name="lines[{{ $index }}][agent_id]" class="select select-bordered select-sm">
                     <option value="">—</option>
                     @foreach($agents as $a)

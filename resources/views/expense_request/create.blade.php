@@ -127,6 +127,20 @@
         }
     }
 
+    // Applicant cascades: only show applicants under the selected agent.
+    function filterApplicantsByAgent(line) {
+        const agentSel = line.querySelector('select[name*="[agent_id]"]');
+        const applicantSel = line.querySelector('select[name*="[applicant_id]"]');
+        if (!agentSel || !applicantSel) return;
+        const agentVal = agentSel.value || '';
+        applicantSel.querySelectorAll('option[data-agent]').forEach(function (o) {
+            const visible = !agentVal || o.dataset.agent === agentVal;
+            o.style.display = visible ? '' : 'none';
+        });
+        const sel = applicantSel.selectedOptions[0];
+        if (sel && sel.style.display === 'none') applicantSel.value = '';
+    }
+
     addBtn.addEventListener('click', function () {
         const tpl = document.getElementById('lineTemplate');
         const node = tpl.content.cloneNode(true);
@@ -144,13 +158,7 @@
         }
         // Applicant cascades: only show applicants under the selected agent
         if (e.target.name && e.target.name.includes('[agent_id]')) {
-            const line = e.target.closest('.expense-line');
-            const applicantSel = line.querySelector('select[name*="[applicant_id]"]');
-            const agentVal = e.target.value;
-            applicantSel.querySelectorAll('option[data-agent]').forEach(function (o) {
-                o.disabled = (agentVal && o.dataset.agent !== agentVal);
-            });
-            if (applicantSel.selectedOptions[0]?.disabled) applicantSel.value = '';
+            filterApplicantsByAgent(e.target.closest('.expense-line'));
         }
     });
 
@@ -163,8 +171,12 @@
         }
     });
 
-    // Initial state
-    linesBox.querySelectorAll('.expense-line').forEach(applyChargeVisibility);
+    // Initial state (re-applies the agent filter too, so a validation-error
+    // re-render keeps applicants of the unselected agents hidden)
+    linesBox.querySelectorAll('.expense-line').forEach(function (line) {
+        applyChargeVisibility(line);
+        filterApplicantsByAgent(line);
+    });
 })();
 </script>
 @endsection
