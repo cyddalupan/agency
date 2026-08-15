@@ -23,7 +23,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+            'email'    => ['required', 'string', 'max:255'],
             'password' => ['required'],
         ]);
 
@@ -38,15 +38,20 @@ class AuthController extends Controller
             return $response;
         }
 
-        // Check user status before attempting login
-        $user = User::where('email', $credentials['email'])->first();
+        // Check user status before attempting login (email or username)
+        $user = User::where('email', $credentials['email'])
+            ->orWhere('username', $credentials['email'])
+            ->first();
         if ($response = $this->checkUserActiveStatus($user)) {
             return $response;
         }
 
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
+        // Resolve to the canonical email so Auth::attempt matches the users table
+        $attempt = ['email' => $user?->email ?? $credentials['email'], 'password' => $credentials['password']];
+
+        if (Auth::attempt($attempt, $remember)) {
             $this->clearRateLimit($key);
             $request->session()->regenerate();
 
@@ -66,7 +71,7 @@ class AuthController extends Controller
         $this->hitRateLimit($key);
 
         // Log failed login attempt
-        $userModel = User::where('email', $email)->first();
+        $userModel = User::where('email', $email)->orWhere('username', $email)->first();
         SensitiveActionLogger::failedLogin($email, $userModel?->agency_id);
 
         return back()->withErrors([
@@ -82,7 +87,7 @@ class AuthController extends Controller
     public function agencyLogin(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+            'email'    => ['required', 'string', 'max:255'],
             'password' => ['required'],
         ]);
 
@@ -94,15 +99,20 @@ class AuthController extends Controller
             return $response;
         }
 
-        // Check user status before attempting login
-        $user = User::where('email', $credentials['email'])->first();
+        // Check user status before attempting login (email or username)
+        $user = User::where('email', $credentials['email'])
+            ->orWhere('username', $credentials['email'])
+            ->first();
         if ($response = $this->checkUserActiveStatus($user)) {
             return $response;
         }
 
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
+        // Resolve to the canonical email so Auth::attempt matches the users table
+        $attempt = ['email' => $user?->email ?? $credentials['email'], 'password' => $credentials['password']];
+
+        if (Auth::attempt($attempt, $remember)) {
             $this->clearRateLimit($key);
             $request->session()->regenerate();
 
@@ -123,7 +133,7 @@ class AuthController extends Controller
 
         $this->hitRateLimit($key);
 
-        $userModel = User::where('email', $email)->first();
+        $userModel = User::where('email', $email)->orWhere('username', $email)->first();
         SensitiveActionLogger::failedLogin($email, $userModel?->agency_id);
         $this->trackFailedLoginAttempt($email, $userModel?->agency_id, $request);
 
@@ -173,7 +183,7 @@ class AuthController extends Controller
 
         // Find the user to get agency_id if not provided
         if (is_null($agencyId)) {
-            $user = User::where('email', $email)->first();
+            $user = User::where('email', $email)->orWhere('username', $email)->first();
             if ($user) {
                 $agencyId = $user->agency_id;
             }

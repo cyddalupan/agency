@@ -97,6 +97,7 @@ class UserController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'surname'     => ['nullable', 'string', 'max:255'],
             'email'       => ['required', 'email', 'max:255', Rule::unique('users')],
+            'username'    => ['nullable', 'string', 'max:255', Rule::unique('users')],
             'contact'     => ['nullable', 'string', 'max:50'],
             'password'    => ['required', 'string', 'min:8', 'confirmed'],
             'user_type'   => ['required', 'string', 'max:50', Rule::in(array_keys(\App\Models\User::ACCESS_PRESETS))],
@@ -114,6 +115,7 @@ class UserController extends Controller
             'contact'     => $validated['contact'] ?? null,
             'branch_id'   => $validated['branch_id'] ?? null,
             'email'       => $validated['email'],
+            'username'    => $validated['username'] ?? null,
             'password'    => Hash::make($validated['password']),
             'user_type'   => $validated['user_type'],
             'status'      => $validated['status'],
@@ -149,6 +151,7 @@ class UserController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'surname'     => ['nullable', 'string', 'max:255'],
             'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'username'  => ['nullable', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'contact'   => ['nullable', 'string', 'max:50'],
             'user_type' => ['required', 'string', 'max:50', Rule::in(array_merge(array_keys(\App\Models\User::ACCESS_PRESETS), ['employer', 'manager', 'coordinator', 'recruiter', 'interviewer', 'report_viewer', 'director', 'marketer']))],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where(function ($q) use ($user) {

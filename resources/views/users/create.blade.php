@@ -57,6 +57,11 @@
                         class="input w-full" placeholder="email@example.com">
                 </fieldset>
                 <fieldset class="fieldset">
+                    <legend class="fieldset-legend">👤 Username</legend>
+                    <input type="text" name="username" value="{{ old('username') }}"
+                        class="input w-full" placeholder="e.g. juan.dela.cruz">
+                </fieldset>
+                <fieldset class="fieldset">
                     <legend class="fieldset-legend">📞 Contact #</legend>
                     <input type="text" name="contact" value="{{ old('contact') }}"
                         class="input w-full" placeholder="e.g. 0917-xxx-xxxx">
