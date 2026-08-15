@@ -67,7 +67,6 @@
                                 <th>Date</th>
                                 <th>User</th>
                                 <th>Status</th>
-                                <th>Main</th>
                                 <th>Branch</th>
                                 <th>Applicant</th>
                                 <th>Agent</th>
@@ -94,7 +93,6 @@
                                                 {{ $request->status }}
                                             </span>
                                         </td>
-                                        <td>{{ $item->charge === 'office' ? 'Office' : 'Agent' }}</td>
                                         <td>{{ $request->branch?->name ?? '—' }}</td>
                                         <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                         <td>{{ $item->agent?->name ?? '—' }}</td>
