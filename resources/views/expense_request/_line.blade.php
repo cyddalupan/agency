@@ -34,21 +34,16 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {{-- Account (gated by charge) --}}
-            <div class="form-control sm:col-span-2">
-                <label class="label"><span class="label-text">Account *</span></label>
-                <select name="lines[{{ $index }}][account_id]" data-account-group="1" class="select select-bordered select-sm">
-                    @php $chargeVal = $line['charge'] ?? 'office'; @endphp
-                    @foreach($officeAccounts as $acc)
-                        <option value="{{ $acc->id }}" data-offset="office"
-                                {{ ($line['account_id'] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
-                    @endforeach
-                    @foreach($agentAccounts as $acc)
-                        <option value="{{ $acc->id }}" data-offset="agent"
-                                {{ ($line['account_id'] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
+            {{-- Main Account (single picker — sub-account field removed) --}}
+            <div class="form-control">
+                <label class="label"><span class="label-text">Main Account *</span></label>
+                <select name="lines[{{ $index }}][main_account_id]" data-main-group="1" class="select select-bordered select-sm">
+                    <option value="">— Select Main —</option>
+                    @foreach($mains as $m)
+                        <option value="{{ $m->id }}" data-offset="{{ $m->charge_type ?? 'office' }}"
+                                {{ ($line['main_account_id'] ?? '') == $m->id ? 'selected' : '' }}>{{ $m->name }}</option>
                     @endforeach
                 </select>
-                <p class="text-xs opacity-60 mt-1">Office charge → office accounts; Agent charge → agent accounts.</p>
             </div>
 
             {{-- Country --}}
@@ -60,6 +55,13 @@
                         <option value="{{ $c->id }}" {{ ($line['country_id'] ?? '') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
                 </select>
+            </div>
+
+            {{-- Particular --}}
+            <div class="form-control">
+                <label class="label"><span class="label-text">Particular</span></label>
+                <input type="text" name="lines[{{ $index }}][particular]" class="input input-bordered input-sm"
+                       value="{{ $line['particular'] ?? '' }}" placeholder="Description">
             </div>
         </div>
 
@@ -87,13 +89,6 @@
                     @endforeach
                 </select>
             </div>
-        </div>
-
-        {{-- Particular --}}
-        <div class="form-control mt-1">
-            <label class="label"><span class="label-text">Particular</span></label>
-            <input type="text" name="lines[{{ $index }}][particular]" class="input input-bordered input-sm"
-                   value="{{ $line['particular'] ?? '' }}" placeholder="Description">
         </div>
 
         {{-- Upload --}}

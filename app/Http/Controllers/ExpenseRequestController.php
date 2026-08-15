@@ -53,11 +53,10 @@ class ExpenseRequestController extends Controller
         $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
         $countries = Country::orderBy('name')->get();
 
-        $officeAccounts = $this->accountsForCharge($agencyId, 'office');
-        $agentAccounts = $this->accountsForCharge($agencyId, 'agent');
+        $mains = Account::mains()->where('agency_id', $agencyId)->orderBy('name')->get();
 
         return view('expense_request.create', compact(
-            'branches', 'agents', 'applicants', 'countries', 'officeAccounts', 'agentAccounts'
+            'branches', 'agents', 'applicants', 'countries', 'mains'
         ));
     }
 
@@ -73,13 +72,13 @@ class ExpenseRequestController extends Controller
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'notes'     => ['nullable', 'string'],
             'lines'     => ['required', 'array', 'min:1'],
-            'lines.*.charge'       => ['required', 'in:office,agent'],
-            'lines.*.agent_id'     => ['nullable', 'integer', 'exists:agents,id'],
+            'lines.*.charge'          => ['required', 'in:office,agent'],
+            'lines.*.main_account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
             'lines.*.applicant_id' => ['nullable', 'integer', 'exists:applicants,id'],
             'lines.*.country_id'   => ['nullable', 'integer', 'exists:countries,id'],
             'lines.*.currency'     => ['required', 'in:PHP,USD'],
             'lines.*.amount'       => ['required', 'numeric', 'min:0.01'],
-            'lines.*.account_id'   => ['required', 'integer', 'exists:accounts,id'],
             'lines.*.particular'   => ['nullable', 'string'],
             'lines.*.file'         => ['nullable', 'file', 'max:5120'],
         ]);
@@ -107,11 +106,21 @@ class ExpenseRequestController extends Controller
                 ]);
 
                 foreach ($validated['lines'] as $index => $line) {
-                    // CoA gating: office charge -> office account only; agent charge -> agent account only.
-                    $account = Account::where('agency_id', $agencyId)->find($line['account_id']);
-                    if (! $account || $account->charge_type !== $line['charge']) {
+                    // Main account must be a Main (no parent) of this agency.
+                    $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
+                    if (! $main || ! $main->isMain()) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            "lines.$index.account_id" => 'Account type must match the charge (office/agent).',
+                            "lines.$index.main_account_id" => 'Selected Main Account is invalid.',
+                        ]);
+                    }
+
+                    // The sub-account picker was removed: the item's account IS the selected Main Account.
+                    $account = $main;
+
+                    // CoA gating: office charge -> office account only; agent charge -> agent account only.
+                    if ($account->charge_type !== $line['charge']) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            "lines.$index.main_account_id" => 'Account type must match the charge (office/agent).',
                         ]);
                     }
 
@@ -147,7 +156,7 @@ class ExpenseRequestController extends Controller
                         'country_id'         => $line['country_id'] ?? null,
                         'currency'           => $line['currency'],
                         'amount'             => $line['amount'],
-                        'account_id'         => $line['account_id'],
+                        'account_id'         => $main->id,
                         'particular'         => $line['particular'] ?? null,
                         'file_path'          => $this->storeLineFile($request, $index),
                     ]);
@@ -177,17 +186,6 @@ class ExpenseRequestController extends Controller
         $seq = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
 
         return $prefix . str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Sub-accounts allowed for a given charge type.
-     */
-    private function accountsForCharge(int $agencyId, string $chargeType)
-    {
-        return Account::where('agency_id', $agencyId)
-            ->where('charge_type', $chargeType)
-            ->orderBy('name')
-            ->get();
     }
 
     /**
