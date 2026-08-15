@@ -207,10 +207,10 @@
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">🏢 Employer</legend>
+                    <legend class="fieldset-legend">FRA/Employer</legend>
                     <select name="employer_id" class="select w-full">
                         <option value="">No Employer</option>
-                        @foreach (\App\Models\Employer::where('agency_id', auth()->user()->agency_id)->get() as $emp)
+                        @foreach ($employers ?? \App\Models\Employer::where('agency_id', auth()->user()->agency_id)->get() as $emp)
                             <option value="{{ $emp->id }}" @selected(old('employer_id', $applicant->employer_id) == $emp->id)>{{ $emp->name }}</option>
                         @endforeach
                     </select>

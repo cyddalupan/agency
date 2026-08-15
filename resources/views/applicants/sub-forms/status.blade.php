@@ -7,12 +7,11 @@
 </fieldset>
 
 <fieldset class="fieldset">
-    <legend class="fieldset-legend">FRA</legend>
-    <select name="fra" id="pi6_fra" class="select w-full">
+    <legend class="fieldset-legend">FRA/Employer</legend>
+    <select name="employer_id" id="pi6_employer_id" class="select w-full">
         <option value="">— None —</option>
-        @foreach (($fraOptions ?? array_keys(app_fra_options())) as $fraValue)
-            @php $fraLabel = app_fra_options()[$fraValue] ?? $fraValue; @endphp
-            <option value="{{ $fraValue }}" @selected(old('fra', $applicant->fra ?? '') === $fraValue)>{{ $fraLabel }}</option>
+        @foreach ($employers ?? [] as $emp)
+            <option value="{{ $emp->id }}" @selected(old('employer_id', $applicant->employer_id ?? '') == $emp->id)>{{ $emp->name }}</option>
         @endforeach
     </select>
 </fieldset>

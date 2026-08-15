@@ -2,32 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
+use App\Models\Agent;
 use App\Models\Applicant;
 use App\Models\Bill;
+use App\Models\Branch;
+use App\Models\CivilStatus;
 use App\Models\Country;
 use App\Models\Employer;
+use App\Models\Language;
+use App\Models\Nationality;
+use App\Models\Position;
+use App\Models\Religion;
+use App\Models\Skill;
 use App\Models\StatusCode;
 use App\Services\SensitiveActionLogger;
-use App\Services\StatusCodeService;
-use App\Services\StatusTransitionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch'])
-            ->forBranchUser();
+        // Withdrawn & Repat statuses (35 Repatriated, 38 Cancel, 50 Backout)
+        // live ONLY on the Withdrawn & Repat tab — never the main applicants
+        // page. (Toybits report 2026-08-10.)
+        $withdrawnStatuses = [35, 38, 50];
+
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'contractRecords'])
+            ->forBranchUser()
+            ->whereNotIn('status_code', $withdrawnStatuses);
 
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
             $search = trim($search);
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%");
             });
         }
 
@@ -214,41 +228,39 @@ class ApplicantController extends Controller
             'salaryRecords',
         ]);
 
-        // Per-agency Status-tab dropdown options (PI: 8 item 3), reusing the
-        // applicant_form_defaults pattern: Status shows only the agency's
-        // enabled status_codes (all when none configured) and FRA shows only
-        // the agency's enabled fra_options.
-        $defaults = app_applicant_form_defaults();
+        // Status-tab dropdown: the FULL status list, matching Add/Edit.
+        // (Toybits report 2026-08-10: filtering by the agency-configured
+        // status_codes hid statuses like Repatriated — the dropdown must be
+        // identical to the Add/Edit form, same as positions/statuses there.)
+        $allStatuses = StatusCode::orderBy('sort_order')->get();
+        $statusCodes = $allStatuses;
 
-        $allStatuses = \App\Models\StatusCode::orderBy('sort_order')->get();
-        $configuredStatuses = $defaults['status_codes'] ?? [];
-        $statusCodes = $configuredStatuses
-            ? $allStatuses->whereIn('code', $configuredStatuses)->values()
-            : $allStatuses;
-
-        $fraOptions = array_values(array_intersect(
-            array_keys(app_fra_options()),
-            $defaults['fra_options'] ?? []
-        ));
-        if (empty($fraOptions)) {
-            $fraOptions = array_keys(app_fra_options());
-        }
+        // Status-tab FRA/Employer dropdown: the agency's FRA list (the employers
+        // table — FRA portal users are employer-type), same as the edit page.
+        // (Toybits report 2026-08-15: the old static No FRA / For FRA / FRA
+        // Completed options were wrong — it must list the FRA like Edit.)
+        $employers = Employer::where('agency_id', resolve_agency_id())
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         // Settings-sourced dropdowns for the Skills & Language tabs (PI items 4 & 5).
-        $skills    = \App\Models\Skill::orderBy('name')->get();
-        $languages = \App\Models\Language::orderBy('name')->get();
+        $skills = Skill::orderBy('name')->get();
+        $languages = Language::orderBy('name')->get();
 
         // Status history for the Status tab (PI item 8): past status_changed
         // activity with the encoder name + timestamp.
-        $statusHistory = \App\Models\ActivityLog::with('user')
-            ->where('subject_type', \App\Models\Applicant::class)
+        $statusHistory = ActivityLog::with('user')
+            ->where('subject_type', Applicant::class)
             ->where('subject_id', $applicant->id)
             ->where('action', 'status_changed')
             ->orderByDesc('id')
             ->get();
 
+        // Status code map (code => model) for the colored Status History tabs.
+        $statusCodeMap = $statusCodes->keyBy('code');
+
         return view('applicants.show', compact(
-            'applicant', 'statusCodes', 'fraOptions', 'skills', 'languages', 'statusHistory'
+            'applicant', 'statusCodes', 'employers', 'skills', 'languages', 'statusHistory', 'statusCodeMap'
         ));
     }
 
@@ -604,18 +616,30 @@ class ApplicantController extends Controller
     }
 
     /**
+     * Snapshot the context shown in the Status History table at the moment of
+     * the change (sub status, agency/employer, country, remarks, status date).
+     * Older entries without snapshots fall back to the applicant's current
+     * values in the view.
+     */
+    private function statusChangeMetadata(int $oldStatus, int $newStatus, Applicant $applicant): array
+    {
+        return [
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'sub_status' => $applicant->fra,
+            'agency' => $applicant->agency?->name,
+            'employer' => $applicant->employer?->name,
+            'country' => $applicant->country?->name,
+            'remarks' => $applicant->remarks,
+            'status_date' => $applicant->status_date?->toDateString(),
+        ];
+    }
+
+    /**
      * The FRA values allowed for this agency's Status tab (PI: 8 item 3).
      * Falls back to the full canonical list when the agency hasn't configured
      * any fra_options.
      */
-    protected function fraOptionValues(): array
-    {
-        $configured = app_applicant_form_defaults()['fra_options'] ?? [];
-        return empty($configured)
-            ? array_keys(app_fra_options())
-            : array_values(array_intersect(array_keys(app_fra_options()), $configured));
-    }
-
     public function soa(Applicant $applicant)
     {
         if ($applicant->agency_id !== auth()->user()->agency_id) {

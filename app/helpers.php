@@ -99,7 +99,6 @@ if (!function_exists('app_applicant_form_defaults')) {
             'sources'          => ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'],
             'enable_firstimer' => true,
             'firstimer_options'=> ['Firstimer', 'Ex-Abroad'],
-            'fra_options'      => ['none', 'for_fra', 'fra_completed'],
         ];
 
         if (! $agency) {

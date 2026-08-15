@@ -26,11 +26,10 @@ class SettingsController extends Controller
         $positions  = Position::orderBy('name')->get();
         $statuses   = StatusCode::orderBy('sort_order')->get();
         $sourceOpts = app_source_options();
-        $fraOpts    = app_fra_options();
         $defaults   = app_applicant_form_defaults($agency);
 
         return view('settings.applicant-form-defaults', compact(
-            'agency', 'positions', 'statuses', 'sourceOpts', 'fraOpts', 'defaults'
+            'agency', 'positions', 'statuses', 'sourceOpts', 'defaults'
         ));
     }
 
@@ -51,8 +50,6 @@ class SettingsController extends Controller
             'sources'           => ['sometimes', 'array'],
             'sources.*'         => ['string', \Illuminate\Validation\Rule::in(app_source_options())],
             'enable_firstimer'  => ['nullable', 'in:1,0,on'],
-            'fra_options'       => ['sometimes', 'array'],
-            'fra_options.*'     => ['string', \Illuminate\Validation\Rule::in(array_keys(app_fra_options()))],
         ]);
 
         $settings = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
@@ -62,7 +59,6 @@ class SettingsController extends Controller
             'sources'           => $validated['sources'] ?? [],
             'enable_firstimer'  => $request->boolean('enable_firstimer'),
             'firstimer_options' => ['Firstimer', 'Ex-Abroad'],
-            'fra_options'       => array_values($validated['fra_options'] ?? []),
         ];
         $agency->update(['settings' => $settings]);
 
