@@ -12,6 +12,7 @@ use App\Models\Bill;
 use App\Models\Commission;
 use App\Models\Country;
 use App\Models\Employer;
+use App\Models\ExpenseRequestItem;
 use App\Models\OfficialReceipt;
 use App\Models\Payment;
 use App\Models\StatusCode;
@@ -122,6 +123,44 @@ class ReportController extends Controller
         return response($pdf->output(['compress' => 0]), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="resume-' . $applicant->id . '.pdf"');
+    }
+
+    /**
+     * Expense Report: a printable PDF like Generate CV, showing the applicant's
+     * Statement of Account and Agent Expenses (Toybits format).
+     */
+    public function expenseReport(Applicant $applicant)
+    {
+        $this->authorizeAgencyAccess($applicant);
+
+        $statementItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
+            ->where('applicant_id', $applicant->id)
+            ->orderBy('id')
+            ->get();
+
+        $agentItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
+            ->where('agent_id', $applicant->agent_id)
+            ->orderBy('id')
+            ->get();
+
+        $statementTotals = $statementItems->groupBy('currency')->map(fn ($group) => (float) $group->sum('amount'));
+        $statementGrandTotal = (float) $statementItems->sum('amount');
+        $agentGrandTotal = (float) $agentItems->sum('amount');
+
+        $applicant->load(['agent', 'branch']);
+
+        $pdf = Pdf::loadView('reports.applicant_expense_report', [
+            'applicant'           => $applicant,
+            'statementItems'      => $statementItems,
+            'statementTotals'     => $statementTotals,
+            'statementGrandTotal' => $statementGrandTotal,
+            'agentItems'          => $agentItems,
+            'agentGrandTotal'     => $agentGrandTotal,
+        ])->setPaper('a4');
+
+        return response($pdf->output(['compress' => 0]), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="expense-report-' . $applicant->id . '.pdf"');
     }
 
     public function applicantsExport(Request $request): StreamedResponse

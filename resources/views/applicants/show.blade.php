@@ -43,6 +43,9 @@
                 <a href="{{ route('reports.resume', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
                     📄 Generate CV
                 </a>
+                <a href="{{ route('reports.expense-report', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                    🧾 Expense Report
+                </a>
             </div>
         </div>
     </div>

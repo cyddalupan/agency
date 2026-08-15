@@ -460,6 +460,7 @@ Route::middleware('auth:web')->group(function () {
         Route::get('/or/{or}', [ReportController::class, 'or'])->name('or');
         Route::get('/commission/{commission}', [ReportController::class, 'commission'])->name('commission');
         Route::get('/resume/{applicant}', [ReportController::class, 'resume'])->name('resume');
+        Route::get('/expense-report/{applicant}', [ReportController::class, 'expenseReport'])->name('expense-report');
         Route::get('/statistics', [ReportController::class, 'statistics'])->name('statistics');
     });
 
