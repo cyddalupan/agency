@@ -37,15 +37,20 @@
                         @endif
                     </div>
                 </div>
-                <a href="{{ route('applicants.edit', $applicant) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
-                    ✏️ Edit
-                </a>
-                <a href="{{ route('reports.resume', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
-                    📄 Generate CV
-                </a>
-                <a href="{{ route('reports.expense-report', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
-                    🧾 Expense Report
-                </a>
+                <div class="flex flex-col items-end gap-3">
+                    <a href="{{ route('applicants.edit', $applicant) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                        ✏️ Edit
+                    </a>
+                    <div class="flex flex-col items-end gap-1 print-group">
+                        <span class="text-[10px] uppercase tracking-wider opacity-60">🖨️ Print</span>
+                        <a href="{{ route('reports.resume', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                            📄 Generate CV
+                        </a>
+                        <a href="{{ route('reports.expense-report', $applicant) }}" target="_blank" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                            🧾 Expense Report
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -73,7 +73,7 @@ class ExpenseRequestController extends Controller
             'notes'     => ['nullable', 'string'],
             'lines'     => ['required', 'array', 'min:1'],
             'lines.*.charge'          => ['required', 'in:office,agent'],
-            'lines.*.main_account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'lines.*.main_account_id' => ['nullable', 'integer', 'exists:accounts,id'],
             'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
             'lines.*.applicant_id' => ['nullable', 'integer', 'exists:applicants,id'],
             'lines.*.country_id'   => ['nullable', 'integer', 'exists:countries,id'],
@@ -106,8 +106,17 @@ class ExpenseRequestController extends Controller
                 ]);
 
                 foreach ($validated['lines'] as $index => $line) {
-                    // Main account must be a Main (no parent) of this agency.
-                    $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
+                    // Main account is auto-resolved from the charge when the
+                    // dropdown is omitted (Charge and Main Account are the same).
+                    if (! empty($line['main_account_id'])) {
+                        $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
+                    } else {
+                        $main = Account::mains()
+                            ->where('agency_id', $agencyId)
+                            ->where('charge_type', $line['charge'])
+                            ->orderBy('name')
+                            ->first();
+                    }
                     if (! $main || ! $main->isMain()) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
                             "lines.$index.main_account_id" => 'Selected Main Account is invalid.',

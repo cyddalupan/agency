@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <title>Expense Report - {{ $applicant->full_name }}</title>
     <style>
+        @page { size: A4 portrait; margin: 8mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
 
-        .page { width: 210mm; padding: 10mm; }
+        .page { width: 100%; }
 
         h1.title {
             font-size: 13pt;
@@ -19,8 +20,8 @@
         }
 
         /* ── HEADER ── */
-        table.header { width: 100%; border-collapse: collapse; margin-bottom: 6mm; }
-        table.header td { padding: 1.5mm 2mm; font-size: 9pt; vertical-align: top; }
+        table.header { width: 100%; border-collapse: collapse; margin-bottom: 6mm; table-layout: fixed; }
+        table.header td { padding: 1.5mm 2mm; font-size: 9pt; vertical-align: top; word-break: break-word; }
         table.header .label { font-weight: 700; color: #1a365d; width: 38mm; }
 
         /* ── SECTION TABLES ── */
@@ -33,7 +34,7 @@
             margin: 6mm 0 3mm;
         }
 
-        table.data { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+        table.data { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
         table.data th {
             background: #1a365d;
             color: #fff;
@@ -46,6 +47,7 @@
             padding: 1.5mm;
             border: 0.5px solid #cbd5e0;
             vertical-align: top;
+            word-break: break-word;
         }
         table.data tr:nth-child(even) td { background: #f8f9fa; }
         table.data td.num, table.data th.num { text-align: right; }

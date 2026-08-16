@@ -34,18 +34,6 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {{-- Main Account (single picker — sub-account field removed) --}}
-            <div class="form-control">
-                <label class="label"><span class="label-text">Main Account *</span></label>
-                <select name="lines[{{ $index }}][main_account_id]" data-main-group="1" class="select select-bordered select-sm">
-                    <option value="">— Select Main —</option>
-                    @foreach($mains as $m)
-                        <option value="{{ $m->id }}" data-offset="{{ $m->charge_type ?? 'office' }}"
-                                {{ ($line['main_account_id'] ?? '') == $m->id ? 'selected' : '' }}>{{ $m->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
             {{-- Country --}}
             <div class="form-control">
                 <label class="label"><span class="label-text">Country</span></label>
