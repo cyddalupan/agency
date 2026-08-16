@@ -33,11 +33,15 @@ class ExpenseRequestController extends Controller
         $totals = $this->currencyTotals($requests);
 
         return view('expense_request.index', [
-            'requests'     => $requests,
-            'phpTotal'     => $totals['PHP'],
-            'usdTotal'     => $totals['USD'],
-            'totalAmount'  => round($totals['PHP'] + $totals['USD'] * config('expense.usd_to_php', 56), 2),
-            'chargeTotals' => $totals['charge'],
+            'requests'         => $requests,
+            'phpTotal'         => $totals['PHP'],
+            'usdTotal'         => $totals['USD'],
+            'totalAmount'      => round($totals['PHP'] + $totals['USD'] * config('expense.usd_to_php', 56), 2),
+            'chargeTotals'     => $totals['charge'],
+            'pendingPhpTotal'  => $totals['status']['pending']['PHP'],
+            'pendingUsdTotal'  => $totals['status']['pending']['USD'],
+            'receivedPhpTotal' => $totals['status']['received']['PHP'],
+            'receivedUsdTotal' => $totals['status']['received']['USD'],
         ]);
     }
 
@@ -53,10 +57,34 @@ class ExpenseRequestController extends Controller
         $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
         $countries = Country::orderBy('name')->get();
 
-        $mains = Account::mains()->where('agency_id', $agencyId)->orderBy('name')->get();
+        // Main accounts (with children) + flat selectable account list for the two-level picker.
+        $mains = Account::mains()->with('children')
+            ->where('agency_id', $agencyId)
+            ->orderBy('name')
+            ->get();
+
+        $allAccounts = collect();
+        foreach ($mains as $main) {
+            foreach ($main->children as $child) {
+                $allAccounts->push((object) [
+                    'id'          => $child->id,
+                    'parent_id'   => $main->id,
+                    'name'        => $main->name . ' → ' . $child->name,
+                    'charge_type' => $child->charge_type ?? 'office',
+                ]);
+            }
+            if ($main->children->isEmpty()) {
+                $allAccounts->push((object) [
+                    'id'          => $main->id,
+                    'parent_id'   => $main->id,
+                    'name'        => $main->name,
+                    'charge_type' => $main->charge_type ?? 'office',
+                ]);
+            }
+        }
 
         return view('expense_request.create', compact(
-            'branches', 'agents', 'applicants', 'countries', 'mains'
+            'branches', 'agents', 'applicants', 'countries', 'mains', 'allAccounts'
         ));
     }
 
@@ -182,19 +210,18 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * Next reference number, unique per agency (Y-m-d + sequence).
+     * Next reference number, unique per agency (sequential, starts at the configured value).
      */
     private function nextReference(int $agencyId): string
     {
-        $prefix = now()->format('Ymd') . '-';
-        $last = ExpenseRequest::where('agency_id', $agencyId)
-            ->where('reference_no', 'like', $prefix . '%')
-            ->orderByDesc('reference_no')
-            ->value('reference_no');
+        $start = (int) config('expense.reference_start', 2000);
 
-        $seq = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+        $max = ExpenseRequest::where('agency_id', $agencyId)
+            ->get('reference_no')
+            ->map(fn ($r) => (int) $r->reference_no)
+            ->max();
 
-        return $prefix . str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
+        return (string) ($max ? max($max + 1, $start) : $start);
     }
 
     /**
@@ -211,26 +238,45 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * Currency + charge breakdown used on the index summary.
+     * Currency + charge + status breakdown used on the index summary.
      */
     private function currencyTotals($requests): array
     {
         $php = 0.0;
         $usd = 0.0;
         $charge = ['office' => 0.0, 'agent' => 0.0];
+        $status = [
+            'pending'  => ['PHP' => 0.0, 'USD' => 0.0],
+            'received' => ['PHP' => 0.0, 'USD' => 0.0],
+        ];
 
         foreach ($requests as $request) {
+            $statusKey = $request->status === ExpenseRequest::STATUS_RECEIVED ? 'received' : 'pending';
+
             foreach ($request->items as $item) {
-                if ($item->currency === 'USD') {
-                    $usd += (float) $item->amount;
+                $isUsd = $item->currency === 'USD';
+                $amount = (float) $item->amount;
+
+                if ($isUsd) {
+                    $usd += $amount;
                 } else {
-                    $php += (float) $item->amount;
+                    $php += $amount;
                 }
-                $charge[$item->charge] = ($charge[$item->charge] ?? 0) + (float) $item->amount;
+
+                $status[$statusKey][$isUsd ? 'USD' : 'PHP'] += $amount;
+                $charge[$item->charge] = ($charge[$item->charge] ?? 0) + $amount;
             }
         }
 
-        return ['PHP' => round($php, 2), 'USD' => round($usd, 2), 'charge' => $charge];
+        return [
+            'PHP'    => round($php, 2),
+            'USD'    => round($usd, 2),
+            'charge' => $charge,
+            'status' => [
+                'pending'  => ['PHP' => round($status['pending']['PHP'], 2), 'USD' => round($status['pending']['USD'], 2)],
+                'received' => ['PHP' => round($status['received']['PHP'], 2), 'USD' => round($status['received']['USD'], 2)],
+            ],
+        ];
     }
 
     /**
@@ -283,6 +329,38 @@ class ExpenseRequestController extends Controller
 
         return redirect()->route('expense_request.show', $expenseRequest)
             ->with('success', "Status updated to {$to}.");
+    }
+
+    /**
+     * Admin-only soft delete with a mandatory reason (stored on the history row).
+     */
+    public function destroy(Request $request, ExpenseRequest $expenseRequest): RedirectResponse
+    {
+        $this->authorizeAgency($expenseRequest);
+
+        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
+            abort(403, 'Only admin can delete expense requests.');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($expenseRequest, $validated) {
+            ExpenseRequestStatusHistory::create([
+                'expense_request_id' => $expenseRequest->id,
+                'agency_id'          => $expenseRequest->agency_id,
+                'user_id'            => auth()->id(),
+                'from_status'        => $expenseRequest->status,
+                'to_status'          => 'deleted',
+                'note'               => $validated['reason'],
+            ]);
+
+            $expenseRequest->delete(); // soft delete
+        });
+
+        return redirect()->route('expense_request.index')
+            ->with('success', 'Expense request deleted.');
     }
 
     /**

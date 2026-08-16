@@ -112,18 +112,105 @@ class AccountCrudTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->post(route('accounts.store'), [
-                'name' => 'Office Expenses',
-                'type' => 'expense',
+                'name'        => 'Office Expenses',
+                'type'        => 'expense',
+                'charge_type' => 'office',
             ])
             ->assertRedirect(route('accounts.index'))
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('accounts', [
-            'agency_id' => $this->agency->id,
-            'name'      => 'Office Expenses',
-            'type'      => 'expense',
-            'parent_id' => null,
+            'agency_id'   => $this->agency->id,
+            'name'        => 'Office Expenses',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+            'parent_id'   => null,
         ]);
+    }
+
+    #[Test]
+    public function store_defaults_charge_type_to_office_when_omitted(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('accounts.store'), [
+                'name' => 'Default Charge',
+                'type' => 'expense',
+            ])
+            ->assertRedirect(route('accounts.index'));
+
+        $this->assertDatabaseHas('accounts', [
+            'agency_id'   => $this->agency->id,
+            'name'        => 'Default Charge',
+            'charge_type' => 'office',
+        ]);
+    }
+
+    #[Test]
+    public function store_persists_agent_charge_type(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('accounts.store'), [
+                'name'        => 'Agent Advances',
+                'type'        => 'expense',
+                'charge_type' => 'agent',
+            ])
+            ->assertRedirect(route('accounts.index'));
+
+        $this->assertDatabaseHas('accounts', [
+            'agency_id'   => $this->agency->id,
+            'name'        => 'Agent Advances',
+            'charge_type' => 'agent',
+        ]);
+    }
+
+    #[Test]
+    public function store_rejects_invalid_charge_type(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('accounts.store'), [
+                'name'        => 'Bad Charge',
+                'type'        => 'expense',
+                'charge_type' => 'corporate',
+            ])
+            ->assertSessionHasErrors('charge_type');
+
+        $this->assertDatabaseCount('accounts', 0);
+    }
+
+    #[Test]
+    public function update_changes_charge_type(): void
+    {
+        $account = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'name'        => 'Advances',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+            'parent_id'   => null,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patch(route('accounts.update', $account), [
+                'name'        => 'Advances',
+                'type'        => 'expense',
+                'charge_type' => 'agent',
+            ])
+            ->assertRedirect(route('accounts.index'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('accounts', [
+            'id'          => $account->id,
+            'charge_type' => 'agent',
+        ]);
+    }
+
+    #[Test]
+    public function create_page_shows_charge_type_field(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('accounts.create'))
+            ->assertOk()
+            ->assertSee('Charge Type')
+            ->assertSee('value="agent"', false);
     }
 
     #[Test]

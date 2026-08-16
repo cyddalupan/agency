@@ -37,6 +37,10 @@
             <div class="card-body">
                 <p class="text-sm opacity-60">💰 Total Amount</p>
                 <p class="text-2xl font-bold">₱{{ number_format($totalAmount, 2) }}</p>
+                <div class="mt-2 pt-2 border-t border-base-200 text-xs opacity-70 space-y-0.5">
+                    <p>⏳ Pending: ₱{{ number_format($pendingTotal, 2) }}</p>
+                    <p>✅ Received: ₱{{ number_format($receivedTotal, 2) }}</p>
+                </div>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
@@ -100,7 +104,35 @@
                                 <td>{{ $r->type ?? '—' }}</td>
                                 <td>{{ $r->debit_account ?? '—' }}</td>
                                 <td>
-                                    <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost">Review →</a>
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                        @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                                            <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Delete"
+                                                onclick="document.getElementById('delete-receivable-{{ $r->id }}').showModal()">🗑️</button>
+                                        @endif
+                                    </div>
+                                    @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                                        <dialog id="delete-receivable-{{ $r->id }}" class="modal">
+                                            <div class="modal-box">
+                                                <h3 class="font-bold text-lg mb-2">Delete Receivable</h3>
+                                                <p>Are you sure you want to delete <strong>{{ $r->code }}</strong>?</p>
+                                                <p class="text-sm opacity-60 mt-2">A reason is required and will be recorded in the history log.</p>
+                                                <form method="POST" action="{{ route('receivable.destroy', $r->id) }}" class="mt-4 space-y-3">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <textarea name="reason" rows="3" class="textarea textarea-bordered w-full"
+                                                        placeholder="Reason for deletion (required)" required></textarea>
+                                                    <div class="modal-action">
+                                                        <button class="btn btn-error">🗑️ Delete</button>
+                                                        <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-receivable-{{ $r->id }}').close()">Cancel</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <form method="dialog" class="modal-backdrop">
+                                                <button>close</button>
+                                            </form>
+                                        </dialog>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach

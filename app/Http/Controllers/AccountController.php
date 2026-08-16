@@ -34,10 +34,13 @@ class AccountController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'      => 'required|string|max:191',
-            'type'      => 'required|string|in:income,expense',
-            'parent_id' => 'nullable|integer|exists:accounts,id',
+            'name'        => 'required|string|max:191',
+            'type'        => 'required|string|in:income,expense',
+            'charge_type' => 'nullable|string|in:office,agent',
+            'parent_id'   => 'nullable|integer|exists:accounts,id',
         ]);
+
+        $validated['charge_type'] = $validated['charge_type'] ?? 'office';
 
         // If a parent is given, ensure it belongs to the same agency and is a Main account,
         // and inherit the parent's type.
@@ -85,10 +88,13 @@ class AccountController extends Controller
         abort_unless($account->agency_id === $this->resolveAgencyId(), 403);
 
         $validated = $request->validate([
-            'name'      => 'required|string|max:191',
-            'type'      => 'required|string|in:income,expense',
-            'parent_id' => 'nullable|integer|exists:accounts,id',
+            'name'        => 'required|string|max:191',
+            'type'        => 'required|string|in:income,expense',
+            'charge_type' => 'nullable|string|in:office,agent',
+            'parent_id'   => 'nullable|integer|exists:accounts,id',
         ]);
+
+        $validated['charge_type'] = $validated['charge_type'] ?? $account->charge_type ?? 'office';
 
         // Prevent setting a Main account under itself as a Sub
         if ((int) ($validated['parent_id'] ?? 0) === $account->id) {

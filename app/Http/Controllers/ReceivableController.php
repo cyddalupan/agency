@@ -27,8 +27,10 @@ class ReceivableController extends Controller
             ->get();
 
         return view('receivable.index', [
-            'receivables' => $receivables,
-            'totalAmount' => round((float) $receivables->sum('amount'), 2),
+            'receivables'   => $receivables,
+            'totalAmount'   => round((float) $receivables->sum('amount'), 2),
+            'pendingTotal'  => round((float) $receivables->where('status', Receivable::STATUS_PENDING)->sum('amount'), 2),
+            'receivedTotal' => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
         ]);
     }
 
@@ -156,6 +158,38 @@ class ReceivableController extends Controller
 
         return redirect()->route('receivable.show', $receivable)
             ->with('success', "Status updated to {$to}.");
+    }
+
+    /**
+     * Admin-only soft delete with a mandatory reason (stored on the history row).
+     */
+    public function destroy(Request $request, Receivable $receivable): RedirectResponse
+    {
+        $this->authorizeAgency($receivable);
+
+        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
+            abort(403, 'Only admin can delete receivables.');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($receivable, $validated) {
+            ReceivableHistory::create([
+                'receivable_id' => $receivable->id,
+                'agency_id'     => $receivable->agency_id,
+                'user_id'       => auth()->id(),
+                'from_status'   => $receivable->status,
+                'to_status'     => 'deleted',
+                'note'          => $validated['reason'],
+            ]);
+
+            $receivable->delete(); // soft delete
+        });
+
+        return redirect()->route('receivable.index')
+            ->with('success', 'Receivable deleted.');
     }
 
     /**

@@ -1,4 +1,9 @@
 {{-- Status tab sub-form (PI 6) — renders the fields for route applicants.status --}}
+{{--
+    Repat checkbox + Repat Date removed 2026-08-10 (Toybits report):
+    setting the status to Repatriated (35) in the dropdown already covers it.
+    The repat boolean was never read anywhere in the app.
+--}}
 <fieldset class="fieldset">
     <legend class="fieldset-legend">Applicant# <span class="opacity-60">(optional)</span></legend>
     <input type="text" name="applicant_no" id="pi6_applicant_no"
@@ -37,17 +42,8 @@
 </fieldset>
 
 <fieldset class="fieldset">
-    <legend class="fieldset-legend">Repat</legend>
-    <label class="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="repat" id="pi6_repat" value="1"
-               @checked((bool) (old('repat', $applicant->repat ?? false))) class="checkbox">
-        <span class="text-sm">Repatriated</span>
-    </label>
-</fieldset>
-
-<fieldset class="fieldset">
-    <legend class="fieldset-legend">Repat Date</legend>
-    <input type="date" name="repat_date" id="pi6_repat_date"
-           value="{{ old('repat_date', $applicant->repat_date?->format('Y-m-d') ?? '') }}"
-           class="input w-full">
+    <legend class="fieldset-legend">Remarks</legend>
+    <textarea name="remarks" id="pi6_remarks" rows="2"
+              class="textarea w-full"
+              placeholder="Notes about this status change">{{ old('remarks', $applicant->remarks ?? '') }}</textarea>
 </fieldset>

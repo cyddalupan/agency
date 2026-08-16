@@ -179,7 +179,7 @@ class FraDashboardController extends Controller
         // On-process status codes: document processing through visa/completion
         $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences'])
+        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -264,7 +264,7 @@ class FraDashboardController extends Controller
 
         $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences'])
+        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')

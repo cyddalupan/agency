@@ -302,6 +302,8 @@ Route::middleware('auth:web')->group(function () {
     // Applicant routes - recruiter and other agency roles
     Route::middleware('role:admin,super_admin,recruiter,staff,processor,coordinator,interviewer,manager,marketer,director')->group(function () {
         Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
+        Route::get('applicants/withdrawn-repat/export', [ApplicantController::class, 'withdrawnExport'])->name('applicants.withdrawn.export');
+        Route::get('applicants/withdrawn-repat', [ApplicantController::class, 'withdrawn'])->name('applicants.withdrawn');
         Route::patch('applicants/{applicant}/status', [ApplicantController::class, 'updateStatus'])->name('applicants.status');
         Route::get('applicants/{applicant}/soa', [ApplicantController::class, 'soa'])->name('applicants.soa');
         Route::resource('applicants', ApplicantController::class);
@@ -367,7 +369,9 @@ Route::middleware('auth:web')->group(function () {
         });
 
         // Reference CRUD modules (admin/super_admin)
-        Route::resource('expenses', \App\Http\Controllers\ExpenseController::class)->except('show');
+        // NOTE: legacy expenses CRUD (ExpenseController) removed 2026-08-11 —
+        // replaced by Tab 2 Expense Request module (expense_request.*). See
+        // LegacyExpenseModuleDeprecationTest.
         Route::resource('branches', \App\Http\Controllers\BranchController::class);
         Route::resource('languages', \App\Http\Controllers\LanguageController::class);
         Route::resource('skills', \App\Http\Controllers\SkillController::class);
@@ -404,6 +408,8 @@ Route::middleware('auth:web')->group(function () {
             ->middleware('role:admin,super_admin,billing');
         Route::patch('/{receivable}/status', [ReceivableController::class, 'updateStatus'])->name('status')
             ->middleware('role:admin,super_admin,billing');
+        Route::delete('/{receivable}', [ReceivableController::class, 'destroy'])->name('destroy')
+            ->middleware('role:admin,super_admin');
     });
 
     // Receivable & Payments module — Tab 2: Expenses & Payments
@@ -418,6 +424,8 @@ Route::middleware('auth:web')->group(function () {
             ->middleware('role:admin,super_admin,billing');
         Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
             ->middleware('role:admin,super_admin,billing');
+        Route::delete('/{expense_request}', [ExpenseRequestController::class, 'destroy'])->name('destroy')
+            ->middleware('role:admin,super_admin');
     });
 
     // Receivable & Payments module — Tab 3: Agents Report

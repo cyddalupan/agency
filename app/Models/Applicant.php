@@ -43,7 +43,7 @@ class Applicant extends Model implements AuthenticatableContract
     {
         $user = $user ?? auth()->user();
 
-        if ($user && (int) $user->branch_id > 0) {
+        if ($user && $user->isBranchLocked()) {
             $query->where($this->getTable() . '.branch_id', $user->branch_id);
         }
 
@@ -51,12 +51,14 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
-     * True when the given user is branch-scoped (has a branch_id).
+     * True when the given user is branch-scoped: a non-admin account that
+     * belongs to a branch. Admins are never branch-scoped, even when their
+     * account carries a branch_id.
      */
     public static function isBranchUser(?\Illuminate\Contracts\Auth\Authenticatable $user = null): bool
     {
         $user = $user ?? auth()->user();
-        return $user && (int) $user->branch_id > 0;
+        return $user && $user->isBranchLocked();
     }
 
     protected $casts = [
@@ -209,6 +211,16 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     public function contract()
+    {
+        return $this->hasMany(ApplicantContract::class);
+    }
+
+    /**
+     * Contract records added via the Documents tab -> Contract section.
+     * Named differently from `contract()` because the `contract` *column*
+     * (legacy file path) shadows the relation on attribute access.
+     */
+    public function contractRecords()
     {
         return $this->hasMany(ApplicantContract::class);
     }

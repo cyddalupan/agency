@@ -87,6 +87,7 @@
                             </td>
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('accounts.create', ['parent_id' => $main->id]) }}" class="btn btn-ghost btn-xs btn-square" title="Add Sub Account">➕</a>
                                     <a href="{{ route('accounts.edit', $main) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">✏️</a>
                                     <form action="{{ route('accounts.destroy', $main) }}" method="POST"
                                           onsubmit="return confirm('Delete {{ $main->name }} and all its Sub accounts?')">

@@ -462,19 +462,56 @@
                     <div class="overflow-x-auto">
                         <table class="table table-sm w-full">
                             <thead>
-                                <tr><th>Encoder</th><th>Status Change</th><th>When</th></tr>
+                                <tr>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                    <th>Sub Status</th>
+                                    <th>Agency/Employer</th>
+                                    <th>Country</th>
+                                    <th>Remarks</th>
+                                    <th>Handled By</th>
+                                    <th>Status Date</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 @foreach ($statusHistory as $entry)
+                                @php
+                                    $meta = $entry->metadata ?? [];
+                                    $newCode = $meta['new_status'] ?? null;
+                                    $st = $newCode !== null ? ($statusCodeMap[$newCode] ?? null) : null;
+                                    $subStatus = $meta['sub_status'] ?? $applicant->fra;
+                                    $agencyName = $meta['agency'] ?? $applicant->agency?->name;
+                                    $employerName = $meta['employer'] ?? $applicant->employer?->name;
+                                    $countryName = $meta['country'] ?? $applicant->country?->name;
+                                    $remarks = $meta['remarks'] ?? $applicant->remarks;
+                                    $statusDate = $meta['status_date'] ?? $applicant->status_date?->toDateString();
+                                    $color = $st?->color ?? '#6b7280';
+                                    $label = $st?->label ?? ($newCode !== null ? "Status {$newCode}" : '—');
+                                    $subLabel = app_fra_options()[$subStatus] ?? $subStatus ?? '—';
+                                @endphp
                                 <tr>
-                                    <td class="font-medium">{{ $entry->user?->name ?? '—' }}</td>
-                                    <td>{{ $entry->description }}</td>
                                     <td class="whitespace-nowrap text-sm">{{ $entry->created_at?->format('M d, Y h:i A') ?? '—' }}</td>
+                                    <td>
+                                        <span class="badge badge-sm font-medium whitespace-nowrap" style="background-color: {{ $color }}20; color: {{ $color }}">{{ $label }}</span>
+                                    </td>
+                                    <td class="text-sm">{{ $subLabel }}</td>
+                                    <td class="text-sm">
+                                        {{ $agencyName ?? '—' }}@if ($employerName) <span class="opacity-50">/</span> {{ $employerName }}@endif
+                                    </td>
+                                    <td class="text-sm">{{ $countryName ?? '—' }}</td>
+                                    <td class="text-sm">{{ $remarks ?? '—' }}</td>
+                                    <td class="font-medium text-sm">{{ $entry->user?->name ?? '—' }}</td>
+                                    <td class="whitespace-nowrap text-sm">{{ $statusDate ?? '—' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
+                </div>
+                @else
+                <div class="mt-6">
+                    <h4 class="font-semibold mb-3">📜 Status History</h4>
+                    <p class="text-sm opacity-50 py-2">No status changes yet.</p>
                 </div>
                 @endif
             </section>

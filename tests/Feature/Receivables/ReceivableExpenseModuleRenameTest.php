@@ -11,9 +11,10 @@ use Tests\TestCase;
 /**
  * Module naming/restructure under Finance (TDD):
  *  1. "Receivable & Payments"  -> renamed to "Receivable"
- *  2. "Expense Journal"        -> renamed to "Expenses and Payments"
- *  3. "Record Expense" button  -> renamed to "Create Request"
- *  4. Collection Module ("Collections" sidebar item) -> removed
+ *  2. Legacy "Expense Journal" / "expenses.*" CRUD -> deprecated, replaced by
+ *     the Tab 2 Expense Request module (expense_request.*), labeled
+ *     "Expenses & Payments" with "Save Request" action.
+ *  3. Collection Module ("Collections" sidebar item) -> removed
  */
 class ReceivableExpenseModuleRenameTest extends TestCase
 {
@@ -46,33 +47,27 @@ class ReceivableExpenseModuleRenameTest extends TestCase
             ->assertDontSee('Receivable & Payments');
     }
 
-    // ---------- "Expense Journal" -> "Expenses and Payments" ----------
+    // ---------- Tab 2 module: "Expenses & Payments", not legacy "Expense Journal" ----------
 
     #[Test]
-    public function expense_module_is_labeled_expenses_and_payments_not_expense_journal(): void
+    public function expense_module_is_labeled_expenses_payments_not_expense_journal(): void
     {
         $this->actingAs($this->admin)
-            ->get(route('expenses.index'))
+            ->get(route('expense_request.index'))
             ->assertOk()
-            ->assertSee('Expenses and Payments')
+            ->assertSee('Expenses &amp; Payments', false)
             ->assertDontSee('Expense Journal');
     }
 
-    // ---------- "Record Expense" -> "Create Request" ----------
+    // ---------- "Record Expense" -> "Save Request" ----------
 
     #[Test]
-    public function expense_create_action_is_labeled_create_request(): void
+    public function expense_create_action_is_labeled_save_request(): void
     {
         $this->actingAs($this->admin)
-            ->get(route('expenses.index'))
+            ->get(route('expense_request.create'))
             ->assertOk()
-            ->assertSee('Create Request')
-            ->assertDontSee('Record Expense');
-
-        $this->actingAs($this->admin)
-            ->get(route('expenses.create'))
-            ->assertOk()
-            ->assertSee('Create Request')
+            ->assertSee('Save Request')
             ->assertDontSee('Record Expense');
     }
 

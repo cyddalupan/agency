@@ -47,7 +47,7 @@
                 <select name="parent_id" class="select w-full">
                     <option value="">— New Main Account —</option>
                     @foreach($mains as $main)
-                        <option value="{{ $main->id }}" @selected(old('parent_id') == $main->id)>
+                        <option value="{{ $main->id }}" @selected(old('parent_id') == $main->id || request('parent_id') == $main->id)>
                             {{ $main->name }} ({{ $main->type }})
                         </option>
                     @endforeach
@@ -62,6 +62,16 @@
                     <option value="expense" @selected(old('type', 'expense') === 'expense')>💸 Expense</option>
                 </select>
                 @error('type') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            </fieldset>
+
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🏢 Charge Type <span class="text-error">*</span></legend>
+                <select name="charge_type" class="select w-full">
+                    <option value="office" @selected(old('charge_type', 'office') === 'office')>🏢 Office</option>
+                    <option value="agent" @selected(old('charge_type', 'office') === 'agent')>🤝 Agent</option>
+                </select>
+                <p class="text-xs opacity-50 mt-1">Which expense lines this account can be used for.</p>
+                @error('charge_type') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
             </fieldset>
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">

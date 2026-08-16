@@ -84,24 +84,26 @@ class ExpenseRequestTest extends TestCase
             'notes'     => 'Monthly expense run',
             'lines'     => [
                 [
-                    'charge'        => 'office',
-                    'agent_id'      => null,
-                    'applicant_id'  => null,
-                    'country_id'    => $country->id,
-                    'currency'      => 'PHP',
-                    'amount'        => 12500.00,
-                    'account_id'    => $officeAccount->id,
-                    'particular'    => 'Office supplies',
+                    'charge'          => 'office',
+                    'agent_id'        => null,
+                    'applicant_id'    => null,
+                    'country_id'      => $country->id,
+                    'currency'        => 'PHP',
+                    'amount'          => 12500.00,
+                    'main_account_id' => $officeAccount->id,
+                    'account_id'      => $officeAccount->id,
+                    'particular'      => 'Office supplies',
                 ],
                 [
-                    'charge'        => 'agent',
-                    'agent_id'      => $agent->id,
-                    'applicant_id'  => $applicant->id,
-                    'country_id'    => $country->id,
-                    'currency'      => 'USD',
-                    'amount'        => 250.00,
-                    'account_id'    => $agentAccount->id,
-                    'particular'    => 'Agent advance for applicant',
+                    'charge'          => 'agent',
+                    'agent_id'        => $agent->id,
+                    'applicant_id'    => $applicant->id,
+                    'country_id'      => $country->id,
+                    'currency'        => 'USD',
+                    'amount'          => 250.00,
+                    'main_account_id' => $agentAccount->id,
+                    'account_id'      => $agentAccount->id,
+                    'particular'      => 'Agent advance for applicant',
                 ],
             ],
         ];
@@ -161,14 +163,15 @@ class ExpenseRequestTest extends TestCase
         $this->actingAs($this->user)
             ->post(route('expense_request.store'), $this->payload($branch, $country, $account, [
                 'lines' => [[
-                    'charge'        => 'agent',
-                    'agent_id'      => $agent->id,
-                    'applicant_id'  => $applicant->id,
-                    'country_id'    => $country->id,
-                    'currency'      => 'PHP',
-                    'amount'        => 500.00,
-                    'account_id'    => $account->id,
-                    'particular'    => 'Test',
+                    'charge'          => 'agent',
+                    'agent_id'        => $agent->id,
+                    'applicant_id'    => $applicant->id,
+                    'country_id'      => $country->id,
+                    'currency'        => 'PHP',
+                    'amount'          => 500.00,
+                    'main_account_id' => $account->id,
+                    'account_id'      => $account->id,
+                    'particular'      => 'Test',
                 ]],
             ]))
             ->assertSessionHasErrors();
@@ -179,32 +182,29 @@ class ExpenseRequestTest extends TestCase
     // ---------- CoA gating (office vs agent) ----------
 
     #[Test]
-    public function office_charge_only_allows_office_sub_accounts(): void
+    public function office_charge_only_allows_office_main_accounts(): void
     {
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
         $country = Country::factory()->create();
 
-        $officeAccount = Account::factory()->create([
+        $agentMain = Account::factory()->create([
             'agency_id'   => $this->agency->id,
-            'charge_type' => 'office',
-        ]);
-        $agentAccount = Account::factory()->create([
-            'agency_id'   => $this->agency->id,
+            'parent_id'   => null,
             'charge_type' => 'agent',
         ]);
 
         $this->actingAs($this->user)
-            ->post(route('expense_request.store'), $this->payload($branch, $country, $officeAccount, [
+            ->post(route('expense_request.store'), $this->payload($branch, $country, $agentMain, [
                 'lines' => [[
-                    'charge'        => 'office',
-                    'country_id'    => $country->id,
-                    'currency'      => 'PHP',
-                    'amount'        => 100.00,
-                    'account_id'    => $agentAccount->id, // agent account with office charge -> invalid
-                    'particular'    => 'Should fail',
+                    'charge'          => 'office',
+                    'country_id'      => $country->id,
+                    'currency'        => 'PHP',
+                    'amount'          => 100.00,
+                    'main_account_id' => $agentMain->id, // agent Main with office charge -> invalid
+                    'particular'      => 'Should fail',
                 ]],
             ]))
-            ->assertSessionHasErrors('lines.0.account_id');
+            ->assertSessionHasErrors('lines.0.main_account_id');
 
         $this->assertDatabaseCount('expense_requests', 0);
     }
@@ -332,22 +332,24 @@ class ExpenseRequestTest extends TestCase
                 'branch_id' => $branch->id,
                 'lines'     => [
                     [
-                        'charge'     => 'office',
-                        'country_id' => $country->id,
-                        'currency'   => 'PHP',
-                        'amount'     => 1000.00,
-                        'account_id' => $officeAccount->id,
-                        'particular' => 'Office',
+                        'charge'          => 'office',
+                        'country_id'      => $country->id,
+                        'currency'        => 'PHP',
+                        'amount'          => 1000.00,
+                        'main_account_id' => $officeAccount->id,
+                        'account_id'      => $officeAccount->id,
+                        'particular'      => 'Office',
                     ],
                     [
-                        'charge'        => 'agent',
-                        'agent_id'      => $agent->id,
-                        'applicant_id'  => $applicant->id,
-                        'country_id'    => $country->id,
-                        'currency'      => 'USD',
-                        'amount'        => 50.00,
-                        'account_id'    => $agentAccount->id,
-                        'particular'    => 'Advance',
+                        'charge'          => 'agent',
+                        'agent_id'        => $agent->id,
+                        'applicant_id'    => $applicant->id,
+                        'country_id'      => $country->id,
+                        'currency'        => 'USD',
+                        'amount'          => 50.00,
+                        'main_account_id' => $agentAccount->id,
+                        'account_id'      => $agentAccount->id,
+                        'particular'      => 'Advance',
                     ],
                 ],
             ])
@@ -382,14 +384,15 @@ class ExpenseRequestTest extends TestCase
             'notes'     => null,
             'lines'     => [
                 [
-                    'charge'        => 'agent',
-                    'agent_id'      => $agent->id,
-                    'applicant_id'  => $applicant->id,
-                    'country_id'    => $country->id,
-                    'currency'      => 'PHP',
-                    'amount'        => 1000.00,
-                    'account_id'    => $account->id,
-                    'particular'    => 'Advance',
+                    'charge'          => 'agent',
+                    'agent_id'        => $agent->id,
+                    'applicant_id'    => $applicant->id,
+                    'country_id'      => $country->id,
+                    'currency'        => 'PHP',
+                    'amount'          => 1000.00,
+                    'main_account_id' => $account->parent_id ?? $account->id,
+                    'account_id'      => $account->id,
+                    'particular'      => 'Advance',
                 ],
             ],
         ], $overrides);

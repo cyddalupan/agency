@@ -32,6 +32,7 @@ class BranchAccountScopingTest extends TestCase
     private Branch $branchB;
     private User $agencyAdmin; // no branch_id
     private User $branchUserA; // branch_id = branchA
+    private User $adminWithBranch; // admin type BUT has branch_id (must stay unrestricted)
 
     protected function setUp(): void
     {
@@ -46,6 +47,12 @@ class BranchAccountScopingTest extends TestCase
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
             'branch_id' => null,
+        ]);
+
+        $this->adminWithBranch = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+            'branch_id' => $this->branchA->id,
         ]);
 
         $this->branchUserA = User::factory()->create([
@@ -180,6 +187,151 @@ class BranchAccountScopingTest extends TestCase
         $this->assertStringNotContainsString(sprintf('value="%d" selected', $this->branchB->id), $html);
     }
 
+    // ─── DROPDOWN: branch user must NOT see branches they can't assign ──
+
+    #[Test]
+    public function branch_user_add_form_only_lists_their_own_branch(): void
+    {
+        $html = $this->actingAs($this->branchUserA)
+            ->get(route('applicants.create'))
+            ->getContent();
+
+        // Own branch appears as a selectable option.
+        $this->assertStringContainsString(
+            sprintf('value="%d"', $this->branchA->id),
+            $html,
+            'Add form should list the logged-in user\'s own branch'
+        );
+
+        // The other branch must NOT be offered (assigning to it is forbidden).
+        $this->assertStringNotContainsString(
+            sprintf('value="%d"', $this->branchB->id),
+            $html,
+            'Add form must not list branches the user cannot assign to'
+        );
+        $this->assertStringNotContainsString(
+            $this->branchB->name,
+            $html,
+            'Add form must not show the other branch name at all'
+        );
+    }
+
+    #[Test]
+    public function branch_user_edit_form_only_lists_their_own_branch(): void
+    {
+        $alice = $this->applicant($this->branchA->id, 'Alice');
+
+        $html = $this->actingAs($this->branchUserA)
+            ->get(route('applicants.edit', $alice))
+            ->getContent();
+
+        $this->assertStringContainsString(
+            sprintf('value="%d"', $this->branchA->id),
+            $html,
+            'Edit form should list the logged-in user\'s own branch'
+        );
+        $this->assertStringNotContainsString(
+            sprintf('value="%d"', $this->branchB->id),
+            $html,
+            'Edit form must not list branches the user cannot assign to'
+        );
+        $this->assertStringNotContainsString(
+            $this->branchB->name,
+            $html,
+            'Edit form must not show the other branch name at all'
+        );
+    }
+
+    #[Test]
+    public function agency_admin_add_form_lists_all_branches(): void
+    {
+        $html = $this->actingAs($this->agencyAdmin)
+            ->get(route('applicants.create'))
+            ->getContent();
+
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchA->id), $html);
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+    }
+
+    // ─── RULE (Cyd 2026-08-10): admin = any branch, branch user = own only ──
+
+    #[Test]
+    public function admin_with_branch_id_add_form_lists_all_branches(): void
+    {
+        $html = $this->actingAs($this->adminWithBranch)
+            ->get(route('applicants.create'))
+            ->getContent();
+
+        // An admin must still see ALL branches even when their account has a branch_id.
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchA->id), $html);
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+    }
+
+    #[Test]
+    public function admin_with_branch_id_can_store_applicant_into_any_branch(): void
+    {
+        $this->actingAs($this->adminWithBranch)
+            ->post(route('applicants.store'), $this->validPayload(['branch_id' => $this->branchB->id]))
+            ->assertRedirect(route('applicants.index'));
+
+        $this->assertDatabaseHas('applicants', [
+            'agency_id' => $this->agency->id,
+            'branch_id' => $this->branchB->id,
+            'first_name' => 'BranchSave',
+        ]);
+    }
+
+    #[Test]
+    public function admin_with_branch_id_edit_form_lists_all_branches(): void
+    {
+        $alice = $this->applicant($this->branchA->id, 'Alice');
+
+        $html = $this->actingAs($this->adminWithBranch)
+            ->get(route('applicants.edit', $alice))
+            ->getContent();
+
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchA->id), $html);
+        $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+    }
+
+    #[Test]
+    public function admin_with_branch_id_can_update_applicant_branch_to_any_branch(): void
+    {
+        $alice = $this->applicant($this->branchA->id, 'Alice');
+
+        $this->actingAs($this->adminWithBranch)
+            ->patch(route('applicants.update', $alice), $this->validPayload(['branch_id' => $this->branchB->id]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('applicants', [
+            'id' => $alice->id,
+            'branch_id' => $this->branchB->id,
+        ]);
+    }
+
+    #[Test]
+    public function admin_with_branch_id_can_open_applicant_from_other_branch(): void
+    {
+        $bob = $this->applicant($this->branchB->id, 'Bob');
+
+        $this->actingAs($this->adminWithBranch)
+            ->get(route('applicants.show', $bob))
+            ->assertOk();
+    }
+
+    #[Test]
+    public function admin_with_branch_id_list_sees_all_branch_applicants(): void
+    {
+        $this->applicant($this->branchA->id, 'Alice');
+        $this->applicant($this->branchB->id, 'Bob');
+
+        $this->actingAs($this->adminWithBranch)
+            ->get(route('applicants.index'))
+            ->assertOk()
+            ->assertSee('Alice')
+            ->assertSee('Bob');
+    }
+
     // ─── STORE: branch persistence for branch user + admin ────────────
 
     #[Test]
@@ -240,8 +392,10 @@ class BranchAccountScopingTest extends TestCase
             ->get(route('agency.dashboard'))
             ->getContent();
 
-        // Keep: Dashboard, Applicants, FRA, Reports, Languages, Skills
-        foreach (['Dashboard', 'Applicants', 'FRA', 'Reports', 'Languages', 'Skills'] as $label) {
+        // Keep: Dashboard, Applicants, FRA, Reports
+        // (Languages/Skills CRUD are admin/super_admin-only routes, so branch
+        //  accounts no longer get those sidebar links — they 403'd before.)
+        foreach (['Dashboard', 'Applicants', 'FRA', 'Reports'] as $label) {
             $this->assertStringContainsString($label, $html, "Branch sidebar should keep: {$label}");
         }
     }
@@ -254,8 +408,9 @@ class BranchAccountScopingTest extends TestCase
             ->getContent();
 
         // Remove: Accounting, Receivables, Expenses, Settings, Users,
-        // Custom Fields, Branches, Agencies, Agents, Accounts, Report Templates
-        foreach (['Accounting', 'Receivable', 'Expenses', 'Settings', 'Users', 'Custom Fields', 'Branches', 'Report Templates'] as $label) {
+        // Custom Fields, Branches, Agencies, Agents, Accounts, Report Templates,
+        // Languages, Skills (route middleware is admin/super_admin-only)
+        foreach (['Accounting', 'Receivable', 'Expenses', 'Settings', 'Users', 'Custom Fields', 'Branches', 'Report Templates', 'Languages', 'Skills'] as $label) {
             $this->assertStringNotContainsString($label, $html, "Branch sidebar should hide: {$label}");
         }
     }

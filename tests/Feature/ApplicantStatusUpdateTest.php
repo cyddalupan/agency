@@ -60,15 +60,17 @@ class ApplicantStatusUpdateTest extends TestCase
     }
 
     #[Test]
-    public function cannot_skip_status_steps(): void
+    public function can_skip_pipeline_steps_from_status_tab(): void
     {
+        // Status tab must allow moving to ANY status — pipeline transition
+        // rules no longer block it (Cyd report 2026-08-09).
         $response = $this->actingAs($this->user)
             ->patch(route('applicants.status', $this->applicant), [
-                'status_code' => 6, // Selected — skip too many
+                'status_code' => 6, // Selected — skip steps
             ]);
 
-        $response->assertSessionHasErrors('status_code');
-        $this->assertEquals(0, $this->applicant->fresh()->status_code);
+        $response->assertSessionHasNoErrors();
+        $this->assertEquals(6, $this->applicant->fresh()->status_code);
     }
 
     #[Test]

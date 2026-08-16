@@ -61,6 +61,7 @@
                         'applicants'      => $applicants,
                         'countries'       => $countries,
                         'mains'           => $mains,
+                        'allAccounts'     => $allAccounts,
                     ])
                 @endforeach
             </div>
@@ -92,6 +93,7 @@
         'applicants' => $applicants,
         'countries' => $countries,
         'mains' => $mains,
+        'allAccounts' => $allAccounts,
     ])
 </template>
 
@@ -113,8 +115,8 @@
 
     function applyChargeVisibility(line) {
         const charge = line.querySelector('select[name*="[charge]"]')?.value;
-        const agentRow = line.querySelector('[data-agent-row]');
         const mainSel = line.querySelector('select[name*="[main_account_id]"]');
+        const agentRow = line.querySelector('[data-agent-row]');
         if (agentRow) agentRow.style.display = (charge === 'agent') ? '' : 'none';
         if (mainSel) {
             mainSel.querySelectorAll('option[data-offset]').forEach(function (o) {

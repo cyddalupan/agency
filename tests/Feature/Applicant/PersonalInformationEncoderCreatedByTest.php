@@ -82,7 +82,7 @@ class PersonalInformationEncoderCreatedByTest extends TestCase
     }
 
     #[Test]
-    public function list_of_applicants_has_created_by_and_timestamp_columns(): void
+    public function list_of_applicants_shows_encoder_column_and_hides_created_at(): void
     {
         $this->applicant->update([
             'created_by' => $this->user->id,
@@ -93,8 +93,10 @@ class PersonalInformationEncoderCreatedByTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('Created By', $html);
-        $this->assertStringContainsString('Created At', $html);
+        // Created By was renamed to Encoder; Created At is hidden (Toybits 2026-08-15).
+        $this->assertStringContainsString('Encoder', $html);
+        $this->assertStringNotContainsString('Created By', $html);
+        $this->assertStringNotContainsString('Created At', $html);
         // The encoder value (auth user name) is still displayed, not editable.
         $this->assertStringContainsString($this->user->name, $html);
     }

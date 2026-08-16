@@ -70,6 +70,16 @@
             </fieldset>
 
             <fieldset class="fieldset">
+                <legend class="fieldset-legend">🏢 Charge Type <span class="text-error">*</span></legend>
+                <select name="charge_type" class="select w-full">
+                    <option value="office" @selected(old('charge_type', $account->charge_type ?? 'office') === 'office')>🏢 Office</option>
+                    <option value="agent" @selected(old('charge_type', $account->charge_type ?? 'office') === 'agent')>🤝 Agent</option>
+                </select>
+                <p class="text-xs opacity-50 mt-1">Which expense lines this account can be used for.</p>
+                @error('charge_type') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            </fieldset>
+
+            <fieldset class="fieldset">
                 <legend class="fieldset-legend">✅ Status</legend>
                 <select name="is_active" class="select w-full">
                     <option value="1" @selected(old('is_active', $account->is_active))>🟢 Active</option>

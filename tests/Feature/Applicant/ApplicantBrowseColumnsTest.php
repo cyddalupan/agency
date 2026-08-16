@@ -140,6 +140,7 @@ class ApplicantBrowseColumnsTest extends TestCase
             'contact'      => '09170000000',
             'branch_id'    => $this->branch->id,
             'encoder'      => 'Cyd Gulf',
+            'created_by'   => $this->user->id,
             'contract'     => 'contracts/maria.pdf',
             'contract_received_date' => '2026-07-10',
         ]);
@@ -148,15 +149,25 @@ class ApplicantBrowseColumnsTest extends TestCase
             ->get(route('applicants.index'));
 
         $response->assertOk();
-        // Header columns requested on the Trello card.
+        // Header columns requested on the Trello card. Created By was renamed
+        // to Encoder and Created At is hidden (Toybits 2026-08-15).
         foreach ([
             'Date Applied', 'Name', 'Status', 'Age', 'Contact#', 'Position',
-            'Branch', 'Agent', 'Contract', 'Contract Received', 'Encoder', 'Action',
+            'Branch', 'Agent', 'Contract', 'Contract Received',
+            'Encoder', 'Action',
         ] as $col) {
             $response->assertSee($col);
         }
 
-        // Row data visible.
+        // Created By / Created At columns are gone, and no emoji icons remain
+        // in the column headers.
+        $response->assertDontSee('Created By');
+        $response->assertDontSee('Created At');
+        $response->assertDontSee('📅');
+        $response->assertDontSee('🧑🎤');
+        $response->assertDontSee('🗓️');
+
+        // Row data visible: name, branch, and the encoder value via Created By.
         $response->assertSee('Maria');
         $response->assertSee($this->branch->name);
         $response->assertSee('Cyd Gulf');

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Applicants')
+@section('title', 'Backout, Cancelled & Repat')
 
 @section('content')
 <div class="max-w-7xl mx-auto">
@@ -8,13 +8,13 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold flex items-center gap-2">
-                <span>👥</span> Applicants
+                <span>🗂️</span> Backout, Cancelled & Repat
             </h2>
-            <p class="opacity-60 text-sm mt-1">Manage and track all applicants in the pipeline</p>
+            <p class="opacity-60 text-sm mt-1">Applicants with Cancel, Backout, or Repatriated status</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ route('applicants.create') }}" class="btn btn-primary">
-                <span>➕</span> Add Applicant
+            <a href="{{ route('applicants.index') }}" class="btn btn-outline">
+                <span>👥</span> All Applicants
             </a>
         </div>
     </div>
@@ -26,9 +26,9 @@
         </div>
     @endif
 
-    {{-- Status Pipeline Chips --}}
+    {{-- Status Pipeline Chips (only the 3 withdrawn statuses) --}}
     <div class="flex flex-wrap gap-2 mb-3">
-        <a href="{{ route('applicants.index') }}"
+        <a href="{{ route('applicants.withdrawn') }}"
            class="btn btn-xs gap-1 {{ request()->query('status') === null ? 'btn-primary' : 'btn-ghost' }}">
             All
             <span class="badge badge-xs {{ request()->query('status') === null ? 'badge-outline' : '' }}">{{ $statusCounts->sum() }}</span>
@@ -36,7 +36,7 @@
         @foreach($statusCodes as $sc)
             @php $count = $statusCounts->get($sc->code, 0); @endphp
             @if($count > 0)
-            <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+            <a href="{{ route('applicants.withdrawn', ['status' => $sc->code]) }}"
                class="btn btn-xs gap-1 {{ request('status') === (string)$sc->code ? 'btn-primary' : 'btn-ghost' }}"
                @if(request('status') !== (string)$sc->code) style="background-color: {{ $sc->color ?? '#e5e7eb' }}15;" @endif>
                 {{ $sc->label }}
@@ -48,7 +48,7 @@
 
     @if($applicants->count())
         {{-- Search & Filters --}}
-        <form method="GET" action="{{ route('applicants.index') }}" class="mb-4" id="filter-form">
+        <form method="GET" action="{{ route('applicants.withdrawn') }}" class="mb-4" id="filter-form">
             {{-- Row 1: Search bar full width --}}
             <div class="flex gap-3 items-end mb-3">
                 <div class="form-control flex-1">
@@ -57,7 +57,7 @@
                         <input type="text" name="search" class="grow" placeholder="Search by name, email, or contact..."
                                value="{{ request('search') }}" />
                         @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
-                            <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
+                            <a href="{{ route('applicants.withdrawn') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
                 </div>
@@ -114,7 +114,7 @@
                 <div class="flex gap-2 items-end">
                     <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
                     @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
-                        <a href="{{ route('applicants.index') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                        <a href="{{ route('applicants.withdrawn') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
                     @endif
                 </div>
             </div>
@@ -128,7 +128,7 @@
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
                 @endif
             </div>
-            <a href="{{ route('applicants.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
+            <a href="{{ route('applicants.withdrawn.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
                class="btn btn-sm btn-outline btn-success gap-1">
                 <span>📥</span> Export to CSV
             </a>
@@ -149,7 +149,7 @@
                             <th>Position</th>
                             <th>Branch</th>
                             <th>Agent</th>
-                            <th>Contract Signed Date</th>
+                            <th>Contract</th>
                             <th>Contract Received</th>
 
                             <th>Encoder</th>
@@ -212,9 +212,12 @@
                             </td>
                             <td class="text-sm">
                                 @php $contractRecord = $applicant->contractRecords->first(); @endphp
-                                @php $contractSigned = $contractRecord?->contract_signed; @endphp
-                                @if ($contractSigned)
-                                    <span class="text-success font-medium">{{ $contractSigned->format('M d, Y') }}</span>
+                                @if ($applicant->contract)
+                                    <a href="{{ Storage::url($applicant->contract) }}" target="_blank"
+                                       class="link link-primary text-sm" title="View contract">📄 View</a>
+                                @elseif ($contractRecord)
+                                    <a href="{{ route('applicants.show', $applicant) }}" class="link link-primary text-sm"
+                                       title="Contract: {{ $contractRecord->rfp ?: $contractRecord->sponsor }}">📄 Added</a>
                                 @else
                                     <span class="opacity-40">—</span>
                                 @endif
@@ -270,13 +273,13 @@
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">
                 <span class="text-6xl mb-4">👤</span>
-                <h3 class="text-xl font-bold mb-2">No Applicants Yet</h3>
+                <h3 class="text-xl font-bold mb-2">No applicants found</h3>
                 <p class="opacity-60 mb-6 max-w-md">
-                    Get started by adding your first applicant. You'll be able to track their entire deployment journey from registration to exit clearance.
+                    No applicants currently have Cancel, Backout, or Repatriated status.
                 </p>
                 <div class="flex flex-wrap justify-center gap-3">
-                    <a href="{{ route('applicants.create') }}" class="btn btn-primary btn-lg">
-                        <span>➕</span> Add Your First Applicant
+                    <a href="{{ route('applicants.index') }}" class="btn btn-primary btn-lg">
+                        <span>👥</span> Go to All Applicants
                     </a>
                     <a href="{{ route('employers.create') }}" class="btn btn-outline btn-lg">
                         <span>🏢</span> Add an Employer First

@@ -209,19 +209,32 @@
                         Dashboard
                     </a>
 
+                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'recruiter', 'staff', 'processor', 'coordinator', 'interviewer', 'manager', 'marketer', 'director']))
                     <a href="{{ route('applicants.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('applicants.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                              {{ request()->routeIs('applicants.*') && !request()->routeIs('applicants.withdrawn*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">👥</span>
                         Applicants
                     </a>
+                    @endif
 
+                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'recruiter', 'staff', 'processor', 'coordinator', 'interviewer', 'manager', 'marketer', 'director']))
+                    <a href="{{ route('applicants.withdrawn') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('applicants.withdrawn*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                        <span class="text-lg">🗂️</span>
+                        Backout, Cancelled & Repat
+                    </a>
+                    @endif
+
+                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'staff']))
                     <a href="{{ route('employers.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('employers.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">🏢</span>
                         FRA
                     </a>
+                    @endif
 
                     {{-- Marketing nav item HIDDEN (2026-08-03 per Cyd) --}}
                     {{--
@@ -240,7 +253,7 @@
                         Reports
                     </a>
 
-                    @if(!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['admin','super_admin','billing']))
+                    @if(in_array(auth()->user()->user_type, ['admin','super_admin','billing']) && (auth()->user()->user_type === 'billing' || !auth()->user()->isBranchAccount()))
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Finance</p>
                         <a href="{{ route('accounting.dashboard') }}"
@@ -255,10 +268,10 @@
                             <span class="text-lg">🧾</span>
                             Receivable
                         </a>
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
-                        <a href="{{ route('expenses.index') }}"
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
+                        <a href="{{ route('expense_request.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('expenses.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                                  {{ request()->routeIs('expense_request.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">💸</span>
                             Expenses and Payments
                         </a>
@@ -296,7 +309,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount())
+                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <a href="{{ route('custom-fields.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('custom-fields.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -360,8 +373,10 @@
                         </a>
                         @endif
 
-                        {{-- Languages & Skills are needed by branch accounts to encode applicants --}}
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']) || auth()->user()->isBranchAccount())
+                        {{-- Languages & Skills CRUD are admin-only (routes enforce it); the
+                             applicant create form loads lookups from the DB, so branch accounts
+                             don't need these pages. --}}
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                         <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Lookups</div>
                         <a href="{{ route('languages.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

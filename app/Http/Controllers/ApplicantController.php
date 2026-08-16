@@ -65,13 +65,18 @@ class ApplicantController extends Controller
             $query->where('country_id', $request->integer('country'));
         }
 
-        $statusCodes = StatusCode::orderBy('sort_order')->get();
+        // Chips/dropdown exclude withdrawn statuses too (they have their own tab).
+        $statusCodes = StatusCode::whereNotIn('code', $withdrawnStatuses)
+            ->orderBy('sort_order')
+            ->get();
 
-        // Get status counts for all applicants (ignoring filters)
+        // Get status counts for all applicants (ignoring filters), excluding
+        // the withdrawn & repat statuses.
         $statusCounts = Applicant::query()
             ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
+            ->whereNotIn('status_code', $withdrawnStatuses)
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
@@ -83,28 +88,90 @@ class ApplicantController extends Controller
         return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
     }
 
+    /**
+     * Withdrawn & Repat tab — applicants whose status is Cancel (38),
+     * Backout (50), or Repatriated (35). Same list/filters as index()
+     * but restricted to those three statuses.
+     */
+    public function withdrawn(Request $request)
+    {
+        $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
+
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'contractRecords'])
+            ->forBranchUser()
+            ->whereIn('status_code', $withdrawnStatuses);
+
+        // Search by name (first, last, middle)
+        if ($search = $request->input('search')) {
+            $search = trim($search);
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by status code (within the three)
+        if ($request->filled('status')) {
+            $query->where('status_code', $request->integer('status'));
+        }
+
+        // Filter by gender
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->input('gender'));
+        }
+
+        // Filter by employer
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
+        // Filter by country
+        if ($request->filled('country')) {
+            $query->where('country_id', $request->integer('country'));
+        }
+
+        $statusCodes = StatusCode::whereIn('code', $withdrawnStatuses)->orderBy('sort_order')->get();
+
+        // Get status counts for the three statuses (ignoring filters)
+        $statusCounts = Applicant::query()
+            ->forBranchUser()
+            ->selectRaw('status_code, count(*) as total')
+            ->whereIn('status_code', $withdrawnStatuses)
+            ->whereNotNull('status_code')
+            ->groupBy('status_code')
+            ->pluck('total', 'status_code');
+
+        $employers = Employer::orderBy('name')->get(['id', 'name']);
+        $countries = Country::orderBy('name')->get(['id', 'name']);
+
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
+    }
+
     public function create()
     {
-        $defaults     = app_applicant_form_defaults();
-        $agencyId     = resolve_agency_id();
+        $defaults = app_applicant_form_defaults();
+        $agencyId = resolve_agency_id();
 
         // Positions and statuses always show the FULL list on the Add Applicant form.
         // (Per Mjolnir "For Fixing" card: restricting to only the agency's newly-added
         // options caused "Data Missing" — users expected all options available.)
-        $positions = \App\Models\Position::orderBy('name')->get();
-        $statusCodes = \App\Models\StatusCode::orderBy('sort_order')->get();
+        $positions = Position::orderBy('name')->get();
+        $statusCodes = StatusCode::orderBy('sort_order')->get();
 
-        $nationalities = \App\Models\Nationality::orderBy('name')->get();
-        $religions     = \App\Models\Religion::orderBy('name')->get();
-        $civilStatuses = \App\Models\CivilStatus::orderBy('name')->get();
+        $nationalities = Nationality::orderBy('name')->get();
+        $religions = Religion::orderBy('name')->get();
+        $civilStatuses = CivilStatus::orderBy('name')->get();
 
-        $sources   = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
-        $branches  = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
-        $agents    = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+        $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        $branches = $this->assignableBranches();
+        $agents = Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
 
         // (PI card) Skills & Languages restricted to the Settings-configured lists.
-        $skills    = \App\Models\Skill::orderBy('name')->get();
-        $languages = \App\Models\Language::orderBy('name')->get();
+        $skills = Skill::orderBy('name')->get();
+        $languages = Language::orderBy('name')->get();
 
         // (Branch feature) Branch dropdown default: the logged-in branch user's
         // own branch; null for agency admins (they pick freely).
@@ -121,52 +188,52 @@ class ApplicantController extends Controller
         $this->validateCustomFields($request, 'Applicant');
 
         $validated = $request->validate([
-            'first_name'   => 'required|string|max:255',
-            'last_name'    => 'required|string|max:255',
-            'middle_name'  => 'nullable|string|max:255',
-            'suffix'       => 'nullable|string|max:50',
-            'email'        => 'nullable|email|max:255',
-            'contact'      => 'nullable|string|max:50',
-            'gender'       => 'nullable|string|max:20',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'suffix' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'contact' => 'nullable|string|max:50',
+            'gender' => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
-            'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
-            'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
-            'mother_name'      => 'nullable|string|max:255',
-            'mother_occupation'=> 'nullable|string|max:255',
-            'father_name'      => 'nullable|string|max:255',
-            'father_occupation'=> 'nullable|string|max:255',
-            'skills'           => 'nullable|array',
-            'skills.*'         => 'nullable|string|max:255|exists:skills,name',
-            'languages'        => 'nullable|array',
-            'languages.*'      => 'nullable|string|max:255|exists:languages,name',
-            'birthdate'    => 'nullable|date',
-            'address'      => 'nullable|string',
-            'remarks'      => 'nullable|string',
-            'source'       => 'nullable|string|max:255',
-            'firstimer_type' => ['nullable', 'string', \Illuminate\Validation\Rule::in(['firstimer', 'ex-abroad'])],
-            'country_id'   => 'nullable|integer|exists:countries,id',
-            'position_id'  => 'nullable|integer|exists:positions,id',
-            'agent_id'     => ['nullable', 'integer', 'exists:agents,id', function ($attribute, $value, $fail) use ($request) {
+            'nationality_id' => ['nullable', 'integer', 'exists:nationalities,id'],
+            'religion_id' => ['nullable', 'integer', 'exists:religions,id'],
+            'mother_name' => 'nullable|string|max:255',
+            'mother_occupation' => 'nullable|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'father_occupation' => 'nullable|string|max:255',
+            'skills' => 'nullable|array',
+            'skills.*' => 'nullable|string|max:255|exists:skills,name',
+            'languages' => 'nullable|array',
+            'languages.*' => 'nullable|string|max:255|exists:languages,name',
+            'birthdate' => 'nullable|date',
+            'address' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'source' => 'nullable|string|max:255',
+            'firstimer_type' => ['nullable', 'string', Rule::in(['firstimer', 'ex-abroad'])],
+            'country_id' => 'nullable|integer|exists:countries,id',
+            'position_id' => 'nullable|integer|exists:positions,id',
+            'agent_id' => ['nullable', 'integer', 'exists:agents,id', function ($attribute, $value, $fail) use ($request) {
                 if (blank($value)) {
                     return;
                 }
                 // When Source = Branch and an agent is selected, the agent must
                 // belong to the selected branch (prevents cross-branch assignment).
                 if ($request->input('source') === 'Branch' && $request->filled('branch_id')) {
-                    $agent = \App\Models\Agent::find($value);
+                    $agent = Agent::find($value);
                     if (! $agent || (int) $agent->branch_id !== (int) $request->input('branch_id')) {
                         $fail('The selected agent does not belong to the selected branch.');
                     }
                 }
             }],
-            'branch_id'    => 'nullable|integer|exists:branches,id',
-            'branch'       => 'nullable|string|max:255',
-            'encoder'      => 'nullable|string|max:255',
-            'contract'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
+            'branch_id' => 'nullable|integer|exists:branches,id',
+            'branch' => 'nullable|string|max:255',
+            'encoder' => 'nullable|string|max:255',
+            'contract' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
             'contract_received_date' => 'nullable|date',
-            'status_code'  => 'nullable|integer|exists:status_codes,code',
-            'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
+            'status_code' => 'nullable|integer|exists:status_codes,code',
+            'photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
             'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
         ]);
 
@@ -269,26 +336,26 @@ class ApplicantController extends Controller
         // (Branch feature) A branch account may only edit applicants of its own branch.
         $this->authorizeBranchAccess($applicant);
 
-        $defaults     = app_applicant_form_defaults();
-        $agencyId     = resolve_agency_id();
-        $statusCodes  = StatusCode::orderBy('sort_order')->get();
+        $defaults = app_applicant_form_defaults();
+        $agencyId = resolve_agency_id();
+        $statusCodes = StatusCode::orderBy('sort_order')->get();
 
         // Same configurable source list as the Add Applicant form — never a
         // hardcoded list. This keeps Add and Edit in sync so sources like
         // "Branch" (and any agency-enabled source) render and stay selected.
-        $sources  = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
-        $branches = \App\Models\Branch::where('agency_id', $agencyId)->orderBy('name')->get();
-        $agents   = \App\Models\Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+        $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        $branches = $this->assignableBranches();
+        $agents = Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
 
         // (PI card) Same Settings-backed dropdowns as Add Applicant, so Edit is in sync.
-        $nationalities = \App\Models\Nationality::orderBy('name')->get();
-        $religions     = \App\Models\Religion::orderBy('name')->get();
-        $civilStatuses = \App\Models\CivilStatus::orderBy('name')->get();
+        $nationalities = Nationality::orderBy('name')->get();
+        $religions = Religion::orderBy('name')->get();
+        $civilStatuses = CivilStatus::orderBy('name')->get();
 
         // (PI card) Skills & Languages restricted to the Settings-configured lists.
         $applicant->load(['skills', 'languages']);
-        $skills    = \App\Models\Skill::orderBy('name')->get();
-        $languages = \App\Models\Language::orderBy('name')->get();
+        $skills = Skill::orderBy('name')->get();
+        $languages = Language::orderBy('name')->get();
 
         // (Branch feature) Branch dropdown default: logged-in branch user's
         // branch; for agency admins fall back to the applicant's current branch.
@@ -308,41 +375,41 @@ class ApplicantController extends Controller
         $this->validateCustomFields($request, 'Applicant');
 
         $validated = $request->validate([
-            'first_name'   => 'required|string|max:255',
-            'last_name'    => 'required|string|max:255',
-            'middle_name'  => 'nullable|string|max:255',
-            'suffix'       => 'nullable|string|max:50',
-            'email'        => 'nullable|email|max:255',
-            'contact'      => 'nullable|string|max:50',
-            'gender'       => 'nullable|string|max:20',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'suffix' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'contact' => 'nullable|string|max:50',
+            'gender' => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
-            'nationality_id'  => ['nullable', 'integer', 'exists:nationalities,id'],
-            'religion_id'     => ['nullable', 'integer', 'exists:religions,id'],
-            'mother_name'      => 'nullable|string|max:255',
-            'mother_occupation'=> 'nullable|string|max:255',
-            'father_name'      => 'nullable|string|max:255',
-            'father_occupation'=> 'nullable|string|max:255',
-            'skills'           => 'nullable|array',
-            'skills.*'         => 'nullable|string|max:255|exists:skills,name',
-            'languages'        => 'nullable|array',
-            'languages.*'      => 'nullable|string|max:255|exists:languages,name',
-            'birthdate'    => 'nullable|date',
-            'address'      => 'nullable|string',
-            'remarks'      => 'nullable|string',
-            'source'       => 'nullable|string|max:255',
-            'country_id'   => 'nullable|integer|exists:countries,id',
-            'position_id'  => 'nullable|integer|exists:positions,id',
-            'agent_id'     => 'nullable|integer|exists:agents,id',
-            'branch_id'    => 'nullable|integer|exists:branches,id',
-            'branch'       => 'nullable|string|max:255',
-            'encoder'      => 'nullable|string|max:255',
-            'contract'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
+            'nationality_id' => ['nullable', 'integer', 'exists:nationalities,id'],
+            'religion_id' => ['nullable', 'integer', 'exists:religions,id'],
+            'mother_name' => 'nullable|string|max:255',
+            'mother_occupation' => 'nullable|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'father_occupation' => 'nullable|string|max:255',
+            'skills' => 'nullable|array',
+            'skills.*' => 'nullable|string|max:255|exists:skills,name',
+            'languages' => 'nullable|array',
+            'languages.*' => 'nullable|string|max:255|exists:languages,name',
+            'birthdate' => 'nullable|date',
+            'address' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'source' => 'nullable|string|max:255',
+            'country_id' => 'nullable|integer|exists:countries,id',
+            'position_id' => 'nullable|integer|exists:positions,id',
+            'agent_id' => 'nullable|integer|exists:agents,id',
+            'branch_id' => 'nullable|integer|exists:branches,id',
+            'branch' => 'nullable|string|max:255',
+            'encoder' => 'nullable|string|max:255',
+            'contract' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
             'contract_received_date' => 'nullable|date',
-            'status_code'  => 'nullable|integer|exists:status_codes,code',
-            'photo'        => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
+            'status_code' => 'nullable|integer|exists:status_codes,code',
+            'photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
             'full_body_photo' => 'nullable|mimes:jpg,jpeg,png,JPG,JPEG,PNG',
-            'employer_id'  => 'nullable|integer|exists:employers,id',
+            'employer_id' => 'nullable|integer|exists:employers,id',
         ]);
 
         // Handle photo upload — delete old photo if replaced
@@ -371,7 +438,21 @@ class ApplicantController extends Controller
         // (Branch feature) On update, enforce the same branch rules as create.
         $this->applyBranchDefaults($validated);
 
+        $oldStatusCode = $applicant->status_code;
+
         $applicant->update($validated);
+
+        // Status changes made via the Edit Applicant form must also appear in
+        // the Status tab history (Cyd report 2026-08-09). Only record when the
+        // status actually changed.
+        if ((int) $applicant->status_code !== (int) $oldStatusCode) {
+            SensitiveActionLogger::log(
+                'status_changed',
+                subject: $applicant,
+                description: auth()->user()->name." changed applicant {$applicant->full_name} status from {$oldStatusCode} to {$applicant->status_code}.",
+                metadata: $this->statusChangeMetadata($oldStatusCode, $applicant->status_code, $applicant),
+            );
+        }
 
         $applicant->syncCustomFields($request->all());
         $this->syncSkillsLanguages($applicant);
@@ -385,7 +466,7 @@ class ApplicantController extends Controller
      * with the Settings-configured lists. Clears existing rows, then re-creates
      * them from the submitted skill/language names.
      */
-    private function syncSkillsLanguages(\App\Models\Applicant $applicant): void
+    private function syncSkillsLanguages(Applicant $applicant): void
     {
         $agencyId = $applicant->agency_id ?: $this->resolveAgencyId();
 
@@ -395,7 +476,7 @@ class ApplicantController extends Controller
         foreach (request('skills', []) as $skillName) {
             if (is_string($skillName) && trim($skillName) !== '') {
                 $applicant->skills()->create([
-                    'agency_id'  => $agencyId,
+                    'agency_id' => $agencyId,
                     'skill_name' => trim($skillName),
                 ]);
             }
@@ -405,7 +486,7 @@ class ApplicantController extends Controller
             if (is_string($langName) && trim($langName) !== '') {
                 $applicant->languages()->create([
                     'agency_id' => $agencyId,
-                    'name'      => trim($langName),
+                    'name' => trim($langName),
                 ]);
             }
         }
@@ -418,21 +499,40 @@ class ApplicantController extends Controller
     private function defaultBranchId(): ?int
     {
         $user = auth()->user();
+
         return ($user && (int) $user->branch_id > 0) ? (int) $user->branch_id : null;
     }
 
     /**
+     * (Branch feature) Branches a user may actually assign an applicant to.
+     * Branch accounts (non-admin) only see their OWN branch in the Add/Edit
+     * dropdown (assigning elsewhere is forbidden); admins see all branches
+     * even when their account carries a branch_id.
+     */
+    private function assignableBranches()
+    {
+        $agencyId = resolve_agency_id();
+        $query = Branch::where('agency_id', $agencyId)->orderBy('name');
+
+        $user = auth()->user();
+        if ($user && $user->isBranchLocked()) {
+            $query->where('id', $user->branch_id);
+        }
+
+        return $query->get();
+    }
+
+    /**
      * (Branch feature) Enforce branch ownership rules when persisting an
-     * applicant. A branch account's branch_id is locked to their own branch:
-     * if omitted it defaults to their branch; if set to some other branch it is
-     * rejected. Agency admins (no branch) are unaffected.
+     * applicant. A branch account (non-admin) is locked to their own branch:
+     * if omitted it defaults to their branch; if set to some other branch it
+     * is rejected. Admins may assign to any branch, even when their account
+     * carries a branch_id.
      */
     private function applyBranchDefaults(array &$validated): void
     {
         $user = auth()->user();
-        $isBranchUser = $user && (int) $user->branch_id > 0;
-
-        if (! $isBranchUser) {
+        if (! $user || ! $user->isBranchLocked()) {
             return;
         }
 
@@ -440,6 +540,7 @@ class ApplicantController extends Controller
 
         if (blank($submitted)) {
             $validated['branch_id'] = $user->branch_id;
+
             return;
         }
 
@@ -450,14 +551,17 @@ class ApplicantController extends Controller
 
     /**
      * (Branch feature) Authorize that a branch account may view/edit an
-     * applicant only when it belongs to their branch. Agency admins pass.
+     * applicant only when it belongs to their branch. Admins pass regardless
+     * of their own branch_id.
      */
     private function authorizeBranchAccess(Applicant $applicant): void
     {
         $user = auth()->user();
-        $isBranchUser = $user && (int) $user->branch_id > 0;
+        if (! $user || ! $user->isBranchLocked()) {
+            return;
+        }
 
-        if ($isBranchUser && (int) $applicant->branch_id !== (int) $user->branch_id) {
+        if ((int) $applicant->branch_id !== (int) $user->branch_id) {
             abort(403, 'This applicant belongs to another branch.');
         }
     }
@@ -485,15 +589,21 @@ class ApplicantController extends Controller
 
     public function export(Request $request)
     {
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])->orderBy('created_at', 'desc');
+        // Same rule as index(): withdrawn & repat statuses are excluded from
+        // the main applicants export — they have their own Withdrawn & Repat tab.
+        $withdrawnStatuses = [35, 38, 50];
+
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+            ->whereNotIn('status_code', $withdrawnStatuses)
+            ->orderBy('created_at', 'desc');
 
         // Apply the same filters as index()
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%");
             });
         }
         if ($request->filled('status')) {
@@ -509,7 +619,7 @@ class ApplicantController extends Controller
         $applicants = $query->get();
 
         // Log the export
-        SensitiveActionLogger::dataExport('applicant', auth()->user()->name . ' exported applicant data.');
+        SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported applicant data.');
 
         $headers = [
             'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
@@ -558,57 +668,127 @@ class ApplicantController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Applicant $applicant, StatusTransitionService $transitionService)
+    /**
+     * CSV export for the Withdrawn & Repat tab — same columns as export()
+     * but restricted to Cancel (38), Backout (50), Repatriated (35).
+     */
+    public function withdrawnExport(Request $request)
+    {
+        $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
+
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+            ->whereIn('status_code', $withdrawnStatuses)
+            ->orderBy('created_at', 'desc');
+
+        // Apply the same filters as withdrawn()
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('status')) {
+            $query->where('status_code', $request->integer('status'));
+        }
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->input('gender'));
+        }
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
+        $applicants = $query->get();
+
+        // Log the export
+        SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported withdrawn & repat applicant data.');
+
+        $headers = [
+            'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
+            'Date of Birth', 'Gender', 'Has Passport', 'Nationality',
+            'Street', 'City', 'State', 'Postal Code', 'Country',
+            'Employer', 'Preferred Position', 'Referred By', 'Status', 'Created At',
+        ];
+
+        $callback = function () use ($applicants, $headers) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($applicants as $applicant) {
+                fputcsv($file, [
+                    $applicant->first_name,
+                    $applicant->last_name,
+                    $applicant->middle_name,
+                    $applicant->email,
+                    $applicant->contact,
+                    $applicant->date_of_birth?->format('Y-m-d'),
+                    $applicant->gender,
+                    $applicant->has_passport ?? 'N/A',
+                    $applicant->nationality,
+                    $applicant->street,
+                    $applicant->city,
+                    $applicant->state,
+                    $applicant->postal_code,
+                    $applicant->country?->name ?? 'N/A',
+                    $applicant->employer?->name ?? 'N/A',
+                    $applicant->position?->name ?? 'N/A',
+                    $applicant->agent?->name ?? 'N/A',
+                    $applicant->statusCode?->name ?? 'N/A',
+                    $applicant->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=withdrawn-repat-applicants.csv',
+        ]);
+    }
+
+    public function updateStatus(Request $request, Applicant $applicant)
     {
         $validated = $request->validate([
             'status_code' => ['required', 'integer', function ($attribute, $value, $fail) {
                 // Only validate existence when status_codes table has data
-                if (\App\Models\StatusCode::count() > 0 && !\App\Models\StatusCode::where('code', $value)->exists()) {
+                if (StatusCode::count() > 0 && ! StatusCode::where('code', $value)->exists()) {
                     $fail('The selected status code is invalid.');
                 }
             }],
             // PI: 6 Status tab fields
             'applicant_no' => ['nullable', 'string', 'max:255'],
-            'fra'          => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::in($this->fraOptionValues())],
-            'status_date'  => ['nullable', 'date'],
-            'repat'        => ['nullable', 'in:0,1'],
-            'repat_date'   => ['nullable', 'date'],
+            'employer_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('employers', 'id')->where('agency_id', resolve_agency_id())],
+            'status_date' => ['nullable', 'date'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $fromCode = $applicant->status_code;
         $toCode = (int) $validated['status_code'];
 
-        // Only run transition validation when the status actually changes.
-        // A same-status Save on the Status tab (e.g. filling FRA/Repat while keeping
-        // the status) is a valid no-op for the transition rules.
-        if ($fromCode !== $toCode
-            && StatusCodeService::exists($fromCode)
-            && StatusCodeService::exists($toCode)) {
-            $error = $transitionService->validateTransition($fromCode, $toCode);
-
-            if ($error) {
-                return redirect()->back()
-                    ->withErrors(['status_code' => $error]);
-            }
-        }
+        // NOTE: pipeline transition rules deliberately do NOT block the Status tab.
+        // The dropdown lists every Settings status and users must be able to move
+        // an applicant to any of them (e.g. applicants on statuses with no defined
+        // transitions, like 51 For Passporting, could never save otherwise).
+        // StatusTransitionService remains available for other flows that opt in.
 
         $applicant->update([
-            'status_code'  => $toCode,
+            'status_code' => $toCode,
             'applicant_no' => $validated['applicant_no'] ?? null,
-            'fra'          => $validated['fra'] ?? null,
-            'status_date'  => $validated['status_date'] ?? null,
-            'repat'        => isset($validated['repat']) ? (bool) $validated['repat'] : false,
-            'repat_date'   => $validated['repat_date'] ?? null,
+            'employer_id' => $validated['employer_id'] ?? null,
+            'status_date' => $validated['status_date'] ?? null,
+            'remarks' => isset($validated['remarks']) && $validated['remarks'] !== '' ? $validated['remarks'] : null,
         ]);
 
         SensitiveActionLogger::log(
             'status_changed',
             subject: $applicant,
-            description: auth()->user()->name . " changed applicant {$applicant->full_name} status from {$fromCode} to {$toCode}.",
-            metadata: [
-                'old_status' => $fromCode,
-                'new_status' => $toCode,
-            ],
+            description: auth()->user()->name." changed applicant {$applicant->full_name} status from {$fromCode} to {$toCode}.",
+            metadata: $this->statusChangeMetadata($fromCode, $toCode, $applicant),
         );
 
         return redirect()->back()

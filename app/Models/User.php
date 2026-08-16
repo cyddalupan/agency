@@ -146,6 +146,21 @@ class User extends Authenticatable
         return $this->user_type === 'super_admin';
     }
 
+    /**
+     * True when the user is branch-restricted: a NON-admin account that
+     * belongs to a branch. Admins (and super admins) are never locked,
+     * even when their account carries a branch_id — they may assign
+     * applicants to any branch.
+     */
+    public function isBranchLocked(): bool
+    {
+        if ((int) $this->branch_id <= 0) {
+            return false;
+        }
+
+        return ! in_array($this->user_type, ['admin', 'super_admin'], true);
+    }
+
     public function canImpersonate(): bool
     {
         return $this->isSuperAdmin();
