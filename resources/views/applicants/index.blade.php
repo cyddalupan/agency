@@ -149,7 +149,7 @@
                             <th>💼 Position</th>
                             <th>🏢 Branch</th>
                             <th>🎯 Agent</th>
-                            <th>📄 Contract</th>
+                            <th>Contract Signed Date</th>
                             <th>✅ Contract Received</th>
                             <th>🧑‍💻 Encoder</th>
                             <th>🧑🎤 Created By</th>
@@ -212,9 +212,10 @@
                                 {{ $applicant->agent?->name ?? '—' }}
                             </td>
                             <td class="text-sm">
-                                @if ($applicant->contract)
-                                    <a href="{{ Storage::url($applicant->contract) }}" target="_blank"
-                                       class="link link-primary text-sm" title="View contract">📄 View</a>
+                                @php $contractRecord = $applicant->contractRecords->first(); @endphp
+                                @php $contractSigned = $contractRecord?->contract_signed; @endphp
+                                @if ($contractSigned)
+                                    <span class="text-success font-medium">{{ $contractSigned->format('M d, Y') }}</span>
                                 @else
                                     <span class="opacity-40">—</span>
                                 @endif

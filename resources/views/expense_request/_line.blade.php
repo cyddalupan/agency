@@ -78,17 +78,19 @@
                     @endforeach
                 </select>
             </div>
-            <div class="form-control">
-                <label class="label"><span class="label-text">Applicant (under agent)</span></label>
-                <select name="lines[{{ $index }}][applicant_id]" class="select select-bordered select-sm">
-                    <option value="">—</option>
-                    @foreach($applicants as $ap)
-                        <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ ($line['applicant_id'] ?? '') == $ap->id ? 'selected' : '' }}>
-                            {{ $ap->last_name }}, {{ $ap->first_name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+        </div>
+
+        {{-- Applicant (always available, even when Charge = office) --}}
+        <div class="form-control mt-1">
+            <label class="label"><span class="label-text">Applicant</span></label>
+            <select name="lines[{{ $index }}][applicant_id]" class="select select-bordered select-sm">
+                <option value="">—</option>
+                @foreach($applicants as $ap)
+                    <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ ($line['applicant_id'] ?? '') == $ap->id ? 'selected' : '' }}>
+                        {{ $ap->last_name }}, {{ $ap->first_name }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
         {{-- Upload --}}
