@@ -9,6 +9,7 @@ use App\Models\Applicant;
 use App\Models\Position;
 use App\Models\ApplicantPassport;
 use App\Models\ApplicantWorkExperience;
+use App\Models\ApplicantContract;
 use App\Models\StatusCode;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
@@ -276,11 +277,18 @@ class FraOnProcessTabTest extends TestCase
     {
         $this->loginAsEmployer();
         $pos = $this->createPosition('DH');
-        $this->createOnProcessApplicant([
+        $applicant = $this->createOnProcessApplicant([
             'first_name'  => 'Paid',
             'last_name'   => 'User',
             'position_id' => $pos->id,
             'status_code' => 30,
+        ]);
+
+        ApplicantContract::create([
+            'agency_id'        => $applicant->agency_id,
+            'applicant_id'     => $applicant->id,
+            'contract_received'=> now()->toDateString(),
+            'contract_signed'  => now()->toDateString(),
         ]);
 
         $this->get(route('fra.onprocess'))

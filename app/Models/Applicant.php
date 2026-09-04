@@ -16,7 +16,7 @@ class Applicant extends Model implements AuthenticatableContract
 
     protected $fillable = [
         'agency_id', 'first_name', 'middle_name', 'last_name', 'suffix',
-        'birthdate', 'gender', 'has_passport', 'contact', 'email', 'address', 'photo', 'full_body_photo',
+        'birthdate', 'gender', 'has_passport', 'education_level', 'contact', 'email', 'address', 'photo', 'full_body_photo',
         'remarks', 'source', 'nationality_id', 'religion_id', 'civil_status_id',
         'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
         'job_id', 'status_code', 'password', 'status', 'firstimer_type',
@@ -114,6 +114,11 @@ class Applicant extends Model implements AuthenticatableContract
     public function employer()
     {
         return $this->belongsTo(Employer::class);
+    }
+
+    public function cases()
+    {
+        return $this->hasMany(Cases::class)->latest('date_received');
     }
 
     public function job()

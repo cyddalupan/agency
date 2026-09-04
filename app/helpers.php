@@ -123,6 +123,84 @@ if (!function_exists('app_source_options')) {
     }
 }
 
+if (!function_exists('app_applicant_table_column_labels')) {
+    /**
+     * All columns available on the Applicants table (key => header label).
+     * The action column is always rendered and is not part of this list.
+     */
+    function app_applicant_table_column_labels(): array
+    {
+        return [
+            'name'             => 'Name',
+            'contact'          => 'Contact#',
+            'gender'           => 'Gender',
+            'age'              => 'Age',
+            'branch'           => 'Branch',
+            'agent'            => 'Agent',
+            'position'         => 'Position',
+            'country'          => 'Country',
+            'fra'              => 'FRA',
+            'status'           => 'Status',
+            'date_applied'     => 'Date Applied',
+            'contract_signed'  => 'Contract Signed Date',
+            'contract_received'=> 'Contract Received',
+            'encoder'          => 'Encoder',
+        ];
+    }
+}
+
+if (!function_exists('app_applicant_table_columns')) {
+    /**
+     * Resolve the ordered list of applicant table columns for an agency.
+     *
+     * Reads agencies.settings['applicants_table_columns']; falls back to the
+     * default column set when nothing is configured. The action column is
+     * always rendered regardless of this list.
+     */
+    function app_applicant_table_columns(?\App\Models\Agency $agency = null): array
+    {
+        $all = app_applicant_table_column_labels();
+
+        // Default column set: the legacy always-on Browse Applicants columns
+        // (BROWSE APPLICANT spec) so unconfigured agencies keep the classic
+        // layout. Agencies can opt into a different set via Settings →
+        // Applicants Table Columns.
+        $defaults = [
+            'date_applied', 'name', 'status', 'age', 'contact', 'position',
+            'branch', 'agent', 'contract_signed', 'contract_received', 'encoder',
+        ];
+
+        $agency = $agency ?? resolve_agency();
+        if (! $agency) {
+            return $defaults;
+        }
+
+        $settings   = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
+        $configured = $settings['applicants_table_columns'] ?? null;
+
+        if (! is_array($configured) || empty($configured)) {
+            return $defaults;
+        }
+
+        // Keep only known keys, preserve the agency's chosen order, and make
+        // sure core columns (name first, status last before action) can never
+        // be dropped or misplaced.
+        $columns = array_values(array_filter($configured, fn ($c) => isset($all[$c])));
+
+        // Name always first.
+        if (($pos = array_search('name', $columns)) !== false) {
+            unset($columns[$pos]);
+        }
+        array_unshift($columns, 'name');
+
+        // Status always last (immediately before the always-on Action column).
+        $columns = array_values(array_filter($columns, fn ($c) => $c !== 'status'));
+        $columns[] = 'status';
+
+        return $columns;
+    }
+}
+
 if (!function_exists('app_fra_options')) {
     /**
      * Known, canonical FRA options (value => label). Per-agency FRA dropdowns

@@ -44,6 +44,14 @@ use App\Http\Controllers\AgentReportController;
 use App\Http\Controllers\ExpenseRequestController;
 use Illuminate\Support\Facades\Route;
 
+// === Health Check ===
+Route::get('/health', function () {
+    return response()->json([
+        'status'    => 'healthy',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
 // === Applicant Portal ===
 Route::prefix('portal')->name('portal.')->group(function () {
     // Guest (not logged in as applicant)
@@ -408,6 +416,9 @@ Route::middleware('auth:web')->group(function () {
             ->middleware('role:admin,super_admin,billing');
         Route::patch('/{receivable}/status', [ReceivableController::class, 'updateStatus'])->name('status')
             ->middleware('role:admin,super_admin,billing');
+        // Batch status change from the index checkboxes (Toybits 2026-08-31).
+        Route::post('/bulk-status', [ReceivableController::class, 'bulkUpdateStatus'])->name('bulk_status')
+            ->middleware('role:admin,super_admin,billing');
         Route::delete('/{receivable}', [ReceivableController::class, 'destroy'])->name('destroy')
             ->middleware('role:admin,super_admin');
     });
@@ -420,17 +431,44 @@ Route::middleware('auth:web')->group(function () {
             ->middleware('role:admin,super_admin,billing');
         Route::post('/', [ExpenseRequestController::class, 'store'])->name('store')
             ->middleware('role:admin,super_admin,billing');
+        Route::post('/check-duplicates', [ExpenseRequestController::class, 'checkDuplicates'])->name('check_duplicates')
+            ->middleware('role:admin,super_admin,billing');
+        // Batch status change from the index checkboxes (Toybits 2026-08-31).
+        Route::post('/bulk-status', [ExpenseRequestController::class, 'bulkUpdateStatus'])->name('bulk_status')
+            ->middleware('role:admin,super_admin,billing');
         Route::get('/{expense_request}', [ExpenseRequestController::class, 'show'])->name('show')
             ->middleware('role:admin,super_admin,billing');
         Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
             ->middleware('role:admin,super_admin,billing');
-        Route::delete('/{expense_request}', [ExpenseRequestController::class, 'destroy'])->name('destroy')
-            ->middleware('role:admin,super_admin');
     });
 
     // Receivable & Payments module — Tab 3: Agents Report
+    // NOTE: static/creation routes MUST stay above the /{agent} wildcard or
+    // Laravel will bind them to the Agent model (route-model binding 404s).
     Route::prefix('agents-report')->name('agent_report.')->group(function () {
         Route::get('/', [AgentReportController::class, 'index'])->name('index')
+            ->middleware('role:admin,super_admin,billing');
+
+        // Tab 3: Deductions & Paid
+        Route::get('/deductions/create', [AgentReportController::class, 'deductionCreate'])->name('deduction.create')
+            ->middleware('role:admin,super_admin,billing');
+        Route::post('/deductions', [AgentReportController::class, 'deductionStore'])->name('deduction.store')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionShow'])->name('deduction.show')
+            ->middleware('role:admin,super_admin,billing');
+
+        // Tab 4: Starting Balance
+        Route::get('/starting-balances/create', [AgentReportController::class, 'startingBalanceCreate'])->name('starting_balance.create')
+            ->middleware('role:admin,super_admin,billing');
+        Route::post('/starting-balances', [AgentReportController::class, 'startingBalanceStore'])->name('starting_balance.store')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/starting-balances/{starting_balance}', [AgentReportController::class, 'startingBalanceShow'])->name('starting_balance.show')
+            ->middleware('role:admin,super_admin,billing');
+
+        // Tab 5: Report — print + CSV export
+        Route::get('/print', [AgentReportController::class, 'print'])->name('print')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/export', [AgentReportController::class, 'export'])->name('export')
             ->middleware('role:admin,super_admin,billing');
     });
 
@@ -448,6 +486,10 @@ Route::middleware('auth:web')->group(function () {
 
     Route::get('/settings/applicant-form-defaults', [SettingsController::class, 'applicantFormDefaults'])->name('settings.applicant-form-defaults');
     Route::post('/settings/applicant-form-defaults', [SettingsController::class, 'updateApplicantFormDefaults'])->name('settings.applicant-form-defaults.update');
+
+    // Per-agency Applicants table column selection
+    Route::get('/settings/applicants-table-columns', [SettingsController::class, 'applicantTableColumns'])->name('settings.applicants-table-columns');
+    Route::post('/settings/applicants-table-columns', [SettingsController::class, 'updateApplicantTableColumns'])->name('settings.applicants-table-columns.update');
 
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');

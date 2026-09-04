@@ -255,12 +255,12 @@
 
                     @if(in_array(auth()->user()->user_type, ['admin','super_admin','billing']) && (auth()->user()->user_type === 'billing' || !auth()->user()->isBranchAccount()))
                     <div class="pt-4 mt-4 border-t border-white/10">
-                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Finance</p>
+                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Accounting Dashboard</p>
                         <a href="{{ route('accounting.dashboard') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('accounting.dashboard') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📊</span>
-                            Accounting
+                            Statistics
                         </a>
                         <a href="{{ route('receivable.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -274,6 +274,14 @@
                                   {{ request()->routeIs('expense_request.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">💸</span>
                             Expenses and Payments
+                        </a>
+                        @endif
+                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
+                        <a href="{{ route('agent_report.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('agent_report.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📈</span>
+                            Agents Report
                         </a>
                         @endif
                     </div>

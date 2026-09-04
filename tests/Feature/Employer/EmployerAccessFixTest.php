@@ -8,6 +8,8 @@ use Tests\TestCase;
 
 class EmployerAccessFixTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * A basic feature test example.
      */

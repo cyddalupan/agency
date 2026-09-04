@@ -100,6 +100,20 @@
                 </select>
             </fieldset>
 
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🔑 New Password</legend>
+                <input type="password" name="password" class="input w-full"
+                    placeholder="Leave blank to keep current password" autocomplete="new-password">
+                <p class="mt-1 text-xs opacity-60">Leave empty to keep the current password.</p>
+                @error('password') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+            </fieldset>
+
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🔑 Confirm New Password</legend>
+                <input type="password" name="password_confirmation" class="input w-full"
+                    placeholder="Repeat the new password" autocomplete="new-password">
+            </fieldset>
+
             <div class="flex gap-2 pt-2">
                 <button type="submit" class="btn btn-primary">Update User</button>
                 <a href="{{ route('users.index') }}" class="btn btn-ghost">Cancel</a>

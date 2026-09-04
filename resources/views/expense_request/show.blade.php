@@ -11,7 +11,7 @@
                 <h1 class="text-2xl font-bold">🧾 Expense Request {{ $request->reference_no }}</h1>
                 <p class="opacity-80 mt-1">
                     {{ $request->date?->format('Y-m-d') }} •
-                    <span class="badge badge-sm {{ $request->status === 'received' ? 'badge-warning' : 'badge-ghost' }}">{{ $request->status }}</span>
+                    <span class="badge badge-sm {{ $request->statusBadge() }}">{{ $request->statusLabel() }}</span>
                     • {{ $request->branch?->name ?? 'All branches' }} • by {{ $request->user?->name ?? $request->user?->username ?? '—' }}
                 </p>
             </div>
@@ -89,8 +89,9 @@
                     <div class="form-control">
                         <label class="label"><span class="label-text">Status</span></label>
                         <select name="status" class="select select-bordered select-sm">
-                            <option value="pending" {{ $request->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="received" {{ $request->status === 'received' ? 'selected' : '' }}>Received</option>
+                            @foreach(App\Models\ExpenseRequest::STATUSES as $statusOption)
+                                <option value="{{ $statusOption }}" {{ $request->status === $statusOption ? 'selected' : '' }}>{{ App\Models\ExpenseRequest::STATUS_LABELS[$statusOption] }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="form-control flex-1 min-w-40">
@@ -102,30 +103,35 @@
             </div>
         </div>
 
-        {{-- History --}}
-        @if($request->histories->count())
-            <div class="card bg-base-100 shadow-md mb-6">
-                <div class="card-body">
-                    <h3 class="font-bold mb-3">📜 History</h3>
-                    <ul class="timeline timeline-vertical timeline-compact">
-                        @foreach($request->histories as $h)
-                            <li>
-                                <div class="timeline-middle">●</div>
-                                <div class="timeline-end">
-                                    <p class="text-sm">
-                                        <strong>{{ $h->from_status }}</strong> → <strong>{{ $h->to_status }}</strong>
-                                        <span class="opacity-60">{{ $h->created_at?->format('M d, H:i') }}</span>
-                                    </p>
-                                    <p class="text-xs opacity-70">{{ $h->actor?->name ?? $h->actor?->username ?? '—' }}
-                                        @if($h->note) — "{{ $h->note }}" @endif
-                                    </p>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
-        @endif
+    {{-- Status / Transaction History: who encoded each change, continuously updated --}}
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h3 class="font-bold mb-3">📜 Status / Transaction History</h3>
+            @if($request->histories->count())
+                <ul class="timeline timeline-vertical timeline-compact">
+                    @foreach($request->histories as $h)
+                        <li>
+                            <div class="timeline-middle">●</div>
+                            <div class="timeline-end">
+                                <p class="text-sm">
+                                    @if($h->from_status)
+                                        <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->from_status] ?? $h->from_status }}</strong> →
+                                    @endif
+                                    <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->to_status] ?? $h->to_status }}</strong>
+                                    <span class="opacity-60">{{ $h->created_at?->format('M d, H:i') }}</span>
+                                </p>
+                                <p class="text-xs opacity-70">Encoded by {{ $h->actor?->name ?? $h->actor?->username ?? '—' }}
+                                    @if($h->note) — "{{ $h->note }}" @endif
+                                </p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="opacity-60 text-sm">No status changes yet.</p>
+            @endif
+        </div>
+    </div>
     @endif
 </div>
 @endsection

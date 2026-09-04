@@ -73,7 +73,11 @@ class ApplicantFileUploadTest extends TestCase
     #[Test]
     public function it_rejects_non_image_uploads(): void
     {
-        $file = UploadedFile::fake()->create('document.pdf', 100);
+        // PDFs ARE allowed for requirements (NBI/clearance scans are usually
+        // PDFs — see requirements.blade accept="image/*,.pdf" and the
+        // mimetypes rule). Use a genuinely disallowed type to assert the
+        // validation still rejects junk files.
+        $file = UploadedFile::fake()->create('document.txt', 100);
 
         $response = $this->post(
             route('applicants.sub.store', [$this->applicant, 'requirements']),

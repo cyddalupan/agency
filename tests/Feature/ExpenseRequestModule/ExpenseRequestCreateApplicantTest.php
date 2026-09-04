@@ -47,7 +47,7 @@ class ExpenseRequestCreateApplicantTest extends TestCase
     }
 
     #[Test]
-    public function create_page_applicant_select_is_not_inside_the_agent_only_row(): void
+    public function create_page_agent_and_applicant_share_one_row(): void
     {
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
         Applicant::factory()->create(['agency_id' => $this->agency->id]);
@@ -57,15 +57,17 @@ class ExpenseRequestCreateApplicantTest extends TestCase
 
         $html = $response->getContent();
 
-        // The applicant picker must still be present on the page...
+        // Agent Name and Applicant are connected, so they live side by side
+        // in one grid row (no separate agent-only row exists anymore).
+        $this->assertStringContainsString('name="lines[0][agent_id]"', $html);
         $this->assertStringContainsString('name="lines[0][applicant_id]"', $html);
+        $this->assertStringNotContainsString('data-agent-row', $html);
 
-        // ...but must NOT live inside the data-agent-row block that gets
-        // hidden when Charge = office.
-        preg_match('/<div[^>]*data-agent-row="0"[^>]*>(.*?)<\/div>\s*<\/div>/s', $html, $m);
-        $agentRow = $m[1] ?? '';
-        $this->assertNotSame('', $agentRow, 'agent-only row block should exist');
-        $this->assertStringNotContainsString('applicant_id', $agentRow);
+        preg_match('/<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">(.*?)<\/div>\s*<\/div>/s', $html, $m);
+        $sharedRow = $m[1] ?? '';
+        $this->assertNotSame('', $sharedRow, 'agent/applicant shared row block should exist');
+        $this->assertStringContainsString('agent_id', $sharedRow);
+        $this->assertStringContainsString('applicant_id', $sharedRow);
     }
 
     #[Test]
@@ -74,12 +76,22 @@ class ExpenseRequestCreateApplicantTest extends TestCase
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
         $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
 
-        $officeAccount = Account::factory()->create([
-            'agency_id' => $this->agency->id,
-            'parent_id' => null,
-            'name'      => 'Office Expenses',
-            'type'      => 'expense',
-            'is_active' => true,
+        // Toybits rule: office + applicant -> applicant accounts.
+        $applicantAccount = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => null,
+            'name'        => 'APPLICANT',
+            'type'        => 'expense',
+            'is_active'   => true,
+            'charge_type' => 'applicant',
+        ]);
+
+        $applicantSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $applicantAccount->id,
+            'name'        => 'Medical Advance',
+            'type'        => 'expense',
+            'charge_type' => 'applicant',
         ]);
 
         $payload = [
@@ -88,10 +100,11 @@ class ExpenseRequestCreateApplicantTest extends TestCase
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $applicantSub->id,
                     'agent_id'        => null,
                     'applicant_id'    => $applicant->id,
                     'country_id'      => null,
-                    'main_account_id' => $officeAccount->id,
+                    'main_account_id' => $applicantAccount->id,
                     'currency'        => 'PHP',
                     'amount'          => 500.00,
                     'particular'      => 'Medical advance',

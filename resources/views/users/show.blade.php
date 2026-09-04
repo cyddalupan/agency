@@ -30,7 +30,10 @@
             </div>
             <div>
                 <dt class="text-sm opacity-60">Access</dt>
-                <dd><span class="badge badge-ghost">{{ \App\Models\User::accessLabel($user->user_type) }}</span></dd>
+                <dd class="flex items-center gap-2">
+                    <span class="badge badge-ghost">{{ \App\Models\User::accessLabel($user->user_type) }}</span>
+                    <span class="text-xs opacity-60">{{ $user->user_type }}</span>
+                </dd>
             </div>
             <div>
                 <dt class="text-sm opacity-60">Status</dt>

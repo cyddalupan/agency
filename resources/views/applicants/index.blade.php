@@ -140,94 +140,138 @@
                 <table class="table table-zebra">
                     <thead>
                         <tr class="bg-base-200/80">
-                            <th class="w-10"></th>
-                            <th>Date Applied</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Age</th>
-                            <th>Contact#</th>
-                            <th>Position</th>
-                            <th>Branch</th>
-                            <th>Agent</th>
-                            <th>Contract Signed Date</th>
-                            <th>Contract Received</th>
-
-                            <th>Encoder</th>
+                            @foreach($tableColumns as $col)
+                                <th @if($col === 'name') class="w-64" @endif>
+                                    {{ app_applicant_table_column_labels()[$col] ?? ucfirst($col) }}
+                                </th>
+                            @endforeach
                             <th class="text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($applicants as $applicant)
+                        @php $contractRecord = $applicant->contractRecords->first(); @endphp
                         <tr class="hover transition-colors">
-                            <td>
-                                <div class="avatar">
-                                    <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold overflow-hidden">
-                                        @if ($applicant->photo)
-                                            <img src="{{ $applicant->photo_url }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
-                                        @else
-                                            {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
-                                        @endif
+                            @foreach($tableColumns as $col)
+                                @if($col === 'name')
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar">
+                                            <div class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold overflow-hidden">
+                                                @if ($applicant->photo)
+                                                    <img src="{{ $applicant->photo_url }}" class="w-full h-full object-cover" alt="{{ $applicant->full_name }}">
+                                                @else
+                                                    {{ strtoupper(substr($applicant->first_name, 0, 1)) }}{{ strtoupper(substr($applicant->last_name, 0, 1)) }}
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <a href="{{ route('applicants.show', $applicant) }}" class="link link-primary font-medium whitespace-nowrap">
+                                                {{ $applicant->first_name }} {{ $applicant->last_name }}
+                                            </a>
+                                            @if($applicant->middle_name)
+                                                <span class="opacity-40 text-sm block"> {{ $applicant->middle_name }}</span>
+                                            @endif
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="text-sm whitespace-nowrap">{{ $applicant->created_at->format('M d, Y') }}</td>
-                            <td>
-                                <a href="{{ route('applicants.show', $applicant) }}" class="link link-primary font-medium">
-                                    {{ $applicant->first_name }} {{ $applicant->last_name }}
-                                </a>
-                                @if($applicant->middle_name)
-                                    <span class="opacity-40 text-sm"> {{ $applicant->middle_name }}</span>
+                                </td>
+                                @elseif($col === 'contact')
+                                <td class="text-sm">
+                                    @if($applicant->contact)
+                                        {{ $applicant->contact }}
+                                    @elseif($applicant->email)
+                                        {{ $applicant->email }}
+                                    @else
+                                        <span class="opacity-40">—</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'gender')
+                                <td class="text-sm">
+                                    @if($applicant->gender)
+                                        {{ ucfirst($applicant->gender) }}
+                                    @else
+                                        <span class="opacity-40">—</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'age')
+                                <td class="text-sm opacity-70">
+                                    {{ $applicant->age ?? '—' }}
+                                </td>
+                                @elseif($col === 'branch')
+                                <td class="text-sm">
+                                    {{ $applicant->branch?->name ?? '—' }}
+                                </td>
+                                @elseif($col === 'agent')
+                                <td class="text-sm">
+                                    {{ $applicant->agent?->name ?? '—' }}
+                                </td>
+                                @elseif($col === 'position')
+                                <td class="text-sm">
+                                    {{ $applicant->position?->name ?? '—' }}
+                                </td>
+                                @elseif($col === 'country')
+                                <td class="text-sm">
+                                    {{ $applicant->country?->name ?? '—' }}
+                                </td>
+                                @elseif($col === 'fra')
+                                <td class="text-sm">
+                                    @if($applicant->fra)
+                                        {{ app_fra_options()[$applicant->fra] ?? ucfirst($applicant->fra) }}
+                                    @else
+                                        <span class="opacity-40">—</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'status')
+                                <td>
+                                    @if($applicant->statusCode)
+                                        <span class="badge badge-sm whitespace-nowrap"
+                                            style="background-color: {{ $applicant->statusCode->color ?? '#e5e7eb' }}20; color: {{ $applicant->statusCode->color ?? '#374151' }}">
+                                            {{ $applicant->statusCode->label }}
+                                        </span>
+                                    @else
+                                        <span class="badge badge-sm badge-ghost whitespace-nowrap">📋 Pending</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'date_applied')
+                                <td class="text-sm whitespace-nowrap">{{ $applicant->created_at->format('M d, Y') }}</td>
+                                @elseif($col === 'contract_signed')
+                                <td class="text-sm">
+                                    @if ($applicant->contract)
+                                        <div class="flex flex-col gap-0.5">
+                                            <a href="{{ Storage::url($applicant->contract) }}" target="_blank"
+                                               class="link link-primary text-sm" title="View contract">{{ basename($applicant->contract) }}</a>
+                                            @if ($contractRecord?->contract_signed)
+                                                <span class="text-success font-medium">{{ $contractRecord->contract_signed->format('M d, Y') }}</span>
+                                            @endif
+                                        </div>
+                                    @elseif ($contractRecord)
+                                        <div class="flex flex-col gap-0.5">
+                                            @if ($contractRecord->rfp)
+                                                <span class="text-xs opacity-60">{{ $contractRecord->rfp }}</span>
+                                            @endif
+                                            @if ($contractRecord->contract_signed)
+                                                <span class="text-success font-medium">{{ $contractRecord->contract_signed->format('M d, Y') }}</span>
+                                            @else
+                                                <span class="opacity-40">—</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="opacity-40">—</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'contract_received')
+                                <td class="text-sm">
+                                    @php $contractReceived = $applicant->contract_received_date ?? $contractRecord?->contract_received; @endphp
+                                    @if ($contractReceived)
+                                        <span class="text-success font-medium">{{ $contractReceived->format('M d, Y') }}</span>
+                                    @else
+                                        <span class="opacity-40">—</span>
+                                    @endif
+                                </td>
+                                @elseif($col === 'encoder')
+                                <td class="text-sm">{{ $applicant->encoder ?? $applicant->creator?->name ?? '—' }}</td>
                                 @endif
-                            </td>
-                            <td>
-                                @if($applicant->statusCode)
-                                    <span class="badge badge-sm whitespace-nowrap"
-                                        style="background-color: {{ $applicant->statusCode->color ?? '#e5e7eb' }}20; color: {{ $applicant->statusCode->color ?? '#374151' }}">
-                                        {{ $applicant->statusCode->label }}
-                                    </span>
-                                @else
-                                    <span class="badge badge-sm badge-ghost whitespace-nowrap">📋 Pending</span>
-                                @endif
-                            </td>
-                            <td class="text-sm opacity-70">
-                                {{ $applicant->age ?? '—' }}
-                            </td>
-                            <td class="text-sm">
-                                @if($applicant->contact)
-                                    {{ $applicant->contact }}
-                                @elseif($applicant->email)
-                                    {{ $applicant->email }}
-                                @else
-                                    <span class="opacity-40">—</span>
-                                @endif
-                            </td>
-                            <td class="text-sm">
-                                {{ $applicant->position?->name ?? '—' }}
-                            </td>
-                            <td class="text-sm">
-                                {{ $applicant->branch?->name ?? '—' }}
-                            </td>
-                            <td class="text-sm">
-                                {{ $applicant->agent?->name ?? '—' }}
-                            </td>
-                            <td class="text-sm">
-                                @php $contractRecord = $applicant->contractRecords->first(); @endphp
-                                @php $contractSigned = $contractRecord?->contract_signed; @endphp
-                                @if ($contractSigned)
-                                    <span class="text-success font-medium">{{ $contractSigned->format('M d, Y') }}</span>
-                                @else
-                                    <span class="opacity-40">—</span>
-                                @endif
-                            </td>
-                            <td class="text-sm">
-                                @php $contractReceived = $applicant->contract_received_date ?? $contractRecord?->contract_received; @endphp
-                                @if ($contractReceived)
-                                    <span class="text-success font-medium">{{ $contractReceived->format('M d, Y') }}</span>
-                                @else
-                                    <span class="opacity-40">—</span>
-                                @endif
-                            </td>
-                            <td class="text-sm">{{ $applicant->encoder ?? $applicant->creator?->name ?? '—' }}</td>
+                            @endforeach
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('applicants.show', $applicant) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>

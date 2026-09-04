@@ -20,7 +20,6 @@
                     </h1>
                     <p class="opacity-80 text-lg">Welcome back, {{ $user->name }}! 👋</p>
                 </div>
-                <span class="text-4xl hidden sm:block">🎯</span>
             </div>
             <div class="mt-4 flex flex-wrap gap-2 text-sm opacity-75">
                 <span>📅 {{ now()->format('l, F j, Y') }}</span>

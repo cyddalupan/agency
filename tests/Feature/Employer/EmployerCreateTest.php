@@ -41,7 +41,7 @@ class EmployerCreateTest extends TestCase
             ->get(route('employers.create'));
 
         $response->assertOk();
-        $response->assertSee('Add Employer');
+        $response->assertSee('Add New FRA');
     }
 
     #[Test]

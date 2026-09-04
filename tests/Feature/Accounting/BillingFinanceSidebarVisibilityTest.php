@@ -50,7 +50,7 @@ class BillingFinanceSidebarVisibilityTest extends TestCase
 
         $this->renderSidebar($billing)
             ->assertOk()
-            ->assertSee('Finance', false)
+            ->assertSee('Accounting Dashboard', false)
             ->assertSee('Accounting', false)
             ->assertSee('Receivable', false)
             ->assertSee('Expenses and Payments', false);
@@ -68,7 +68,7 @@ class BillingFinanceSidebarVisibilityTest extends TestCase
 
         $this->renderSidebar($billing)
             ->assertOk()
-            ->assertSee('Finance', false)
+            ->assertSee('Accounting Dashboard', false)
             ->assertSee('Accounting', false)
             ->assertSee('Receivable', false)
             ->assertSee('Expenses and Payments', false);

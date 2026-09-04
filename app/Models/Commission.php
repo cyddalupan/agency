@@ -18,6 +18,7 @@ class Commission extends Model
     protected $fillable = [
         'agency_id',
         'employer_id',
+        'agent_id',
         'commissionable_type',
         'commissionable_id',
         'amount',
@@ -35,6 +36,11 @@ class Commission extends Model
     public function employer(): BelongsTo
     {
         return $this->belongsTo(Employer::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function commissionable(): MorphTo

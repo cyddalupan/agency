@@ -71,10 +71,25 @@ class ExpenseRequestTest extends TestCase
             'is_active' => true,
         ]);
 
+        $officeSub = Account::factory()->create([
+            'agency_id' => $this->agency->id,
+            'parent_id' => $officeAccount->id,
+            'name'      => 'Office Supplies',
+            'type'      => 'expense',
+        ]);
+
         $agentAccount = Account::factory()->create([
             'agency_id'   => $this->agency->id,
             'parent_id'   => null,
             'name'        => 'Agent Advances',
+            'type'        => 'expense',
+            'charge_type' => 'agent',
+        ]);
+
+        $agentSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $agentAccount->id,
+            'name'        => 'Cash Advance',
             'type'        => 'expense',
             'charge_type' => 'agent',
         ]);
@@ -85,6 +100,7 @@ class ExpenseRequestTest extends TestCase
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $officeSub->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
                     'country_id'      => $country->id,
@@ -96,6 +112,7 @@ class ExpenseRequestTest extends TestCase
                 ],
                 [
                     'charge'          => 'agent',
+                    'sub_account_id'  => $agentSub->id,
                     'agent_id'        => $agent->id,
                     'applicant_id'    => $applicant->id,
                     'country_id'      => $country->id,
@@ -158,12 +175,14 @@ class ExpenseRequestTest extends TestCase
         $agent = Agent::factory()->create(['agency_id' => $otherAgency->id, 'branch_id' => $branch->id]);
         $applicant = Applicant::factory()->create(['agency_id' => $otherAgency->id, 'agent_id' => $agent->id]);
         $country = Country::factory()->create();
-        $account = Account::factory()->create(['agency_id' => $otherAgency->id]);
+        $account = Account::factory()->create(['agency_id' => $otherAgency->id, 'charge_type' => 'agent']);
+        $sub = Account::factory()->create(['agency_id' => $otherAgency->id, 'parent_id' => $account->id, 'charge_type' => 'agent']);
 
         $this->actingAs($this->user)
             ->post(route('expense_request.store'), $this->payload($branch, $country, $account, [
                 'lines' => [[
                     'charge'          => 'agent',
+                    'sub_account_id'  => $sub->id,
                     'agent_id'        => $agent->id,
                     'applicant_id'    => $applicant->id,
                     'country_id'      => $country->id,
@@ -193,10 +212,17 @@ class ExpenseRequestTest extends TestCase
             'charge_type' => 'agent',
         ]);
 
+        $agentSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $agentMain->id,
+            'charge_type' => 'agent',
+        ]);
+
         $this->actingAs($this->user)
             ->post(route('expense_request.store'), $this->payload($branch, $country, $agentMain, [
                 'lines' => [[
                     'charge'          => 'office',
+                    'sub_account_id'  => $agentSub->id,
                     'country_id'      => $country->id,
                     'currency'        => 'PHP',
                     'amount'          => 100.00,
@@ -266,7 +292,7 @@ class ExpenseRequestTest extends TestCase
 
         $staff = User::factory()->create(['agency_id' => $this->agency->id, 'user_type' => 'staff']);
         $this->actingAs($staff)
-            ->patch(route('expense_request.status', $request), ['status' => 'received'])
+            ->patch(route('expense_request.status', $request), ['status' => 'approved'])
             ->assertForbidden();
 
         $this->assertSame('pending', $request->fresh()->status);
@@ -282,16 +308,16 @@ class ExpenseRequestTest extends TestCase
         $request = $this->createRequest($branch, $country, $agentAccount);
 
         $this->actingAs($this->user) // admin
-            ->patch(route('expense_request.status', $request), ['status' => 'received', 'note' => 'Docs verified'])
+            ->patch(route('expense_request.status', $request), ['status' => 'approved', 'note' => 'Docs verified'])
             ->assertRedirect();
 
-        $this->assertSame('received', $request->fresh()->status);
+        $this->assertSame('approved', $request->fresh()->status);
 
         $this->assertDatabaseHas('expense_request_histories', [
             'expense_request_id' => $request->id,
             'agency_id'          => $this->agency->id,
             'from_status'        => 'pending',
-            'to_status'          => 'received',
+            'to_status'          => 'approved',
             'note'               => 'Docs verified',
         ]);
     }
@@ -306,7 +332,7 @@ class ExpenseRequestTest extends TestCase
         $request = $this->createRequest($branch, $country, $agentAccount);
 
         $this->actingAs($this->user)
-            ->patch(route('expense_request.status', $request), ['status' => 'received', 'note' => 'OK']);
+            ->patch(route('expense_request.status', $request), ['status' => 'approved', 'note' => 'OK']);
 
         $this->actingAs($this->user)
             ->get(route('expense_request.show', $request))
@@ -324,6 +350,9 @@ class ExpenseRequestTest extends TestCase
         $officeAccount = Account::factory()->create(['agency_id' => $this->agency->id, 'charge_type' => 'office']);
         $agentAccount = Account::factory()->create(['agency_id' => $this->agency->id, 'charge_type' => 'agent']);
 
+        $officeSub = Account::factory()->create(['agency_id' => $this->agency->id, 'parent_id' => $officeAccount->id, 'charge_type' => 'office']);
+        $agentSub = Account::factory()->create(['agency_id' => $this->agency->id, 'parent_id' => $agentAccount->id, 'charge_type' => 'agent']);
+
         $agent = Agent::factory()->create(['agency_id' => $this->agency->id, 'branch_id' => $branch->id]);
         $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id, 'agent_id' => $agent->id]);
 
@@ -333,6 +362,7 @@ class ExpenseRequestTest extends TestCase
                 'lines'     => [
                     [
                         'charge'          => 'office',
+                        'sub_account_id'  => $officeSub->id,
                         'country_id'      => $country->id,
                         'currency'        => 'PHP',
                         'amount'          => 1000.00,
@@ -342,6 +372,7 @@ class ExpenseRequestTest extends TestCase
                     ],
                     [
                         'charge'          => 'agent',
+                        'sub_account_id'  => $agentSub->id,
                         'agent_id'        => $agent->id,
                         'applicant_id'    => $applicant->id,
                         'country_id'      => $country->id,
@@ -379,19 +410,33 @@ class ExpenseRequestTest extends TestCase
         $agent = Agent::factory()->create(['agency_id' => $this->agency->id, 'branch_id' => $branch->id]);
         $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id, 'agent_id' => $agent->id]);
 
+        if ($account->parent_id === null) {
+            $main = $account;
+            $sub = Account::factory()->create([
+                'agency_id'   => $this->agency->id,
+                'parent_id'   => $main->id,
+                'type'        => 'expense',
+                'charge_type' => $main->charge_type,
+            ]);
+        } else {
+            $main = Account::find($account->parent_id);
+            $sub = $account;
+        }
+
         return array_merge([
             'branch_id' => $branch->id,
             'notes'     => null,
             'lines'     => [
                 [
                     'charge'          => 'agent',
+                    'sub_account_id'  => $sub->id,
                     'agent_id'        => $agent->id,
                     'applicant_id'    => $applicant->id,
                     'country_id'      => $country->id,
                     'currency'        => 'PHP',
                     'amount'          => 1000.00,
-                    'main_account_id' => $account->parent_id ?? $account->id,
-                    'account_id'      => $account->id,
+                    'main_account_id' => $main->id,
+                    'account_id'      => $sub->id,
                     'particular'      => 'Advance',
                 ],
             ],

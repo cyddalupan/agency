@@ -3,22 +3,15 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DatabaseBackup extends Command
 {
-    protected $signature = 'app:database-backup {--type=daily : daily|weekly|monthly}';
+    protected $signature = 'backup:database {--type=daily : daily|weekly|monthly}';
     protected $description = 'Create a database backup with retention management';
 
-    private string $backupDisk = 'local';
     private string $backupDir = 'backups';
-
-    private array $retention = [
-        'daily'   => 7,
-        'weekly'  => 4,
-        'monthly' => 3,
-    ];
 
     public function handle(): int
     {
@@ -28,97 +21,143 @@ class DatabaseBackup extends Command
             return Command::FAILURE;
         }
 
-        $dbName     = config('database.connections.mysql.database');
-        $dbUser     = config('database.connections.mysql.username');
-        $dbPassword = config('database.connections.mysql.password');
-        $dbHost     = config('database.connections.mysql.host');
+        $driver = DB::connection()->getDriverName();
+        $backupDir = storage_path($this->backupDir);
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
 
         $now    = Carbon::now('Asia/Manila');
         $stamp  = $now->format('Y-m-d_H-i-s');
+        $dbName = $driver === 'sqlite'
+            ? 'database'
+            : (config('database.connections.mysql.database') ?: 'database');
 
-        // Directory: backups/daily/YYYY/MM/ for daily, backups/weekly/ for weekly, backups/monthly/ for monthly
-        $typeDir = match($type) {
-            'daily'   => "{$this->backupDir}/{$type}/{$now->year}/{$now->format('m')}",
-            'weekly'  => "{$this->backupDir}/{$type}/{$now->year}/week-{$now->isoWeek()}",
-            'monthly' => "{$this->backupDir}/{$type}/{$now->year}",
-        };
+        $filename = "{$dbName}_{$type}_{$stamp}.sql";
+        $fullPath = "{$backupDir}/{$filename}";
 
-        $filename = "{$dbName}_{$type}_{$stamp}.sql.gz";
-        $tmpPath  = storage_path("app/{$filename}");
-        $fullPath = storage_path("app/{$typeDir}/{$filename}");
-
-        // Create directory structure
-        if (!is_dir(dirname($fullPath))) {
-            mkdir(dirname($fullPath), 0755, true);
-        }
-
-        // Dump database, gzip it
-        $passwordArg = escapeshellarg($dbPassword);
-        $cmd = sprintf(
-            'MYSQL_PWD=%s mysqldump --host=%s --user=%s --single-transaction --routines --triggers --events %s 2>/dev/null | gzip > %s',
-            $passwordArg,
-            escapeshellarg($dbHost),
-            escapeshellarg($dbUser),
-            escapeshellarg($dbName),
-            escapeshellarg($tmpPath)
-        );
-
-        $this->info("Running: mysqldump for {$dbName} ({$type})...");
-        $startTime = microtime(true);
-        exec($cmd, $output, $exitCode);
-        $elapsed = round(microtime(true) - $startTime, 2);
-
-        if ($exitCode !== 0 || !file_exists($tmpPath) || filesize($tmpPath) < 100) {
-            $this->error("Backup failed (exit code: {$exitCode})");
-            if (file_exists($tmpPath)) {
-                unlink($tmpPath);
-            }
+        try {
+            $dump = $driver === 'sqlite' ? $this->dumpSqlite() : $this->dumpMysql();
+        } catch (\Throwable $e) {
+            $this->error("Backup failed: {$e->getMessage()}");
             logger()->error('Database backup command failed', [
                 'db' => $dbName,
                 'type' => $type,
-                'exit_code' => $exitCode,
+                'error' => $e->getMessage(),
             ]);
             return Command::FAILURE;
         }
 
-        // Move to final location
-        rename($tmpPath, $fullPath);
+        if ($dump === null || strlen($dump) < 1) {
+            $this->error("Backup failed: dump was empty (exit code: unknown)");
+            logger()->error('Database backup command failed', [
+                'db' => $dbName,
+                'type' => $type,
+                'exit_code' => 'empty-dump',
+            ]);
+            return Command::FAILURE;
+        }
+
+        file_put_contents($fullPath, $dump);
 
         $size = $this->humanSize(filesize($fullPath));
-        $this->info("✓ Backup created: {$fullPath} ({$size}) in {$elapsed}s");
+        $this->info("✓ Backup created: {$fullPath} ({$size})");
 
-        // Log success
         logger()->info('Database backup created', [
             'db' => $dbName,
             'type' => $type,
             'file' => $filename,
             'size' => $size,
-            'duration' => "{$elapsed}s",
         ]);
 
         // Enforce retention
         $this->enforceRetention($type);
 
-        // Create latest symlink
-        $this->updateLatestSymlink($fullPath, $dbName, $type);
-
         return Command::SUCCESS;
+    }
+
+    private function dumpSqlite(): string
+    {
+        $pdo = DB::connection()->getPdo();
+        $out = "-- SQLite database dump generated by backup:database\n";
+        $out .= "-- Date: " . Carbon::now('Asia/Manila')->toDateTimeString() . "\n\n";
+
+        // Schema
+        $stmt = $pdo->query("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY type DESC, name");
+        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $sql) {
+            $out .= $sql . ";\n";
+        }
+
+        // Data
+        $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            ->fetchAll(\PDO::FETCH_COLUMN);
+
+        foreach ($tables as $table) {
+            $rows = $pdo->query("SELECT * FROM \"{$table}\"")->fetchAll(\PDO::FETCH_ASSOC);
+            if (empty($rows)) {
+                continue;
+            }
+            $cols = array_keys($rows[0]);
+            $colList = implode(', ', array_map(fn ($c) => '"' . str_replace('"', '""', $c) . '"', $cols));
+            $out .= "\n-- Data for {$table}\n";
+            foreach ($rows as $row) {
+                $values = array_map(function ($v) {
+                    if ($v === null) {
+                        return 'NULL';
+                    }
+                    if (is_numeric($v)) {
+                        return $v;
+                    }
+                    return "'" . str_replace("'", "''", (string) $v) . "'";
+                }, array_values($row));
+                $out .= "INSERT INTO \"{$table}\" ({$colList}) VALUES (" . implode(', ', $values) . ");\n";
+            }
+        }
+
+        return $out;
+    }
+
+    private function dumpMysql(): string
+    {
+        $dbName     = config('database.connections.mysql.database');
+        $dbUser     = config('database.connections.mysql.username');
+        $dbPassword = config('database.connections.mysql.password');
+        $dbHost     = config('database.connections.mysql.host');
+
+        $passwordArg = escapeshellarg($dbPassword);
+        $cmd = sprintf(
+            'MYSQL_PWD=%s mysqldump --host=%s --user=%s --single-transaction --routines --triggers --events %s 2>/dev/null',
+            $passwordArg,
+            escapeshellarg($dbHost),
+            escapeshellarg($dbUser),
+            escapeshellarg($dbName)
+        );
+
+        $output = [];
+        $exitCode = 0;
+        exec($cmd, $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            return null;
+        }
+
+        return implode("\n", $output) . "\n";
     }
 
     private function enforceRetention(string $type): void
     {
-        $keep = $this->retention[$type];
-        $dir  = storage_path("app/{$this->backupDir}/{$type}");
+        $keep = config("backup.retention.{$type}", 7);
+        $dir  = storage_path($this->backupDir);
         if (!is_dir($dir)) {
             return;
         }
 
-        // Collect all backup files, sorted by modification time (newest first)
-        $files = $this->rGlob("{$dir}/*.sql.gz");
+        // Collect all backup files for this type, sorted by modification time (newest first)
+        $files = glob("{$dir}/*_{$type}_*.sql");
         usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
 
         $deleted = 0;
-        foreach (array_slice($files, $keep) as $oldFile) {
+        foreach (array_slice($files, (int) $keep) as $oldFile) {
             if (is_file($oldFile)) {
                 unlink($oldFile);
                 $deleted++;
@@ -126,43 +165,7 @@ class DatabaseBackup extends Command
         }
 
         if ($deleted > 0) {
-            // Clean empty dirs
-            $this->cleanEmptyDirs("{$dir}");
             $this->info("Retention: removed {$deleted} old backup(s), keeping {$keep} {$type}");
-        }
-    }
-
-    private function updateLatestSymlink(string $file, string $dbName, string $type): void
-    {
-        $linkPath = storage_path("app/{$this->backupDir}/{$dbName}_{$type}_latest.sql.gz");
-        if (file_exists($linkPath)) {
-            unlink($linkPath);
-        }
-        symlink($file, $linkPath);
-    }
-
-    private function rGlob(string $pattern): array
-    {
-        $files = glob($pattern);
-        foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR) as $dir) {
-            $files = array_merge($files, $this->rGlob("{$dir}/" . basename($pattern)));
-        }
-        return $files;
-    }
-
-    private function cleanEmptyDirs(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-        $children = array_diff(scandir($dir), ['.', '..']);
-        if (empty($children)) {
-            rmdir($dir);
-            // Also clean parent if empty
-            $parent = dirname($dir);
-            if ($parent !== $dir) {
-                $this->cleanEmptyDirs($parent);
-            }
         }
     }
 

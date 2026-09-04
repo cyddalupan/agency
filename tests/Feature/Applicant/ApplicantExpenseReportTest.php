@@ -123,8 +123,12 @@ class ApplicantExpenseReportTest extends TestCase
             ->get();
 
         $statementTotals = $statementItems->groupBy('currency')->map(fn ($group) => (float) $group->sum('amount'));
-        $statementGrandTotal = (float) $statementItems->sum('amount');
-        $agentGrandTotal = (float) $agentItems->sum('amount');
+        $statementGrandTotal = (float) $statementItems->sum(
+            fn ($i) => app(\App\Services\CurrencyConverter::class)->toPhp((float) $i->amount, (string) $i->currency)
+        );
+        $agentGrandTotal = (float) $agentItems->sum(
+            fn ($i) => app(\App\Services\CurrencyConverter::class)->toPhp((float) $i->amount, (string) $i->currency)
+        );
 
         return view('reports.applicant_expense_report', [
             'applicant'           => $this->applicant->load('agent', 'branch'),
@@ -197,11 +201,11 @@ class ApplicantExpenseReportTest extends TestCase
         $this->assertStringContainsString('1,500.00', $html);
 
         // Totals
-        $this->assertStringContainsString('Total', $html);
+        $this->assertStringContainsString('TOTAL', $html);
     }
 
     #[Test]
-    public function statement_of_account_shows_charge_to_and_per_currency_totals(): void
+    public function statement_of_account_shows_charge_to_and_single_converted_total(): void
     {
         $this->makeExpense([
             'applicant_id' => $this->applicant->id,
@@ -230,9 +234,13 @@ class ApplicantExpenseReportTest extends TestCase
 
         // Charge To shows the charged party (Office for office-charged items).
         $this->assertStringContainsString('Office', $html);
-        // Per-currency PHP total 800.00 and USD total 100.00.
-        $this->assertStringContainsString('800.00', $html);
-        $this->assertStringContainsString('100.00', $html);
+
+        // Change #2: no per-currency total rows; the statement shows a single
+        // converted TOTAL row instead.
+        $this->assertStringNotContainsString('Total - PHP', $html);
+        $this->assertStringNotContainsString('Total - USD', $html);
+        $this->assertStringNotContainsString('Total - per column', $html);
+        $this->assertSame(1, substr_count($html, '>TOTAL<'));
     }
 
     #[Test]

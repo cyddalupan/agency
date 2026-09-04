@@ -21,6 +21,9 @@
                     </div>
                 </div>
                 <div class="flex gap-2">
+                    <a href="{{ route('reports.or', $officialReceipt) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
+                        📄 PDF
+                    </a>
                     <a href="{{ route('official-receipts.edit', $officialReceipt) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
                         ✏️ Edit
                     </a>

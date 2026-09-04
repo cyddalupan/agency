@@ -140,12 +140,21 @@ class ReportController extends Controller
 
         $agentItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
             ->where('agent_id', $applicant->agent_id)
+            ->where('applicant_id', $applicant->id)
             ->orderBy('id')
             ->get();
 
         $statementTotals = $statementItems->groupBy('currency')->map(fn ($group) => (float) $group->sum('amount'));
-        $statementGrandTotal = (float) $statementItems->sum('amount');
-        $agentGrandTotal = (float) $agentItems->sum('amount');
+
+        // Statement total is converted by currency (USD→PHP via free API,
+        // 1.0 fallback) so the grand total is meaningful in one currency.
+        $converter = app(\App\Services\CurrencyConverter::class);
+        $statementGrandTotal = (float) $statementItems->sum(
+            fn ($item) => $converter->toPhp((float) $item->amount, (string) $item->currency)
+        );
+        $agentGrandTotal = (float) $agentItems->sum(
+            fn ($item) => $converter->toPhp((float) $item->amount, (string) $item->currency)
+        );
 
         $applicant->load(['agent', 'branch']);
 

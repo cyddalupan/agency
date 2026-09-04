@@ -14,8 +14,13 @@ class Cases extends Model
     protected $fillable = [
         'agency_id',
         'applicant_id',
+        'employer_id',
+        'case_number',
         'title',
         'description',
+        'date_received',
+        'date_hearing',
+        'court',
         'status',
         'priority',
     ];
@@ -25,8 +30,21 @@ class Cases extends Model
         'priority' => 'normal',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'date_received' => 'date',
+            'date_hearing' => 'date',
+        ];
+    }
+
     public function applicant()
     {
         return $this->belongsTo(Applicant::class);
+    }
+
+    public function employer()
+    {
+        return $this->belongsTo(Employer::class);
     }
 }

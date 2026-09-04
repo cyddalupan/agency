@@ -45,7 +45,7 @@ class EmployerIndexTest extends TestCase
             ->get(route('employers.index'));
 
         $response->assertOk();
-        $response->assertSee('Employers');
+        $response->assertSee('FRAs');
     }
 
     #[Test]
@@ -120,6 +120,6 @@ class EmployerIndexTest extends TestCase
         // Expected: 200 OK (staff should be able to view employers)
         // Actual (bug): 403 Forbidden — middleware blocks non-admin users
         $response->assertOk();
-        $response->assertSee('Employers');
+        $response->assertSee('FRAs');
     }
 }

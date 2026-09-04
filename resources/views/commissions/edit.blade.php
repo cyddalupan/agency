@@ -45,6 +45,18 @@
                 </select>
             </fieldset>
 
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">🧑‍💼 Agent</legend>
+                <select name="agent_id" class="select w-full">
+                    <option value="">Select agent (optional)...</option>
+                    @foreach($agents as $agent)
+                        <option value="{{ $agent->id }}" @selected(old('agent_id', $commission->agent_id) == $agent->id)>
+                            {{ $agent->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </fieldset>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">💰 Amount <span class="text-error">*</span></legend>

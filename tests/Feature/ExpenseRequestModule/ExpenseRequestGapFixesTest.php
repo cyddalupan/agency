@@ -85,7 +85,7 @@ class ExpenseRequestGapFixesTest extends TestCase
     // ---------- Gap 2: Main -> Sub account hierarchy ----------
 
     #[Test]
-    public function store_uses_selected_main_account_as_the_item_account(): void
+    public function store_uses_selected_sub_account_as_the_item_account(): void
     {
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
         $country = Country::factory()->create();
@@ -97,8 +97,8 @@ class ExpenseRequestGapFixesTest extends TestCase
 
         $this->assertDatabaseCount('expense_requests', 1);
         $item = ExpenseRequest::first()->items->first();
-        // The Account sub-picker is gone: the item's account IS the selected Main.
-        $this->assertSame($main->id, (int) $item->account_id);
+        // The item's account IS the selected Sub account.
+        $this->assertSame($sub->id, (int) $item->account_id);
     }
 
     #[Test]
@@ -109,16 +109,16 @@ class ExpenseRequestGapFixesTest extends TestCase
         [$mainA, $subA] = $this->mainAndSub('office');
         [, $subB] = $this->mainAndSub('office');
 
-        $payload = $this->payload($branch, $country, $mainA, $subB);
+        $payload = $this->payload($branch, $country, $mainA, $subA);
         // A stray account_id (from the removed sub-account field) is ignored.
-        $payload['lines'][0]['account_id'] = $subA->id;
+        $payload['lines'][0]['account_id'] = $subB->id;
 
         $this->actingAs($this->admin)
             ->post(route('expense_request.store'), $payload)
             ->assertRedirect();
 
         $item = ExpenseRequest::first()->items->first();
-        $this->assertSame($mainA->id, (int) $item->account_id);
+        $this->assertSame($subA->id, (int) $item->account_id);
     }
 
     #[Test]
@@ -191,7 +191,7 @@ class ExpenseRequestGapFixesTest extends TestCase
         $request = ExpenseRequest::first();
 
         $this->actingAs($billing)
-            ->patch(route('expense_request.status', $request), ['status' => 'received'])
+            ->patch(route('expense_request.status', $request), ['status' => 'approved'])
             ->assertForbidden();
 
         $this->assertSame('pending', $request->fresh()->status);
@@ -233,6 +233,7 @@ class ExpenseRequestGapFixesTest extends TestCase
             'lines'     => [
                 [
                     'charge'          => $sub->charge_type,
+                    'sub_account_id'  => $sub->id,
                     'main_account_id' => $main->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,

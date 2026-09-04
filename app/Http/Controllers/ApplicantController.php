@@ -31,7 +31,7 @@ class ApplicantController extends Controller
         // page. (Toybits report 2026-08-10.)
         $withdrawnStatuses = [35, 38, 50];
 
-        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'contractRecords'])
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'country', 'contractRecords'])
             ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses);
 
@@ -83,9 +83,12 @@ class ApplicantController extends Controller
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
 
+        // Per-agency table column selection (see app_applicant_table_columns).
+        $tableColumns = app_applicant_table_columns();
+
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'tableColumns'));
     }
 
     /**
@@ -196,6 +199,11 @@ class ApplicantController extends Controller
             'contact' => 'nullable|string|max:50',
             'gender' => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
+            'education_level' => 'nullable|string|in:high_school,vocational,bachelor,master',
+            'passport_no' => 'nullable|string|max:50',
+            'passport_issue_date' => 'nullable|date',
+            'passport_expiry_date' => 'nullable|date|after:passport_issue_date',
+            'passport_place_of_issue' => 'nullable|string|max:255',
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
             'nationality_id' => ['nullable', 'integer', 'exists:nationalities,id'],
             'religion_id' => ['nullable', 'integer', 'exists:religions,id'],
@@ -214,6 +222,8 @@ class ApplicantController extends Controller
             'firstimer_type' => ['nullable', 'string', Rule::in(['firstimer', 'ex-abroad'])],
             'country_id' => 'nullable|integer|exists:countries,id',
             'position_id' => 'nullable|integer|exists:positions,id',
+            'expected_salary' => 'nullable|numeric|min:0',
+            'employer_id' => 'nullable|integer|exists:employers,id',
             'agent_id' => ['nullable', 'integer', 'exists:agents,id', function ($attribute, $value, $fail) use ($request) {
                 if (blank($value)) {
                     return;
@@ -263,11 +273,13 @@ class ApplicantController extends Controller
 
         // Encoder is auto-derived (stored in DB, not editable by users) and
         // created_by uses Laravel's default convention (auth user id).
-        $validated['encoder'] = $validated['encoder']
-            ?? (auth()->user()->name.' - '.now()->format('M d, Y h:i A'));
+        // Name only — no date/time suffix (Cyd 2026-08-16).
+        $validated['encoder'] = $validated['encoder'] ?? auth()->user()->name;
         $validated['created_by'] = auth()->id();
 
         $applicant = Applicant::create($validated);
+
+        $this->syncPassport($request, $applicant);
 
         $applicant->syncCustomFields($request->all());
         $this->syncSkillsLanguages($applicant);
@@ -383,6 +395,11 @@ class ApplicantController extends Controller
             'contact' => 'nullable|string|max:50',
             'gender' => 'nullable|string|max:20',
             'has_passport' => 'nullable|string|in:with,without',
+            'education_level' => 'nullable|string|in:high_school,vocational,bachelor,master',
+            'passport_no' => 'nullable|string|max:50',
+            'passport_issue_date' => 'nullable|date',
+            'passport_expiry_date' => 'nullable|date|after:passport_issue_date',
+            'passport_place_of_issue' => 'nullable|string|max:255',
             'civil_status_id' => ['nullable', 'integer', 'exists:civil_statuses,id'],
             'nationality_id' => ['nullable', 'integer', 'exists:nationalities,id'],
             'religion_id' => ['nullable', 'integer', 'exists:religions,id'],
@@ -442,6 +459,8 @@ class ApplicantController extends Controller
 
         $applicant->update($validated);
 
+        $this->syncPassport($request, $applicant);
+
         // Status changes made via the Edit Applicant form must also appear in
         // the Status tab history (Cyd report 2026-08-09). Only record when the
         // status actually changed.
@@ -489,6 +508,41 @@ class ApplicantController extends Controller
                     'name' => trim($langName),
                 ]);
             }
+        }
+    }
+
+    /**
+     * (Cyd 2026-08-31) Passport fields on the Add/Edit form are stored in the
+     * applicant_passports sub-table. Creates the record when none exists,
+     * updates it when it does, and removes it when the applicant is marked
+     * without a passport.
+     */
+    private function syncPassport(Request $request, Applicant $applicant): void
+    {
+        $hasPassport = $request->input('has_passport');
+        $passportNo  = trim((string) $request->input('passport_no', ''));
+
+        // Marked without a passport (or cleared) → drop the passport record.
+        if ($hasPassport === 'without' || $passportNo === '') {
+            if ($applicant->passport) {
+                $applicant->passport()->delete();
+            }
+
+            return;
+        }
+
+        $data = [
+            'agency_id'       => $applicant->agency_id ?: $this->resolveAgencyId(),
+            'passport_no'     => $passportNo,
+            'issue_date'      => $request->input('passport_issue_date'),
+            'expiry_date'     => $request->input('passport_expiry_date'),
+            'place_of_issue'  => $request->input('passport_place_of_issue'),
+        ];
+
+        if ($applicant->passport) {
+            $applicant->passport()->update($data);
+        } else {
+            $applicant->passport()->create($data);
         }
     }
 

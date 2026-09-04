@@ -48,6 +48,14 @@ class ExpenseRequestIndexNoMainColumnTest extends TestCase
             'charge_type' => 'office',
         ]);
 
+        $sub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $main->id,
+            'name'        => 'Supplies',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+        ]);
+
         $this->actingAs($this->admin)
             ->post(route('expense_request.store'), [
                 'branch_id' => $branch->id,
@@ -55,6 +63,7 @@ class ExpenseRequestIndexNoMainColumnTest extends TestCase
                 'lines'     => [
                     [
                         'charge'          => 'office',
+                        'sub_account_id'  => $sub->id,
                         'main_account_id' => $main->id,
                         'agent_id'        => null,
                         'applicant_id'    => null,
@@ -86,6 +95,6 @@ class ExpenseRequestIndexNoMainColumnTest extends TestCase
 
         // Other key columns are intact.
         $this->assertStringContainsString('<th>Account</th>', $html);
-        $this->assertStringContainsString('<th>Branch</th>', $html);
+        $this->assertStringContainsString('<th>Offices</th>', $html);
     }
 }

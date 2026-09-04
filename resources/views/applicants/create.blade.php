@@ -126,6 +126,36 @@
                     <input type="text" name="contact" value="{{ old('contact') }}"
                         class="input w-full" placeholder="09XX-XXX-XXXX">
                 </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🎓 Education Level</legend>
+                    <select name="education_level" class="select w-full">
+                        <option value="">-- Select --</option>
+                        <option value="high_school" @selected(old('education_level') === 'high_school')>High School</option>
+                        <option value="vocational" @selected(old('education_level') === 'vocational')>Vocational / Associate Degree</option>
+                        <option value="bachelor" @selected(old('education_level') === 'bachelor')>Bachelor's Degree</option>
+                        <option value="master" @selected(old('education_level') === 'master')>Master's Degree</option>
+                    </select>
+                </fieldset>
+            </div>
+
+            {{-- Passport details — shown only when has_passport = with (Cyd 2026-08-31). --}}
+            <div id="passport-fields" class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4" style="display: none;">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🛂 Passport Number</legend>
+                    <input type="text" name="passport_no" value="{{ old('passport_no') }}" class="input w-full" placeholder="e.g. P1234567A">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📅 Date Issued</legend>
+                    <input type="date" name="passport_issue_date" value="{{ old('passport_issue_date') }}" class="input w-full">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">📍 Place Issued</legend>
+                    <input type="text" name="passport_place_of_issue" value="{{ old('passport_place_of_issue') }}" class="input w-full" placeholder="e.g. DFA Manila">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">⏳ Expiration</legend>
+                    <input type="date" name="passport_expiry_date" value="{{ old('passport_expiry_date') }}" class="input w-full">
+                </fieldset>
             </div>
 
             <fieldset class="fieldset">
@@ -199,6 +229,22 @@
                         <option value="">-- Select --</option>
                         @foreach ($positions as $pos)
                             <option value="{{ $pos->id }}" @selected(old('position_id') == $pos->id)>{{ $pos->name }}</option>
+                        @endforeach
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">💵 Salary</legend>
+                    <input type="number" step="0.01" min="0" name="expected_salary" value="{{ old('expected_salary') }}" class="input w-full" placeholder="e.g. 25000">
+                </fieldset>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏢 FRA/Employer</legend>
+                    <select name="employer_id" class="select w-full">
+                        <option value="">No Employer</option>
+                        @foreach (\App\Models\Employer::where('agency_id', auth()->user()->agency_id)->orderBy('name')->get() as $emp)
+                            <option value="{{ $emp->id }}" @selected(old('employer_id') == $emp->id)>{{ $emp->name }}</option>
                         @endforeach
                     </select>
                 </fieldset>
@@ -314,6 +360,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sourceSelect) sourceSelect.addEventListener('change', toggleExtraFields);
     if (branchSelect) branchSelect.addEventListener('change', filterAgentsByBranch);
     toggleExtraFields();
+
+    // (Cyd 2026-08-31) Passport details appear only when "With Passport" is chosen.
+    const passportName = 'has_passport';
+    const passportSelect = document.querySelector('select[name="' + passportName + '"]');
+    const passportFields = document.getElementById('passport-fields');
+    if (passportSelect && passportFields) {
+        const togglePassport = () => {
+            passportFields.style.display = passportSelect.value === 'with' ? '' : 'none';
+        };
+        passportSelect.addEventListener('change', togglePassport);
+        togglePassport();
+    }
 });
 </script>
 @endpush

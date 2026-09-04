@@ -99,7 +99,7 @@ class UserController extends Controller
             'email'       => ['required', 'email', 'max:255', Rule::unique('users')],
             'username'    => ['nullable', 'string', 'max:255', Rule::unique('users')],
             'contact'     => ['nullable', 'string', 'max:50'],
-            'password'    => ['required', 'string', 'min:8', 'confirmed'],
+            'password'    => ['required', 'string', 'confirmed'],
             'user_type'   => ['required', 'string', 'max:50', Rule::in(array_keys(\App\Models\User::ACCESS_PRESETS))],
             'branch_id'   => ['nullable', Rule::exists('branches', 'id')->where(function ($q) {
                 $q->where('agency_id', auth()->user()->agency_id);
@@ -158,9 +158,20 @@ class UserController extends Controller
                 $q->where('agency_id', $user->agency_id);
             })],
             'status'    => ['required', 'string', 'in:active,inactive,suspended'],
+            'password'  => ['nullable', 'string', 'confirmed'],
         ]);
 
-        $user->update($validated);
+        $data = $validated;
+
+        // Toybits 2026-08-16: admin can reset a user's password from the edit
+        // page. Only hash/update when a new password is provided.
+        if (filled($data['password'] ?? null)) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $user->update($data);
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');

@@ -127,37 +127,104 @@ class ReceivableController extends Controller
     public function updateStatus(Request $request, Receivable $receivable): RedirectResponse
     {
         $this->authorizeAgency($receivable);
-
-        // Only admin / super_admin may change status (per card: "Only Admin Account can change Status")
-        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
-            abort(403, 'Only admin can change receivable status.');
-        }
+        $this->authorizeStatusChange();
 
         $validated = $request->validate([
             'status' => ['required', 'in:' . Receivable::STATUS_PENDING . ',' . Receivable::STATUS_RECEIVED],
             'note'   => ['nullable', 'string'],
         ]);
 
-        $from = $receivable->status;
-        $to   = $validated['status'];
+        $to = $validated['status'];
 
-        if ($from !== $to) {
-            DB::transaction(function () use ($receivable, $from, $to, $request) {
-                $receivable->update(['status' => $to]);
-
-                ReceivableHistory::create([
-                    'receivable_id' => $receivable->id,
-                    'agency_id'     => $receivable->agency_id,
-                    'user_id'       => auth()->id(),
-                    'from_status'   => $from,
-                    'to_status'     => $to,
-                    'note'          => $request->input('note'),
-                ]);
+        if ($receivable->status !== $to) {
+            DB::transaction(function () use ($receivable, $to, $validated) {
+                $this->applyStatusChange($receivable, $to, $validated['note'] ?? null);
             });
         }
 
         return redirect()->route('receivable.show', $receivable)
             ->with('success', "Status updated to {$to}.");
+    }
+
+    /**
+     * Admin-only batch status change (Toybits 2026-08-31): one status applied to
+     * many selected receivables at once via the checkboxes on the index page.
+     * Each changed receivable gets its own history entry, inside a single
+     * transaction. Receivables already in the target status are skipped.
+     */
+    public function bulkUpdateStatus(Request $request): RedirectResponse
+    {
+        $this->authorizeStatusChange();
+
+        $validated = $request->validate([
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer'],
+            'status' => ['required', 'in:' . Receivable::STATUS_PENDING . ',' . Receivable::STATUS_RECEIVED],
+            'note'   => ['nullable', 'string'],
+        ]);
+
+        $to   = $validated['status'];
+        $note = $validated['note'] ?? null;
+
+        // Only the caller's own agency's receivables are ever touched.
+        $receivables = Receivable::where('agency_id', auth()->user()->agency_id)
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        if ($receivables->isEmpty()) {
+            return redirect()->route('receivable.index')
+                ->with('error', 'No matching receivables selected.');
+        }
+
+        $changed = 0;
+
+        DB::transaction(function () use ($receivables, $to, $note, &$changed) {
+            foreach ($receivables as $receivable) {
+                if ($receivable->status === $to) {
+                    continue;
+                }
+                $this->applyStatusChange($receivable, $to, $note);
+                $changed++;
+            }
+        });
+
+        $message = $changed === 0
+            ? "All selected receivables were already {$to}."
+            : "Updated {$changed} receivable(s) to {$to}.";
+
+        return redirect()->back()
+            ->with('success', $message);
+    }
+
+    /**
+     * Apply one status change to a single receivable + history entry. Shared by
+     * the single (updateStatus) and batch (bulkUpdateStatus) paths so both stay
+     * consistent (Toybits 2026-08-31).
+     */
+    private function applyStatusChange(Receivable $receivable, string $to, ?string $note): void
+    {
+        $from = $receivable->status;
+
+        $receivable->update(['status' => $to]);
+
+        ReceivableHistory::create([
+            'receivable_id' => $receivable->id,
+            'agency_id'     => $receivable->agency_id,
+            'user_id'       => auth()->id(),
+            'from_status'   => $from,
+            'to_status'     => $to,
+            'note'          => $note,
+        ]);
+    }
+
+    /**
+     * Only admin/super_admin may change receivable statuses (single or batch).
+     */
+    private function authorizeStatusChange(): void
+    {
+        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
+            abort(403, 'Only admin can change receivable status.');
+        }
     }
 
     /**

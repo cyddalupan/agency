@@ -71,7 +71,7 @@
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">🔑 Password <span class="text-error">*</span></legend>
                 <input type="password" name="password" required
-                    class="input w-full" placeholder="Minimum 8 characters">
+                    class="input w-full" placeholder="Set a password">
             </fieldset>
 
             <fieldset class="fieldset">

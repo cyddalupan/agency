@@ -65,4 +65,42 @@ class SettingsController extends Controller
         return redirect()->route('settings.applicant-form-defaults')
             ->with('success', 'Applicant form defaults saved.');
     }
+
+    /**
+     * Show the per-agency Applicants table column picker.
+     */
+    public function applicantTableColumns()
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+
+        $labels = app_applicant_table_column_labels();
+        $selected = app_applicant_table_columns($agency);
+
+        return view('settings.applicants-table-columns', compact('agency', 'labels', 'selected'));
+    }
+
+    /**
+     * Persist the agency's chosen Applicants table columns (JSON on agencies.settings).
+     * Only known column keys are accepted.
+     */
+    public function updateApplicantTableColumns(Request $request)
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+
+        $labels = app_applicant_table_column_labels();
+
+        $validated = $request->validate([
+            'columns'   => ['nullable', 'array'],
+            'columns.*' => ['string', \Illuminate\Validation\Rule::in(array_keys($labels))],
+        ]);
+
+        $settings = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
+        $settings['applicants_table_columns'] = $validated['columns'] ?? [];
+        $agency->update(['settings' => $settings]);
+
+        return redirect()->route('settings.applicants-table-columns')
+            ->with('success', 'Applicants table columns saved.');
+    }
 }

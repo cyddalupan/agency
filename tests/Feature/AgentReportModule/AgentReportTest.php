@@ -5,14 +5,17 @@ namespace Tests\Feature\AgentReportModule;
 use App\Models\Account;
 use App\Models\Agency;
 use App\Models\Agent;
+use App\Models\AgentDeduction;
 use App\Models\Applicant;
 use App\Models\Branch;
 use App\Models\Country;
 use App\Models\ExpenseRequest;
 use App\Models\ExpenseRequestItem;
 use App\Models\Receivable;
+use App\Models\StartingBalance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -34,6 +37,9 @@ class AgentReportTest extends TestCase
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
         ]);
+
+        // Force a deterministic FX rate (CurrencyConverter reads this cache key).
+        Cache::put('fx_usd_to_php', 56.0, 3600);
     }
 
     private function makeAgent(): Agent
@@ -44,9 +50,9 @@ class AgentReportTest extends TestCase
         ]);
     }
 
-    private function makeApplicant(Agent $agent): Applicant
+    private function makeApplicant(Agent $agent, int $statusCode = 0): Applicant
     {
-        return Applicant::factory()->create([
+        return Applicant::factory()->withStatus($statusCode)->create([
             'agency_id' => $this->agency->id,
             'agent_id'  => $agent->id,
         ]);
@@ -70,22 +76,21 @@ class AgentReportTest extends TestCase
         ]);
     }
 
-    private function makeAgentExpense(Agent $agent, float $amount, string $currency = 'PHP', ?Applicant $applicant = null): ExpenseRequestItem
+    private function makeAgentExpense(Agent $agent, float $amount, string $currency = 'PHP', ?Applicant $applicant = null, string $accountName = 'Agent Advances', string $requestStatus = 'pending'): ExpenseRequestItem
     {
         $er = ExpenseRequest::create([
             'agency_id'     => $this->agency->id,
             'user_id'       => $this->user->id,
             'reference_no'  => (string) rand(100000, 999999),
             'date'          => now()->toDateString(),
-            'status'        => 'pending',
+            'status'        => $requestStatus,
             'branch_id'     => $this->branch->id,
             'notes'         => 'test',
         ]);
 
-        // agent sub-account
         $acct = Account::create([
             'agency_id'    => $this->agency->id,
-            'name'         => 'Agent Advances',
+            'name'         => $accountName,
             'type'         => 'expense',
             'charge_type'  => 'agent',
             'parent_id'    => null,
@@ -124,98 +129,200 @@ class AgentReportTest extends TestCase
             ->assertForbidden();
     }
 
-    // ---------- Per-agent grouping + totals ----------
+    // ---------- Tabs render ----------
 
     #[Test]
-    public function report_groups_ledger_by_agent_with_receivable_and_expense_totals(): void
+    public function index_renders_the_seven_tabs(): void
+    {
+        $this->actingAs($this->user)->get(route('agent_report.index'))
+            ->assertOk()
+            ->assertSee('Commission')
+            ->assertSee('Cash Advance')
+            ->assertSee('Receivables')
+            ->assertSee('Payments')
+            ->assertSee('Deductions &amp; Paid', false)
+            ->assertSee('Starting Balance')
+            ->assertSee('Agent Report');
+    }
+
+    #[Test]
+    public function each_tab_renders_with_an_agent_filter(): void
+    {
+        foreach (['commission', 'cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'] as $tab) {
+            $this->actingAs($this->user)
+                ->get(route('agent_report.index', ['tab' => $tab]))
+                ->assertOk();
+        }
+    }
+
+    #[Test]
+    public function unknown_tab_falls_back_to_commission(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'bogus']))
+            ->assertOk();
+    }
+
+    // ---------- Receivables + Cash Advance tab routing ----------
+
+    #[Test]
+    public function receivable_accounts_appear_in_receivables_tab_and_not_commission(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Partial');
+        $this->makeAgentExpense($agent, 20000, 'PHP', null, 'Full');
+        $this->makeAgentExpense($agent, 30000, 'PHP', null, 'Deployed');
+        $this->makeAgentExpense($agent, 40000, 'PHP', null, 'Other Commission');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'receivables']))
+            ->assertOk()
+            ->assertSee('Partial')
+            ->assertSee('Full')
+            ->assertSee('Deployed')
+            ->assertDontSee('Other Commission');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->assertOk()
+            ->assertSee('Other Commission')
+            ->assertDontSee('Partial')
+            ->assertDontSee('Full')
+            ->assertDontSee('Deployed');
+    }
+
+    #[Test]
+    public function cash_advance_accounts_appear_in_cash_advance_tab_and_not_commission(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 15000, 'PHP', null, 'Cash advance');
+        $this->makeAgentExpense($agent, 25000, 'PHP', null, 'Other Commission');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'cash-advance']))
+            ->assertOk()
+            ->assertSee('Cash advance')
+            ->assertDontSee('Other Commission');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->assertOk()
+            ->assertSee('Other Commission')
+            ->assertDontSee('Cash advance');
+    }
+
+    #[Test]
+    public function receivable_and_cash_advance_tabs_respect_agent_filter(): void
     {
         $agentA = $this->makeAgent();
         $agentB = $this->makeAgent();
 
-        // Agent A: 2 receivables (1 received/collected) + 1 agent expense
-        $this->makeReceivable($agentA, 5000, 'pending');
-        $this->makeReceivable($agentA, 3000, 'received');
-        $this->makeAgentExpense($agentA, 1000, 'PHP');
-
-        // Agent B: 1 receivable, uncollected
-        $this->makeReceivable($agentB, 20000, 'pending');
-
-        $resp = $this->actingAs($this->user)->get(route('agent_report.index'));
-        $resp->assertOk();
-
-        $resp->assertSee($agentA->name);
-        $resp->assertSee($agentB->name);
-
-        // Agent A rows visible with counts/totals
-        $resp->assertSee('2');          // # receivables A (assert via data or rendered)
-        $resp->assertSee('8,000.00');   // total receivable A (5000+3000)
-    }
-
-    #[Test]
-    public function balance_is_calculated_as_receivables_minus_collected_minus_expenses(): void
-    {
-        $agent = $this->makeAgent();
-
-        $this->makeReceivable($agent, 10000, 'pending');   // receivable
-        $this->makeReceivable($agent, 4000, 'received');   // collected
-        $this->makeAgentExpense($agent, 2500, 'PHP');      // expense
-
-        $this->actingAs($this->user)->get(route('agent_report.index'))
-            ->assertOk()
-            ->assertSee('14,000.00')   // total receivable (10000 + 4000)
-            ->assertSee('4,000.00')    // collected
-            ->assertSee('2,500.00')    // expenses
-            ->assertSee('7,500.00');   // balance = 14000 - 4000 - 2500
-    }
-
-    #[Test]
-    public function usd_expenses_are_converted_to_php_equivalent_in_totals(): void
-    {
-        $agent = $this->makeAgent();
-
-        $this->makeAgentExpense($agent, 10, 'USD'); // USD 10 -> PHP equivalent via config
-        $this->makeReceivable($agent, 1000, 'pending');
-
-        $rate = (float) config('expense.usd_to_php', 56);
-        $peso = 1000 - ($rate * 10);
-
-        $this->actingAs($this->user)->get(route('agent_report.index'))
-            ->assertOk()
-            ->assertSee(number_format($peso, 2));
-    }
-
-    #[Test]
-    public function date_range_filter_limits_receivables_and_expenses(): void
-    {
-        $agent = $this->makeAgent();
-
-        $this->makeReceivable($agent, 9000, 'pending'); // today
-
-        $old = now()->subMonths(3);
-        Receivable::create([
-            'agency_id'      => $this->agency->id,
-            'user_id'        => $this->user->id,
-            'agent_id'       => $agent->id,
-            'applicant_id'   => $this->makeApplicant($agent)->id,
-            'code'           => '000099',
-            'date'           => $old->toDateString(),
-            'status'         => 'pending',
-            'amount'         => 50000,
-            'account'        => 'Placement Fee',
-            'debit_account'  => 'Receivable',
-            'type'           => 'Full Payment',
-            'mode'           => 'GCash',
-        ]);
-
-        // filter only the last 30 days -> excludes the 50k old receivable
-        $from = now()->startOfMonth()->toDateString();
-        $to   = now()->endOfMonth()->toDateString();
+        $this->makeAgentExpense($agentA, 10000, 'PHP', null, 'Partial');
+        $this->makeAgentExpense($agentB, 99999, 'PHP', null, 'Partial');
 
         $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['from' => $from, 'to' => $to]))
+            ->get(route('agent_report.index', ['tab' => 'receivables', 'agent_id' => $agentA->id]))
             ->assertOk()
-            ->assertSee('9,000.00')
-            ->assertDontSee('50,000.00');
+            ->assertSee('10,000.00')
+            ->assertDontSee('99,999.00');
+    }
+
+    // ---------- Report tab: new confirmed formula ----------
+
+    #[Test]
+    public function report_balance_follows_confirmed_formula(): void
+    {
+        $agent = $this->makeAgent();
+
+        StartingBalance::create([
+            'agency_id' => $this->agency->id,
+            'user_id'   => $this->user->id,
+            'agent_id'  => $agent->id,
+            'date'      => now()->toDateString(),
+            'account'   => StartingBalance::ACCOUNT,
+            'amount'    => 50000,
+        ]);
+
+        $this->makeAgentExpense($agent, 10000, 'PHP');      // commission
+        $this->makeReceivable($agent, 4000, 'received');    // payment
+        AgentDeduction::create([
+            'agency_id' => $this->agency->id,
+            'user_id'   => $this->user->id,
+            'agent_id'  => $agent->id,
+            'date'      => now()->toDateString(),
+            'account'   => AgentDeduction::ACCOUNT_DEDUCTION,
+            'amount'    => 1500,
+        ]);
+        AgentDeduction::create([
+            'agency_id' => $this->agency->id,
+            'user_id'   => $this->user->id,
+            'agent_id'  => $agent->id,
+            'date'      => now()->toDateString(),
+            'account'   => AgentDeduction::ACCOUNT_PAID,
+            'amount'    => 500,
+        ]);
+
+        // Balance = 50000 (SB) + 10000 (commission) + 4000 (payments) - 1500 (deduction) - 500 (paid) = 62000
+        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk()
+            ->assertSee('50,000.00')   // starting balance
+            ->assertSee('10,000.00')   // commission
+            ->assertSee('4,000.00')    // payments
+            ->assertSee('1,500.00')    // deductions
+            ->assertSee('500.00')      // paid
+            ->assertSee('62,000.00');  // net balance
+    }
+
+    #[Test]
+    public function report_payments_count_only_received_receivables(): void
+    {
+        $agent = $this->makeAgent();
+
+        $this->makeReceivable($agent, 6000, 'received');
+        $this->makeReceivable($agent, 9000, 'pending'); // not counted as payment
+
+        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk()
+            ->assertSee('6,000.00')
+            ->assertDontSee('15,000.00');
+    }
+
+    #[Test]
+    public function report_commission_converts_usd_to_php(): void
+    {
+        $agent = $this->makeAgent();
+
+        $this->makeAgentExpense($agent, 10, 'USD'); // USD 10 -> PHP 560 @ 56
+
+        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk()
+            ->assertSee('560.00'); // converted commission
+    }
+
+    #[Test]
+    public function zero_activity_agents_are_still_listed(): void
+    {
+        $agent = $this->makeAgent(); // no receivables, expenses, commissions
+
+        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk()
+            ->assertSee($agent->name);
+    }
+
+    #[Test]
+    public function report_filter_limits_to_selected_agent(): void
+    {
+        $agentA = $this->makeAgent();
+        $agentB = $this->makeAgent();
+
+        $this->makeReceivable($agentA, 5000, 'received');
+        $this->makeReceivable($agentB, 99999, 'received');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'report', 'agent_id' => $agentA->id]))
+            ->assertOk()
+            ->assertSee('5,000.00')
+            ->assertDontSee('99,999.00');
     }
 
     // ---------- Agency isolation ----------
@@ -228,7 +335,7 @@ class AgentReportTest extends TestCase
             'agency_id' => $otherAgency->id,
             'branch_id' => Branch::factory()->create(['agency_id' => $otherAgency->id])->id,
         ]);
-        $this->makeReceivable($otherAgent, 999999, 'pending');
+        $this->makeReceivable($otherAgent, 999999, 'received');
 
         $this->actingAs($this->user)->get(route('agent_report.index'))
             ->assertOk()

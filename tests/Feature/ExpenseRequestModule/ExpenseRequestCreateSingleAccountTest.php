@@ -13,13 +13,12 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Create page simplification (requested via Toybits):
- * - the "Account" (sub-account) field is removed; "Main Account" is the
- *   single account picker
- * - the line form is re-aligned into compact 3-column rows so the page
- *   is not too tall
- * - store() no longer needs account_id: the item's account IS the selected
- *   Main Account (schema keeps account_id NOT NULL)
+ * Create page (requested via Toybits 2026-08-16):
+ * - the sub-account picker is RESTORED (change #5); the item stores the
+ *   chosen sub-account id
+ * - the Main Account is no longer user-picked: it is auto-derived from the
+ *   Charge (office -> office main, agent -> agent main)
+ * - store() still accepts an explicit main_account_id for backwards compat
  */
 class ExpenseRequestCreateSingleAccountTest extends TestCase
 {
@@ -48,16 +47,16 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
     }
 
     #[Test]
-    public function create_page_has_only_the_main_account_picker(): void
+    public function create_page_has_the_sub_account_picker_not_the_main_picker(): void
     {
         $html = $this->createPageHtml();
 
-        // Main Account remains the single picker...
-        $this->assertStringContainsString('Main Account', $html);
-        $this->assertStringContainsString('lines[0][main_account_id]', $html);
+        // The account-type picker is back (change #5)...
+        $this->assertStringContainsString('Account Type', $html);
+        $this->assertStringContainsString('lines[0][sub_account_id]', $html);
 
-        // ...and the sub-account "Account" field is gone.
-        $this->assertStringNotContainsString('lines[0][account_id]', $html);
+        // ...and the user-facing Main Account picker is gone (main comes from Charge).
+        $this->assertStringNotContainsString('lines[0][main_account_id]', $html);
         $this->assertStringNotContainsString('— Select Account —', $html);
         $this->assertStringNotContainsString('data-account-group', $html);
         $this->assertStringNotContainsString('Account shows Sub Accounts', $html);
@@ -93,12 +92,21 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
             'charge_type' => 'office',
         ]);
 
+        $sub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $main->id,
+            'name'        => 'Office Supplies',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+        ]);
+
         $payload = [
             'branch_id' => $branch->id,
             'notes'     => null,
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $sub->id,
                     'main_account_id' => $main->id,
                     // NOTE: no account_id submitted — the field is removed.
                     'agent_id'        => null,
@@ -117,7 +125,7 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
 
         $this->assertDatabaseCount('expense_requests', 1);
         $item = ExpenseRequest::first()->items->first();
-        $this->assertSame($main->id, (int) $item->account_id);
+        $this->assertSame($sub->id, (int) $item->account_id);
     }
 
     #[Test]
@@ -126,12 +134,28 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
         $country = Country::factory()->create();
 
+        // Only an applicant main exists — no office main to auto-resolve.
+        $applicantMain = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => null,
+            'name'        => 'APPLICANT',
+            'type'        => 'expense',
+            'charge_type' => 'applicant',
+        ]);
+        $applicantSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $applicantMain->id,
+            'type'        => 'expense',
+            'charge_type' => 'applicant',
+        ]);
+
         $payload = [
             'branch_id' => $branch->id,
             'notes'     => null,
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $applicantSub->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
                     'country_id'      => $country->id,
@@ -161,6 +185,12 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
             'type'        => 'expense',
             'charge_type' => 'agent',
         ]);
+        $agentSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $agentMain->id,
+            'type'        => 'expense',
+            'charge_type' => 'agent',
+        ]);
 
         $payload = [
             'branch_id' => $branch->id,
@@ -168,6 +198,7 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
             'lines'     => [
                 [
                     'charge'          => 'office', // office charge with agent main -> invalid
+                    'sub_account_id'  => $agentSub->id,
                     'main_account_id' => $agentMain->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
@@ -197,8 +228,8 @@ class ExpenseRequestCreateSingleAccountTest extends TestCase
         // Particular sits inside a grid row next to the account/country fields.
         $this->assertStringContainsString('lines[0][particular]', $html);
 
-        // Agent/Applicant row is still present (hidden for office charge).
-        $this->assertStringContainsString('data-agent-row', $html);
+        // Agent/Applicant share one compact grid row (no agent-only row).
+        $this->assertStringContainsString('grid grid-cols-1 sm:grid-cols-2 gap-3', $html);
         $this->assertStringContainsString('lines[0][agent_id]', $html);
         $this->assertStringContainsString('lines[0][applicant_id]', $html);
     }

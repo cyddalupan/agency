@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agency;
 use App\Models\Applicant;
 use App\Services\SensitiveActionLogger;
 use Illuminate\Http\Request;
@@ -35,6 +36,8 @@ class ApplicantAuthController extends Controller
             'last_name'  => $validated['last_name'],
             'email'      => $validated['email'],
             'password'   => Hash::make($validated['password']),
+            'agency_id'  => resolve_agency_id() ?? Agency::first()?->id,
+            'status'     => 'pending',
         ]);
 
         Auth::guard('applicant')->login($applicant);

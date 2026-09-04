@@ -69,6 +69,7 @@
                 <select name="charge_type" class="select w-full">
                     <option value="office" @selected(old('charge_type', 'office') === 'office')>🏢 Office</option>
                     <option value="agent" @selected(old('charge_type', 'office') === 'agent')>🤝 Agent</option>
+                    <option value="applicant" @selected(old('charge_type', 'office') === 'applicant')>👤 Applicant</option>
                 </select>
                 <p class="text-xs opacity-50 mt-1">Which expense lines this account can be used for.</p>
                 @error('charge_type') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror

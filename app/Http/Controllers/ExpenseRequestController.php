@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Agent;
+use App\Models\AgentDeduction;
 use App\Models\Applicant;
 use App\Models\Branch;
 use App\Models\Country;
 use App\Models\ExpenseRequest;
 use App\Models\ExpenseRequestItem;
 use App\Models\ExpenseRequestStatusHistory;
+use App\Services\CurrencyConverter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,30 +21,117 @@ class ExpenseRequestController extends Controller
 {
     /**
      * Tab 2 — Expenses & Payments: request list.
+     *
+     * Optional ?status= query param filters the table to one status
+     * (Pending / Approved / For Releasing / Released / Cancelled).
      */
     public function index(): View
     {
         $agencyId = auth()->user()->agency_id;
 
-        $requests = ExpenseRequest::with(['items', 'user', 'branch'])
+        $allRequests = ExpenseRequest::with(['items', 'user', 'branch'])
             ->where('agency_id', $agencyId)
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
 
-        $totals = $this->currencyTotals($requests);
+        // Status tab filter (Toybits 2026-08-18). Invalid/absent status = show all.
+        $status = request()->query('status');
+        $activeStatus = in_array($status, ExpenseRequest::STATUSES, true) ? $status : null;
+        $requests = $activeStatus
+            ? $allRequests->where('status', $activeStatus)->values()
+            : $allRequests;
+
+        // Per-status request counts for the tab badges (always over the full set).
+        $statusCounts = [];
+        foreach (ExpenseRequest::STATUSES as $statusKey) {
+            $statusCounts[$statusKey] = $allRequests->where('status', $statusKey)->count();
+        }
+
+        $totals = $this->currencyTotals($allRequests);
+
+        // Duplicate detection (Toybits 2026-08-16): an item is a duplicate when
+        // another item in the same agency shares amount + applicant (null matches null).
+        $keyCounts = [];
+        foreach ($requests as $requestModel) {
+            // A cancelled transaction must not flag a live one as a duplicate.
+            if ($requestModel->status === ExpenseRequest::STATUS_CANCELLED) {
+                continue;
+            }
+            foreach ($requestModel->items as $item) {
+                $key = $this->duplicateKey((float) $item->amount, $item->applicant_id);
+                $keyCounts[$key] = ($keyCounts[$key] ?? 0) + 1;
+            }
+        }
+        $duplicateKeys = array_keys(array_filter($keyCounts, fn ($c) => $c > 1));
 
         return view('expense_request.index', [
             'requests'         => $requests,
+            'allRequests'      => $allRequests,
+            'activeStatus'     => $activeStatus,
+            'statusCounts'     => $statusCounts,
             'phpTotal'         => $totals['PHP'],
             'usdTotal'         => $totals['USD'],
             'totalAmount'      => round($totals['PHP'] + $totals['USD'] * config('expense.usd_to_php', 56), 2),
             'chargeTotals'     => $totals['charge'],
-            'pendingPhpTotal'  => $totals['status']['pending']['PHP'],
-            'pendingUsdTotal'  => $totals['status']['pending']['USD'],
-            'receivedPhpTotal' => $totals['status']['received']['PHP'],
-            'receivedUsdTotal' => $totals['status']['received']['USD'],
+            'pendingPhpTotal'       => $totals['status']['pending']['PHP'],
+            'pendingUsdTotal'       => $totals['status']['pending']['USD'],
+            'approvedPhpTotal'      => $totals['status']['approved']['PHP'],
+            'approvedUsdTotal'      => $totals['status']['approved']['USD'],
+            'forReleasingPhpTotal'  => $totals['status']['for_releasing']['PHP'],
+            'forReleasingUsdTotal'  => $totals['status']['for_releasing']['USD'],
+            'releasedPhpTotal'      => $totals['status']['released']['PHP'],
+            'releasedUsdTotal'      => $totals['status']['released']['USD'],
+            'duplicateKeys'    => $duplicateKeys,
         ]);
+    }
+
+    /**
+     * Save-time duplicate check (Toybits 2026-08-16): a line is a duplicate
+     * when an existing item in the same agency shares the same amount AND the
+     * same applicant (null applicant matches null applicant).
+     */
+    public function checkDuplicates(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $agencyId = auth()->user()->agency_id;
+
+        $lines = $request->validate([
+            'lines'                 => ['required', 'array', 'min:1'],
+            'lines.*.applicant_id'  => ['nullable', 'integer'],
+            'lines.*.amount'        => ['required', 'numeric'],
+        ])['lines'];
+
+        $duplicate = false;
+
+        foreach ($lines as $line) {
+            $applicantId = $line['applicant_id'] ?? null;
+            $amount      = number_format((float) $line['amount'], 2);
+
+            $query = ExpenseRequestItem::query()
+                ->whereHas('expenseRequest', fn ($q) => $q->where('agency_id', $agencyId))
+                ->where('amount', $amount);
+
+            if ($applicantId === null) {
+                $query->whereNull('applicant_id');
+            } else {
+                $query->where('applicant_id', $applicantId);
+            }
+
+            if ($query->exists()) {
+                $duplicate = true;
+                break;
+            }
+        }
+
+        return response()->json(['duplicate' => $duplicate]);
+    }
+
+    /**
+     * Duplicate key for an item: amount (2dp) + applicant id, null-aware.
+     */
+    private function duplicateKey(?float $amount, ?int $applicantId): string
+    {
+        return number_format((float) $amount, 2) . '|' . ($applicantId ?? 'null');
     }
 
     /**
@@ -102,11 +191,13 @@ class ExpenseRequestController extends Controller
             'lines'     => ['required', 'array', 'min:1'],
             'lines.*.charge'          => ['required', 'in:office,agent'],
             'lines.*.main_account_id' => ['nullable', 'integer', 'exists:accounts,id'],
+            'lines.*.sub_account_id'  => ['required', 'integer', 'exists:accounts,id'],
             'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
             'lines.*.applicant_id' => ['nullable', 'integer', 'exists:applicants,id'],
             'lines.*.country_id'   => ['nullable', 'integer', 'exists:countries,id'],
             'lines.*.currency'     => ['required', 'in:PHP,USD'],
             'lines.*.amount'       => ['required', 'numeric', 'min:0.01'],
+            'lines.*.payment'      => ['nullable', 'numeric', 'min:0'],
             'lines.*.particular'   => ['nullable', 'string'],
             'lines.*.file'         => ['nullable', 'file', 'max:5120'],
         ]);
@@ -133,15 +224,34 @@ class ExpenseRequestController extends Controller
                     'notes'        => $validated['notes'] ?? null,
                 ]);
 
+                // First history entry: who encoded the request (Toybits 2026-08-18).
+                ExpenseRequestStatusHistory::create([
+                    'expense_request_id' => $parent->id,
+                    'agency_id'          => $agencyId,
+                    'user_id'            => auth()->id(),
+                    'from_status'        => null,
+                    'to_status'          => ExpenseRequest::STATUS_PENDING,
+                    'note'               => 'Request created',
+                ]);
+
                 foreach ($validated['lines'] as $index => $line) {
-                    // Main account is auto-resolved from the charge when the
-                    // dropdown is omitted (Charge and Main Account are the same).
+                    // Account group mirrors the front-end picker rule (Toybits 2026-08-16):
+                    //   Charge = agent                -> agent accounts
+                    //   Charge = office, no applicant -> office accounts
+                    //   Charge = office + applicant   -> applicant accounts
+                    $group = $line['charge'] === 'agent'
+                        ? 'agent'
+                        : (! empty($line['applicant_id']) ? 'applicant' : 'office');
+
+                    // Main account is auto-resolved from the group (office -> office
+                    // main, agent -> agent main, applicant -> applicant main). An
+                    // explicit main_account_id is still accepted for backwards compatibility.
                     if (! empty($line['main_account_id'])) {
                         $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
                     } else {
                         $main = Account::mains()
                             ->where('agency_id', $agencyId)
-                            ->where('charge_type', $line['charge'])
+                            ->where('charge_type', $group)
                             ->orderBy('name')
                             ->first();
                     }
@@ -151,14 +261,32 @@ class ExpenseRequestController extends Controller
                         ]);
                     }
 
-                    // The sub-account picker was removed: the item's account IS the selected Main Account.
-                    $account = $main;
-
-                    // CoA gating: office charge -> office account only; agent charge -> agent account only.
-                    if ($account->charge_type !== $line['charge']) {
+                    // CoA gating: the main must match the group.
+                    if ($main->charge_type !== $group) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
                             "lines.$index.main_account_id" => 'Account type must match the charge (office/agent).',
                         ]);
+                    }
+
+                    // Sub-account picker (restored): the item's account is the chosen
+                    // sub-account (child of the group's main). Falls back to the main
+                    // when omitted.
+                    $account = $main;
+                    if (! empty($line['sub_account_id'])) {
+                        $sub = Account::where('agency_id', $agencyId)
+                            ->where('parent_id', $main->id)
+                            ->find($line['sub_account_id']);
+                        if (! $sub) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                "lines.$index.sub_account_id" => 'Selected Sub Account is invalid.',
+                            ]);
+                        }
+                        if ($sub->charge_type !== $group) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                "lines.$index.sub_account_id" => 'Sub Account type must match the charge (office/agent).',
+                            ]);
+                        }
+                        $account = $sub;
                     }
 
                     // Branch-scoped agent: agent must belong to selected branch + this agency.
@@ -193,7 +321,8 @@ class ExpenseRequestController extends Controller
                         'country_id'         => $line['country_id'] ?? null,
                         'currency'           => $line['currency'],
                         'amount'             => $line['amount'],
-                        'account_id'         => $main->id,
+                        'payment'            => $line['payment'] ?? 0,
+                        'account_id'         => $account->id,
                         'particular'         => $line['particular'] ?? null,
                         'file_path'          => $this->storeLineFile($request, $index),
                     ]);
@@ -246,14 +375,23 @@ class ExpenseRequestController extends Controller
         $usd = 0.0;
         $charge = ['office' => 0.0, 'agent' => 0.0];
         $status = [
-            'pending'  => ['PHP' => 0.0, 'USD' => 0.0],
-            'received' => ['PHP' => 0.0, 'USD' => 0.0],
+            'pending'       => ['PHP' => 0.0, 'USD' => 0.0],
+            'approved'      => ['PHP' => 0.0, 'USD' => 0.0],
+            'for_releasing' => ['PHP' => 0.0, 'USD' => 0.0],
+            'released'      => ['PHP' => 0.0, 'USD' => 0.0],
         ];
 
-        foreach ($requests as $request) {
-            $statusKey = $request->status === ExpenseRequest::STATUS_RECEIVED ? 'received' : 'pending';
+        foreach ($requests as $requestModel) {
+            // Cancelled transactions are rejected: they count toward nothing.
+            if ($requestModel->status === ExpenseRequest::STATUS_CANCELLED) {
+                continue;
+            }
 
-            foreach ($request->items as $item) {
+            $statusKey = in_array($requestModel->status, ['approved', 'for_releasing', 'released'], true)
+                ? $requestModel->status
+                : 'pending';
+
+            foreach ($requestModel->items as $item) {
                 $isUsd = $item->currency === 'USD';
                 $amount = (float) $item->amount;
 
@@ -273,8 +411,10 @@ class ExpenseRequestController extends Controller
             'USD'    => round($usd, 2),
             'charge' => $charge,
             'status' => [
-                'pending'  => ['PHP' => round($status['pending']['PHP'], 2), 'USD' => round($status['pending']['USD'], 2)],
-                'received' => ['PHP' => round($status['received']['PHP'], 2), 'USD' => round($status['received']['USD'], 2)],
+                'pending'       => ['PHP' => round($status['pending']['PHP'], 2), 'USD' => round($status['pending']['USD'], 2)],
+                'approved'      => ['PHP' => round($status['approved']['PHP'], 2), 'USD' => round($status['approved']['USD'], 2)],
+                'for_releasing' => ['PHP' => round($status['for_releasing']['PHP'], 2), 'USD' => round($status['for_releasing']['USD'], 2)],
+                'released'      => ['PHP' => round($status['released']['PHP'], 2), 'USD' => round($status['released']['USD'], 2)],
             ],
         ];
     }
@@ -294,36 +434,24 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * Admin-only status change (pending <-> received) + history log.
+     * Admin-only status change (pending -> approved -> for_releasing -> released,
+     * or cancelled) + history log.
      */
     public function updateStatus(Request $request, ExpenseRequest $expenseRequest): RedirectResponse
     {
         $this->authorizeAgency($expenseRequest);
-
-        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
-            abort(403, 'Only admin can change expense request status.');
-        }
+        $this->authorizeStatusChange();
 
         $validated = $request->validate([
-            'status' => ['required', 'in:' . ExpenseRequest::STATUS_PENDING . ',' . ExpenseRequest::STATUS_RECEIVED],
+            'status' => ['required', 'in:' . implode(',', ExpenseRequest::STATUSES)],
             'note'   => ['nullable', 'string'],
         ]);
 
-        $from = $expenseRequest->status;
-        $to   = $validated['status'];
+        $to = $validated['status'];
 
-        if ($from !== $to) {
-            DB::transaction(function () use ($expenseRequest, $from, $to, $request) {
-                $expenseRequest->update(['status' => $to]);
-
-                ExpenseRequestStatusHistory::create([
-                    'expense_request_id' => $expenseRequest->id,
-                    'agency_id'          => $expenseRequest->agency_id,
-                    'user_id'            => auth()->id(),
-                    'from_status'        => $from,
-                    'to_status'          => $to,
-                    'note'               => $request->input('note'),
-                ]);
+        if ($expenseRequest->status !== $to) {
+            DB::transaction(function () use ($expenseRequest, $to, $validated) {
+                $this->applyStatusChange($expenseRequest, $to, $validated['note'] ?? null);
             });
         }
 
@@ -332,35 +460,137 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * Admin-only soft delete with a mandatory reason (stored on the history row).
+     * Admin-only batch status change (Toybits 2026-08-31): one status applied to
+     * many selected requests at once via the checkboxes on the index page.
+     * Each changed request gets its own history entry + Paid-entry sync, inside
+     * a single transaction. Requests already in the target status are skipped.
      */
-    public function destroy(Request $request, ExpenseRequest $expenseRequest): RedirectResponse
+    public function bulkUpdateStatus(Request $request): RedirectResponse
     {
-        $this->authorizeAgency($expenseRequest);
-
-        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
-            abort(403, 'Only admin can delete expense requests.');
-        }
+        $this->authorizeStatusChange();
 
         $validated = $request->validate([
-            'reason' => ['required', 'string', 'max:1000'],
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer'],
+            'status' => ['required', 'in:' . implode(',', ExpenseRequest::STATUSES)],
+            'note'   => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($expenseRequest, $validated) {
-            ExpenseRequestStatusHistory::create([
-                'expense_request_id' => $expenseRequest->id,
-                'agency_id'          => $expenseRequest->agency_id,
-                'user_id'            => auth()->id(),
-                'from_status'        => $expenseRequest->status,
-                'to_status'          => 'deleted',
-                'note'               => $validated['reason'],
-            ]);
+        $to   = $validated['status'];
+        $note = $validated['note'] ?? null;
 
-            $expenseRequest->delete(); // soft delete
+        // Only the caller's own agency's requests are ever touched.
+        $requests = ExpenseRequest::where('agency_id', auth()->user()->agency_id)
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        if ($requests->isEmpty()) {
+            return redirect()->route('expense_request.index')
+                ->with('error', 'No matching expense requests selected.');
+        }
+
+        $changed = 0;
+
+        DB::transaction(function () use ($requests, $to, $note, &$changed) {
+            foreach ($requests as $expenseRequest) {
+                if ($expenseRequest->status === $to) {
+                    continue;
+                }
+                $this->applyStatusChange($expenseRequest, $to, $note);
+                $changed++;
+            }
         });
 
-        return redirect()->route('expense_request.index')
-            ->with('success', 'Expense request deleted.');
+        $message = $changed === 0
+            ? "All selected requests were already {$to}."
+            : "Updated {$changed} expense request(s) to {$to}.";
+
+        // Back to the same status tab the admin was viewing.
+        return redirect()->back()
+            ->with('success', $message);
+    }
+
+    /**
+     * Apply one status change to a single request + history entry + Paid-entry
+     * sync. Shared by the single (updateStatus) and batch (bulkUpdateStatus) paths
+     * so both stay consistent (Toybits 2026-08-31).
+     */
+    private function applyStatusChange(ExpenseRequest $expenseRequest, string $to, ?string $note): void
+    {
+        $from = $expenseRequest->status;
+
+        $expenseRequest->update(['status' => $to]);
+
+        ExpenseRequestStatusHistory::create([
+            'expense_request_id' => $expenseRequest->id,
+            'agency_id'          => $expenseRequest->agency_id,
+            'user_id'            => auth()->id(),
+            'from_status'        => $from,
+            'to_status'          => $to,
+            'note'               => $note,
+        ]);
+
+        // Approved agent-charged items become Paid entries in the agent report
+        // (Deductions & Paid tab); cancelling removes them so cancelled items
+        // don't linger (Toybits 2026-08-29).
+        $this->syncPaidEntriesFromApproval($expenseRequest, $to);
+    }
+
+    /**
+     * Only admin/super_admin may change expense request statuses (single or batch).
+     */
+    private function authorizeStatusChange(): void
+    {
+        if (! in_array(auth()->user()->user_type, ['super_admin', 'admin'])) {
+            abort(403, 'Only admin can change expense request status.');
+        }
+    }
+
+    /**
+     * On approval, agent-charged items become Paid entries in the agent report's
+     * Deductions & Paid tab (net = amount − payment, converted to PHP). On cancel,
+     * linked Paid entries are removed.
+     */
+    private function syncPaidEntriesFromApproval(ExpenseRequest $expenseRequest, string $to): void
+    {
+        if ($to === ExpenseRequest::STATUS_CANCELLED) {
+            AgentDeduction::whereIn(
+                'expense_request_item_id',
+                $expenseRequest->items()->pluck('id')
+            )->delete();
+
+            return;
+        }
+
+        if ($to !== ExpenseRequest::STATUS_APPROVED) {
+            return;
+        }
+
+        $converter = new CurrencyConverter();
+
+        foreach ($expenseRequest->items as $item) {
+            if ($item->charge !== 'agent' || ! $item->agent_id) {
+                continue; // only agent-charged items flow into the agent report
+            }
+
+            $net = (float) $item->amount - (float) ($item->payment ?? 0);
+
+            AgentDeduction::updateOrCreate(
+                ['expense_request_item_id' => $item->id],
+                [
+                    'agency_id'    => $expenseRequest->agency_id,
+                    'user_id'      => auth()->id(),
+                    'agent_id'     => $item->agent_id,
+                    'applicant_id' => $item->applicant_id,
+                    'date'         => $expenseRequest->date->toDateString(),
+                    'account'      => AgentDeduction::ACCOUNT_PAID,
+                    'amount'       => round($converter->toPhp($net, $item->currency), 2),
+                    'particular'   => $item->particular
+                        ? 'Expense #' . $expenseRequest->reference_no . ': ' . $item->particular
+                        : 'Expense #' . $expenseRequest->reference_no,
+                ]
+            );
+        }
     }
 
     /**

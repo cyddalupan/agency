@@ -92,4 +92,26 @@ class CommissionCreateTest extends TestCase
             'agency_id' => $this->agency->id,
         ]);
     }
+
+    #[Test]
+    public function store_persists_agent_id_when_provided(): void
+    {
+        $agent = \App\Models\Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('commissions.store'), [
+                'employer_id' => $this->employer->id,
+                'agent_id'    => $agent->id,
+                'amount'      => 15000,
+                'status'      => 'pending',
+            ])
+            ->assertRedirect(route('commissions.index'));
+
+        $this->assertDatabaseHas('commissions', [
+            'agent_id' => $agent->id,
+            'amount'   => 15000,
+        ]);
+    }
 }

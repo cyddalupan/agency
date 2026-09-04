@@ -36,7 +36,7 @@ class AccountController extends Controller
         $validated = $request->validate([
             'name'        => 'required|string|max:191',
             'type'        => 'required|string|in:income,expense',
-            'charge_type' => 'nullable|string|in:office,agent',
+            'charge_type' => 'nullable|string|in:office,agent,applicant',
             'parent_id'   => 'nullable|integer|exists:accounts,id',
         ]);
 
@@ -90,7 +90,7 @@ class AccountController extends Controller
         $validated = $request->validate([
             'name'        => 'required|string|max:191',
             'type'        => 'required|string|in:income,expense',
-            'charge_type' => 'nullable|string|in:office,agent',
+            'charge_type' => 'nullable|string|in:office,agent,applicant',
             'parent_id'   => 'nullable|integer|exists:accounts,id',
         ]);
 

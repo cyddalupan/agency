@@ -1,0 +1,128 @@
+@extends('layouts.app')
+
+@section('title', 'New Deduction')
+
+@section('content')
+<div class="max-w-4xl mx-auto">
+
+    <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
+        <div class="card-body p-6">
+            <h1 class="text-2xl font-bold">➕ New Deduction</h1>
+            <p class="opacity-80 mt-1">Agents Report · Tab 3 — Save Transaction</p>
+        </div>
+    </div>
+
+    @if($errors->any())
+        <div class="alert alert-error shadow-md mb-6">
+            <ul class="list-disc list-inside text-sm">
+                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Applicant belongs to the selected Agent (same cascade as Receivable) --}}
+    <div class="bg-info/10 border border-info/40 text-info-content rounded-lg p-4 mb-5 text-sm">
+        <p class="font-semibold">ℹ️ Applicant belongs to the selected Agent</p>
+        <ul class="list-disc list-inside mt-2 opacity-90">
+            <li>Choose an <strong>Agent</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that Agent.</li>
+            <li>If no applicant appears for the chosen Agent, that Agent has no applicants linked yet.</li>
+        </ul>
+    </div>
+
+    <form method="POST" action="{{ route('agent_report.deduction.store') }}" class="card bg-base-100 shadow-md">
+        @csrf
+
+        <div class="card-body space-y-6">
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">📋 Transaction Details</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Date *</span></label>
+                        <input type="date" name="date" class="input input-bordered w-full" value="{{ old('date', now()->toDateString()) }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Amount * <span class="opacity-50 font-normal">(Amount in Peso)</span></span></label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm opacity-60 font-semibold">₱</span>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="input input-bordered w-full pl-8" value="{{ old('amount') }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Agent / Applicant --}}
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">👤 Agent & Applicant</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Agent *</span></label>
+                        <select name="agent_id" id="agent_id" class="select select-bordered w-full" required>
+                            <option value="">Select agent…</option>
+                            @foreach($agents as $a)
+                                <option value="{{ $a->id }}" {{ old('agent_id') == $a->id ? 'selected' : '' }}>
+                                    {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Applicant (from agent)</span></label>
+                        <select name="applicant_id" id="applicant_id" class="select select-bordered w-full">
+                            <option value="">Select applicant…</option>
+                            @foreach($applicants as $ap)
+                                <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ old('applicant_id') == $ap->id ? 'selected' : '' }}>
+                                    {{ $ap->last_name }}, {{ $ap->first_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p id="applicant_empty_note" class="hidden mt-1 text-xs text-warning font-medium">
+                            No applicants are assigned to this selected Agent yet.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label"><span class="label-text">Particular / Description</span></label>
+                <textarea name="particular" class="textarea textarea-bordered w-full" rows="2" placeholder="Details…">{{ old('particular') }}</textarea>
+            </div>
+
+            <div class="flex gap-3 pt-4 border-t border-base-200">
+                <button type="submit" class="btn btn-primary">💾 Save Transaction</button>
+                <a href="{{ route('agent_report.index', ['tab' => 'deductions']) }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const agentSel = document.getElementById('agent_id');
+            const appSel = document.getElementById('applicant_id');
+            const emptyNote = document.getElementById('applicant_empty_note');
+
+            function filterApplicants() {
+                const agentId = agentSel.value;
+                let visible = 0;
+                Array.from(appSel.options).forEach(function (opt) {
+                    if (!opt.value) return;
+                    const shown = agentId === '' || opt.dataset.agent === agentId;
+                    opt.hidden = !shown;
+                    if (shown) visible++;
+                });
+                const sel = appSel.options[appSel.selectedIndex];
+                if (sel && sel.selected && sel.hidden) {
+                    appSel.value = '';
+                }
+                if (agentId && visible === 0) {
+                    emptyNote.classList.remove('hidden');
+                } else {
+                    emptyNote.classList.add('hidden');
+                }
+            }
+            agentSel.addEventListener('change', filterApplicants);
+            filterApplicants();
+        });
+    </script>
+
+</div>
+@endsection

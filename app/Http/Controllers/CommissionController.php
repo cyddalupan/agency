@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\Commission;
 use App\Models\Employer;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +13,7 @@ class CommissionController extends Controller
 {
     public function index(): View
     {
-        $commissions = Commission::with(['employer'])
+        $commissions = Commission::with(['employer', 'agent'])
             ->latest()
             ->paginate(15);
 
@@ -25,13 +26,18 @@ class CommissionController extends Controller
             ->latest()
             ->get();
 
-        return view('commissions.create', compact('employers'));
+        $agents = Agent::where('agency_id', auth()->user()->agency_id)
+            ->orderBy('name')
+            ->get();
+
+        return view('commissions.create', compact('employers', 'agents'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'employer_id' => 'nullable|exists:employers,id',
+            'agent_id'    => 'nullable|exists:agents,id',
             'amount'      => 'required|numeric|min:0.01',
             'paid_amount' => 'nullable|numeric|min:0',
             'status'      => 'nullable|string|in:pending,partial,paid',
@@ -61,13 +67,18 @@ class CommissionController extends Controller
             ->latest()
             ->get();
 
-        return view('commissions.edit', compact('commission', 'employers'));
+        $agents = Agent::where('agency_id', auth()->user()->agency_id)
+            ->orderBy('name')
+            ->get();
+
+        return view('commissions.edit', compact('commission', 'employers', 'agents'));
     }
 
     public function update(Request $request, Commission $commission): RedirectResponse
     {
         $validated = $request->validate([
             'employer_id' => 'nullable|exists:employers,id',
+            'agent_id'    => 'nullable|exists:agents,id',
             'amount'      => 'required|numeric|min:0.01',
             'paid_amount' => 'nullable|numeric|min:0',
             'status'      => 'nullable|string|in:pending,partial,paid',

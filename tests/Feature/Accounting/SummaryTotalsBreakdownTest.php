@@ -71,14 +71,14 @@ class SummaryTotalsBreakdownTest extends TestCase
     // ---------- Expense & Payments (Tab 2) ----------
 
     #[Test]
-    public function expense_request_summary_splits_pending_and_received(): void
+    public function expense_request_summary_splits_pending_and_released(): void
     {
         // Pending: office PHP 1000.00
         $this->makeExpenseRequest(ExpenseRequest::STATUS_PENDING, [
             ['charge' => 'office', 'currency' => 'PHP', 'amount' => 1000.00],
         ]);
-        // Received: agent PHP 500.00
-        $this->makeExpenseRequest(ExpenseRequest::STATUS_RECEIVED, [
+        // Released: agent PHP 500.00
+        $this->makeExpenseRequest(ExpenseRequest::STATUS_RELEASED, [
             ['charge' => 'agent', 'currency' => 'PHP', 'amount' => 500.00],
         ]);
 

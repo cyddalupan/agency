@@ -26,6 +26,11 @@ class SensitiveActionLogger
         $request = request();
         $currentUser = $request?->user();
 
+        // activity_logs.user_id FK references the users table — only set it
+        // for real User actors. Applicant/Employer/Sponsor actors are captured
+        // via subject_type/subject_id instead.
+        $actorUserId = $currentUser instanceof User ? $currentUser->id : null;
+
         // Collect metadata
         $meta = $metadata ?? [];
         if (!isset($meta['ip']) && $request) {
@@ -37,7 +42,7 @@ class SensitiveActionLogger
 
         return ActivityLog::create([
             'agency_id'    => $agencyId ?? $currentUser?->agency_id ?? self::findAgencyFromSubject($subject),
-            'user_id'      => $userId ?? $currentUser?->id,
+            'user_id'      => $userId ?? $actorUserId,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id'   => $subject?->getKey(),
             'action'       => $action,

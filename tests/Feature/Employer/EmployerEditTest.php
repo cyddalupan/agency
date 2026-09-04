@@ -49,7 +49,7 @@ class EmployerEditTest extends TestCase
             ->get(route('employers.edit', $employer));
 
         $response->assertOk();
-        $response->assertSee('Edit Employer');
+        $response->assertSee('Edit FRA');
         $response->assertSee($employer->name);
     }
 

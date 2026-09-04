@@ -50,6 +50,13 @@
                 <p class="text-sm opacity-70">Choose which positions, statuses, and sources appear on the Add Applicant form.</p>
             </div>
         </a>
+
+        <a href="{{ route('settings.applicants-table-columns') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">📊 Applicants Table Columns</h2>
+                <p class="text-sm opacity-70">Choose which columns appear on the Applicants list for your agency.</p>
+            </div>
+        </a>
     </div>
 </div>
 @endsection

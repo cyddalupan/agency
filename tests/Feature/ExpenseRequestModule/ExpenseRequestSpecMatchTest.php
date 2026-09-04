@@ -123,10 +123,10 @@ class ExpenseRequestSpecMatchTest extends TestCase
         $this->assertSame($applicant->id, (int) $item->applicant_id);
     }
 
-    // ---------- EVIDENCE: create page offers Main Accounts as the single picker ----------
+    // ---------- EVIDENCE: create page offers the Sub Account picker (change #5) ----------
 
     #[Test]
-    public function create_page_offers_mains_as_the_single_account_picker(): void
+    public function create_page_offers_sub_accounts_as_the_picker(): void
     {
         $mainOffice = Account::factory()->create([
             'agency_id' => $this->agency->id, 'parent_id' => null,
@@ -145,13 +145,13 @@ class ExpenseRequestSpecMatchTest extends TestCase
         $mains = $response->viewData('mains');
         $this->assertTrue($mains->contains('id', $mainOffice->id));
 
-        // The single Main Account picker lists Mains with their charge offset...
+        // The restored Sub Account picker lists sub-accounts gated by charge...
         $html = $response->getContent();
-        $this->assertStringContainsString('data-main-group="1"', $html);
+        $this->assertStringContainsString('lines[0][sub_account_id]', $html);
         $this->assertStringContainsString('data-offset="' . $mainOffice->charge_type . '"', $html);
 
-        // ...and the sub-account picker (account_id / data-main cascade) is gone.
-        $this->assertStringNotContainsString('lines[0][account_id]', $html);
+        // ...and the user-facing Main Account picker is gone (main comes from Charge).
+        $this->assertStringNotContainsString('lines[0][main_account_id]', $html);
         $this->assertStringNotContainsString('data-main="', $html);
     }
 
@@ -186,6 +186,7 @@ class ExpenseRequestSpecMatchTest extends TestCase
             'lines'     => [
                 [
                     'charge'          => $sub->charge_type,
+                    'sub_account_id'  => $sub->id,
                     'main_account_id' => $main->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,

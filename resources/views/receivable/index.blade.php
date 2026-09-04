@@ -10,20 +10,11 @@
         <div class="card-body p-6 flex flex-row items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold">🧾 Receivable</h1>
-                <p class="opacity-80 mt-1">Receivable — Tab 1</p>
+                <p class="opacity-80 mt-1">Track and manage receivables</p>
             </div>
             <a href="{{ route('receivable.create') }}" class="btn btn-secondary btn-sm shadow-md">+ New Receivable</a>
         </div>
     </div>
-
-    {{-- Tab switcher: Tab 1 Receivable / Tab 2 Expenses & Payments --}}
-    @if(in_array(auth()->user()->user_type ?? '', ['super_admin', 'admin', 'billing']))
-        <div class="tabs tabs-boxed bg-base-200/60 mb-6 w-fit">
-            <span class="tab tab-active text-sm font-semibold">Tab 1 · Receivable</span>
-            <a href="{{ route('expense_request.index') }}" class="tab text-sm">Tab 2 · Expenses &amp; Payments</a>
-            <a href="{{ route('agent_report.index') }}" class="tab text-sm">Tab 3 · Agents Report</a>
-        </div>
-    @endif
 
     {{-- Summary --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -56,10 +47,29 @@
         <div class="card-body">
             <h3 class="font-bold mb-3">Transactions</h3>
             @if($receivables->count())
+                @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                    {{-- Batch status update toolbar (Toybits 2026-08-31) --}}
+                    <form method="POST" action="{{ route('receivable.bulk_status') }}" id="bulk-status-form" class="mb-3">
+                        @csrf
+                        <div class="flex flex-wrap items-center gap-2 bg-base-200/60 rounded-lg px-3 py-2">
+                            <span class="text-sm font-semibold">⚡ Bulk update:</span>
+                            <select name="status" class="select select-sm select-bordered" required>
+                                <option value="" disabled selected>Change status to…</option>
+                                <option value="{{ \App\Models\Receivable::STATUS_PENDING }}">Pending</option>
+                                <option value="{{ \App\Models\Receivable::STATUS_RECEIVED }}">Received</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary" id="bulk-apply-btn" disabled>Apply to selected</button>
+                            <span id="bulk-selected-count" class="text-sm opacity-60 ml-auto">0 selected</span>
+                        </div>
+                    </form>
+                @endif
                 <div class="overflow-x-auto">
                     <table class="table table-sm">
                         <thead>
                             <tr class="bg-base-200/70">
+                                @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                                    <th class="w-8"><input type="checkbox" id="select-all" class="checkbox checkbox-sm checkbox-primary" title="Select all"></th>
+                                @endif
                                 <th>Code</th>
                                 <th>Date</th>
                                 <th>User</th>
@@ -79,6 +89,11 @@
                         <tbody>
                             @foreach($receivables as $r)
                             <tr class="{{ $r->status === 'received' ? 'opacity-70' : '' }}">
+                                @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                                    <td>
+                                        <input type="checkbox" name="ids[]" value="{{ $r->id }}" form="bulk-status-form" class="checkbox checkbox-sm checkbox-primary request-checkbox" title="Select {{ $r->code }}">
+                                    </td>
+                                @endif
                                 <td class="font-mono font-semibold">{{ $r->code }}</td>
                                 <td>{{ $r->date->format('M d, Y') }}</td>
                                 <td>{{ $r->encoder->name ?? '—' }}</td>
@@ -104,35 +119,7 @@
                                 <td>{{ $r->type ?? '—' }}</td>
                                 <td>{{ $r->debit_account ?? '—' }}</td>
                                 <td>
-                                    <div class="flex items-center gap-1">
-                                        <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
-                                        @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
-                                            <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Delete"
-                                                onclick="document.getElementById('delete-receivable-{{ $r->id }}').showModal()">🗑️</button>
-                                        @endif
-                                    </div>
-                                    @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
-                                        <dialog id="delete-receivable-{{ $r->id }}" class="modal">
-                                            <div class="modal-box">
-                                                <h3 class="font-bold text-lg mb-2">Delete Receivable</h3>
-                                                <p>Are you sure you want to delete <strong>{{ $r->code }}</strong>?</p>
-                                                <p class="text-sm opacity-60 mt-2">A reason is required and will be recorded in the history log.</p>
-                                                <form method="POST" action="{{ route('receivable.destroy', $r->id) }}" class="mt-4 space-y-3">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <textarea name="reason" rows="3" class="textarea textarea-bordered w-full"
-                                                        placeholder="Reason for deletion (required)" required></textarea>
-                                                    <div class="modal-action">
-                                                        <button class="btn btn-error">🗑️ Delete</button>
-                                                        <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-receivable-{{ $r->id }}').close()">Cancel</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                            <form method="dialog" class="modal-backdrop">
-                                                <button>close</button>
-                                            </form>
-                                        </dialog>
-                                    @endif
+                                    <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                 </td>
                             </tr>
                             @endforeach
@@ -147,3 +134,36 @@
 
 </div>
 @endsection
+
+@push('scripts')
+@if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+<script>
+// Batch status update (Toybits 2026-08-31): select-all toggle + live selected count.
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll = document.getElementById('select-all');
+    if (! selectAll) return;
+
+    const boxes = document.querySelectorAll('.request-checkbox');
+    const countEl = document.getElementById('bulk-selected-count');
+    const applyBtn = document.getElementById('bulk-apply-btn');
+
+    function update() {
+        const checked = document.querySelectorAll('.request-checkbox:checked').length;
+        if (countEl) countEl.textContent = checked + ' selected';
+        if (applyBtn) applyBtn.disabled = checked === 0;
+        if (selectAll) {
+            selectAll.checked = checked === boxes.length && boxes.length > 0;
+            selectAll.indeterminate = checked > 0 && checked < boxes.length;
+        }
+    }
+
+    selectAll.addEventListener('change', function () {
+        boxes.forEach(function (b) { b.checked = selectAll.checked; });
+        update();
+    });
+    boxes.forEach(function (b) { b.addEventListener('change', update); });
+    update();
+});
+</script>
+@endif
+@endpush

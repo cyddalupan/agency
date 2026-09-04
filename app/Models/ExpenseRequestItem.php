@@ -18,13 +18,15 @@ class ExpenseRequestItem extends Model
         'country_id',
         'currency',      // PHP|USD
         'amount',
+        'payment',       // already paid to them; net = amount - payment
         'account_id',
         'particular',
         'file_path',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount'  => 'decimal:2',
+        'payment' => 'decimal:2',
     ];
 
     public function expenseRequest(): BelongsTo

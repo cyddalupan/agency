@@ -33,6 +33,7 @@
                         <tr class="bg-base-200/80">
                             <th>ID</th>
                             <th>🏢 Employer</th>
+                            <th>🧑‍💼 Agent</th>
                             <th>🏷️ Type</th>
                             <th>💰 Amount</th>
                             <th>💵 Paid</th>
@@ -51,6 +52,13 @@
                                     <a href="{{ route('employers.show', $commission->employer) }}" class="link link-primary">
                                         {{ $commission->employer->name }}
                                     </a>
+                                @else
+                                    <span class="opacity-40">—</span>
+                                @endif
+                            </td>
+                            <td class="text-sm">
+                                @if($commission->agent)
+                                    {{ $commission->agent->name }}
                                 @else
                                     <span class="opacity-40">—</span>
                                 @endif

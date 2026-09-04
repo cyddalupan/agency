@@ -33,110 +33,121 @@
     <form method="POST" action="{{ route('receivable.store') }}" class="card bg-base-100 shadow-md">
         @csrf
 
-        <div class="card-body">
+        <div class="card-body space-y-6">
             {{-- Row: Code / Date / Ref# --}}
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Code</span></label>
-                    <input type="text" class="input input-bordered font-mono" value="{{ $code }}" disabled>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Date *</span></label>
-                    <input type="date" name="date" class="input input-bordered" value="{{ old('date', now()->toDateString()) }}" required>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Ref# / AR#</span></label>
-                    <input type="text" name="ref_ar" class="input input-bordered" value="{{ old('ref_ar') }}" placeholder="AR-1001">
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">📋 Transaction Details</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Code</span></label>
+                        <input type="text" class="input input-bordered w-full font-mono" value="{{ $code }}" disabled>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Date *</span></label>
+                        <input type="date" name="date" class="input input-bordered w-full" value="{{ old('date', now()->toDateString()) }}" required>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Ref# / AR#</span></label>
+                        <input type="text" name="ref_ar" class="input input-bordered w-full" value="{{ old('ref_ar') }}" placeholder="AR-1001">
+                    </div>
                 </div>
             </div>
 
             {{-- Agent / Applicant --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Agent * (all branches)</span></label>
-                    <select name="agent_id" id="agent_id" class="select select-bordered" required>
-                        <option value="">Select agent…</option>
-                        @foreach($agents as $a)
-                            <option value="{{ $a->id }}" data-branch="{{ $a->branch->name ?? '' }}" {{ old('agent_id') == $a->id ? 'selected' : '' }}>
-                                {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Applicant (from agent)</span></label>
-                    <select name="applicant_id" id="applicant_id" class="select select-bordered">
-                        <option value="">Select applicant…</option>
-                        @foreach($applicants as $ap)
-                            <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ old('applicant_id') == $ap->id ? 'selected' : '' }}>
-                                {{ $ap->last_name }}, {{ $ap->first_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p id="applicant_empty_note" class="hidden mt-1 text-xs text-warning font-medium">
-                        No applicants are assigned to this selected Agent yet.
-                    </p>
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">👤 Agent & Applicant</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Agent * (all branches)</span></label>
+                        <select name="agent_id" id="agent_id" class="select select-bordered w-full" required>
+                            <option value="">Select agent…</option>
+                            @foreach($agents as $a)
+                                <option value="{{ $a->id }}" data-branch="{{ $a->branch->name ?? '' }}" {{ old('agent_id') == $a->id ? 'selected' : '' }}>
+                                    {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Applicant (from agent)</span></label>
+                        <select name="applicant_id" id="applicant_id" class="select select-bordered w-full">
+                            <option value="">Select applicant…</option>
+                            @foreach($applicants as $ap)
+                                <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ old('applicant_id') == $ap->id ? 'selected' : '' }}>
+                                    {{ $ap->last_name }}, {{ $ap->first_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p id="applicant_empty_note" class="hidden mt-1 text-xs text-warning font-medium">
+                            No applicants are assigned to this selected Agent yet.
+                        </p>
+                    </div>
                 </div>
             </div>
 
             {{-- Amount / Account --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Amount *</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text">₱</span>
-                        <input type="number" step="0.01" min="0.01" name="amount" class="input input-bordered flex-1" value="{{ old('amount') }}" required>
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">💰 Amount & Account</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Amount *</span></label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm opacity-60 font-semibold">₱</span>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="input input-bordered w-full pl-8" value="{{ old('amount') }}" required>
+                        </div>
                     </div>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Account</span></label>
-                    <select name="account" class="select select-bordered">
-                        <option value="">Select account…</option>
-                        @foreach($accounts as $ac)
-                            <option value="{{ $ac }}" {{ old('account') == $ac ? 'selected' : '' }}>{{ $ac }}</option>
-                        @endforeach
-                    </select>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Account</span></label>
+                        <select name="account" class="select select-bordered w-full">
+                            <option value="">Select account…</option>
+                            @foreach($accounts as $ac)
+                                <option value="{{ $ac }}" {{ old('account') == $ac ? 'selected' : '' }}>{{ $ac }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {{-- Payment Information --}}
-            <h3 class="font-bold text-sm opacity-70 mt-2 mb-2">Payment Information</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Deposit / Debit Account</span></label>
-                    <select name="debit_account" class="select select-bordered">
-                        <option value="">Select…</option>
-                        @foreach($debitAccounts as $d)
-                            <option value="{{ $d }}" {{ old('debit_account') == $d ? 'selected' : '' }}>{{ $d }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Type</span></label>
-                    <select name="type" class="select select-bordered">
-                        <option value="">Select…</option>
-                        @foreach($types as $t)
-                            <option value="{{ $t }}" {{ old('type') == $t ? 'selected' : '' }}>{{ $t }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text">Mode of Payment</span></label>
-                    <select name="mode" class="select select-bordered">
-                        <option value="">Select…</option>
-                        @foreach($modes as $m)
-                            <option value="{{ $m }}" {{ old('mode') == $m ? 'selected' : '' }}>{{ $m }}</option>
-                        @endforeach
-                    </select>
+            <div>
+                <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">💳 Payment Information</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Deposit / Debit Account</span></label>
+                        <select name="debit_account" class="select select-bordered w-full">
+                            <option value="">Select…</option>
+                            @foreach($debitAccounts as $d)
+                                <option value="{{ $d }}" {{ old('debit_account') == $d ? 'selected' : '' }}>{{ $d }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Type</span></label>
+                        <select name="type" class="select select-bordered w-full">
+                            <option value="">Select…</option>
+                            @foreach($types as $t)
+                                <option value="{{ $t }}" {{ old('type') == $t ? 'selected' : '' }}>{{ $t }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text">Mode of Payment</span></label>
+                        <select name="mode" class="select select-bordered w-full">
+                            <option value="">Select…</option>
+                            @foreach($modes as $m)
+                                <option value="{{ $m }}" {{ old('mode') == $m ? 'selected' : '' }}>{{ $m }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-control mb-4">
+            <div class="form-control">
                 <label class="label"><span class="label-text">Particular</span></label>
-                <textarea name="particular" class="textarea textarea-bordered" rows="2" placeholder="Details…">{{ old('particular') }}</textarea>
+                <textarea name="particular" class="textarea textarea-bordered w-full" rows="2" placeholder="Details…">{{ old('particular') }}</textarea>
             </div>
 
-            <div class="flex gap-3">
+            <div class="flex gap-3 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">💾 Save Transaction</button>
                 <a href="{{ route('receivable.index') }}" class="btn btn-ghost">Cancel</a>
             </div>

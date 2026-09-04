@@ -10,7 +10,7 @@
             {{-- Charge --}}
             <div class="form-control">
                 <label class="label"><span class="label-text">Charge *</span></label>
-                <select name="lines[{{ $index }}][charge]" class="select select-bordered select-sm">
+                <select name="lines[{{ $index }}][charge]" class="select select-bordered select-sm" required>
                     <option value="office" {{ ($line['charge'] ?? '') === 'office' ? 'selected' : '' }}>Office</option>
                     <option value="agent" {{ ($line['charge'] ?? '') === 'agent' ? 'selected' : '' }}>Agent</option>
                 </select>
@@ -38,7 +38,7 @@
             <div class="form-control">
                 <label class="label"><span class="label-text">Country</span></label>
                 <select name="lines[{{ $index }}][country_id]" class="select select-bordered select-sm">
-                    <option value="">—</option>
+                    <option value="">N/A</option>
                     @foreach($countries as $c)
                         <option value="{{ $c->id }}" {{ ($line['country_id'] ?? '') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                     @endforeach
@@ -51,14 +51,22 @@
                 <input type="text" name="lines[{{ $index }}][particular]" class="input input-bordered input-sm"
                        value="{{ $line['particular'] ?? '' }}" placeholder="Description">
             </div>
+
+            {{-- Payments (already paid to them); net = amount - payment --}}
+            <div class="form-control">
+                <label class="label"><span class="label-text">Payments</span></label>
+                <input type="number" step="0.01" min="0" name="lines[{{ $index }}][payment]"
+                       class="input input-bordered input-sm payment-input"
+                       value="{{ $line['payment'] ?? '' }}" placeholder="0.00">
+            </div>
         </div>
 
-        {{-- Agent (only for charge=agent) --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" data-agent-row="{{ $index }}">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {{-- Agent Name (shown for both Charge types) --}}
             <div class="form-control">
                 <label class="label"><span class="label-text">Agent Name</span></label>
                 <select name="lines[{{ $index }}][agent_id]" class="select select-bordered select-sm">
-                    <option value="">—</option>
+                    <option value="">N/A</option>
                     @foreach($agents as $a)
                         <option value="{{ $a->id }}" {{ ($line['agent_id'] ?? '') == $a->id ? 'selected' : '' }}>
                             {{ $a->name }}{{ $a->branch ? ' (' . $a->branch->name . ')' : '' }}
@@ -66,16 +74,29 @@
                     @endforeach
                 </select>
             </div>
+
+            {{-- Applicant (connected to Agent; cascades by selected Agent) --}}
+            <div class="form-control">
+                <label class="label"><span class="label-text">Applicant</span></label>
+                <select name="lines[{{ $index }}][applicant_id]" class="select select-bordered select-sm">
+                    <option value="">N/A</option>
+                    @foreach($applicants as $ap)
+                        <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ ($line['applicant_id'] ?? '') == $ap->id ? 'selected' : '' }}>
+                            {{ $ap->last_name }}, {{ $ap->first_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
-        {{-- Applicant (always available, even when Charge = office) --}}
+        {{-- Account Type (sub account): gated by Charge; main is auto-derived from charge --}}
         <div class="form-control mt-1">
-            <label class="label"><span class="label-text">Applicant</span></label>
-            <select name="lines[{{ $index }}][applicant_id]" class="select select-bordered select-sm">
-                <option value="">—</option>
-                @foreach($applicants as $ap)
-                    <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ ($line['applicant_id'] ?? '') == $ap->id ? 'selected' : '' }}>
-                        {{ $ap->last_name }}, {{ $ap->first_name }}
+            <label class="label"><span class="label-text">Account Type *</span></label>
+            <select name="lines[{{ $index }}][sub_account_id]" class="select select-bordered select-sm" required>
+                <option value="">- select -</option>
+                @foreach($allAccounts as $acct)
+                    <option value="{{ $acct->id }}" data-offset="{{ $acct->charge_type }}" {{ ($line['sub_account_id'] ?? '') == $acct->id ? 'selected' : '' }}>
+                        {{ $acct->name }}
                     </option>
                 @endforeach
             </select>

@@ -34,7 +34,7 @@
             margin: 6mm 0 3mm;
         }
 
-        table.data { width: 100%; border-collapse: collapse; font-size: 8.5pt; table-layout: fixed; }
+        table.data { width: 100%; border-collapse: collapse; font-size: 8pt; table-layout: fixed; }
         table.data th {
             background: #1a365d;
             color: #fff;
@@ -76,30 +76,32 @@
     {{-- ── HEADER ── --}}
     <table class="header">
         <tr>
-            <td class="label">Date Applied</td>
+            <td class="label">Date Applied:</td>
             <td>{{ $applicant->created_at?->format('Y-m-d') ?? '—' }}</td>
-            <td class="label">Name - Applicant</td>
+            <td class="label">Name - Applicant:</td>
             <td>{{ $applicant->full_name }}</td>
         </tr>
         <tr>
-            <td class="label">Agent</td>
+            <td class="label">Agent:</td>
             <td>{{ $applicant->agent?->name ?? '—' }}</td>
-            <td class="label">Branch</td>
+            <td class="label">Branch:</td>
             <td>{{ $applicant->branch?->name ?? '—' }}</td>
         </tr>
     </table>
 
     {{-- ── STATEMENT OF ACCOUNT ── --}}
     <h2 class="section">Statement of Account</h2>
+    @php $converter = app(\App\Services\CurrencyConverter::class); @endphp
     <table class="data">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Account Type</th>
-                <th>Description</th>
-                <th>Currency</th>
-                <th>Charge To</th>
-                <th class="num">Amount</th>
+                <th style="width:6%">Date</th>
+                <th style="width:10%">Account Type</th>
+                <th style="width:44%">Description</th>
+                <th style="width:8%">Charge To</th>
+                <th style="width:7%">Currency</th>
+                <th style="width:12%;text-align:center">Amount</th>
+                <th style="width:13%;text-align:center">Converted</th>
             </tr>
         </thead>
         <tbody>
@@ -108,24 +110,18 @@
                     <td>{{ $item->expenseRequest?->date?->format('Y-m-d') ?? '—' }}</td>
                     <td>{{ $item->account?->name ?? '—' }}</td>
                     <td>{{ $item->particular ?? '—' }}</td>
-                    <td>{{ $item->currency }}</td>
                     <td>{{ $item->charge === 'office' ? 'Office' : 'Agent' }}</td>
+                    <td>{{ $item->currency }}</td>
                     <td class="num">{{ number_format((float) $item->amount, 2) }}</td>
+                    <td class="num">{{ number_format($converter->toPhp((float) $item->amount, (string) $item->currency), 2) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="muted">No expenses recorded.</td></tr>
+                <tr><td colspan="7" class="muted">No expenses recorded.</td></tr>
             @endforelse
         </tbody>
         @if ($statementItems->isNotEmpty())
-            @foreach ($statementTotals as $currency => $total)
-                <tr class="total-row">
-                    <td colspan="4">Total - {{ $currency }}</td>
-                    <td>Total - per column</td>
-                    <td class="num">{{ number_format($total, 2) }}</td>
-                </tr>
-            @endforeach
             <tr class="total-row">
-                <td colspan="5">Total - Total of all column</td>
+                <td colspan="6" class="num">TOTAL</td>
                 <td class="num">{{ number_format($statementGrandTotal, 2) }}</td>
             </tr>
         @endif
@@ -136,12 +132,13 @@
     <table class="data">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Account Type</th>
-                <th>Description</th>
-                <th>Currency</th>
-                <th class="num">Amount</th>
+                <th style="width:6%">Date</th>
+                <th style="width:8%">Status</th>
+                <th style="width:10%">Account Type</th>
+                <th style="width:44%">Description</th>
+                <th style="width:7%">Currency</th>
+                <th style="width:12%;text-align:center">Amount</th>
+                <th style="width:13%;text-align:center">Converted</th>
             </tr>
         </thead>
         <tbody>
@@ -153,14 +150,15 @@
                     <td>{{ $item->particular ?? '—' }}</td>
                     <td>{{ $item->currency }}</td>
                     <td class="num">{{ number_format((float) $item->amount, 2) }}</td>
+                    <td class="num">{{ number_format($converter->toPhp((float) $item->amount, (string) $item->currency), 2) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="muted">No agent expenses recorded.</td></tr>
+                <tr><td colspan="7" class="muted">No agent expenses recorded.</td></tr>
             @endforelse
         </tbody>
         @if ($agentItems->isNotEmpty())
             <tr class="total-row">
-                <td colspan="5">Total - All amounts</td>
+                <td colspan="6" class="num">TOTAL</td>
                 <td class="num">{{ number_format($agentGrandTotal, 2) }}</td>
             </tr>
         @endif

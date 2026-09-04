@@ -85,7 +85,7 @@ class ExpenseRequestLayoutAndRolesTest extends TestCase
         $response->assertOk()
             ->assertSee('grid grid-cols-1 md:grid-cols-3', false)
             ->assertSee('PHP Total')
-            ->assertSee('Received');
+            ->assertSee('Released');
     }
 
     #[Test]

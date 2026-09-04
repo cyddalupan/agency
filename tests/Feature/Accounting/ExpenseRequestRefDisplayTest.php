@@ -40,7 +40,7 @@ class ExpenseRequestRefDisplayTest extends TestCase
         ]);
     }
 
-    private function makeRequestWithItems(string $ref, array $items): ExpenseRequest
+    private function makeRequestWithItems(string $ref, array $items, ?string $date = null): ExpenseRequest
     {
         $account = Account::factory()->create(['agency_id' => $this->agency->id]);
 
@@ -48,7 +48,7 @@ class ExpenseRequestRefDisplayTest extends TestCase
             'agency_id'    => $this->agency->id,
             'user_id'      => $this->billing->id,
             'reference_no' => $ref,
-            'date'         => now()->toDateString(),
+            'date'         => $date ?? now()->toDateString(),
             'status'       => ExpenseRequest::STATUS_PENDING,
         ]);
 
@@ -96,15 +96,18 @@ class ExpenseRequestRefDisplayTest extends TestCase
     #[Test]
     public function request_level_date_is_not_repeated_per_line_item(): void
     {
-        $date = '2026-08-12';
-        $this->makeRequestWithItems('2001', [
+        $request = $this->makeRequestWithItems('2001', [
             ['charge' => 'office', 'currency' => 'PHP', 'amount' => 1000.00],
             ['charge' => 'agent', 'currency' => 'PHP', 'amount' => 500.00],
         ]);
 
+        // Index renders the request-level datetime column from created_at
+        // (Y-m-d H:i) — it must appear exactly once, not once per line item.
+        $expected = $request->created_at->format('Y-m-d H:i');
+
         $content = $this->actingAs($this->billing)->get(route('expense_request.index'))->getContent();
 
-        $this->assertSame(1, substr_count($content, '>'.$date.'<'));
+        $this->assertSame(1, substr_count($content, '>'.$expected.'<'));
     }
 
     #[Test]

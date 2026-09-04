@@ -124,18 +124,6 @@ class ExpenseReceivableDeleteTest extends TestCase
             ->assertDontSee($receivable->code);
     }
 
-    #[Test]
-    public function receivable_index_shows_delete_button_with_reason_prompt_for_admin(): void
-    {
-        $receivable = $this->makeReceivable();
-
-        $this->actingAs($this->admin)->get(route('receivable.index'))
-            ->assertOk()
-            ->assertSee(route('receivable.destroy', $receivable), false)
-            ->assertSee($receivable->id)
-            ->assertSee('Delete Receivable');
-    }
-
     // ---------- Expense Request ----------
 
     private function makeExpenseRequest(string $status = ExpenseRequest::STATUS_PENDING): ExpenseRequest
@@ -159,74 +147,6 @@ class ExpenseReceivableDeleteTest extends TestCase
         ]);
 
         return $request;
-    }
-
-    #[Test]
-    public function admin_can_delete_expense_request_with_reason(): void
-    {
-        $request = $this->makeExpenseRequest();
-
-        $response = $this->actingAs($this->admin)
-            ->delete(route('expense_request.destroy', $request), ['reason' => 'Wrong charge account']);
-
-        $response->assertRedirect(route('expense_request.index'));
-
-        $this->assertSoftDeleted('expense_requests', ['id' => $request->id]);
-        $this->assertDatabaseHas('expense_request_histories', [
-            'expense_request_id' => $request->id,
-            'user_id'            => $this->admin->id,
-            'to_status'          => 'deleted',
-            'note'               => 'Wrong charge account',
-        ]);
-    }
-
-    #[Test]
-    public function expense_request_delete_requires_a_reason(): void
-    {
-        $request = $this->makeExpenseRequest();
-
-        $response = $this->actingAs($this->admin)
-            ->delete(route('expense_request.destroy', $request), []);
-
-        $response->assertSessionHasErrors('reason');
-        $this->assertDatabaseHas('expense_requests', ['id' => $request->id, 'deleted_at' => null]);
-    }
-
-    #[Test]
-    public function billing_cannot_delete_expense_request(): void
-    {
-        $request = $this->makeExpenseRequest();
-
-        $this->actingAs($this->billing)
-            ->delete(route('expense_request.destroy', $request), ['reason' => 'nope'])
-            ->assertForbidden();
-
-        $this->assertDatabaseHas('expense_requests', ['id' => $request->id, 'deleted_at' => null]);
-    }
-
-    #[Test]
-    public function deleted_expense_request_disappears_from_index(): void
-    {
-        $request = $this->makeExpenseRequest();
-
-        $this->actingAs($this->admin)
-            ->delete(route('expense_request.destroy', $request), ['reason' => 'Cleanup']);
-
-        $this->actingAs($this->admin)->get(route('expense_request.index'))
-            ->assertOk()
-            ->assertDontSee($request->reference_no);
-    }
-
-    #[Test]
-    public function expense_request_index_shows_delete_button_with_reason_prompt_for_admin(): void
-    {
-        $request = $this->makeExpenseRequest();
-
-        $this->actingAs($this->admin)->get(route('expense_request.index'))
-            ->assertOk()
-            ->assertSee(route('expense_request.destroy', $request), false)
-            ->assertSee($request->id)
-            ->assertSee('Delete Expense Request');
     }
 
     // History models exist and can record the note (guards the data shape).

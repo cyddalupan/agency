@@ -45,7 +45,7 @@ class SubTableController extends Controller
                 'status'         => 'nullable|string|in:pending,submitted,approved,rejected',
                 'submitted_date' => 'nullable|date',
                 'approved_date'  => 'nullable|date',
-                'file'           => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:2048',
+                'file'           => 'nullable|file|mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf|max:2048',
                 'file_path'      => 'nullable|string|max:255',
                 'remarks'        => 'nullable|string',
             ],
@@ -137,6 +137,16 @@ class SubTableController extends Controller
                 'released_date'    => 'nullable|date',
                 'local_flight_date' => 'nullable|date',
             ],
+            'cases' => [
+                'case_number'  => 'nullable|string|max:100',
+                'title'        => 'required|string|max:255',
+                'description'  => 'nullable|string',
+                'date_received'=> 'nullable|date',
+                'date_hearing' => 'nullable|date',
+                'employer_id'  => 'nullable|exists:employers,id',
+                'court'        => 'nullable|string|max:255',
+                'status'       => 'nullable|in:open,closed',
+            ],
             default => [],
         };
     }
@@ -167,6 +177,7 @@ class SubTableController extends Controller
             'ticket'           => ['agency_id', 'applicant_id', 'airline', 'flight_date', 'flight_time', 'flight_remarks'],
             'oma'              => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date'],
             'owwa'             => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date', 'local_flight_date'],
+            'cases'            => ['agency_id', 'applicant_id', 'employer_id', 'case_number', 'title', 'description', 'date_received', 'date_hearing', 'court', 'status'],
             default            => [],
         };
     }
@@ -194,6 +205,7 @@ class SubTableController extends Controller
             'ticket'          => \App\Models\ApplicantTicket::class,
             'oma'             => \App\Models\ApplicantOma::class,
             'owwa'            => \App\Models\ApplicantOwWa::class,
+            'cases'           => \App\Models\Cases::class,
             default           => abort(404, "Unknown sub-table: {$type}"),
         };
     }

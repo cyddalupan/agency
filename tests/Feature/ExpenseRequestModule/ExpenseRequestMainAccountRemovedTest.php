@@ -62,12 +62,21 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
             'charge_type' => 'office',
         ]);
 
+        $officeSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $officeMain->id,
+            'name'        => 'Office Supplies',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+        ]);
+
         $payload = [
             'branch_id' => $branch->id,
             'notes'     => 'Auto-resolve test',
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $officeSub->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
                     'country_id'      => null,
@@ -85,7 +94,7 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
 
         $this->assertDatabaseHas('expense_request_items', [
             'charge'     => 'office',
-            'account_id' => $officeMain->id,
+            'account_id' => $officeSub->id,
         ]);
 
         $this->assertSame(1, ExpenseRequest::count());
@@ -104,11 +113,20 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
             'charge_type' => 'agent',
         ]);
 
+        $agentSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $agentMain->id,
+            'name'        => 'Cash Advance',
+            'type'        => 'expense',
+            'charge_type' => 'agent',
+        ]);
+
         $payload = [
             'branch_id' => $branch->id,
             'lines'     => [
                 [
                     'charge'          => 'agent',
+                    'sub_account_id'  => $agentSub->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
                     'country_id'      => null,
@@ -126,7 +144,7 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
 
         $this->assertDatabaseHas('expense_request_items', [
             'charge'     => 'agent',
-            'account_id' => $agentMain->id,
+            'account_id' => $agentSub->id,
         ]);
     }
 
@@ -143,11 +161,20 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
             'charge_type' => 'office',
         ]);
 
+        $officeSub = Account::factory()->create([
+            'agency_id'   => $this->agency->id,
+            'parent_id'   => $officeMain->id,
+            'name'        => 'Office Supplies',
+            'type'        => 'expense',
+            'charge_type' => 'office',
+        ]);
+
         $payload = [
             'branch_id' => $branch->id,
             'lines'     => [
                 [
                     'charge'          => 'office',
+                    'sub_account_id'  => $officeSub->id,
                     'main_account_id' => $officeMain->id,
                     'agent_id'        => null,
                     'applicant_id'    => null,
@@ -166,7 +193,7 @@ class ExpenseRequestMainAccountRemovedTest extends TestCase
 
         $this->assertDatabaseHas('expense_request_items', [
             'charge'     => 'office',
-            'account_id' => $officeMain->id,
+            'account_id' => $officeSub->id,
         ]);
     }
 }

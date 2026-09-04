@@ -10,6 +10,7 @@
         'workExperiences', 'skills', 'references', 'salaryRecords', 'documents',
         'languages', 'contacts',
         'spouse', 'family', 'emergencyContacts',
+        'cases.employer',
     ]);
     $hidePassport = $applicant->has_passport === 'without';
 @endphp
@@ -28,6 +29,7 @@
                 ['cert',    'Certifications'],
                 ['docs',    'Documents'],
                 ['uploads', 'Upload Files'],
+                ['cases',   'Cases'],
                 ['status',  'Status'],
             ] as [$key, $label])
             <button type="button" role="tab" data-pi-tab="{{ $key }}"
@@ -438,6 +440,30 @@
                 </div>
                 @php $d = $pi->documents ?? collect(); @endphp
                 @if ($d->count() > 0) @include('applicants.sub-lists.documents', ['records' => $d, 'routeKey' => 'documents']) @else <p class="text-sm opacity-50 py-2">No records yet.</p> @endif
+            </section>
+
+            {{-- ============ TAB: Cases ============ --}}
+            <section data-pi-panel="cases" class="hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold">⚖️ Cases</h4>
+                    <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-cases').classList.toggle('hidden')">➕ Add Case</button>
+                </div>
+                <div id="form-cases" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                    <form action="{{ route('applicants.sub.store', [$applicant, 'cases']) }}" method="POST">
+                        @csrf
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">@include('applicants.sub-forms.cases', ['record' => null])</div>
+                        <div class="flex items-center gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary btn-sm">💾 Save Case</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-cases').classList.add('hidden')">❌ Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                @php $caseRecs = $pi->cases ?? collect(); @endphp
+                @if ($caseRecs->count() > 0)
+                    @include('applicants.sub-lists.cases', ['records' => $caseRecs, 'routeKey' => 'cases'])
+                @else
+                    <p class="text-sm opacity-50 py-2">No cases yet.</p>
+                @endif
             </section>
 
             {{-- ============ TAB: Status ============ --}}

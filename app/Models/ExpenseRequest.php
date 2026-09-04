@@ -13,8 +13,35 @@ class ExpenseRequest extends Model
     use HasFactory;
     use SoftDeletes;
 
-    public const STATUS_PENDING  = 'pending';
-    public const STATUS_RECEIVED = 'received';
+    public const STATUS_PENDING       = 'pending';
+    public const STATUS_APPROVED      = 'approved';
+    public const STATUS_FOR_RELEASING = 'for_releasing';
+    public const STATUS_RELEASED      = 'released';
+    public const STATUS_CANCELLED     = 'cancelled';
+
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_APPROVED,
+        self::STATUS_FOR_RELEASING,
+        self::STATUS_RELEASED,
+        self::STATUS_CANCELLED,
+    ];
+
+    public const STATUS_LABELS = [
+        'pending'       => 'Pending',
+        'approved'      => 'Approved',
+        'for_releasing' => 'For Releasing',
+        'released'      => 'Released',
+        'cancelled'     => 'Cancelled',
+    ];
+
+    public const STATUS_BADGES = [
+        'pending'       => 'badge-warning',
+        'approved'      => 'badge-info',
+        'for_releasing' => 'badge-primary',
+        'released'      => 'badge-success',
+        'cancelled'     => 'badge-error',
+    ];
 
     protected $fillable = [
         'agency_id',
@@ -53,5 +80,15 @@ class ExpenseRequest extends Model
     public function histories(): HasMany
     {
         return $this->hasMany(ExpenseRequestStatusHistory::class)->latest();
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUS_LABELS[$this->status] ?? ucfirst(str_replace('_', ' ', (string) $this->status));
+    }
+
+    public function statusBadge(): string
+    {
+        return self::STATUS_BADGES[$this->status] ?? 'badge-ghost';
     }
 }
