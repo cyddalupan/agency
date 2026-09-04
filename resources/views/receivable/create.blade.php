@@ -58,7 +58,7 @@
                 <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">👤 Agent & Applicant</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-control">
-                        <label class="label"><span class="label-text">Agent * (all branches)</span></label>
+                        <label class="label"><span class="label-text">Agent *{{ auth()->user()->isBranchLocked() ? ' (your branch)' : ' (all branches)' }}</span></label>
                         <select name="agent_id" id="agent_id" class="select select-bordered w-full" required>
                             <option value="">Select agent…</option>
                             @foreach($agents as $a)

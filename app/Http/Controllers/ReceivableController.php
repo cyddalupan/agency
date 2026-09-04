@@ -42,9 +42,18 @@ class ReceivableController extends Controller
         $agencyId = auth()->user()->agency_id;
 
         $agents = Agent::where('agency_id', $agencyId)
-            ->with('branch')
-            ->orderBy('name')
-            ->get();
+            ->with('branch');
+
+        // (Branch feature) Branch accounts may only file receivables for
+        // agents in their OWN branch (plus main-office agents with no branch).
+        $user = auth()->user();
+        if ($user && $user->isBranchLocked()) {
+            $agents->where(function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+
+        $agents = $agents->orderBy('name')->get();
 
         $applicants = Applicant::where('agency_id', $agencyId)
             ->orderBy('last_name')
@@ -84,6 +93,19 @@ class ReceivableController extends Controller
 
         // Security: agent + applicant must belong to the same agency
         $agent = Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
+
+        // (Branch feature) Branch accounts (non-admin with a branch) may only
+        // file receivables against agents of their OWN branch or main-office
+        // agents (no branch); another branch's agent is rejected.
+        $user = auth()->user();
+        if ($user && $user->isBranchLocked()) {
+            $agentBranchId = $agent->branch_id;
+            if ($agentBranchId !== null && (int) $agentBranchId !== (int) $user->branch_id) {
+                return back()->withErrors([
+                    'agent_id' => 'You can only file receivables for agents in your own branch.',
+                ])->withInput();
+            }
+        }
 
         if (! empty($validated['applicant_id'])) {
             $applicant = Applicant::where('agency_id', $agencyId)->find($validated['applicant_id']);
