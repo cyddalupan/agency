@@ -63,6 +63,27 @@ class UserAccessLevelOptionsTest extends TestCase
             ->assertSee('<option value="branch"', false);
     }
 
+    #[Test]
+    public function admin_create_form_offers_operation_option(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('users.create'))
+            ->assertOk()
+            ->assertSee('<option value="operation"', false)
+            ->assertSee('Operation', false);
+    }
+
+    #[Test]
+    public function super_admin_create_form_also_offers_operation_option(): void
+    {
+        $super = User::factory()->create(['user_type' => 'super_admin']);
+
+        $this->actingAs($super)
+            ->get(route('users.create'))
+            ->assertOk()
+            ->assertSee('<option value="operation"', false);
+    }
+
     // ---------- Store ----------
 
     #[Test]
@@ -82,6 +103,26 @@ class UserAccessLevelOptionsTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email'     => 'paralegal@example.com',
             'user_type' => 'paralegal',
+        ]);
+    }
+
+    #[Test]
+    public function admin_can_create_an_operation_user(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('users.store'), [
+                'name'                  => 'Ops Lead',
+                'email'                 => 'operation@example.com',
+                'password'              => 'password123',
+                'password_confirmation' => 'password123',
+                'user_type'             => 'operation',
+                'status'                => 'active',
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', [
+            'email'     => 'operation@example.com',
+            'user_type' => 'operation',
         ]);
     }
 
@@ -116,5 +157,6 @@ class UserAccessLevelOptionsTest extends TestCase
     {
         $this->assertSame('Paralegal', User::accessLabel('paralegal'));
         $this->assertSame('Branch', User::accessLabel('branch'));
+        $this->assertSame('Operation', User::accessLabel('operation'));
     }
 }

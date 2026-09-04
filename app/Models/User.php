@@ -42,6 +42,7 @@ class User extends Authenticatable
         'processor'   => 'Processing',
         'paralegal'   => 'Paralegal',
         'branch'      => 'Branch',
+        'operation'   => 'Operation',
     ];
 
     /** Display label for a user_type (presets first, fall back to raw role). */
