@@ -154,10 +154,13 @@ class BranchAccountScopingTest extends TestCase
             ->get(route('applicants.edit', $alice))
             ->getContent();
 
+        // (Mjolnir branch-user UI) No dropdown at all — branch is hidden and
+        // auto-set to the logged-in user's own branch.
+        $this->assertStringNotContainsString('<select name="branch_id"', $html);
         $this->assertStringContainsString(
-            sprintf('value="%d" selected', $this->branchA->id),
+            sprintf('name="branch_id" id="branch-select" value="%d"', $this->branchA->id),
             $html,
-            'Branch dropdown on Edit should pre-select the logged-in user\'s branch for a branch account'
+            'Edit form should auto-set the logged-in user\'s branch for a branch account'
         );
     }
 
@@ -168,10 +171,13 @@ class BranchAccountScopingTest extends TestCase
             ->get(route('applicants.create'))
             ->getContent();
 
+        // (Mjolnir branch-user UI) No dropdown at all — branch is hidden and
+        // auto-set to the logged-in user's own branch.
+        $this->assertStringNotContainsString('<select name="branch_id"', $html);
         $this->assertStringContainsString(
-            sprintf('value="%d" selected', $this->branchA->id),
+            sprintf('name="branch_id" id="branch-select" value="%d"', $this->branchA->id),
             $html,
-            'Branch dropdown on Add should pre-select the logged-in user\'s branch for a branch account'
+            'Add form should auto-set the logged-in user\'s branch for a branch account'
         );
     }
 

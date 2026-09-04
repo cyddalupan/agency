@@ -271,12 +271,20 @@
                 </fieldset>
                 <fieldset class="fieldset" id="branch-field">
                     <legend class="fieldset-legend">🏢 Branch</legend>
-                    <select name="branch_id" class="select w-full" id="branch-select">
-                        <option value="">-- Select Branch --</option>
-                        @foreach ($branches as $br)
-                            <option value="{{ $br->id }}" @selected(old('branch_id', $defaultBranchId) == $br->id)>{{ $br->name }}</option>
-                        @endforeach
-                    </select>
+                    @if (auth()->user()->isBranchLocked())
+                        {{-- Branch account: no dropdown — branch is auto-set to the user's own branch. --}}
+                        <input type="hidden" name="branch_id" id="branch-select" value="{{ $defaultBranchId }}">
+                        <div class="select select-bordered w-full opacity-80" aria-readonly="true">
+                            {{ $branches->firstWhere('id', $defaultBranchId)?->name ?? '' }}
+                        </div>
+                    @else
+                        <select name="branch_id" class="select w-full" id="branch-select">
+                            <option value="">-- Select Branch --</option>
+                            @foreach ($branches as $br)
+                                <option value="{{ $br->id }}" @selected(old('branch_id', $defaultBranchId) == $br->id)>{{ $br->name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </fieldset>
                 <fieldset class="fieldset" id="agent-field" style="display:none;">
                     <legend class="fieldset-legend">🎯 Select Agent</legend>

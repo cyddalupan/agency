@@ -170,7 +170,7 @@ class ApplicantController extends Controller
 
         $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
         $branches = $this->assignableBranches();
-        $agents = Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+        $agents = $this->assignableAgents();
 
         // (PI card) Skills & Languages restricted to the Settings-configured lists.
         $skills = Skill::orderBy('name')->get();
@@ -357,7 +357,7 @@ class ApplicantController extends Controller
         // "Branch" (and any agency-enabled source) render and stay selected.
         $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
         $branches = $this->assignableBranches();
-        $agents = Agent::where('agency_id', $agencyId)->where('status', 'active')->orderBy('name')->get();
+        $agents = $this->assignableAgents();
 
         // (PI card) Same Settings-backed dropdowns as Add Applicant, so Edit is in sync.
         $nationalities = Nationality::orderBy('name')->get();
@@ -555,6 +555,26 @@ class ApplicantController extends Controller
         $user = auth()->user();
 
         return ($user && (int) $user->branch_id > 0) ? (int) $user->branch_id : null;
+    }
+
+    /**
+     * (Branch feature) Agents a branch user may assign an applicant to. Branch
+     * accounts (non-admin) only see agents of their OWN branch (plus unassigned
+     * main-office agents); admins see every active agent in the agency.
+     */
+    private function assignableAgents()
+    {
+        $agencyId = resolve_agency_id();
+        $query = Agent::where('agency_id', $agencyId)->where('status', 'active');
+
+        $user = auth()->user();
+        if ($user && $user->isBranchLocked()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+
+        return $query->orderBy('name')->get();
     }
 
     /**

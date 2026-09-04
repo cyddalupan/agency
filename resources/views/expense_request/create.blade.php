@@ -39,12 +39,18 @@
                 </div>
                 <div class="form-control">
                     <label class="label"><span class="label-text">Branch</span></label>
-                    <select name="branch_id" id="branch_id" class="select select-bordered">
-                        <option value="">- select -</option>
-                        @foreach($branches as $b)
-                            <option value="{{ $b->id }}" {{ old('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
-                        @endforeach
-                    </select>
+                    @if (auth()->user()->isBranchLocked())
+                        {{-- Branch account: no dropdown — branch is auto-set to the user's own branch. --}}
+                        <input type="hidden" name="branch_id" value="{{ $branches->first()?->id }}">
+                        <div class="input input-bordered w-full opacity-80" aria-readonly="true">{{ $branches->first()?->name }}</div>
+                    @else
+                        <select name="branch_id" id="branch_id" class="select select-bordered">
+                            <option value="">- select -</option>
+                            @foreach($branches as $b)
+                                <option value="{{ $b->id }}" {{ old('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
             </div>
 

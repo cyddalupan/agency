@@ -140,9 +140,20 @@ class ExpenseRequestController extends Controller
     public function create(): View
     {
         $agencyId = auth()->user()->agency_id;
+        $user = auth()->user();
 
-        $branches = Branch::where('agency_id', $agencyId)->orderBy('name')->get();
-        $agents = Agent::where('agency_id', $agencyId)->with('branch')->orderBy('name')->get();
+        // (Branch feature) Branch accounts only file expenses for their OWN branch
+        // (admins/main-office users see the full list and pick freely).
+        $branches = Branch::where('agency_id', $agencyId);
+        $agents = Agent::where('agency_id', $agencyId)->with('branch');
+        if ($user && $user->isBranchLocked()) {
+            $branches->where('id', $user->branch_id);
+            $agents->where(function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+        $branches = $branches->orderBy('name')->get();
+        $agents = $agents->orderBy('name')->get();
         $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
         $countries = Country::orderBy('name')->get();
 
@@ -203,6 +214,21 @@ class ExpenseRequestController extends Controller
         ]);
 
         $branchId = $validated['branch_id'] ?? null;
+
+        // (Branch feature) Branch accounts (non-admin with a branch) may only file
+        // expense requests for their OWN branch: omitted defaults to their branch,
+        // a different branch is rejected. Admins/main-office users pick freely.
+        $user = auth()->user();
+        if ($user && $user->isBranchLocked()) {
+            if (blank($branchId)) {
+                $branchId = $user->branch_id;
+            } elseif ((int) $branchId !== (int) $user->branch_id) {
+                return back()->withErrors([
+                    'branch_id' => 'You can only file expense requests for your own branch.',
+                ])->withInput();
+            }
+        }
+
         if ($branchId) {
             $branch = Branch::where('agency_id', $agencyId)->find($branchId);
             if (! $branch) {
