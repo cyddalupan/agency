@@ -40,6 +40,8 @@ class User extends Authenticatable
         'billing'     => 'Accounting',
         'staff'       => 'Receptionist',
         'processor'   => 'Processing',
+        'paralegal'   => 'Paralegal',
+        'branch'      => 'Branch',
     ];
 
     /** Display label for a user_type (presets first, fall back to raw role). */
