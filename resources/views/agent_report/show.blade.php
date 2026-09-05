@@ -17,15 +17,21 @@
                         </div>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-extrabold">{{ $agent->name }}</h1>
+                        <p class="text-xs uppercase tracking-widest opacity-70 font-bold">AGENT LEDGER</p>
+                        <h1 class="text-2xl font-extrabold mt-0.5">{{ $agent->name }}</h1>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="badge badge-sm badge-primary border-0">🏢 {{ $agent->branch?->name ?? '—' }}</span>
-                            <span class="opacity-60 text-sm">Agent Ledger</span>
+                            <span class="opacity-60 text-sm">Branch</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="flex justify-end -mt-2 mb-2">
+        <a href="{{ route('agent_report.show.print', $agent->id) }}" target="_blank"
+           class="btn btn-sm btn-outline btn-primary gap-2">🖨️ Print / Save as PDF</a>
     </div>
 
     {{-- Summary report --}}
@@ -184,14 +190,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($backoutRepat as $item)
+                        @forelse($backoutRepat as $d)
                             <tr class="hover transition-colors">
-                                <td class="whitespace-nowrap">{{ $item->expenseRequest?->date?->format('M d, Y') ?? '—' }}</td>
-                                <td>{{ $item->account?->name ?? '—' }}</td>
-                                <td>{{ $item->agent?->name ?? '—' }}</td>
-                                <td>{{ $item->applicant?->full_name ?? '—' }}</td>
-                                <td class="text-right font-mono">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
-                                <td class="max-w-xs truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="whitespace-nowrap">{{ $d->date?->format('M d, Y') ?? '—' }}</td>
+                                <td>{{ $d->account ?? '—' }}</td>
+                                <td>{{ $d->agent?->name ?? '—' }}</td>
+                                <td>{{ $d->applicant?->full_name ?? '—' }}</td>
+                                <td class="text-right font-mono">₱{{ number_format($d->amount, 2) }}</td>
+                                <td class="max-w-xs truncate" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -240,7 +246,7 @@
                                 <td class="whitespace-nowrap">{{ $r->date?->format('M d, Y') ?? '—' }}</td>
                                 <td class="font-mono text-xs">{{ $r->ref_ar ?? $r->code ?? '—' }}</td>
                                 <td>{{ $r->applicant?->full_name ?? '—' }}</td>
-                                <td class="opacity-40">—</td>
+                                <td>{{ $r->mode ?? '—' }}</td>
                                 <td>{{ $r->account ?? '—' }}</td>
                                 <td class="max-w-xs truncate" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
                                 <td class="text-right font-mono">₱{{ number_format($r->amount, 2) }}</td>

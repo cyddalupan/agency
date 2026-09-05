@@ -355,6 +355,117 @@ class AgentReportController extends Controller
         ]);
     }
 
+    // ------------------------------------------------------------------
+    // Agent Ledger — single-agent detail view (clickable Name) + PDF
+    // ------------------------------------------------------------------
+
+    /** Single-agent ledger view: five detail tables + summary. */
+    public function show(Agent $agent): View
+    {
+        $this->authorizeAgency($agent->agency_id);
+
+        return view('agent_report.show', $this->agentLedgerData($agent));
+    }
+
+    /** Print/PDF version of the single-agent ledger. */
+    public function showPrint(Agent $agent): View
+    {
+        $this->authorizeAgency($agent->agency_id);
+
+        $data = $this->agentLedgerData($agent);
+        $data['printedAt'] = now();
+
+        return view('agent_report.show_print', $data);
+    }
+
+    /**
+     * Gathers every table + total for the single-agent ledger view.
+     *  - releasedCommission : RELEASED expense items on commission accounts
+     *    (Partial/Full/Fit to work/Contract/Deployed/Return); Return rows are
+     *    shown but excluded from the Total Commission.
+     *  - cashAdvance        : RELEASED expense items on cash-advance accounts
+     *  - backoutRepat       : AgentDeduction rows (account = Deduction)
+     *  - receivables        : Receivable module rows (account = Agents &
+     *    Applicant Payment, status = received)
+     *  - payments           : AgentDeduction rows (account = Paid)
+     *  - balance            = cashAdvance + backoutRepat - receivables - payments
+     */
+    private function agentLedgerData(Agent $agent): array
+    {
+        $agencyId = $agent->agency_id;
+        $converter = new CurrencyConverter();
+
+        $commissionAccountIds = Account::where('agency_id', $agencyId)
+            ->whereIn('name', self::RECEIVABLE_ACCOUNT_NAMES)
+            ->pluck('id');
+        $returnAccountIds = Account::where('agency_id', $agencyId)
+            ->where('name', 'Return')
+            ->pluck('id');
+        $cashAdvanceAccountIds = Account::where('agency_id', $agencyId)
+            ->whereIn('name', self::CASH_ADVANCE_ACCOUNT_NAMES)
+            ->pluck('id');
+
+        // Released agent-charged expense items for this agent.
+        $items = ExpenseRequestItem::query()
+            ->where('charge', 'agent')
+            ->where('agent_id', $agent->id)
+            ->whereHas('expenseRequest', fn ($er) => $er
+                ->where('agency_id', $agencyId)
+                ->where('status', ExpenseRequest::STATUS_RELEASED))
+            ->with(['expenseRequest', 'applicant', 'account'])
+            ->orderByDesc('id')
+            ->get();
+
+        $releasedCommission = $items->whereIn('account_id', $commissionAccountIds)->values();
+        $cashAdvance        = $items->whereIn('account_id', $cashAdvanceAccountIds)->values();
+
+        // Total Commission = all commission accounts MINUS Return.
+        $totalCommission = $releasedCommission
+            ->reject(fn ($i) => $returnAccountIds->contains($i->account_id))
+            ->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
+        $totalCashAdvance = $cashAdvance->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
+
+        // Backout & Repat (Deduction) and Payment (Paid) from the Deduction & Paid module.
+        $deductions = AgentDeduction::query()
+            ->where('agent_id', $agent->id)
+            ->with(['agent', 'applicant'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+        $backoutRepat = $deductions->where('account', AgentDeduction::ACCOUNT_DEDUCTION)->values();
+        $payments     = $deductions->where('account', AgentDeduction::ACCOUNT_PAID)->values();
+
+        $totalBackoutRepat = (float) $backoutRepat->sum('amount');
+        $totalPayment      = (float) $payments->sum('amount');
+
+        // Receivables: Receivable module, account 'Agents & Applicant Payment', status RECEIVED.
+        $receivables = Receivable::query()
+            ->where('agent_id', $agent->id)
+            ->where('account', 'Agents & Applicant Payment')
+            ->where('status', Receivable::STATUS_RECEIVED)
+            ->with(['applicant', 'agent'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get();
+        $totalReceivables = (float) $receivables->sum('amount');
+
+        return [
+            'agent'              => $agent->load('branch'),
+            'releasedCommission' => $releasedCommission,
+            'cashAdvance'        => $cashAdvance,
+            'backoutRepat'       => $backoutRepat,
+            'receivables'        => $receivables,
+            'payments'           => $payments,
+            'totalCommission'    => $totalCommission,
+            'totalCashAdvance'   => $totalCashAdvance,
+            'totalBackoutRepat'  => $totalBackoutRepat,
+            'totalReceivables'   => $totalReceivables,
+            'totalPayment'       => $totalPayment,
+            'balance'            => $totalCashAdvance + $totalBackoutRepat - $totalReceivables - $totalPayment,
+            'usdToPhp'           => $converter->usdToPhpRate(),
+        ];
+    }
+
     /**
      * Per-agent ledger rows — Agent Ledger spec:
      *  - commission    : pending agent-charged items on general accounts

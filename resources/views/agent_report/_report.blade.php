@@ -20,7 +20,7 @@
                     <tbody>
                         @foreach($reportRows as $row)
                             <tr>
-                                <td class="font-semibold">{{ $row['agent'] }}</td>
+                                <td class="font-semibold"><a href="{{ route('agent_report.show', $row['id']) }}" class="link link-primary hover:underline">{{ $row['agent'] }}</a></td>
                                 <td>{{ $row['branch'] }}</td>
                                 <td class="text-right">₱{{ number_format($row['commission'], 2) }}</td>
                                 <td class="text-right">₱{{ number_format($row['cash_advance'], 2) }}</td>

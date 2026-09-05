@@ -470,6 +470,12 @@ Route::middleware('auth:web')->group(function () {
             ->middleware('role:admin,super_admin,billing');
         Route::get('/export', [AgentReportController::class, 'export'])->name('export')
             ->middleware('role:admin,super_admin,billing');
+
+        // Tab 5: Agent Ledger — single-agent detail view (clickable Name) + print/PDF
+        Route::get('/ledger/{agent}', [AgentReportController::class, 'show'])->name('show')
+            ->middleware('role:admin,super_admin,billing');
+        Route::get('/ledger/{agent}/print', [AgentReportController::class, 'showPrint'])->name('show.print')
+            ->middleware('role:admin,super_admin,billing');
     });
 
     // Report Template CRUD

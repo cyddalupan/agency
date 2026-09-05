@@ -304,6 +304,63 @@ class AgentReportTest extends TestCase
             ->assertDontSee('99,999.00');
     }
 
+    // ---------- Single-agent ledger detail view + PDF (clickable Name) ----------
+
+    #[Test]
+    public function detail_view_shows_agent_name_branch_and_tables(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 3000, 'PHP', null, 'Partial', 'released');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.show', $agent))
+            ->assertOk()
+            ->assertSee($agent->name)
+            ->assertSee('AGENT LEDGER', false)
+            ->assertSee('Released Commission')
+            ->assertSee('Summary Report');
+    }
+
+    #[Test]
+    public function detail_view_prints_a_downloadable_pdf_page(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 1500, 'PHP', null, 'Contract', 'released');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.show.print', $agent))
+            ->assertOk()
+            ->assertSee($agent->name)
+            ->assertSee('AGENT LEDGER', false)
+            ->assertSee('1,500.00');
+    }
+
+    #[Test]
+    public function detail_view_isolates_agents_by_agency(): void
+    {
+        $otherAgency = Agency::factory()->create();
+        $otherAgent = Agent::factory()->create([
+            'agency_id' => $otherAgency->id,
+            'branch_id' => Branch::factory()->create(['agency_id' => $otherAgency->id])->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.show', $otherAgent))
+            ->assertNotFound();
+    }
+
+    #[Test]
+    public function ledger_table_agent_name_links_to_detail_view(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeReceivable($agent, 1000, 'received');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk()
+            ->assertSee(route('agent_report.show', $agent->id), false);
+    }
+
     // ---------- Agency isolation ----------
 
     #[Test]
