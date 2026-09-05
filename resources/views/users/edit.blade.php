@@ -81,12 +81,20 @@
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">🏢 Branch</legend>
-                    <select name="branch_id" class="select w-full">
-                        <option value="">Select branch...</option>
-                        @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}" @selected(old('branch_id', $user->branch_id) == $branch->id)>{{ $branch->name }}</option>
-                        @endforeach
-                    </select>
+                    @if (auth()->user()->isBranchLocked())
+                        {{-- Branch account: no dropdown — branch is auto-set to the user's own branch. --}}
+                        <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                        <div class="select select-bordered w-full opacity-80" aria-readonly="true">
+                            {{ $branches->firstWhere('id', auth()->user()->branch_id)?->name ?? '' }}
+                        </div>
+                    @else
+                        <select name="branch_id" class="select w-full">
+                            <option value="">Select branch...</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" @selected(old('branch_id', $user->branch_id) == $branch->id)>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     @error('branch_id') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
                 </fieldset>
             </div>

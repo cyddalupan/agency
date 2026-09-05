@@ -65,6 +65,10 @@ class AgentController extends Controller
             return back()->withErrors(['agency' => 'No agency context.'])->withInput();
         }
 
+        // (Branch feature) Branch accounts may only create agents in their own
+        // branch: omitted defaults to their branch, a different branch is rejected.
+        $this->applyBranchDefaults($validated);
+
         Agent::create($validated);
 
         return redirect()->route('agents.index')
@@ -94,6 +98,9 @@ class AgentController extends Controller
             'status'          => 'nullable|string|in:active,inactive',
         ]);
 
+        // (Branch feature) Branch accounts may only keep agents in their own branch.
+        $this->applyBranchDefaults($validated);
+
         $agent->update($validated);
 
         return redirect()->route('agents.index')
@@ -106,5 +113,30 @@ class AgentController extends Controller
 
         return redirect()->route('agents.index')
             ->with('success', 'Agent deactivated.');
+    }
+
+    /**
+     * (Branch feature) Branch accounts (non-admin with a branch) may only
+     * assign/create agents under their OWN branch. Omitted branch_id defaults
+     * to their branch; any other branch is rejected server-side.
+     */
+    private function applyBranchDefaults(array &$validated): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->isBranchLocked()) {
+            return;
+        }
+
+        $submitted = $validated['branch_id'] ?? null;
+
+        if (blank($submitted)) {
+            $validated['branch_id'] = $user->branch_id;
+
+            return;
+        }
+
+        if ((int) $submitted !== (int) $user->branch_id) {
+            abort(403, 'You can only assign agents to your own branch.');
+        }
     }
 }

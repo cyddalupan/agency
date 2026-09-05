@@ -107,6 +107,10 @@ class UserController extends Controller
             'status'      => ['required', 'string', 'in:active,inactive,suspended'],
         ]);
 
+        // (Branch feature) Branch accounts may only create users under their own
+        // branch: omitted defaults to their branch, a different branch is rejected.
+        $this->applyBranchDefaults($validated);
+
         User::create([
             'agency_id'   => auth()->user()->agency_id,
             'name'        => $validated['name'],
@@ -163,6 +167,9 @@ class UserController extends Controller
 
         $data = $validated;
 
+        // (Branch feature) Branch accounts may only keep users in their own branch.
+        $this->applyBranchDefaults($data);
+
         // Toybits 2026-08-16: admin can reset a user's password from the edit
         // page. Only hash/update when a new password is provided.
         if (filled($data['password'] ?? null)) {
@@ -175,6 +182,31 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * (Branch feature) Branch accounts (non-admin with a branch) may only
+     * assign users to their OWN branch. Omitted branch_id defaults to their
+     * branch; any other branch is rejected server-side.
+     */
+    private function applyBranchDefaults(array &$validated): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->isBranchLocked()) {
+            return;
+        }
+
+        $submitted = $validated['branch_id'] ?? null;
+
+        if (blank($submitted)) {
+            $validated['branch_id'] = $user->branch_id;
+
+            return;
+        }
+
+        if ((int) $submitted !== (int) $user->branch_id) {
+            abort(403, 'You can only assign users to your own branch.');
+        }
     }
 
     /**
