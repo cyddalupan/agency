@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Agents Report — {{ $printedAt->format('Y-m-d') }}</title>
+    <title>Agent Ledger — {{ $printedAt->format('Y-m-d') }}</title>
     <style>
         body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #111; padding: 24px; }
         h1 { font-size: 20px; margin: 0 0 2px; }
@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <h1>📊 Agents Report</h1>
+    <h1>📊 Agent Ledger</h1>
     <div class="sub">
         Generated {{ $printedAt->format('M d, Y H:i') }}
         @if($agentId) · Agent filter applied @endif
@@ -30,12 +30,12 @@
             <tr>
                 <th>Agent</th>
                 <th>Branch</th>
-                <th>Starting Balance</th>
-                <th>Commission</th>
-                <th>Payments</th>
-                <th>Deductions</th>
-                <th>Paid</th>
-                <th>Net Balance</th>
+                <th>Total Commission</th>
+                <th>Total Cash Advance</th>
+                <th>Total Backout and Repat</th>
+                <th>Total Receivable (AR)</th>
+                <th>Total Payments</th>
+                <th>Agent's Balance</th>
             </tr>
         </thead>
         <tbody>
@@ -43,11 +43,11 @@
                 <tr>
                     <td>{{ $row['agent'] }}</td>
                     <td>{{ $row['branch'] }}</td>
-                    <td>₱{{ number_format($row['starting_balance'], 2) }}</td>
                     <td>₱{{ number_format($row['commission'], 2) }}</td>
+                    <td>₱{{ number_format($row['cash_advance'], 2) }}</td>
+                    <td>₱{{ number_format($row['backout_repat'], 2) }}</td>
+                    <td>₱{{ number_format($row['receivable'], 2) }}</td>
                     <td>₱{{ number_format($row['payments'], 2) }}</td>
-                    <td>₱{{ number_format($row['deductions'], 2) }}</td>
-                    <td>₱{{ number_format($row['paid'], 2) }}</td>
                     <td class="{{ $row['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($row['balance'], 2) }}</td>
                 </tr>
             @endforeach
@@ -55,19 +55,18 @@
         <tfoot>
             <tr>
                 <td colspan="2">Totals</td>
-                <td>₱{{ number_format($totals['starting_balance'], 2) }}</td>
                 <td>₱{{ number_format($totals['commission'], 2) }}</td>
+                <td>₱{{ number_format($totals['cash_advance'], 2) }}</td>
+                <td>₱{{ number_format($totals['backout_repat'], 2) }}</td>
+                <td>₱{{ number_format($totals['receivable'], 2) }}</td>
                 <td>₱{{ number_format($totals['payments'], 2) }}</td>
-                <td>₱{{ number_format($totals['deductions'], 2) }}</td>
-                <td>₱{{ number_format($totals['paid'], 2) }}</td>
                 <td class="{{ $totals['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($totals['balance'], 2) }}</td>
             </tr>
         </tfoot>
     </table>
 
     <div class="note">
-        Net Balance = Starting Balance + Commission + Payments − Deductions − Paid.<br>
-        Positive = agency owes the agent (credit) · Negative = agent owes the agency (debit).
+        Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) − Total Payments.
     </div>
 
     <script>window.print();</script>

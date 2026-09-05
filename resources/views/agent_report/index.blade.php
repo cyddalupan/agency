@@ -50,7 +50,7 @@
                 'payments'          => ['label' => '💳 Payments',          'url' => null],
                 'deductions'        => ['label' => '🧾 Deductions & Paid', 'url' => null],
                 'starting-balances' => ['label' => '⚖️ Starting Balance',  'url' => null],
-                'report'            => ['label' => '📑 Agent Report',      'url' => null],
+                'report'            => ['label' => '📑 Agent Ledger',      'url' => null],
             ];
         @endphp
         @foreach($tabDefs as $key => $def)

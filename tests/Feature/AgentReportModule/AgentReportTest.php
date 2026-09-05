@@ -142,7 +142,7 @@ class AgentReportTest extends TestCase
             ->assertSee('Payments')
             ->assertSee('Deductions &amp; Paid', false)
             ->assertSee('Starting Balance')
-            ->assertSee('Agent Report');
+            ->assertSee('Agent Ledger');
     }
 
     #[Test]
@@ -230,47 +230,26 @@ class AgentReportTest extends TestCase
     // ---------- Report tab: new confirmed formula ----------
 
     #[Test]
-    public function report_balance_follows_confirmed_formula(): void
+    public function agent_ledger_balance_follows_spec_formula(): void
     {
         $agent = $this->makeAgent();
 
-        StartingBalance::create([
-            'agency_id' => $this->agency->id,
-            'user_id'   => $this->user->id,
-            'agent_id'  => $agent->id,
-            'date'      => now()->toDateString(),
-            'account'   => StartingBalance::ACCOUNT,
-            'amount'    => 50000,
-        ]);
+        $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Other Commission'); // Total Commission
+        $this->makeAgentExpense($agent, 2000, 'PHP', null, 'Agent Advances');    // Total Cash Advance
+        $backout = $this->makeApplicant($agent, 50);
+        $this->makeAgentExpense($agent, 3000, 'PHP', $backout, 'Other Commission'); // Total Backout and Repat
+        $this->makeAgentExpense($agent, 4000, 'PHP', null, 'Partial');           // Total Receivable (AR)
+        $this->makeReceivable($agent, 5000, 'received');                         // Total Payments
 
-        $this->makeAgentExpense($agent, 10000, 'PHP');      // commission
-        $this->makeReceivable($agent, 4000, 'received');    // payment
-        AgentDeduction::create([
-            'agency_id' => $this->agency->id,
-            'user_id'   => $this->user->id,
-            'agent_id'  => $agent->id,
-            'date'      => now()->toDateString(),
-            'account'   => AgentDeduction::ACCOUNT_DEDUCTION,
-            'amount'    => 1500,
-        ]);
-        AgentDeduction::create([
-            'agency_id' => $this->agency->id,
-            'user_id'   => $this->user->id,
-            'agent_id'  => $agent->id,
-            'date'      => now()->toDateString(),
-            'account'   => AgentDeduction::ACCOUNT_PAID,
-            'amount'    => 500,
-        ]);
-
-        // Balance = 50000 (SB) + 10000 (commission) + 4000 (payments) - 1500 (deduction) - 500 (paid) = 62000
+        // Balance = 2000 (CA) + 3000 (backout & repat) - 4000 (receivable AR) - 5000 (payments) = -4000
         $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
             ->assertOk()
-            ->assertSee('50,000.00')   // starting balance
-            ->assertSee('10,000.00')   // commission
-            ->assertSee('4,000.00')    // payments
-            ->assertSee('1,500.00')    // deductions
-            ->assertSee('500.00')      // paid
-            ->assertSee('62,000.00');  // net balance
+            ->assertSee('10,000.00')   // total commission
+            ->assertSee('2,000.00')    // total cash advance
+            ->assertSee('3,000.00')    // total backout and repat
+            ->assertSee('4,000.00')    // total receivable (AR)
+            ->assertSee('5,000.00')    // total payments
+            ->assertSee('-4,000.00');  // agent's balance
     }
 
     #[Test]
@@ -292,7 +271,7 @@ class AgentReportTest extends TestCase
     {
         $agent = $this->makeAgent();
 
-        $this->makeAgentExpense($agent, 10, 'USD'); // USD 10 -> PHP 560 @ 56
+        $this->makeAgentExpense($agent, 10, 'USD', null, 'Other Commission'); // USD 10 -> PHP 560 @ 56
 
         $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
             ->assertOk()
