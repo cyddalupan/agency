@@ -161,7 +161,9 @@ class User extends Authenticatable
             return false;
         }
 
-        return ! in_array($this->user_type, ['admin', 'super_admin'], true);
+        // Any account assigned to a branch is a branch account — admin or not.
+        // Only super_admin (system-wide) keeps the free branch dropdown.
+        return $this->user_type !== 'super_admin';
     }
 
     public function canImpersonate(): bool

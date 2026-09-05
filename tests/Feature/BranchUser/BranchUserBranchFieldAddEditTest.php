@@ -19,9 +19,10 @@ use Tests\TestCase;
  * "Branch user" add/edit pages (Mjolnir: branch user types).
  *
  * Branch users (accounts bound to a branch — branch_id > 0 and not
- * admin/super_admin, see User::isBranchLocked) must NOT see a branch
- * dropdown on add/edit pages: the branch is hidden and automatically set
- * from their own branch. Main-office employee accounts may still pick.
+ * super_admin, see User::isBranchLocked) must NOT see a branch dropdown
+ * on add/edit pages: the branch is hidden and automatically set from
+ * their own branch. An admin with a branch is a branch account. Only
+ * branch-less accounts (main office) and super_admin may still pick.
  *
  * Pages in scope: Applicant create/edit, Expense Request create.
  */
@@ -34,7 +35,8 @@ class BranchUserBranchFieldAddEditTest extends TestCase
     private Branch $branchB;
     private User $staffBranchA;   // branch-locked staff (applicant module)
     private User $billingBranchA; // branch-locked billing (expense module)
-    private User $admin;
+    private User $admin;          // main-office admin (no branch) — dropdown stays
+    private User $adminBranchA;   // admin WITH a branch — branch account, locked
 
     protected function setUp(): void
     {
@@ -59,6 +61,11 @@ class BranchUserBranchFieldAddEditTest extends TestCase
         $this->admin = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
+        ]);
+        $this->adminBranchA = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+            'branch_id' => $this->branchA->id,
         ]);
     }
 
@@ -102,6 +109,39 @@ class BranchUserBranchFieldAddEditTest extends TestCase
         $this->assertStringContainsString('<select name="branch_id"', $html);
         $this->assertStringContainsString($this->branchA->name, $html);
         $this->assertStringContainsString($this->branchB->name, $html);
+    }
+
+    #[Test]
+    public function admin_with_branch_is_locked_on_applicant_create(): void
+    {
+        $html = $this->actingAs($this->adminBranchA)
+            ->get(route('applicants.create'))
+            ->assertOk()
+            ->getContent();
+
+        // Admin + branch = branch account: no dropdown, branch auto-set.
+        $this->assertStringNotContainsString('<select name="branch_id"', $html);
+        $this->assertStringContainsString(
+            sprintf('name="branch_id" id="branch-select" value="%d"', $this->branchA->id),
+            $html
+        );
+        $this->assertStringContainsString($this->branchA->name, $html);
+        $this->assertStringNotContainsString($this->branchB->name, $html);
+    }
+
+    #[Test]
+    public function admin_with_branch_store_with_other_branch_is_rejected(): void
+    {
+        $this->actingAs($this->adminBranchA)
+            ->post(route('applicants.store'), [
+                'first_name' => 'Juan',
+                'last_name'  => 'Cruz',
+                'source'     => 'Branch',
+                'branch_id'  => $this->branchB->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('applicants', 0);
     }
 
     // ---------- Applicant edit ----------
