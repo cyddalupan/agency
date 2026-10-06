@@ -17,9 +17,13 @@ use App\Models\Religion;
 use App\Models\Skill;
 use App\Models\StatusCode;
 use App\Services\SensitiveActionLogger;
+use App\Support\ApplicantDuplicateChecker;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ApplicantController extends Controller
@@ -98,6 +102,10 @@ class ApplicantController extends Controller
      */
     public function withdrawn(Request $request)
     {
+        // (Mjolnir "Backout, Repat Module" 2026-10-06) Restricted to Admin and
+        // Accounting users only.
+        abort_unless(auth()->user()->canViewBackoutRepat(), 403, 'This folder is restricted to Admin and Accounting.');
+
         $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
 
         $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'contractRecords'])
@@ -151,6 +159,43 @@ class ApplicantController extends Controller
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
+    }
+
+    /**
+     * Live duplicate check for the Add Applicant form (AJAX).
+     * Mirrors the store() guard so the warning can appear as the user types.
+     */
+    public function checkDuplicates(Request $request): JsonResponse
+    {
+        $agencyId = $this->resolveAgencyId();
+        if (! $agencyId) {
+            return response()->json(['count' => 0, 'duplicates' => []]);
+        }
+
+        $duplicates = ApplicantDuplicateChecker::find(
+            $agencyId,
+            $request->all(),
+            $request->integer('exclude_id') ?: null
+        );
+
+        return response()->json([
+            'count' => $duplicates->count(),
+            'duplicates' => $this->duplicatePayload($duplicates),
+        ]);
+    }
+
+    /** Shape duplicate matches for views / JSON. */
+    private function duplicatePayload($duplicates): array
+    {
+        return $duplicates->map(fn ($m) => [
+            'id' => $m['applicant']->id,
+            'applicant_no' => $m['applicant']->applicant_no,
+            'name' => trim($m['applicant']->first_name.' '.$m['applicant']->last_name),
+            'status' => $m['applicant']->status,
+            'created_at' => optional($m['applicant']->created_at)->format('M d, Y'),
+            'url' => route('applicants.show', $m['applicant']),
+            'reasons' => $m['reasons'],
+        ])->values()->all();
     }
 
     public function create()
@@ -277,6 +322,25 @@ class ApplicantController extends Controller
         $validated['encoder'] = $validated['encoder'] ?? auth()->user()->name;
         $validated['created_by'] = auth()->id();
 
+        // Duplicate guard (Cyd 2026-09-26): if this applicant looks like one we
+        // already have, bounce back with the matches and let the user confirm.
+        // The form resubmits with confirm_duplicate=1 to proceed.
+        if (! $request->boolean('confirm_duplicate')) {
+            $duplicates = ApplicantDuplicateChecker::find($validated['agency_id'], array_merge($request->all(), [
+                'birthdate'  => $request->input('birthdate', $validated['birthdate'] ?? null),
+                'passport_no' => $request->input('passport_no'),
+            ]));
+
+            if ($duplicates->isNotEmpty()) {
+                return back()
+                    ->withInput()
+                    ->with('duplicate_applicants', $this->duplicatePayload($duplicates))
+                    ->withErrors([
+                        'duplicate' => 'Possible duplicate applicant found. Review the existing record(s), then click "Create anyway" if this is a different person.',
+                    ]);
+            }
+        }
+
         $applicant = Applicant::create($validated);
 
         $this->syncPassport($request, $applicant);
@@ -286,6 +350,652 @@ class ApplicantController extends Controller
 
         return redirect()->route('applicants.index')
             ->with('success', 'Applicant created successfully.');
+    }
+
+    // ---------------------------------------------------------------------
+    // Bulk CSV upload (page, template download, import)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Bulk upload page: explains the flow, offers the template download and
+     * the CSV upload form.
+     */
+    public function bulkUpload()
+    {
+        $agencyId = resolve_agency_id();
+
+        // Reference lists so staff can type exact names and avoid row errors.
+        $statusCodes = StatusCode::orderBy('sort_order')->get();
+        $agents = $this->assignableAgents();
+        $branches = $this->assignableBranches();
+        $employers = Employer::where('agency_id', $agencyId)->orderBy('name')->get(['id', 'name']);
+        $positions = Position::orderBy('name')->get(['id', 'name']);
+        $nationalities = Nationality::orderBy('name')->get(['id', 'name']);
+        $religions = Religion::orderBy('name')->get(['id', 'name']);
+        $civilStatuses = CivilStatus::orderBy('name')->get(['id', 'name']);
+        $countries = Country::orderBy('name')->get(['id', 'name']);
+
+        return view('applicants.bulk', compact(
+            'statusCodes', 'agents', 'branches', 'employers', 'positions',
+            'nationalities', 'religions', 'civilStatuses', 'countries'
+        ));
+    }
+
+    /**
+     * Download the bulk import CSV template. Includes two SAMPLE rows (with
+     * different statuses) so users can follow the exact format.
+     */
+    public function bulkTemplate()
+    {
+        $statusLabels = StatusCode::orderBy('sort_order')->pluck('label')->take(2);
+        $sampleStatus1 = $statusLabels[0] ?? 'Pending';
+        $sampleStatus2 = $statusLabels[1] ?? 'For Interview';
+
+        $headers = [
+            'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Gender', 'Birthdate',
+            'Contact', 'Email', 'Address', 'Nationality', 'Religion', 'Civil Status',
+            'Country', 'Position', 'Employer', 'Agent', 'Branch', 'Source', 'Status', 'Remarks',
+            'Date Applied', 'Passport #', 'Date Issued', 'Place Issued', 'Expiration',
+        ];
+
+        $sampleRows = [
+            [
+                'Juan', 'P.', 'Dela Cruz', '', 'Male', '1995-03-14', '09171234567',
+                'juan.sample@email.com', '123 Sample St, Manila', 'Filipino', 'Christian', 'Single',
+                'Saudi Arabia', 'Caregiver', '', '', '', 'Walk-in', $sampleStatus1,
+                'SAMPLE ROW - replace with real data then delete',
+                '2026-09-15', 'P1234567A', '2021-05-10', 'DFA Manila', '2031-05-09',
+            ],
+            [
+                'Maria', 'S.', 'Santos', '', 'Female', '1990-07-22', '09179876543',
+                'maria.sample@email.com', '456 Another St, Cebu City', 'Filipino', 'Christian', 'Married',
+                'UAE', 'Chef', '', '', '', 'Facebook', $sampleStatus2,
+                'SAMPLE ROW - replace with real data then delete',
+                '2026-09-20', '', '', '', '',
+            ],
+        ];
+
+        $callback = function () use ($headers, $sampleRows) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($sampleRows as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=applicants_bulk_template.csv',
+        ]);
+    }
+
+    /**
+     * Parse the uploaded CSV, validate EVERY row first, and only then insert.
+     * Any row error aborts the whole import and reports each bad row (with its
+     * CSV line number) so the file can be fixed and re-uploaded.
+     *
+     * Matching is deliberately case/space-insensitive: lookups (agent, branch,
+     * employer, status, etc.) are resolved on a trimmed + lowercased key, so
+     * "PENDING" or "For  Interview " never fail because of casing/spacing.
+     */
+    public function bulkImport(Request $request)
+    {
+        $agencyId = $this->resolveAgencyId();
+        if (! $agencyId) {
+            return back()->withErrors(['csv_file' => 'No agency context. Please log in with an agency account to import applicants.']);
+        }
+
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $file = $request->file('csv_file');
+        $rows = $this->parseBulkCsv($file->getRealPath());
+        if (is_string($rows)) {
+            // parse error (bad file / missing required headers / too many rows)
+            return back()->withErrors(['csv_file' => $rows]);
+        }
+
+        $user = auth()->user();
+        $branchLocked = $user && $user->isBranchLocked();
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        // ---- Preload lookup maps (name-key => id), scoped for this user ----
+        $agentOptions = $this->assignableAgents()->load('branch:id,name');
+        $branchOptions = $this->assignableBranches();
+        $employerOptions = Employer::where('agency_id', $agencyId)->get();
+
+        $nameMap = function ($collection) use ($norm) {
+            $map = [];
+            foreach ($collection as $item) {
+                $key = $norm($item->name);
+                if ($key !== '' && ! array_key_exists($key, $map)) {
+                    $map[$key] = $item;
+                }
+            }
+
+            return $map;
+        };
+
+        $agentMap = $nameMap($agentOptions);
+        $branchMap = $nameMap($branchOptions);
+        $employerMap = $nameMap($employerOptions);
+        $nationalityMap = $nameMap(Nationality::all());
+        $religionMap = $nameMap(Religion::all());
+        $civilStatusMap = $nameMap(CivilStatus::all());
+        $countryMap = $nameMap(Country::all());
+        $positionMap = $nameMap(Position::all());
+
+        $statusByLabel = [];
+        $statusByCode = [];
+        foreach (StatusCode::all() as $sc) {
+            $statusByLabel[$norm($sc->label)] = (int) $sc->code;
+            $statusByCode[$norm((string) $sc->code)] = (int) $sc->code;
+        }
+
+        $errors = [];
+        $validatedRows = [];
+        $maxRows = 2000;
+
+        foreach ($rows as $row) {
+            $line = $row['line'];
+            $d = $row['data'];
+            $rowErrors = [];
+
+            $first = trim((string) ($d['first_name'] ?? ''));
+            $last = trim((string) ($d['last_name'] ?? ''));
+            if ($first === '' && $last === '') {
+                continue; // fully empty line -> skip silently
+            }
+
+            // ---- Plain fields ----
+            if ($first === '') {
+                $rowErrors[] = 'First Name is required.';
+            } elseif (mb_strlen($first) > 255) {
+                $rowErrors[] = 'First Name is too long (max 255).';
+            }
+            if ($last === '') {
+                $rowErrors[] = 'Last Name is required.';
+            } elseif (mb_strlen($last) > 255) {
+                $rowErrors[] = 'Last Name is too long (max 255).';
+            }
+
+            $middle = trim((string) ($d['middle_name'] ?? ''));
+            $suffix = trim((string) ($d['suffix'] ?? ''));
+            $gender = trim((string) ($d['gender'] ?? ''));
+            $email = mb_strtolower(trim((string) ($d['email'] ?? '')));
+            $contact = trim((string) ($d['contact'] ?? ''));
+            $address = trim((string) ($d['address'] ?? ''));
+            $remarks = trim((string) ($d['remarks'] ?? ''));
+            $source = trim((string) ($d['source'] ?? ''));
+
+            if (mb_strlen($middle) > 255) {
+                $rowErrors[] = 'Middle Name is too long (max 255).';
+            }
+            if (mb_strlen($suffix) > 50) {
+                $rowErrors[] = 'Suffix is too long (max 50).';
+            }
+            if (mb_strlen($gender) > 20) {
+                $rowErrors[] = 'Gender is too long (max 20).';
+            } elseif ($gender !== '') {
+                $gender = ucfirst(mb_strtolower($gender)); // Male / Female / etc.
+            }
+            if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $rowErrors[] = "Email '{$email}' is not a valid email address.";
+            }
+            if (mb_strlen($contact) > 50) {
+                $rowErrors[] = 'Contact is too long (max 50).';
+            }
+
+            // ---- Birthdate (flexible formats; stored as Y-m-d) ----
+            $birthdate = null;
+            $birthRaw = trim((string) ($d['birthdate'] ?? ''));
+            if ($birthRaw !== '') {
+                try {
+                    $birthdate = Carbon::parse($birthRaw)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    $rowErrors[] = "Birthdate '{$birthRaw}' is not a valid date.";
+                }
+            }
+
+            // ---- Date Applied (optional; maps to the applicant's "Date Applied",
+            // i.e. created_at shown in Browse Applicants) — Toybits 2026-10-06 ----
+            $dateApplied = null;
+            $dateAppliedRaw = trim((string) ($d['date_applied'] ?? ''));
+            if ($dateAppliedRaw !== '') {
+                try {
+                    $dateApplied = Carbon::parse($dateAppliedRaw)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    $rowErrors[] = "Date Applied '{$dateAppliedRaw}' is not a valid date.";
+                }
+            }
+
+            // ---- Passport details (optional) — Toybits 2026-10-06 ----
+            $passportNo = trim((string) ($d['passport_no'] ?? ''));
+            $passportIssue = null;
+            $passportIssueRaw = trim((string) ($d['passport_issue_date'] ?? ''));
+            if ($passportIssueRaw !== '') {
+                try {
+                    $passportIssue = Carbon::parse($passportIssueRaw)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    $rowErrors[] = "Date Issued '{$passportIssueRaw}' is not a valid date.";
+                }
+            }
+            $passportExpiry = null;
+            $passportExpiryRaw = trim((string) ($d['passport_expiry_date'] ?? ''));
+            if ($passportExpiryRaw !== '') {
+                try {
+                    $passportExpiry = Carbon::parse($passportExpiryRaw)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    $rowErrors[] = "Expiration '{$passportExpiryRaw}' is not a valid date.";
+                }
+            }
+            $passportPlace = trim((string) ($d['passport_place_of_issue'] ?? ''));
+            if (mb_strlen($passportNo) > 50) {
+                $rowErrors[] = 'Passport # is too long (max 50).';
+            }
+            if (mb_strlen($passportPlace) > 255) {
+                $rowErrors[] = 'Place Issued is too long (max 255).';
+            }
+            if ($passportIssue && $passportExpiry && $passportExpiry <= $passportIssue) {
+                $rowErrors[] = 'Expiration must be after Date Issued.';
+            }
+
+            // ---- Lookup-by-name columns ----
+            $resolve = function ($raw, $map, string $label) use ($norm, &$rowErrors) {
+                $raw = trim((string) $raw);
+                if ($raw === '') {
+                    return null;
+                }
+                $item = $map[$norm($raw)] ?? null;
+                if (! $item) {
+                    $available = collect(array_keys($map))->take(6)->map(fn ($k) => ucwords($k))->implode(', ');
+                    $rowErrors[] = "{$label} '{$raw}' not found.".($available !== '' ? " Available: {$available}" : '');
+
+                    return null;
+                }
+
+                return $item->id;
+            };
+
+            $nationalityId = $resolve($d['nationality'] ?? '', $nationalityMap, 'Nationality');
+            $religionId = $resolve($d['religion'] ?? '', $religionMap, 'Religion');
+            $civilStatusId = $resolve($d['civil_status'] ?? '', $civilStatusMap, 'Civil Status');
+            $countryId = $resolve($d['country'] ?? '', $countryMap, 'Country');
+            $positionId = $resolve($d['position'] ?? '', $positionMap, 'Position');
+            $employerId = $resolve($d['employer'] ?? '', $employerMap, 'Employer');
+            $agentId = $resolve($d['agent'] ?? '', $agentMap, 'Agent');
+
+            // ---- Branch (respects branch-locked accounts) ----
+            $branchId = null;
+            $branchRaw = trim((string) ($d['branch'] ?? ''));
+            if ($branchRaw !== '') {
+                $branch = $branchMap[$norm($branchRaw)] ?? null;
+                if (! $branch) {
+                    $available = collect(array_keys($branchMap))->take(6)->map(fn ($k) => ucwords($k))->implode(', ');
+                    $rowErrors[] = "Branch '{$branchRaw}' not found.".($available !== '' ? " Available: {$available}" : '');
+                } else {
+                    $branchId = $branch->id;
+                    if ($branchLocked && (int) $branchId !== (int) $user->branch_id) {
+                        $rowErrors[] = 'You can only assign applicants to your own branch.';
+                    }
+                }
+            } elseif ($branchLocked) {
+                $branchId = $user->branch_id; // default to own branch
+            }
+
+            // Mirror the create-form rule: Source = Branch requires the agent
+            // to belong to the chosen branch.
+            if ($norm($source) === 'branch' && $agentId && $branchId) {
+                $agent = $agentMap[$norm(trim((string) ($d['agent'] ?? '')))] ?? null;
+                if ($agent && $agent->branch_id && (int) $agent->branch_id !== (int) $branchId) {
+                    $rowErrors[] = 'The selected agent does not belong to the selected branch.';
+                }
+            }
+
+            // ---- Status (label OR code; case/space-insensitive) ----
+            $statusCode = 0; // default Pending, mirrors single-create
+            $statusRaw = trim((string) ($d['status'] ?? ''));
+            if ($statusRaw !== '') {
+                $key = $norm($statusRaw);
+                if (isset($statusByCode[$key])) {
+                    $statusCode = $statusByCode[$key];
+                } elseif (isset($statusByLabel[$key])) {
+                    $statusCode = $statusByLabel[$key];
+                } else {
+                    $rowErrors[] = "Status '{$statusRaw}' not found. Use a status label (e.g. Pending, For Interview) or its code number.";
+                }
+            }
+
+            // ---- Duplicate detection (Cyd 2026-09-26) ----
+            // Flag rows that look like an applicant we already have. Only run
+            // once the row is otherwise valid so the message is useful.
+            if (empty($rowErrors)) {
+                $dupes = ApplicantDuplicateChecker::find($agencyId, [
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'contact' => $contact,
+                    'birthdate' => $birthdate,
+                ]);
+                if ($dupes->isNotEmpty()) {
+                    $names = $dupes->take(3)->map(fn ($m) => trim($m['applicant']->first_name.' '.$m['applicant']->last_name).' (#'.$m['applicant']->applicant_no.')')->implode('; ');
+                    $rowErrors[] = "Possible duplicate of existing applicant: {$names}. Remove this row or confirm it is a different person.";
+                }
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['line' => $line, 'errors' => $rowErrors];
+                continue;
+            }
+
+            $validatedRows[] = [
+                'first_name' => $first,
+                'middle_name' => $middle !== '' ? $middle : null,
+                'last_name' => $last,
+                'suffix' => $suffix !== '' ? $suffix : null,
+                'gender' => $gender !== '' ? $gender : null,
+                'birthdate' => $birthdate,
+                'contact' => $contact !== '' ? $contact : null,
+                'email' => $email !== '' ? $email : null,
+                'address' => $address !== '' ? $address : null,
+                'remarks' => $remarks !== '' ? $remarks : null,
+                'source' => $source !== '' ? $source : null,
+                'nationality_id' => $nationalityId,
+                'religion_id' => $religionId,
+                'civil_status_id' => $civilStatusId,
+                'country_id' => $countryId,
+                'position_id' => $positionId,
+                'employer_id' => $employerId,
+                'agent_id' => $agentId,
+                'branch_id' => $branchId,
+                'status_code' => $statusCode,
+                'has_passport' => $passportNo !== '' ? 'with' : null,
+                // Non-column payloads handled after Applicant::create().
+                '_date_applied' => $dateApplied,
+                '_passport' => ($passportNo !== '' || $passportIssue || $passportExpiry || $passportPlace !== '')
+                    ? [
+                        'passport_no' => $passportNo !== '' ? $passportNo : null,
+                        'issue_date' => $passportIssue,
+                        'expiry_date' => $passportExpiry,
+                        'place_of_issue' => $passportPlace !== '' ? $passportPlace : null,
+                    ]
+                    : null,
+            ];
+        }
+
+        if (count($validatedRows) > $maxRows) {
+            return back()->withErrors(['csv_file' => "Too many rows: the file has more than {$maxRows} applicant rows. Split it into smaller files."]);
+        }
+
+        if (! empty($errors)) {
+            return back()->with('bulk_errors', $errors)->withInput();
+        }
+
+        // ---- All rows valid: insert in one transaction ----
+        $count = count($validatedRows);
+        DB::transaction(function () use ($validatedRows, $agencyId) {
+            foreach ($validatedRows as $data) {
+                $passport = $data['_passport'] ?? null;
+                $dateApplied = $data['_date_applied'] ?? null;
+                unset($data['_passport'], $data['_date_applied']);
+
+                $data['agency_id'] = $agencyId;
+                $data['encoder'] = auth()->user()->name; // name only, no date suffix (matches store())
+                $data['created_by'] = auth()->id();
+
+                $applicant = Applicant::create($data);
+
+                // Date Applied is the applicant's created_at (Browse Applicants column).
+                if ($dateApplied) {
+                    $applicant->created_at = Carbon::parse($dateApplied)->startOfDay();
+                    $applicant->saveQuietly();
+                }
+
+                // Passport sub-record (mirrors syncPassport() on the create form).
+                if ($passport) {
+                    $applicant->passport()->create(array_merge($passport, [
+                        'agency_id' => $agencyId,
+                    ]));
+                }
+            }
+        });
+
+        SensitiveActionLogger::log(
+            'bulk_applicant_import',
+            subject: null,
+            description: auth()->user()->name." bulk-imported {$count} applicants via CSV.",
+            metadata: ['count' => $count],
+            agencyId: $agencyId,
+        );
+
+        return redirect()->route('applicants.index')
+            ->with('success', "Bulk upload complete: {$count} applicant(s) imported from CSV.");
+    }
+
+    /**
+     * Read a CSV file into rows keyed by canonical field name.
+     *
+     * Tolerant parser aimed at real-world Excel round-trips:
+     *  - strips UTF-8 BOM, decodes UTF-16 (LE/BE), falls back to Windows-1252
+     *  - auto-detects delimiter (comma / semicolon / tab)
+     *  - does NOT assume the header is the very first line: leading blank lines
+     *    or a stray title row are skipped until a row containing the required
+     *    "First Name" / "Last Name" headers is found
+     *  - unknown extra columns are ignored
+     *
+     * @return array|string array of ['line' => int, 'data' => [field => value]] or an error message
+     */
+    private function parseBulkCsv(string $path)
+    {
+        $raw = @file_get_contents($path);
+        if ($raw === false) {
+            return 'Could not read the uploaded file.';
+        }
+
+        // ---- Encoding normalization (Excel writes all of these) ----
+        if (str_starts_with($raw, "\xFF\xFE")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16LE');
+        } elseif (str_starts_with($raw, "\xFE\xFF")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16BE');
+        } elseif (str_starts_with($raw, "\xEF\xBB\xBF")) {
+            $raw = substr($raw, 3); // UTF-8 BOM
+        }
+        if ($raw !== '' && ! mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+        if (trim($raw) === '') {
+            return 'The file is empty.';
+        }
+
+        // ---- Try each plausible delimiter; the first one that yields a valid
+        // header row wins. (Fully re-parsing 2-3 times is fine: files are
+        // capped at 2,000 data rows and 5 MB.) ----
+        $lastError = null;
+        foreach ([',', ';', "\t"] as $delimiter) {
+            $result = $this->parseBulkCsvWithDelimiter($raw, $delimiter);
+            if (is_array($result)) {
+                return $result;
+            }
+            $lastError = $result;
+        }
+
+        return $lastError;
+    }
+
+    /**
+     * @return array|string parsed rows, or an error message for this delimiter
+     */
+    private function parseBulkCsvWithDelimiter(string $raw, string $delimiter)
+    {
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, $raw);
+        rewind($handle);
+
+        $parsedRows = [];
+        while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $parsedRows[] = $cells;
+        }
+        fclose($handle);
+
+        if (empty($parsedRows)) {
+            return 'The file has no readable rows.';
+        }
+
+        $aliases = $this->bulkHeaderAliases();
+
+        // ---- Find the header row: skip blank lines and stray title lines ----
+        $headerIndex = null;
+        $fieldByIndex = [];
+        $scanLimit = min(count($parsedRows), 30);
+        for ($i = 0; $i < $scanLimit; $i++) {
+            $cells = $parsedRows[$i];
+            if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                continue; // blank line
+            }
+            $candidate = [];
+            foreach ($cells as $idx => $header) {
+                $field = $aliases[$this->normKey($header)] ?? null;
+                if ($field && ! in_array($field, $candidate, true)) {
+                    $candidate[$idx] = $field;
+                }
+            }
+            $fields = array_values($candidate);
+            // A row only counts as the header when it names BOTH required columns.
+            if (in_array('first_name', $fields, true) && in_array('last_name', $fields, true)) {
+                $headerIndex = $i;
+                $fieldByIndex = $candidate;
+                break;
+            }
+        }
+
+        if ($headerIndex === null) {
+            $firstNonBlank = null;
+            foreach (array_slice($parsedRows, 0, 5) as $cells) {
+                if (! empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    $firstNonBlank = implode(' | ', array_map(fn ($c) => trim((string) $c), $cells));
+                    break;
+                }
+            }
+            $preview = mb_substr($firstNonBlank ?? '(empty file)', 0, 160);
+
+            return 'No header row found. The file must have a header row containing "First Name" and "Last Name" columns (use the downloaded template and keep its first row unchanged). What the parser saw first: "'.$preview.'". If you added a title or blank line above the header, remove it, or just re-download the template and fill it in.';
+        }
+
+        // ---- Data rows = everything after the header row ----
+        $rows = [];
+        $line = $headerIndex + 1; // physical CSV line of the header
+        $dataLines = 0;
+        for ($i = $headerIndex + 1; $i < count($parsedRows); $i++) {
+            $line++;
+            $cells = $parsedRows[$i];
+            $data = [];
+            foreach ($fieldByIndex as $idx => $field) {
+                $data[$field] = trim((string) ($cells[$idx] ?? ''));
+            }
+            if (implode('', array_values($data)) === '') {
+                continue; // skip blank lines
+            }
+            $dataLines++;
+            if ($dataLines > 2000) {
+                return 'Too many rows: the file exceeds 2,000 applicant rows. Split it into smaller files.';
+            }
+            $rows[] = ['line' => $line, 'data' => $data];
+        }
+
+        if (empty($rows)) {
+            return 'The file has no data rows below the header.';
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Map normalized header labels to canonical applicant fields.
+     *
+     * @return array<string, string>
+     */
+    private function bulkHeaderAliases(): array
+    {
+        return [
+            'firstname' => 'first_name',
+            'first' => 'first_name',
+            'middlename' => 'middle_name',
+            'middle' => 'middle_name',
+            'lastname' => 'last_name',
+            'last' => 'last_name',
+            'suffix' => 'suffix',
+            'gender' => 'gender',
+            'sex' => 'gender',
+            'birthdate' => 'birthdate',
+            'dateofbirth' => 'birthdate',
+            'dob' => 'birthdate',
+            'birthday' => 'birthdate',
+            'contact' => 'contact',
+            'contactno' => 'contact',
+            'contactnumber' => 'contact',
+            'phone' => 'contact',
+            'phonenumber' => 'contact',
+            'mobile' => 'contact',
+            'cellphone' => 'contact',
+            'email' => 'email',
+            'emailaddress' => 'email',
+            'address' => 'address',
+            'homeaddress' => 'address',
+            'nationality' => 'nationality',
+            'religion' => 'religion',
+            'civilstatus' => 'civil_status',
+            'maritalstatus' => 'civil_status',
+            'country' => 'country',
+            'position' => 'position',
+            'positionapplied' => 'position',
+            'preferredposition' => 'position',
+            'employer' => 'employer',
+            'company' => 'employer',
+            'agent' => 'agent',
+            'branch' => 'branch',
+            'branchname' => 'branch',
+            'source' => 'source',
+            'status' => 'status',
+            'statuscode' => 'status',
+            'remarks' => 'remarks',
+            'notes' => 'remarks',
+            // Toybits 2026-10-06 — passport + date-applied columns on the template.
+            'dateapplied' => 'date_applied',
+            'dateofapplication' => 'date_applied',
+            'applied' => 'date_applied',
+            'passport' => 'passport_no',
+            'passportno' => 'passport_no',
+            'passportnumber' => 'passport_no',
+            'dateissued' => 'passport_issue_date',
+            'issueddate' => 'passport_issue_date',
+            'issuedate' => 'passport_issue_date',
+            'passportissuedate' => 'passport_issue_date',
+            'placeissued' => 'passport_place_of_issue',
+            'placeofissue' => 'passport_place_of_issue',
+            'passportplaceofissue' => 'passport_place_of_issue',
+            'expiration' => 'passport_expiry_date',
+            'expirationdate' => 'passport_expiry_date',
+            'expiry' => 'passport_expiry_date',
+            'expirydate' => 'passport_expiry_date',
+            'passportexpiry' => 'passport_expiry_date',
+            'passportexpirydate' => 'passport_expiry_date',
+            'validuntil' => 'passport_expiry_date',
+        ];
+    }
+
+    /**
+     * Normalize a header label: lowercase, strip non-alphanumerics.
+     */
+    private function normKey($value): string
+    {
+        return mb_strtolower(preg_replace('/[^a-z0-9]+/i', '', (string) $value));
     }
 
     public function show(Applicant $applicant)
@@ -748,6 +1458,8 @@ class ApplicantController extends Controller
      */
     public function withdrawnExport(Request $request)
     {
+        abort_unless(auth()->user()->canViewBackoutRepat(), 403, 'This folder is restricted to Admin and Accounting.');
+
         $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
 
         $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])

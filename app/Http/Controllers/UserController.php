@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Branch;
-use App\Models\UserPermission;
 use App\Models\ActivityLog;
 use App\Services\SensitiveActionLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -15,23 +14,6 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     use AuthorizesRequests;
-
-    /**
-     * All known permissions in the system.
-     */
-    private function getAllPermissions(): array
-    {
-        return [
-            'view_applicants',
-            'edit_applicants',
-            'view_bills',
-            'edit_bills',
-            'view_employers',
-            'edit_employers',
-            'view_reports',
-            'manage_users',
-        ];
-    }
 
     /**
      * Display a listing of users.
@@ -219,59 +201,6 @@ class UserController extends Controller
         $activities = $user->activities()->latest()->get();
 
         return view('users.show', compact('user', 'activities'));
-    }
-
-    /**
-     * Show the permissions/roles management page for a user.
-     */
-    public function permissions(User $user)
-    {
-        $this->authorize('view', $user);
-
-        $allPermissions = $this->getAllPermissions();
-        $userPermissions = $user->permissions()->pluck('permission')->toArray();
-
-        return view('users.permissions', compact('user', 'userPermissions') + ['permissions' => $allPermissions]);
-    }
-
-    /**
-     * Update the user's role and granular permissions.
-     */
-    public function updatePermissions(Request $request, User $user)
-    {
-        $this->authorize('update', $user);
-
-        $this->ensureCanAssignRole($request->input('user_type'));
-
-        $validated = $request->validate([
-            'user_type'   => ['required', 'string', 'max:50'],
-            'permissions'  => ['nullable', 'array'],
-            'permissions.*' => ['string', Rule::in($this->getAllPermissions())],
-        ]);
-
-        $oldRole = $user->user_type;
-
-        // Update the user's role
-        $user->update(['user_type' => $validated['user_type']]);
-
-        // Log role change if role actually changed
-        if ($oldRole !== $validated['user_type']) {
-            SensitiveActionLogger::roleChanged($user, $oldRole, $validated['user_type'], auth()->user());
-        }
-
-        // Replace all permissions (delete old, create new)
-        $user->permissions()->delete();
-
-        if (! empty($validated['permissions'])) {
-            foreach ($validated['permissions'] as $permission) {
-                $user->permissions()->create([
-                    'permission' => $permission,
-                ]);
-            }
-        }
-
-        return redirect()->route('users.permissions', $user)
-            ->with('success', 'Permissions updated successfully.');
     }
 
     /**

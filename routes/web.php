@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\CommissionPaymentController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CustomFieldDefinitionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployerAuthController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\EmployerDashboardController;
 use App\Http\Controllers\EmployerBillingController;
 use App\Http\Controllers\JobPositionController;
 use App\Http\Controllers\MarketingAgencyController;
+use App\Http\Controllers\AgentController;
 use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
@@ -240,7 +242,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // Authenticated routes
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::match(['GET', 'POST'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Super admin dashboard
@@ -274,12 +276,8 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/agency/dashboard', [AgencyDashboardController::class, 'index'])->name('agency.dashboard');
 
     // User management (admin, super_admin only)
-    Route::middleware('role:admin,super_admin')->group(function () {
+    Route::group([], function () {
         Route::resource('users', UserController::class);
-
-        // Role & permission assignment UI
-        Route::get('/users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
-        Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
 
         // User activation / suspension
         Route::put('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
@@ -288,7 +286,7 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Agency management (admin, super_admin only)
-    Route::middleware('role:admin,super_admin')->group(function () {
+    Route::group([], function () {
         Route::get('/agencies', [AgencyController::class, 'index'])->name('agencies.index');
         Route::get('/agencies/create', [AgencyController::class, 'create'])->name('agencies.create');
         Route::post('/agencies', [AgencyController::class, 'store'])->name('agencies.store');
@@ -308,10 +306,16 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Applicant routes - recruiter and other agency roles
-    Route::middleware('role:admin,super_admin,recruiter,staff,processor,coordinator,interviewer,manager,marketer,director')->group(function () {
+    Route::group([], function () {
         Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
         Route::get('applicants/withdrawn-repat/export', [ApplicantController::class, 'withdrawnExport'])->name('applicants.withdrawn.export');
         Route::get('applicants/withdrawn-repat', [ApplicantController::class, 'withdrawn'])->name('applicants.withdrawn');
+        // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an applicant id)
+        Route::get('applicants/bulk', [ApplicantController::class, 'bulkUpload'])->name('applicants.bulk');
+        Route::get('applicants/bulk/template', [ApplicantController::class, 'bulkTemplate'])->name('applicants.bulk.template');
+        Route::post('applicants/bulk/import', [ApplicantController::class, 'bulkImport'])->name('applicants.bulk.import');
+        // Live duplicate check for the Add Applicant form (must precede the resource route)
+        Route::post('applicants/check-duplicates', [ApplicantController::class, 'checkDuplicates'])->name('applicants.check_duplicates');
         Route::patch('applicants/{applicant}/status', [ApplicantController::class, 'updateStatus'])->name('applicants.status');
         Route::get('applicants/{applicant}/soa', [ApplicantController::class, 'soa'])->name('applicants.soa');
         Route::resource('applicants', ApplicantController::class);
@@ -336,7 +340,11 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Employer routes (admin, super_admin only)
-    Route::middleware('role:admin,super_admin,staff')->group(function () {
+    Route::group([], function () {
+        // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an employer id)
+        Route::get('employers/bulk', [EmployerController::class, 'bulkUpload'])->name('employers.bulk');
+        Route::get('employers/bulk/template', [EmployerController::class, 'bulkTemplate'])->name('employers.bulk.template');
+        Route::post('employers/bulk/import', [EmployerController::class, 'bulkImport'])->name('employers.bulk.import');
         Route::get('employers/{employer}/soa', [EmployerController::class, 'soa'])->name('employers.soa');
         Route::resource('employers', EmployerController::class);
 
@@ -351,7 +359,7 @@ Route::middleware('auth:web')->group(function () {
     Route::resource('marketing-agencies.marketing-agents', MarketingAgentController::class);
 
     // Billing routes (admin, super_admin, billing)
-    Route::middleware('role:admin,super_admin,billing')->group(function () {
+    Route::group([], function () {
         Route::resource('bills', BillController::class);
         Route::resource('payments', PaymentController::class);
         Route::resource('official-receipts', OfficialReceiptController::class);
@@ -362,9 +370,13 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Custom field management (admin, super_admin only)
-    Route::middleware('role:admin,super_admin')->group(function () {
+    Route::group([], function () {
         // Agent management
-    Route::resource('agents', \App\Http\Controllers\AgentController::class);
+        // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an agent id)
+        Route::get('agents/bulk', [AgentController::class, 'bulkUpload'])->name('agents.bulk');
+        Route::get('agents/bulk/template', [AgentController::class, 'bulkTemplate'])->name('agents.bulk.template');
+        Route::post('agents/bulk/import', [AgentController::class, 'bulkImport'])->name('agents.bulk.import');
+        Route::resource('agents', \App\Http\Controllers\AgentController::class);
 
     Route::resource('custom-fields', CustomFieldDefinitionController::class);
 
@@ -392,11 +404,11 @@ Route::middleware('auth:web')->group(function () {
     Route::prefix('accounting')->name('accounting.')->group(function () {
         // Agency finance dashboard — restricted to admin/super_admin/billing
         Route::get('/', [AccountingController::class, 'dashboard'])->name('dashboard')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/export', [AccountingController::class, 'export'])->name('export')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/receivables', [ReceivablesController::class, 'receivables'])->name('receivables')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/employer/{employer}', [AccountingController::class, 'employer'])->name('employer');
         Route::get('/worker/{applicant}', [AccountingController::class, 'worker'])->name('worker');
         Route::get('/marketing-agency/{marketingAgency}', [AccountingController::class, 'marketingAgency'])->name('marketing-agency');
@@ -407,39 +419,53 @@ Route::middleware('auth:web')->group(function () {
     // Receivable & Payments module — Tab 1: Receivable
     Route::prefix('receivable')->name('receivable.')->group(function () {
         Route::get('/', [ReceivableController::class, 'index'])->name('index')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/create', [ReceivableController::class, 'create'])->name('create')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::post('/', [ReceivableController::class, 'store'])->name('store')
-            ->middleware('role:admin,super_admin,billing');
+            ;
+        // Bulk CSV upload (must precede the {receivable} show route so 'bulk' is not captured as an id).
+        Route::get('/bulk', [ReceivableController::class, 'bulkUpload'])->name('bulk')
+            ;
+        Route::get('/bulk/template', [ReceivableController::class, 'bulkTemplate'])->name('bulk.template')
+            ;
+        Route::post('/bulk/import', [ReceivableController::class, 'bulkImport'])->name('bulk.import')
+            ;
         Route::get('/{receivable}', [ReceivableController::class, 'show'])->name('show')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::patch('/{receivable}/status', [ReceivableController::class, 'updateStatus'])->name('status')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         // Batch status change from the index checkboxes (Toybits 2026-08-31).
         Route::post('/bulk-status', [ReceivableController::class, 'bulkUpdateStatus'])->name('bulk_status')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::delete('/{receivable}', [ReceivableController::class, 'destroy'])->name('destroy')
-            ->middleware('role:admin,super_admin');
+            ;
     });
 
     // Receivable & Payments module — Tab 2: Expenses & Payments
     Route::prefix('expense-request')->name('expense_request.')->group(function () {
         Route::get('/', [ExpenseRequestController::class, 'index'])->name('index')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/create', [ExpenseRequestController::class, 'create'])->name('create')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::post('/', [ExpenseRequestController::class, 'store'])->name('store')
-            ->middleware('role:admin,super_admin,billing');
+            ;
+        // Bulk CSV upload (must precede the {expense_request} show route so 'bulk' is not captured as an id).
+        Route::get('/bulk', [ExpenseRequestController::class, 'bulkUpload'])->name('bulk')
+            ;
+        Route::get('/bulk/template', [ExpenseRequestController::class, 'bulkTemplate'])->name('bulk.template')
+            ;
+        Route::post('/bulk/import', [ExpenseRequestController::class, 'bulkImport'])->name('bulk.import')
+            ;
         Route::post('/check-duplicates', [ExpenseRequestController::class, 'checkDuplicates'])->name('check_duplicates')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         // Batch status change from the index checkboxes (Toybits 2026-08-31).
         Route::post('/bulk-status', [ExpenseRequestController::class, 'bulkUpdateStatus'])->name('bulk_status')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/{expense_request}', [ExpenseRequestController::class, 'show'])->name('show')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
-            ->middleware('role:admin,super_admin,billing');
+            ;
     });
 
     // Receivable & Payments module — Tab 3: Agents Report
@@ -447,35 +473,35 @@ Route::middleware('auth:web')->group(function () {
     // Laravel will bind them to the Agent model (route-model binding 404s).
     Route::prefix('agents-report')->name('agent_report.')->group(function () {
         Route::get('/', [AgentReportController::class, 'index'])->name('index')
-            ->middleware('role:admin,super_admin,billing');
+            ;
 
         // Tab 3: Deductions & Paid
         Route::get('/deductions/create', [AgentReportController::class, 'deductionCreate'])->name('deduction.create')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::post('/deductions', [AgentReportController::class, 'deductionStore'])->name('deduction.store')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionShow'])->name('deduction.show')
-            ->middleware('role:admin,super_admin,billing');
+            ;
 
         // Tab 4: Starting Balance
         Route::get('/starting-balances/create', [AgentReportController::class, 'startingBalanceCreate'])->name('starting_balance.create')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::post('/starting-balances', [AgentReportController::class, 'startingBalanceStore'])->name('starting_balance.store')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/starting-balances/{starting_balance}', [AgentReportController::class, 'startingBalanceShow'])->name('starting_balance.show')
-            ->middleware('role:admin,super_admin,billing');
+            ;
 
         // Tab 5: Report — print + CSV export
         Route::get('/print', [AgentReportController::class, 'print'])->name('print')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/export', [AgentReportController::class, 'export'])->name('export')
-            ->middleware('role:admin,super_admin,billing');
+            ;
 
         // Tab 5: Agent Ledger — single-agent detail view (clickable Name) + print/PDF
         Route::get('/ledger/{agent}', [AgentReportController::class, 'show'])->name('show')
-            ->middleware('role:admin,super_admin,billing');
+            ;
         Route::get('/ledger/{agent}/print', [AgentReportController::class, 'showPrint'])->name('show.print')
-            ->middleware('role:admin,super_admin,billing');
+            ;
     });
 
     // Report Template CRUD
@@ -486,7 +512,7 @@ Route::middleware('auth:web')->group(function () {
 
     // Accounts module — renamed from "Chart of Accounts", now lives inside Settings.
     // URI nested under /settings but resource route names stay accounts.* for compatibility.
-    Route::prefix('settings')->middleware('role:admin,super_admin')->group(function () {
+    Route::prefix('settings')->group(function () {
         Route::resource('accounts', \App\Http\Controllers\AccountController::class)->except('show');
     });
 
@@ -496,6 +522,14 @@ Route::middleware('auth:web')->group(function () {
     // Per-agency Applicants table column selection
     Route::get('/settings/applicants-table-columns', [SettingsController::class, 'applicantTableColumns'])->name('settings.applicants-table-columns');
     Route::post('/settings/applicants-table-columns', [SettingsController::class, 'updateApplicantTableColumns'])->name('settings.applicants-table-columns.update');
+
+    // Per-agency site display: ALL CAPS toggle
+    Route::get('/settings/site-display', [SettingsController::class, 'siteDisplay'])->name('settings.site-display');
+    Route::post('/settings/site-display', [SettingsController::class, 'updateSiteDisplay'])->name('settings.site-display.update');
+
+    // Per-agency Agency Settings (sidebar visibility toggles)
+    Route::get('/settings/agency', [SettingsController::class, 'agencySettings'])->name('settings.agency');
+    Route::post('/settings/agency', [SettingsController::class, 'updateAgencySettings'])->name('settings.agency.update');
 
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');
@@ -529,4 +563,9 @@ Route::middleware('auth:web')->group(function () {
         Route::get('cases', [CaseController::class, 'index'])->name('cases.index');
         Route::post('cases', [CaseController::class, 'store'])->name('cases.store')->middleware('throttle:29,1');
     });
+
+    // Per-agency Company Profile (WYSIWYG page content)
+    Route::get('/company-profile', [CompanyProfileController::class, 'show'])->name('company-profile.show');
+    Route::get('/company-profile/edit', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
+    Route::post('/company-profile', [CompanyProfileController::class, 'update'])->name('company-profile.update');
 });

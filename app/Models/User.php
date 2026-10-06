@@ -52,6 +52,74 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user may access a module (see App\Support\ModuleAccess).
+     * super_admin/admin => everything; Accounting (billing) => admin minus the
+     * denied modules; everyone else => the allowlisted modules only.
+     */
+    public function canAccessModule(string $module): bool
+    {
+        return \App\Support\ModuleAccess::allows($this->user_type, $module);
+    }
+
+    /** True for the limited "Rest of Account" tier (everyone below admin/accounting). */
+    public function isRestOfAccount(): bool
+    {
+        return \App\Support\ModuleAccess::isRestOfAccount($this->user_type);
+    }
+
+    /**
+     * Privileged "sees everything" account (client 2026-09-28: MAE, EVELYN,
+     * ANGEL). These bypass the own-records-only scoping and keep the gated
+     * folders / Statistics report / full Reports tab / Agent Deduction create.
+     * Configured in config/mjolnir.php.
+     */
+    public function isPrivileged(): bool
+    {
+        $list = (array) config('mjolnir.privileged_accounts', []);
+        if (empty($list)) {
+            return false;
+        }
+
+        $name  = strtoupper(trim((string) $this->name));
+        $email = strtoupper(trim((string) strtok((string) $this->email, '@')));
+
+        return in_array($name, $list, true) || in_array($email, $list, true);
+    }
+
+    /**
+     * Whether this user may open the Backout / Cancelled / Repat folder.
+     * (Mjolnir card "Backout, Repat Module") Admin + Accounting only.
+     */
+    public function canViewBackoutRepat(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin', 'billing'], true);
+    }
+
+    /**
+     * Whether this user may change expense-request status (single or bulk).
+     * (Cyd 2026-09-28 #1) Admins plus the privileged accounts (Mae/Evelyn).
+     */
+    public function canChangeExpenseStatus(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin'], true)
+            || $this->isPrivileged();
+    }
+
+    /**
+     * Whether this user may see accounting data belonging to other users.
+     * Admins/Accounting keep full visibility; everyone else is limited to
+     * their own records unless they are a privileged account.
+     */
+    public function seesAllAccountingData(): bool
+    {
+        if ($this->isPrivileged()) {
+            return true;
+        }
+
+        return in_array((string) $this->user_type, ['super_admin', 'admin'], true);
+    }
+
+    /**
      * Full name assembled from name + middle name + surname (the "Name" column).
      */
     public function getFullNameAttribute(): string
@@ -79,9 +147,21 @@ class User extends Authenticatable
         return (int) $this->branch_id > 0;
     }
 
-    public function permissions()
+    /**
+     * True when this account belongs to the agency's MAIN OFFICE branch.
+     * Main Office users are head-office staff: they may pick any branch on
+     * forms that support it (e.g. Expense requests) instead of being locked
+     * to their own branch. (Cyd 2026-09-26)
+     */
+    public function isMainOffice(): bool
     {
-        return $this->hasMany(UserPermission::class);
+        if ((int) $this->branch_id <= 0) {
+            return false;
+        }
+
+        $name = optional($this->branch)->name;
+
+        return $name !== null && mb_strtolower(trim($name)) === 'main office';
     }
 
     public function activities()

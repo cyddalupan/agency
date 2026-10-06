@@ -118,17 +118,21 @@ class SidebarRouteAlignmentTest extends TestCase
         return array_map(fn(string $type) => [$type], self::ALL_USER_TYPES);
     }
 
-    // ---------- billing (Accounting) must not see links that 403 ----------
+    // ---------- billing (Accounting): admin tier minus ACCOUNTING_DENIED ----------
 
     #[Test]
-    public function billing_user_does_not_see_applicants_or_employer_links(): void
+    public function billing_user_sees_applicant_and_employer_links(): void
     {
         $billing = $this->makeUser('billing');
         $html = $this->sidebarNavHtml($this->sidebarHtml($billing));
 
-        $this->assertStringNotContainsString(route('applicants.index'), $html);
-        $this->assertStringNotContainsString(route('applicants.withdrawn'), $html);
-        $this->assertStringNotContainsString(route('employers.index'), $html);
+        // Accounting tier = admin minus ACCOUNTING_DENIED (App\Support\ModuleAccess),
+        // so applicants/employers are reachable; every link below returns 200.
+        // Backout/Cancelled/Repat is now open to Accounting too
+        // (Mjolnir card "Backout, Repat Module", 2026-10-06).
+        $this->assertStringContainsString(route('applicants.index'), $html);
+        $this->assertStringContainsString(route('applicants.withdrawn'), $html);
+        $this->assertStringContainsString(route('employers.index'), $html);
     }
 
     #[Test]
@@ -146,7 +150,9 @@ class SidebarRouteAlignmentTest extends TestCase
         $billing = $this->makeUser('billing');
         $html = $this->sidebarNavHtml($this->sidebarHtml($billing));
 
-        $this->assertStringContainsString(route('accounting.dashboard'), $html);
+        // Accounting keeps Receivable + Expenses. Statistics (accounting.dashboard)
+        // is restricted to the privileged accounts (Mae/Evelyn/Angel) per
+        // Cyd 2026-09-28, so a plain billing user does not get it.
         $this->assertStringContainsString(route('receivable.index'), $html);
         $this->assertStringContainsString(route('expense_request.index'), $html);
     }
@@ -154,12 +160,15 @@ class SidebarRouteAlignmentTest extends TestCase
     // ---------- other user types ----------
 
     #[Test]
-    public function recruiter_does_not_see_employer_link(): void
+    public function rest_of_account_user_sees_employer_link(): void
     {
         $recruiter = $this->makeUser('recruiter');
         $html = $this->sidebarNavHtml($this->sidebarHtml($recruiter));
 
-        $this->assertStringNotContainsString(route('employers.index'), $html);
+        // "Rest of Account" tier is allowed the employers module
+        // (App\Support\ModuleAccess::STAFF_ALLOWED), so the link is visible
+        // and /employers returns 200 for this user type.
+        $this->assertStringContainsString(route('employers.index'), $html);
     }
 
     #[Test]

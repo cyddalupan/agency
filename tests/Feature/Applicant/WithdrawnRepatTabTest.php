@@ -112,32 +112,27 @@ class WithdrawnRepatTabTest extends TestCase
     }
 
     #[Test]
-    public function withdrawn_list_respects_branch_scoping(): void
+    public function withdrawn_folder_is_forbidden_for_branch_staff(): void
     {
         $branchA = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Branch A']);
-        $branchB = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Branch B']);
 
+        // Non-admin branch account. Per Mjolnir card "Backout, Repat Module"
+        // (2026-10-06) the folder is restricted to Admin + Accounting only, so
+        // branch/staff accounts are forbidden (branch scoping below is moot).
         $branchUser = User::factory()->create([
             'agency_id' => $this->agency->id,
-            'user_type' => 'staff', // non-admin branch account → scoped to own branch
+            'user_type' => 'staff',
             'branch_id' => $branchA->id,
         ]);
 
-        $scoped = Applicant::factory()->withStatus(38)->create([
+        Applicant::factory()->withStatus(38)->create([
             'agency_id' => $this->agency->id,
             'branch_id' => $branchA->id,
         ]);
-        $otherBranch = Applicant::factory()->withStatus(38)->create([
-            'agency_id' => $this->agency->id,
-            'branch_id' => $branchB->id,
-        ]);
 
-        $response = $this->actingAs($branchUser)
-            ->get(route('applicants.withdrawn'));
-
-        $response->assertOk();
-        $response->assertSee($scoped->first_name);
-        $response->assertDontSee($otherBranch->first_name);
+        $this->actingAs($branchUser)
+            ->get(route('applicants.withdrawn'))
+            ->assertForbidden();
     }
 
     #[Test]

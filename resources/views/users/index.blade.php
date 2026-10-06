@@ -73,7 +73,6 @@
                             <div class="flex gap-1">
                                 <a href="{{ route('users.show', $user) }}" class="btn btn-xs btn-ghost">View</a>
                                 <a href="{{ route('users.edit', $user) }}" class="btn btn-xs btn-ghost">Edit</a>
-                                <a href="{{ route('users.permissions', $user) }}" class="btn btn-xs btn-ghost">Permissions</a>
                                 @if ($user->id !== auth()->id())
                                     @if ($user->status === 'inactive')
                                         <form action="{{ route('users.activate', $user) }}" method="POST" class="inline">

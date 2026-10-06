@@ -1,4 +1,4 @@
-@php $universe = config('app.universe', 1); @endphp
+@php $universe = config('app.universe', 1); $siteAllCaps = app_site_all_caps(); @endphp
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ $universe == 2 ? 'universe-2' : 'corporate' }}">
 <head>
@@ -13,6 +13,13 @@
         <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     @endif
     @vite('resources/css/app.css')
+    @include('partials.agency-site-colors')
+    @if($siteAllCaps)
+    <style>
+        /* Agency-level ALL CAPS display mode */
+        body.all-caps, body.all-caps * { text-transform: uppercase !important; }
+    </style>
+    @endif
     <script src="{{ asset('d3.min.js') }}"></script>
     @stack('head')
     <style>
@@ -49,7 +56,7 @@
         }
     </style>
 </head>
-<body class="bg-base-200 bg-noise min-h-screen">
+<body class="bg-base-200 bg-noise min-h-screen{{ $siteAllCaps ? ' all-caps' : '' }}">
 
     @auth
     {{-- Drawer layout: sidebar on desktop, overlay on mobile --}}
@@ -192,7 +199,7 @@
                         @else
                             <span class="text-2xl">{{ app_brand_icon() }}</span>
                         @endif
-                        <span class="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                        <span class="font-bold text-xl text-white">
                             {{ app_brand_name() }}
                         </span>
                     </a>
@@ -209,7 +216,16 @@
                         Dashboard
                     </a>
 
-                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'recruiter', 'staff', 'processor', 'coordinator', 'interviewer', 'manager', 'marketer', 'director']))
+                    @if (auth()->user()->agency_id && app_show_company_profile())
+                    <a href="{{ route('company-profile.show') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('company-profile.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                        <span class="text-lg">🏢</span>
+                        Company Profile
+                    </a>
+                    @endif
+
+                    @if (auth()->user()->canAccessModule('applicants'))
                     <a href="{{ route('applicants.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('applicants.*') && !request()->routeIs('applicants.withdrawn*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -218,7 +234,7 @@
                     </a>
                     @endif
 
-                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'recruiter', 'staff', 'processor', 'coordinator', 'interviewer', 'manager', 'marketer', 'director']))
+                    @if (auth()->user()->canAccessModule('applicants') && auth()->user()->canViewBackoutRepat())
                     <a href="{{ route('applicants.withdrawn') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('applicants.withdrawn*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -227,7 +243,7 @@
                     </a>
                     @endif
 
-                    @if (in_array(auth()->user()->user_type, ['admin', 'super_admin', 'staff']))
+                    @if (auth()->user()->canAccessModule('employers'))
                     <a href="{{ route('employers.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('employers.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -246,29 +262,51 @@
                     </a>
                     --}}
 
+                    @if (auth()->user()->canAccessModule('reports'))
                     <a href="{{ route('reports.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                              {{ request()->routeIs('reports.*') || request()->routeIs('report-templates.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                              {{ request()->routeIs('reports.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                         <span class="text-lg">📄</span>
                         Reports
                     </a>
+                    @endif
 
-                    @if(in_array(auth()->user()->user_type, ['admin','super_admin','billing']) && (auth()->user()->user_type === 'billing' || !auth()->user()->isBranchAccount()))
+                    @php
+                        $navUser = auth()->user();
+                        // (Cyd 2026-09-26) Main Office (head-office) accounts may also
+                        // see the Accounting Dashboard group — they file expenses/receivables
+                        // for any branch. Other branch accounts stay trimmed as before.
+                        $showAccountingNav = ! $navUser->isBranchAccount() || $navUser->isMainOffice();
+                        // (Cyd 2026-09-28) Statistics is restricted to the privileged
+                        // accounts (Mae/Evelyn/Angel); everyone else loses it.
+                        $showStats       = $navUser->canAccessModule('accounting') && $navUser->isPrivileged();
+                        // (Cyd 2026-09-28 #6) Rest-of-Account staff must ALWAYS keep
+                        // Receivable + Expense & Payments (to file requests) — even
+                        // branch accounts — so no longer gated on Main Office.
+                        $showReceivable  = $navUser->canAccessModule('receivable');
+                        $showExpenses    = $navUser->canAccessModule('expense_request');
+                        $showAgentReport = $navUser->canAccessModule('agent_report')    && $showAccountingNav;
+                    @endphp
+                    @if ($showStats || $showReceivable || $showExpenses || $showAgentReport)
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Accounting Dashboard</p>
+                        @if ($showStats)
                         <a href="{{ route('accounting.dashboard') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('accounting.dashboard') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📊</span>
                             Statistics
                         </a>
+                        @endif
+                        @if ($showReceivable)
                         <a href="{{ route('receivable.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('receivable.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">🧾</span>
                             Receivable
                         </a>
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
+                        @endif
+                        @if ($showExpenses)
                         <a href="{{ route('expense_request.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('expense_request.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -276,7 +314,7 @@
                             Expenses and Payments
                         </a>
                         @endif
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
+                        @if ($showAgentReport)
                         <a href="{{ route('agent_report.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('agent_report.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -308,7 +346,7 @@
                         @endif
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('users'))
                         <a href="{{ route('users.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('users.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -317,7 +355,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('custom-fields'))
                         <a href="{{ route('custom-fields.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('custom-fields.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -326,7 +364,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('agents'))
                         <a href="{{ route('agents.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('agents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -335,7 +373,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount())
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                               {{ request()->routeIs('settings.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -344,7 +382,7 @@
                     </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('accounts.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('accounts.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -353,7 +391,7 @@
                         </a>
                         @endif
 
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (auth()->user()->canAccessModule('branches'))
                         <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Reference Data</div>
                         <a href="{{ route('branches.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -373,6 +411,7 @@
                             <span class="text-lg">💼</span>
                             Positions
                         </a>
+                        @if (auth()->user()->canAccessModule('status-codes'))
                         <a href="{{ route('status-codes.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('status-codes.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -380,11 +419,12 @@
                             Status Codes
                         </a>
                         @endif
+                        @endif
 
                         {{-- Languages & Skills CRUD are admin-only (routes enforce it); the
                              applicant create form loads lookups from the DB, so branch accounts
                              don't need these pages. --}}
-                        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+                        @if (auth()->user()->canAccessModule('languages'))
                         <div class="px-3 pt-3 text-xs uppercase tracking-wider opacity-50 font-semibold">Lookups</div>
                         <a href="{{ route('languages.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -400,7 +440,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount())
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('report-templates'))
                         <a href="{{ route('report-templates.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('report-templates.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
