@@ -28,7 +28,7 @@
 
     {{-- Status Pipeline Chips (only the 3 withdrawn statuses) --}}
     <div class="flex flex-wrap gap-2 mb-3">
-        <a href="{{ route('applicants.withdrawn') }}"
+        <a href="{{ route('applicants.withdrawn', request()->only(['type'])) }}"
            class="btn btn-xs gap-1 {{ request()->query('status') === null ? 'btn-primary' : 'btn-ghost' }}">
             All
             <span class="badge badge-xs {{ request()->query('status') === null ? 'badge-outline' : '' }}">{{ $statusCounts->sum() }}</span>
@@ -36,7 +36,7 @@
         @foreach($statusCodes as $sc)
             @php $count = $statusCounts->get($sc->code, 0); @endphp
             @if($count > 0)
-            <a href="{{ route('applicants.withdrawn', ['status' => $sc->code]) }}"
+            <a href="{{ route('applicants.withdrawn', request()->only(['type']) + ['status' => $sc->code]) }}"
                class="btn btn-xs gap-1 {{ request('status') === (string)$sc->code ? 'btn-primary' : 'btn-ghost' }}"
                @if(request('status') !== (string)$sc->code) style="background-color: {{ $sc->color ?? '#e5e7eb' }}15;" @endif>
                 {{ $sc->label }}
@@ -46,9 +46,18 @@
         @endforeach
     </div>
 
+    {{-- (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs --}}
+    <div class="tabs tabs-boxed mb-4">
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
+           class="tab {{ ($type ?? 'skilled') === 'skilled' ? 'tab-active' : '' }}">💼 Skilled ({{ $typeCounts['skilled'] ?? 0 }})</a>
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
+           class="tab {{ ($type ?? '') === 'household' ? 'tab-active' : '' }}">🏠 Household ({{ $typeCounts['household'] ?? 0 }})</a>
+    </div>
+
     @if($applicants->count())
         {{-- Search & Filters --}}
         <form method="GET" action="{{ route('applicants.withdrawn') }}" class="mb-4" id="filter-form">
+            <input type="hidden" name="type" value="{{ $type ?? 'skilled' }}">
             {{-- Row 1: Search bar full width --}}
             <div class="flex gap-3 items-end mb-3">
                 <div class="form-control flex-1">

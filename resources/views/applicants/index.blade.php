@@ -16,6 +16,9 @@
             <a href="{{ route('applicants.create') }}" class="btn btn-primary">
                 <span>➕</span> Add Applicant
             </a>
+            <a href="{{ route('applicants.bulk') }}" class="btn btn-outline gap-1" title="Bulk upload applicants from CSV">
+                <span>📥</span> Bulk Upload
+            </a>
         </div>
     </div>
 
@@ -46,9 +49,18 @@
         @endforeach
     </div>
 
+    {{-- (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs --}}
+    <div class="tabs tabs-boxed mb-4">
+        <a href="{{ route('applicants.index', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
+           class="tab {{ ($type ?? 'skilled') === 'skilled' ? 'tab-active' : '' }}">💼 Skilled ({{ $typeCounts['skilled'] ?? 0 }})</a>
+        <a href="{{ route('applicants.index', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
+           class="tab {{ ($type ?? '') === 'household' ? 'tab-active' : '' }}">🏠 Household ({{ $typeCounts['household'] ?? 0 }})</a>
+    </div>
+
     @if($applicants->count())
         {{-- Search & Filters --}}
         <form method="GET" action="{{ route('applicants.index') }}" class="mb-4" id="filter-form">
+            <input type="hidden" name="type" value="{{ $type ?? 'skilled' }}">
             {{-- Row 1: Search bar full width --}}
             <div class="flex gap-3 items-end mb-3">
                 <div class="form-control flex-1">
@@ -128,7 +140,7 @@
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
                 @endif
             </div>
-            <a href="{{ route('applicants.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
+            <a href="{{ route('applicants.export', request()->only(['search', 'status', 'gender', 'employer', 'country', 'type'])) }}"
                class="btn btn-sm btn-outline btn-success gap-1">
                 <span>📥</span> Export to CSV
             </a>

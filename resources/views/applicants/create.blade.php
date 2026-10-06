@@ -28,9 +28,45 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('applicants.store') }}" enctype="multipart/form-data" class="card bg-base-100 shadow-sm card-lift">
+    {{-- Duplicate guard (Cyd 2026-09-26): shown after a blocked submit --}}
+    @if(session('duplicate_applicants') && count(session('duplicate_applicants')))
+        <div id="duplicate-warning" role="alert" class="alert alert-warning mb-6 shadow-md items-start">
+            <div class="w-full">
+                <p class="font-bold text-base">⚠️ Possible duplicate applicant</p>
+                <p class="text-sm opacity-80 mt-1">
+                    We found {{ count(session('duplicate_applicants')) }} existing record(s) that look like this applicant.
+                    Check the match(es) first — open a record below before creating a duplicate.
+                </p>
+                <ul class="mt-3 space-y-2">
+                    @foreach(session('duplicate_applicants') as $dupe)
+                        <li class="text-sm flex flex-wrap items-center gap-2">
+                            <a href="{{ $dupe['url'] }}" target="_blank" class="link link-primary font-semibold">{{ $dupe['name'] }}</a>
+                            @if(!empty($dupe['applicant_no']))
+                                <span class="badge badge-sm badge-ghost">#{{ $dupe['applicant_no'] }}</span>
+                            @endif
+                            <span class="opacity-70">— {{ implode(' · ', $dupe['reasons']) }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="text-xs opacity-70 mt-3">
+                    If this is a different person, click <b>Create anyway</b> to proceed.
+                </p>
+            </div>
+        </div>
+    @endif
+
+    <form id="applicant-create-form" method="POST" action="{{ route('applicants.store') }}" enctype="multipart/form-data" class="card bg-base-100 shadow-sm card-lift">
         <div class="card-body space-y-4">
             @csrf
+            <input type="hidden" name="confirm_duplicate" id="confirm_duplicate" value="{{ old('confirm_duplicate') }}">
+
+            {{-- Live duplicate check result (Cyd 2026-09-26) --}}
+            <div id="live-duplicate" role="alert" class="alert alert-warning shadow-sm items-start" style="display: none;">
+                <div class="w-full">
+                    <p class="font-bold">⚠️ Possible duplicate applicant</p>
+                    <ul id="live-duplicate-list" class="mt-2 text-sm list-disc pl-5 space-y-1"></ul>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <fieldset class="fieldset">
@@ -215,6 +251,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏷️ Applicant Type</legend>
+                    <select name="applicant_type" id="applicant_type" class="select w-full" onchange="filterPositionsByType()">
+                        <option value="skilled" @selected(old('applicant_type', 'skilled') === 'skilled')>💼 Skilled</option>
+                        <option value="household" @selected(old('applicant_type') === 'household')>🏠 Household (Domestic Helper)</option>
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
                     <legend class="fieldset-legend">🌍 Preferred Country</legend>
                     <select name="country_id" class="select w-full">
                         <option value="">-- Select --</option>
@@ -225,10 +268,10 @@
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">💼 Preferred Position</legend>
-                    <select name="position_id" class="select w-full">
+                    <select name="position_id" id="position_id" class="select w-full">
                         <option value="">-- Select --</option>
                         @foreach ($positions as $pos)
-                            <option value="{{ $pos->id }}" @selected(old('position_id') == $pos->id)>{{ $pos->name }}</option>
+                            <option value="{{ $pos->id }}" data-category="{{ $pos->category ?? 'skilled' }}" @selected(old('position_id') == $pos->id)>{{ $pos->name }}</option>
                         @endforeach
                     </select>
                 </fieldset>
@@ -381,6 +424,95 @@ document.addEventListener('DOMContentLoaded', function () {
         togglePassport();
     }
 });
+</script>
+
+{{-- Live duplicate check (Cyd 2026-09-26) --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('applicant-create-form');
+    const panel = document.getElementById('live-duplicate');
+    const list = document.getElementById('live-duplicate-list');
+    if (!form || !panel || !list) return;
+
+    const url = @json(route('applicants.check_duplicates'));
+    const tokenEl = form.querySelector('input[name="_token"]');
+    const token = tokenEl ? tokenEl.value : '';
+    const fields = ['first_name', 'middle_name', 'last_name', 'suffix', 'birthdate', 'email', 'contact', 'passport_no'];
+    let timer = null;
+
+    function collect() {
+        const data = new FormData();
+        data.append('_token', token);
+        fields.forEach(function (f) {
+            const el = form.querySelector('[name="' + f + '"]');
+            if (el && el.value) data.append(f, el.value);
+        });
+        return data;
+    }
+
+    function render(d) {
+        list.innerHTML = '';
+        if (!d || !d.count) {
+            panel.style.display = 'none';
+            return;
+        }
+        d.duplicates.forEach(function (x) {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = x.url;
+            a.target = '_blank';
+            a.className = 'link link-primary font-semibold';
+            a.textContent = x.name + (x.applicant_no ? ' #' + x.applicant_no : '');
+            li.appendChild(a);
+            const meta = document.createElement('span');
+            meta.className = 'opacity-70';
+            meta.textContent = ' — ' + (x.reasons || []).join(' · ');
+            li.appendChild(meta);
+            list.appendChild(li);
+        });
+        panel.style.display = '';
+    }
+
+    function check() {
+        fetch(url, {
+            method: 'POST',
+            body: collect(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        }).then(function (r) { return r.json(); }).then(render).catch(function () {});
+    }
+
+    fields.forEach(function (f) {
+        const el = form.querySelector('[name="' + f + '"]');
+        if (el) {
+            el.addEventListener('blur', function () {
+                clearTimeout(timer);
+                timer = setTimeout(check, 250);
+            });
+        }
+    });
+});
+</script>
+@endpush
+
+@push('scripts')
+<script>
+// (Mjolnir "Skilled Applicants") Restrict Preferred Position by Applicant Type:
+// Household => Domestic Helper only; Skilled => every other position.
+function filterPositionsByType() {
+    var typeEl = document.getElementById('applicant_type');
+    var posEl = document.getElementById('position_id');
+    if (!typeEl || !posEl) return;
+    var type = typeEl.value;
+    Array.prototype.forEach.call(posEl.options, function (o) {
+        if (!o.value) return;
+        var cat = o.getAttribute('data-category') || 'skilled';
+        var show = (type === 'household') ? (cat === 'household') : (cat !== 'household');
+        o.hidden = !show;
+        o.disabled = !show;
+        if (!show && o.selected) posEl.value = '';
+    });
+}
+document.addEventListener('DOMContentLoaded', filterPositionsByType);
 </script>
 @endpush
 @endsection

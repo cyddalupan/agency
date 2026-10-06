@@ -190,11 +190,18 @@
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
+                    <legend class="fieldset-legend">🏷️ Applicant Type</legend>
+                    <select name="applicant_type" id="applicant_type" class="select w-full" onchange="filterPositionsByType()">
+                        <option value="skilled" @selected(old('applicant_type', $applicant->applicant_type ?? 'skilled') === 'skilled')>💼 Skilled</option>
+                        <option value="household" @selected(old('applicant_type', $applicant->applicant_type) === 'household')>🏠 Household (Domestic Helper)</option>
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
                     <legend class="fieldset-legend">💼 Preferred Position</legend>
-                    <select name="position_id" class="select w-full">
+                    <select name="position_id" id="position_id" class="select w-full">
                         <option value="">-- Select --</option>
                         @foreach (\App\Models\Position::orderBy('name')->get() as $pos)
-                            <option value="{{ $pos->id }}" @selected(old('position_id', $applicant->position_id) == $pos->id)>{{ $pos->name }}</option>
+                            <option value="{{ $pos->id }}" data-category="{{ $pos->category ?? 'skilled' }}" @selected(old('position_id', $applicant->position_id) == $pos->id)>{{ $pos->name }}</option>
                         @endforeach
                     </select>
                 </fieldset>
@@ -386,6 +393,28 @@ document.addEventListener('DOMContentLoaded', function () {
         togglePassport();
     }
 });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+// (Mjolnir "Skilled Applicants") Restrict Preferred Position by Applicant Type:
+// Household => Domestic Helper only; Skilled => every other position.
+function filterPositionsByType() {
+    var typeEl = document.getElementById('applicant_type');
+    var posEl = document.getElementById('position_id');
+    if (!typeEl || !posEl) return;
+    var type = typeEl.value;
+    Array.prototype.forEach.call(posEl.options, function (o) {
+        if (!o.value) return;
+        var cat = o.getAttribute('data-category') || 'skilled';
+        var show = (type === 'household') ? (cat === 'household') : (cat !== 'household');
+        o.hidden = !show;
+        o.disabled = !show;
+        if (!show && o.selected) posEl.value = '';
+    });
+}
+document.addEventListener('DOMContentLoaded', filterPositionsByType);
 </script>
 @endpush
 @endsection

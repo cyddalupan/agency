@@ -39,6 +39,12 @@ class ApplicantController extends Controller
             ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses);
 
+        // (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs.
+        $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
+            ? Applicant::TYPE_HOUSEHOLD
+            : Applicant::TYPE_SKILLED;
+        $query->ofType($type);
+
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
             $search = trim($search);
@@ -92,7 +98,14 @@ class ApplicantController extends Controller
 
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'tableColumns'));
+        // Tab counters (ignoring the funnel filters, but never the withdrawn ones).
+        $base = Applicant::query()->forBranchUser()->whereNotIn('status_code', $withdrawnStatuses);
+        $typeCounts = [
+            Applicant::TYPE_SKILLED => (clone $base)->ofType(Applicant::TYPE_SKILLED)->count(),
+            Applicant::TYPE_HOUSEHOLD => (clone $base)->ofType(Applicant::TYPE_HOUSEHOLD)->count(),
+        ];
+
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'tableColumns', 'type', 'typeCounts'));
     }
 
     /**
@@ -111,6 +124,12 @@ class ApplicantController extends Controller
         $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'contractRecords'])
             ->forBranchUser()
             ->whereIn('status_code', $withdrawnStatuses);
+
+        // (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs.
+        $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
+            ? Applicant::TYPE_HOUSEHOLD
+            : Applicant::TYPE_SKILLED;
+        $query->ofType($type);
 
         // Search by name (first, last, middle)
         if ($search = $request->input('search')) {
@@ -158,7 +177,13 @@ class ApplicantController extends Controller
 
         $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries'));
+        $base = Applicant::query()->forBranchUser()->whereIn('status_code', $withdrawnStatuses);
+        $typeCounts = [
+            Applicant::TYPE_SKILLED => (clone $base)->ofType(Applicant::TYPE_SKILLED)->count(),
+            Applicant::TYPE_HOUSEHOLD => (clone $base)->ofType(Applicant::TYPE_HOUSEHOLD)->count(),
+        ];
+
+        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'type', 'typeCounts'));
     }
 
     /**
@@ -265,6 +290,7 @@ class ApplicantController extends Controller
             'remarks' => 'nullable|string',
             'source' => 'nullable|string|max:255',
             'firstimer_type' => ['nullable', 'string', Rule::in(['firstimer', 'ex-abroad'])],
+            'applicant_type' => ['nullable', 'string', Rule::in(Applicant::types())],
             'country_id' => 'nullable|integer|exists:countries,id',
             'position_id' => 'nullable|integer|exists:positions,id',
             'expected_salary' => 'nullable|numeric|min:0',
@@ -293,6 +319,7 @@ class ApplicantController extends Controller
         ]);
 
         $validated['status_code'] = $validated['status_code'] ?? 0; // Default: Pending if not provided
+        $validated['applicant_type'] = $validated['applicant_type'] ?? Applicant::TYPE_SKILLED;
 
         // (Branch feature) Enforce branch ownership on create: a branch account
         // may only create applicants in its own branch. If omitted, default to
@@ -1125,6 +1152,7 @@ class ApplicantController extends Controller
             'address' => 'nullable|string',
             'remarks' => 'nullable|string',
             'source' => 'nullable|string|max:255',
+            'applicant_type' => ['nullable', 'string', Rule::in(Applicant::types())],
             'country_id' => 'nullable|integer|exists:countries,id',
             'position_id' => 'nullable|integer|exists:positions,id',
             'agent_id' => 'nullable|integer|exists:agents,id',

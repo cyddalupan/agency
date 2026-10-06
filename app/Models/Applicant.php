@@ -14,12 +14,21 @@ class Applicant extends Model implements AuthenticatableContract
 {
     use HasFactory, HasTenant, HasCustomFields, AuthenticatableTrait;
 
+    /** Applicant types (Mjolnir "Skilled Applicants", 2026-10-06). */
+    public const TYPE_SKILLED = 'skilled';
+    public const TYPE_HOUSEHOLD = 'household';
+
+    public static function types(): array
+    {
+        return [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED];
+    }
+
     protected $fillable = [
         'agency_id', 'first_name', 'middle_name', 'last_name', 'suffix',
         'birthdate', 'gender', 'has_passport', 'education_level', 'contact', 'email', 'address', 'photo', 'full_body_photo',
         'remarks', 'source', 'nationality_id', 'religion_id', 'civil_status_id',
         'country_id', 'position_id', 'expected_salary', 'employer_id', 'agent_id',
-        'job_id', 'status_code', 'password', 'status', 'firstimer_type',
+        'job_id', 'status_code', 'password', 'status', 'firstimer_type', 'applicant_type',
         'applicant_no', 'fra', 'status_date', 'repat', 'repat_date',
         'branch_id', 'encoder', 'contract', 'contract_received_date',
         'created_by',
@@ -31,6 +40,27 @@ class Applicant extends Model implements AuthenticatableContract
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Scope to a single applicant type (household|skilled). Legacy rows with a
+     * NULL applicant_type are treated as Skilled so they stay visible on the
+     * Skilled tab.
+     */
+    public function scopeOfType($query, ?string $type)
+    {
+        if ($type === self::TYPE_HOUSEHOLD) {
+            return $query->where('applicant_type', self::TYPE_HOUSEHOLD);
+        }
+
+        if ($type === self::TYPE_SKILLED) {
+            return $query->where(function ($q) {
+                $q->where('applicant_type', self::TYPE_SKILLED)
+                    ->orWhereNull('applicant_type');
+            });
+        }
+
+        return $query;
     }
 
     /**

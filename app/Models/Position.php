@@ -9,5 +9,20 @@ class Position extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description'];
+    public const CATEGORY_HOUSEHOLD = 'household';
+    public const CATEGORY_SKILLED = 'skilled';
+
+    protected $fillable = ['name', 'description', 'category'];
+
+    public function scopeHousehold($query)
+    {
+        return $query->where('category', self::CATEGORY_HOUSEHOLD);
+    }
+
+    public function scopeSkilled($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('category', self::CATEGORY_SKILLED)->orWhereNull('category');
+        });
+    }
 }
