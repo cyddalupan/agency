@@ -232,6 +232,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Full-access agency admin (super_admin or admin).
+     * Used to gate the FRA (employer) Delete action — Accounting and
+     * Rest-of-Account do not see it. (Mjolnir card "FRA Module")
+     */
+    public function isAdmin(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin'], true);
+    }
+
+    /**
      * True when the user is branch-restricted: a NON-admin account that
      * belongs to a branch. Admins (and super admins) are never locked,
      * even when their account carries a branch_id — they may assign

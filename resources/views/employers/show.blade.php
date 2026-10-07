@@ -24,9 +24,21 @@
                     <a href="{{ route('employers.job-positions.index', $employer) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
                         💼 Positions
                     </a>
+                    @if (! auth()->user()->isRestOfAccount())
                     <a href="{{ route('employers.edit', $employer) }}" class="btn btn-ghost btn-sm text-white border border-white/30 hover:bg-white/20">
                         ✏️ Edit
                     </a>
+                    @endif
+                    @if (auth()->user()->isAdmin())
+                    <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="inline"
+                          onsubmit="return confirm('Delete FRA {{ $employer->name }}? Its job positions will be removed too.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-ghost btn-sm text-white border border-red-300/50 hover:bg-red-500/30">
+                            🗑️ Delete
+                        </button>
+                    </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -102,9 +114,11 @@
                 <h3 class="card-title flex items-center gap-2">
                     <span>💼</span> Job Positions ({{ $employer->jobPositions->count() }})
                 </h3>
+                @if (! auth()->user()->isRestOfAccount())
                 <a href="{{ route('employers.job-positions.create', $employer) }}" class="btn btn-primary btn-sm">
                     ➕ Add Position
                 </a>
+                @endif
             </div>
 
             @if ($employer->jobPositions->count() > 0)
@@ -146,7 +160,9 @@
                 <div class="text-center py-8 opacity-50">
                     <span class="text-4xl block mb-2">💼</span>
                     <p class="text-sm">No job positions assigned yet.</p>
+                    @if (! auth()->user()->isRestOfAccount())
                     <a href="{{ route('employers.job-positions.create', $employer) }}" class="btn btn-outline btn-sm mt-3">➕ Add First Position</a>
+                    @endif
                 </div>
             @endif
         </div>

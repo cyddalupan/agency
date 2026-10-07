@@ -92,17 +92,17 @@ class RoleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function report_viewer_can_only_access_report_routes(): void
+    public function report_viewer_can_view_employers_list_but_not_manage(): void
     {
         $user = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'report_viewer',
         ]);
 
-        $response = $this->actingAs($user)->get(route('employers.index'));
-
-        // Report viewers should not have access to CRUD pages
-        $response->assertForbidden();
+        // Rest of Account keeps read access to the FRA list (client 2026-10-07);
+        // adding/importing FRAs is reserved for Admin + Accounting.
+        $this->actingAs($user)->get(route('employers.index'))->assertOk();
+        $this->actingAs($user)->get(route('employers.create'))->assertForbidden();
     }
 
     #[Test]
@@ -132,16 +132,17 @@ class RoleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function processor_cannot_access_employer_routes(): void
+    public function processor_can_view_employers_but_not_add_or_bulk(): void
     {
         $user = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'processor',
         ]);
 
-        $response = $this->actingAs($user)->get(route('employers.index'));
-
-        $response->assertForbidden();
+        // FRA Module card (2026-10-07): Processing keeps the list, loses Add/Bulk.
+        $this->actingAs($user)->get(route('employers.index'))->assertOk();
+        $this->actingAs($user)->get(route('employers.create'))->assertForbidden();
+        $this->actingAs($user)->get(route('employers.bulk'))->assertForbidden();
     }
 
     // ─── SUPER ADMIN ACCESS ─────────────────────────────────────────

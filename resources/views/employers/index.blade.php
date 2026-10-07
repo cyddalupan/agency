@@ -12,11 +12,16 @@
             </h2>
             <p class="opacity-60 text-sm mt-1">Manage client companies hiring overseas workers</p>
         </div>
+        @if (! auth()->user()->isRestOfAccount())
         <div class="flex gap-2">
             <a href="{{ route('employers.create') }}" class="btn btn-primary">
                 <span>➕</span> Add FRA
             </a>
+            <a href="{{ route('employers.bulk') }}" class="btn btn-outline gap-1" title="Bulk upload FRAs from CSV">
+                <span>📥</span> Bulk Upload
+            </a>
         </div>
+        @endif
     </div>
 
     @if (session('success'))
@@ -74,7 +79,17 @@
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('employers.show', $employer) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>
+                                    @if (! auth()->user()->isRestOfAccount())
                                     <a href="{{ route('employers.edit', $employer) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">✏️</a>
+                                    @endif
+                                    @if (auth()->user()->isAdmin())
+                                    <form action="{{ route('employers.destroy', $employer) }}" method="POST" class="inline"
+                                          onsubmit="return confirm('Delete FRA {{ $employer->name }}? Its job positions will be removed too.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">🗑️</button>
+                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -97,9 +112,11 @@
                     FRAs are the companies hiring workers. Add one to start creating job positions and matching applicants.
                 </p>
                 <div class="flex flex-wrap justify-center gap-3">
+                    @if (! auth()->user()->isRestOfAccount())
                     <a href="{{ route('employers.create') }}" class="btn btn-primary btn-lg">
                         <span>➕</span> Add Your First Employer
                     </a>
+                    @endif
                     <a href="{{ route('applicants.create') }}" class="btn btn-outline btn-lg">
                         <span>👥</span> Add an Applicant First
                     </a>
