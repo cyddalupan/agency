@@ -69,7 +69,12 @@ class ReferenceDataSeeder extends Seeder
         }
 
         // === CIVIL STATUSES ===
-        foreach (['Single', 'Married', 'Divorced', 'Widowed', 'Separated', 'Annulled'] as $cs) {
+        // Idempotent: a fresh `migrate --seed` already inserts "Single with
+        // Children" via migration, so skip any that are already present.
+        foreach (['Single', 'Single with Children', 'Married', 'Divorced', 'Widowed', 'Separated', 'Annulled'] as $cs) {
+            if (DB::table('civil_statuses')->where('name', $cs)->exists()) {
+                continue;
+            }
             DB::table('civil_statuses')->insert(['name' => $cs, 'created_at' => now(), 'updated_at' => now()]);
         }
 
