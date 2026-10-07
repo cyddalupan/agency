@@ -116,7 +116,9 @@ class User extends Authenticatable
             return true;
         }
 
-        return in_array((string) $this->user_type, ['super_admin', 'admin'], true);
+        // (Cyd 2026-09-28 #4) Only *Rest of Account* (staff) is limited to
+        // their own records. Admin AND Accounting (billing) keep full visibility.
+        return in_array((string) $this->user_type, ['super_admin', 'admin', 'billing'], true);
     }
 
     /**

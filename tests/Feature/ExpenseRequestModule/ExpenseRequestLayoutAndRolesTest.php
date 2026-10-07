@@ -122,11 +122,13 @@ class ExpenseRequestLayoutAndRolesTest extends TestCase
     }
 
     #[Test]
-    public function staff_user_still_cannot_access_expense_request_index(): void
+    public function staff_user_can_access_expense_request_index(): void
     {
+        // (Cyd 2026-09-28 #6) Rest-of-Account staff keep Expense & Payments so
+        // they can file requests; only admin-only modules stay 403 for them.
         $this->actingAs($this->staff)
             ->get(route('expense_request.index'))
-            ->assertForbidden();
+            ->assertOk();
     }
 
     // ---------- Issue 1: navbar label renamed ----------
