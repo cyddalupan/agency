@@ -12,6 +12,7 @@
                 <h1 class="text-3xl font-bold">🧾 Receivable</h1>
                 <p class="opacity-80 mt-1">Track and manage receivables</p>
             </div>
+            <a href="{{ route('receivable.bulk') }}" class="btn btn-outline btn-sm shadow-md" title="Bulk upload receivables from CSV">📥 Bulk CSV</a>
             <a href="{{ route('receivable.create') }}" class="btn btn-secondary btn-sm shadow-md">+ New Receivable</a>
         </div>
     </div>
@@ -46,6 +47,21 @@
     <div class="card bg-base-100 shadow-md">
         <div class="card-body">
             <h3 class="font-bold mb-3">Transactions</h3>
+            {{-- Encoder filter (Toybits 2026-10-07) — narrow the list to one encoder's rows. --}}
+            @if($encoders->count())
+                <form method="GET" action="{{ route('receivable.index') }}" class="flex flex-wrap items-center gap-2 mb-3">
+                    <label for="encoder-filter" class="text-sm font-semibold">🔎 Encoder:</label>
+                    <select name="encoder" id="encoder-filter" class="select select-sm select-bordered" onchange="this.form.submit()">
+                        <option value="">All encoders</option>
+                        @foreach($encoders as $encoder)
+                            <option value="{{ $encoder->id }}" @selected((string) $activeEncoder === (string) $encoder->id)>{{ $encoder->name }}</option>
+                        @endforeach
+                    </select>
+                    @if($activeEncoder)
+                        <a href="{{ route('receivable.index') }}" class="btn btn-ghost btn-xs">✕ Clear</a>
+                    @endif
+                </form>
+            @endif
             @if($receivables->count())
                 @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                     {{-- Batch status update toolbar (Toybits 2026-08-31) --}}
