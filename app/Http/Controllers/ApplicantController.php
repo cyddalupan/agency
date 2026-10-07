@@ -841,19 +841,34 @@ class ApplicantController extends Controller
             return 'The file is empty.';
         }
 
+        // Normalize line endings — Excel for Mac / some exports use a lone CR,
+        // which fgetcsv would otherwise read as a single giant row (so the
+        // header row is never seen). (Fixed 2026-10-07)
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
         // ---- Try each plausible delimiter; the first one that yields a valid
         // header row wins. (Fully re-parsing 2-3 times is fine: files are
         // capped at 2,000 data rows and 5 MB.) ----
         $lastError = null;
+        $headerFoundError = null;
         foreach ([',', ';', "\t"] as $delimiter) {
             $result = $this->parseBulkCsvWithDelimiter($raw, $delimiter);
             if (is_array($result)) {
                 return $result;
             }
+
+            // A delimiter that *did* recognize the header row but then failed
+            // for a concrete reason (no data rows / too many rows) is far more
+            // useful than the generic "no header row" from a wrong delimiter —
+            // don't let the wrong delimiter's message win. (Fixed 2026-10-07)
+            if (! str_starts_with($result, 'No header row found')) {
+                $headerFoundError ??= $result;
+            }
+
             $lastError = $result;
         }
 
-        return $lastError;
+        return $headerFoundError ?? $lastError;
     }
 
     /**
