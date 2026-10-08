@@ -235,6 +235,11 @@ class Applicant extends Model implements AuthenticatableContract
         return $this->hasMany(ApplicantNbi::class);
     }
 
+    public function medical()
+    {
+        return $this->hasMany(ApplicantMedical::class);
+    }
+
     public function oec()
     {
         return $this->hasMany(ApplicantOec::class);

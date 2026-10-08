@@ -6,7 +6,7 @@
      */
     $pi = $applicant->load([
         'passport', 'education', 'certificates', 'requirements',
-        'nbi', 'contract', 'tickets', 'visa', 'oec',
+        'nbi', 'medical', 'contract', 'tickets', 'visa', 'oec',
         'workExperiences', 'skills', 'references', 'salaryRecords', 'documents',
         'languages', 'contacts',
         'spouse', 'family', 'emergencyContacts',
@@ -261,6 +261,26 @@
                     </div>
                     @php $nbiRecs = $pi->nbi ?? collect(); @endphp
                     @if ($nbiRecs->count() > 0) @include('applicants.sub-lists.nbi', ['records' => $nbiRecs, 'routeKey' => 'nbi']) @else <p class="text-sm opacity-50 py-2">No NBI record yet.</p> @endif
+                </div>
+
+                {{-- MEDICAL (under NBI) --}}
+                <div class="mt-6 pt-4 border-t border-base-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold">🩺 MEDICAL</h4>
+                        <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-medical').classList.toggle('hidden')">➕ Add</button>
+                    </div>
+                    <div id="form-medical" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
+                        <form action="{{ route('applicants.sub.store', [$applicant, 'medical']) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">@include('applicants.sub-forms.medical', ['record' => null])</div>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('form-medical').classList.add('hidden')">❌ Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    @php $medRecs = $pi->medical ?? collect(); @endphp
+                    @if ($medRecs->count() > 0) @include('applicants.sub-lists.medical', ['records' => $medRecs, 'routeKey' => 'medical']) @else <p class="text-sm opacity-50 py-2">No medical record yet.</p> @endif
                 </div>
 
                 {{-- Requirement checklists + Save Requirements --}}

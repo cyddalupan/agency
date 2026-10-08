@@ -99,6 +99,14 @@ class SubTableController extends Controller
                 'issue_date'  => 'nullable|date',
                 'expiry_date' => 'nullable|date|after:issue_date',
             ],
+            'medical' => [
+                'clinic_name' => 'nullable|string|max:255',
+                'issue_date'  => 'nullable|date',
+                'expiry_date' => 'nullable|date|after:issue_date',
+                'file'        => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:2048',
+                'file_path'   => 'nullable|string|max:255',
+                'remarks'     => 'nullable|string',
+            ],
             'oec' => [
                 'oec_no'      => 'nullable|string|max:100',
                 'oec_release' => 'nullable|date',
@@ -171,6 +179,7 @@ class SubTableController extends Controller
             'family'           => ['agency_id', 'applicant_id', 'name', 'relation', 'occupation'],
             'emergency'        => ['agency_id', 'applicant_id', 'name', 'relationship', 'contact'],
             'nbi'              => ['agency_id', 'applicant_id', 'nbi_no', 'issue_date', 'expiry_date'],
+            'medical'          => ['agency_id', 'applicant_id', 'clinic_name', 'issue_date', 'expiry_date', 'remarks', 'file_path'],
             'oec'              => ['agency_id', 'applicant_id', 'oec_no', 'oec_release'],
             'visa'             => ['agency_id', 'applicant_id', 'visa_no', 'visa_type', 'received_date', 'stamped_date', 'expiry_date', 'approved_musaned'],
             'contract'         => ['agency_id', 'applicant_id', 'rfp', 'sponsor', 'sponsor_id', 'contact', 'address', 'contract_received', 'contract_signed'],
@@ -199,6 +208,7 @@ class SubTableController extends Controller
             'family'          => \App\Models\ApplicantFamilyMember::class,
             'emergency'       => \App\Models\ApplicantEmergencyContact::class,
             'nbi'             => \App\Models\ApplicantNbi::class,
+            'medical'         => \App\Models\ApplicantMedical::class,
             'oec'             => \App\Models\ApplicantOec::class,
             'visa'            => \App\Models\ApplicantVisa::class,
             'contract'        => \App\Models\ApplicantContract::class,
@@ -212,6 +222,10 @@ class SubTableController extends Controller
 
     public function store(Request $request, Applicant $applicant, string $type)
     {
+        // (Branch feature) A branch account may only maintain sub-table data
+        // for applicants of its own branch.
+        $this->authorizeApplicantBranch($applicant);
+
         $modelClass = $this->modelClass($type);
         $validator = Validator::make($request->all(), $this->rulesFor($type));
 
@@ -256,6 +270,10 @@ class SubTableController extends Controller
 
     public function update(Request $request, Applicant $applicant, string $type, $id)
     {
+        // (Branch feature) A branch account may only maintain sub-table data
+        // for applicants of its own branch.
+        $this->authorizeApplicantBranch($applicant);
+
         $modelClass = $this->modelClass($type);
         $record = $modelClass::where('applicant_id', $applicant->id)->findOrFail($id);
 
@@ -287,6 +305,10 @@ class SubTableController extends Controller
 
     public function destroy(Request $request, Applicant $applicant, string $type, $id)
     {
+        // (Branch feature) A branch account may only maintain sub-table data
+        // for applicants of its own branch.
+        $this->authorizeApplicantBranch($applicant);
+
         $modelClass = $this->modelClass($type);
         $record = $modelClass::where('applicant_id', $applicant->id)->findOrFail($id);
         $record->delete();
@@ -294,4 +316,20 @@ class SubTableController extends Controller
         return redirect()->route('applicants.show', $applicant)
             ->with('success', __('Sub-table entry deleted.'));
     }
+    /**
+     * (Branch feature) Branch-locked users may only touch sub-table data of
+     * applicants in their own branch.
+     */
+    private function authorizeApplicantBranch(Applicant $applicant): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->isBranchLocked()) {
+            return;
+        }
+        if ((int) $applicant->branch_id !== (int) $user->branch_id) {
+            abort(403, 'This applicant belongs to another branch.');
+        }
+    }
+
+
 }
