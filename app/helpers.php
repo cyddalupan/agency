@@ -224,6 +224,128 @@ if (!function_exists('app_brand_favicon_emoji')) {
     }
 }
 
+if (!function_exists('app_show_company_profile')) {
+    /**
+     * Whether the Company Profile link should appear in the sidebar for this agency.
+     * Default is visible; an agency can hide it via Settings → Agency Settings.
+     */
+    function app_show_company_profile(?\App\Models\Agency $agency = null): bool
+    {
+        $agency = $agency ?? resolve_agency();
+        if (! $agency) {
+            return false;
+        }
+
+        $settings = $agency->settings;
+        $settings = is_object($settings) ? $settings->toArray() : (array) ($settings ?? []);
+
+        return empty($settings['hide_company_profile']);
+    }
+}
+
+if (!function_exists('app_site_all_caps')) {
+    function app_site_all_caps(?\App\Models\Agency $agency = null): bool
+    {
+        $agency = $agency ?? resolve_agency();
+        if (! $agency) {
+            return false;
+        }
+
+        $settings = $agency->settings;
+        $settings = is_object($settings) ? $settings->toArray() : (array) ($settings ?? []);
+
+        return ! empty($settings['all_caps']);
+    }
+}
+
+if (!function_exists('app_site_banner_color')) {
+    /**
+     * The agency's single banner color (hex), or null when the default gold is used.
+     */
+    function app_site_banner_color(?\App\Models\Agency $agency = null): ?string
+    {
+        $agency = $agency ?? resolve_agency();
+        if (! $agency) {
+            return null;
+        }
+
+        $settings = $agency->settings;
+        $settings = is_object($settings) ? $settings->toArray() : (array) ($settings ?? []);
+        $hex = $settings['banner_color'] ?? null;
+
+        return (is_string($hex) && preg_match('/^#[0-9a-fA-F]{6}$/', $hex)) ? $hex : null;
+    }
+}
+
+if (!function_exists('app_site_banner_style')) {
+    /**
+     * CSS custom properties used to recolor every gold gradient on the site
+     * when the agency picks a banner color. One color in — the gradient end
+     * and the text color are auto-derived.
+     */
+    function app_site_banner_style(?\App\Models\Agency $agency = null): string
+    {
+        $hex = app_site_banner_color($agency);
+        if (! $hex) {
+            return '';
+        }
+
+        $c1 = $hex;
+        $c2 = app_hex_shade($hex, -0.28);
+        $content = app_hex_is_light($hex) ? '#1a2744' : '#ffffff';
+
+        return "--banner-c1:{$c1};--banner-c2:{$c2};--banner-content:{$content};";
+    }
+}
+
+if (!function_exists('app_hex_is_light')) {
+    /**
+     * True when a #rrggbb color reads as light (WCAG-ish relative luminance).
+     */
+    function app_hex_is_light(string $hex): bool
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        $r = hexdec(substr($hex, 0, 2)) / 255;
+        $g = hexdec(substr($hex, 2, 2)) / 255;
+        $b = hexdec(substr($hex, 4, 2)) / 255;
+
+        $lin = fn ($c) => $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+        $l = 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b);
+
+        return $l > 0.5;
+    }
+}
+
+if (!function_exists('app_hex_shade')) {
+    /**
+     * Lighten (positive) or darken (negative) a #rrggbb hex color.
+     */
+    function app_hex_shade(string $hex, float $pct): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $t = $pct < 0 ? 0 : 255;
+        $p = abs($pct);
+
+        $r = (int) round(($t - $r) * $p) + $r;
+        $g = (int) round(($t - $g) * $p) + $g;
+        $b = (int) round(($t - $b) * $p) + $b;
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    }
+}
+
 if (!function_exists('resolve_agency_id')) {
     function resolve_agency_id(): ?int
     {
@@ -278,5 +400,147 @@ if (!function_exists('resize_and_save_photo')) {
         imagedestroy($resized);
 
         return $path;
+    }
+}
+
+if (!function_exists('app_sanitize_page_html')) {
+    /**
+     * Server-side HTML sanitizer with an allowlist (DOMDocument).
+     * Used for WYSIWYG page content that may be rendered publicly later.
+     */
+    function app_sanitize_page_html(?string $html): string
+    {
+        if ($html === null || trim($html) === '') {
+            return '';
+        }
+
+        // Wrap in a known container so DOMDocument tolerates fragment content.
+        $doc = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="utf-8" ?><div id="sanitize-root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $allowedTags = [
+            'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup',
+            'blockquote', 'pre', 'code', 'hr', 'table', 'thead', 'tbody', 'tfoot',
+            'tr', 'th', 'td', 'a', 'img', 'figure', 'figcaption',
+        ];
+
+        // Grab the wrapper BEFORE any cleanup — the allowlist below strips its
+        // id attribute, which would otherwise make a later getElementById/XPath
+        // lookup fail. A DOMNode reference survives attribute removal.
+        $xpath = new DOMXPath($doc);
+        $foundRoot = $xpath->query('//div[@id="sanitize-root"]');
+        $root = ($foundRoot && $foundRoot->length > 0) ? $foundRoot->item(0) : null;
+
+        $allowedAttrs = [
+            'href', 'title', 'target', 'rel', 'src', 'alt', 'width', 'height',
+            'align', 'class', 'style', 'colspan', 'rowspan', 'start', 'type',
+        ];
+
+        // URL schemes permitted for links/images.
+        $safeSchemes = ['http', 'https', 'mailto', 'tel'];
+        $disallowedCss = ['expression', 'javascript:', 'url(', 'behavior', '-moz-binding'];
+
+        $xpath = new DOMXPath($doc);
+        foreach (iterator_to_array($xpath->query('//*')) as $node) {
+            if (!($node instanceof DOMElement)) {
+                continue;
+            }
+
+            $tag = strtolower($node->tagName);
+
+            if (!in_array($tag, $allowedTags, true)) {
+                $node->parentNode->removeChild($node);
+                continue;
+            }
+
+            // Remove non-allowlisted attributes.
+            foreach (iterator_to_array($node->attributes) as $attr) {
+                $name = strtolower($attr->nodeName);
+
+                if (!in_array($name, $allowedAttrs, true)) {
+                    $node->removeAttribute($attr->nodeName);
+                    continue;
+                }
+
+                $value = trim($attr->nodeValue);
+
+                if ($name === 'href' || $name === 'src') {
+                    // Allow data:image/* (base64) ONLY on <img> — Quill pastes/embeds
+                    // images that way. SVG is rejected (script-bearing).
+                    if ($name === 'src' && $tag === 'img' && preg_match('#^data:image/(png|jpe?g|gif|webp);base64,#i', $value)) {
+                        continue;
+                    }
+
+                    $scheme = parse_url($value, PHP_URL_SCHEME);
+                    if ($scheme !== null && !in_array(strtolower((string) $scheme), $safeSchemes, true)) {
+                        $node->removeAttribute($attr->nodeName);
+                        continue;
+                    }
+                }
+
+                if ($name === 'target' && strtolower($value) !== '_blank') {
+                    $node->removeAttribute($attr->nodeName);
+                    continue;
+                }
+
+                if ($name === 'style') {
+                    $lower = strtolower($value);
+                    foreach ($disallowedCss as $needle) {
+                        if (str_contains($lower, $needle)) {
+                            $node->removeAttribute($attr->nodeName);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Links must not point to unsafe schemes via javascript: etc. (already covered).
+            // Images must have http(s) src or a data: blocked by scheme check above.
+        }
+
+        // Remove comments & leftover script/style nodes entirely.
+        foreach (iterator_to_array($xpath->query('//comment()')) as $node) {
+            $node->parentNode->removeChild($node);
+        }
+        foreach (iterator_to_array($xpath->query('//script | //style | //iframe | //object | //embed | //form | //input | //button')) as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        // Serialize the wrapper's children (root reference captured before cleanup).
+        $inner = '';
+        if ($root instanceof DOMElement) {
+            foreach ($root->childNodes as $child) {
+                $inner .= $doc->saveHTML($child);
+            }
+        }
+
+        return trim($inner);
+    }
+}
+
+if (!function_exists('resume_locale_for_country')) {
+    /**
+     * Resolve the resume label locale from a destination country code.
+     *
+     * The resume shows field labels in English plus the language of the
+     * destination country (i.e. the country of the FRA). Returns null when
+     * the country has no mapped/needed translation so callers can fall back
+     * to the application locale.
+     *
+     * (Mjolnir "LANDAS: Resume" 2026-10-08)
+     */
+    function resume_locale_for_country(?string $countryCode): ?string
+    {
+        $code = strtoupper(trim((string) $countryCode));
+        if ($code === '') {
+            return null;
+        }
+
+        $map = (array) config('resume.locale_by_country', []);
+
+        return $map[$code] ?? null;
     }
 }

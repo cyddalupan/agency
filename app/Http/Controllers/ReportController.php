@@ -16,8 +16,10 @@ use App\Models\ExpenseRequestItem;
 use App\Models\OfficialReceipt;
 use App\Models\Payment;
 use App\Models\StatusCode;
+use App\Services\HtmlPdfRenderer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\View\View;
@@ -110,17 +112,48 @@ class ReportController extends Controller
         return $this->downloadPdf('reports.commission', ['commission' => $commission], 'commission-' . $commission->id . '.pdf');
     }
 
-    public function resume(Applicant $applicant)
+    /**
+     * Printable applicant resume / bio-data (PDF).
+     *
+     * The document is bilingual: field labels are shown in English and in the
+     * language of the destination country (the country of the FRA / foreign
+     * employer). Rendering goes through HtmlPdfRenderer so non-Latin scripts
+     * (Arabic/CJK) shape correctly. (Mjolnir "LANDAS: Resume" 2026-10-08)
+     */
+    public function resume(Applicant $applicant, HtmlPdfRenderer $renderer)
     {
         $this->authorizeAgencyAccess($applicant);
 
-        $applicant->load(['country', 'agent', 'statusCode', 'skills']);
+        $applicant->load([
+            'country', 'agent', 'statusCode', 'skills', 'languages',
+            'nationality', 'religion', 'civilStatus', 'position', 'branch',
+            'agency', 'employer.country',
+        ]);
         $this->loadResumeRelations($applicant);
 
-        $pdf = Pdf::loadView('reports.resume', ['applicant' => $applicant])
-            ->setPaper('a4');
+        // Resolve the resume label locale from the destination country of the
+        // FRA (foreign employer), falling back to the applicant's destination.
+        $countryCode = $applicant->employer?->country?->code ?? $applicant->country?->code;
+        $locale = resume_locale_for_country($countryCode) ?? config('app.locale');
 
-        return response($pdf->output(['compress' => 0]), 200)
+        $agency = $applicant->agency ?: resolve_agency();
+
+        $previous = App::getLocale();
+        App::setLocale($locale);
+
+        try {
+            $html = view('reports.resume', [
+                'applicant' => $applicant,
+                'agency'    => $agency,
+                'locale'    => $locale,
+            ])->render();
+        } finally {
+            App::setLocale($previous);
+        }
+
+        $pdf = $renderer->render($html);
+
+        return response($pdf, 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="resume-' . $applicant->id . '.pdf"');
     }
@@ -133,14 +166,19 @@ class ReportController extends Controller
     {
         $this->authorizeAgencyAccess($applicant);
 
+        // Row split (Toybits 2026-09-07): an item is either charged to the
+        // office/applicant (Statement of Account) or to the agent (Agent Expenses).
+        // Agent-charged rows must never appear in the applicant's statement.
         $statementItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
             ->where('applicant_id', $applicant->id)
+            ->where('charge', '!=', 'agent')
             ->orderBy('id')
             ->get();
 
         $agentItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
             ->where('agent_id', $applicant->agent_id)
             ->where('applicant_id', $applicant->id)
+            ->where('charge', 'agent')
             ->orderBy('id')
             ->get();
 

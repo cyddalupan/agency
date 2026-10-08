@@ -1,308 +1,285 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ $locale ?? 'en' }}">
 <head>
     <meta charset="utf-8">
-    <title>CV - {{ $applicant->full_name }}</title>
+    <title>{{ $applicant->full_name }} — {{ __('resume.title', [], 'en') }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
-
-        .page { width: 210mm; }
-
-        table.frame { width: 100%; border-collapse: collapse; }
-        table.frame td { vertical-align: top; }
-
-        /* ── LEFT COLUMN ── */
-        td.left-col {
-            width: 95mm;
-            background-color: #f8f9fa;
-            padding: 10mm 6mm 8mm;
-            border-right: 1px solid #e0e0e0;
+        @page { margin: 0; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'DejaVu Sans', 'Noto Naskh Arabic', 'WenQuanYi Zen Hei', Arial, sans-serif;
+            font-size: 9.5pt;
+            color: #1f2937;
+            margin: 0;
         }
-        td.left-col .portrait {
-            width: 55mm;
-            height: 65mm;
-            object-fit: cover;
-            border: 2px solid #ddd;
-            display: block;
-            margin: 0 auto 4mm;
-        }
-        td.left-col h1 {
-            font-size: 14pt;
-            font-weight: 700;
-            color: #1a365d;
+        .page { width: 210mm; min-height: 270mm; padding: 9mm 11mm 10mm; }
+
+        /* Letterhead */
+        .letterhead {
             text-align: center;
-            line-height: 1.2;
-            margin-bottom: 1mm;
-        }
-        td.left-col .subtitle {
-            font-size: 8pt;
-            color: #6b7280;
-            text-align: center;
+            border-bottom: 3px double #1a365d;
+            padding-bottom: 3mm;
             margin-bottom: 4mm;
         }
-        .sb-line {
-            width: 30mm;
-            height: 1px;
-            background: #d1d5db;
-            margin: 2mm auto;
-        }
-        td.left-col .contact-row {
-            font-size: 7.5pt;
-            color: #555;
-            text-align: center;
-            margin-bottom: 0.5mm;
-            word-break: break-word;
-        }
+        .letterhead img { max-height: 20mm; max-width: 100%; }
+        .letterhead .agency-name { font-size: 15pt; font-weight: 700; color: #1a365d; line-height: 1.15; }
+        .letterhead .agency-sub { font-size: 8pt; color: #6b7280; margin-top: 0.5mm; }
 
-        td.left-col .sb-title {
-            font-size: 8pt;
+        .doc-title {
+            text-align: center;
+            font-size: 12pt;
             font-weight: 700;
+            letter-spacing: 2px;
+            color: #1a365d;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #1a365d;
-            margin: 3mm 0 1.5mm;
-            border-bottom: 1px solid #d1d5db;
-            padding-bottom: 1mm;
-        }
-        td.left-col .sb-item {
-            font-size: 7.5pt;
-            color: #555;
-            margin: 0 0 1mm 0;
-            line-height: 1.3;
-        }
-        td.left-col .sb-item strong { color: #333; }
-
-        td.left-col .skill-badge {
-            display: inline-block;
-            background: #e5e7eb;
-            color: #333;
-            padding: 0.5mm 2mm;
-            border: 1px solid #d1d5db;
-            font-size: 7pt;
-            margin: 0.3mm 0.8mm 0.3mm 0;
+            margin: 1mm 0 4mm;
         }
 
-        td.left-col .body-photo-wrap {
+        /* Bio-data layout */
+        table.bio { width: 100%; border-collapse: collapse; }
+        table.bio > tbody > tr > td { vertical-align: top; }
+
+        td.photo-cell { width: 42mm; }
+        .photo-frame {
+            width: 38mm; height: 45mm;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
             text-align: center;
-            margin-top: 4mm;
         }
-        td.left-col .body-photo-wrap img {
-            max-width: 100%;
-            max-height: 160mm;
-            object-fit: contain;
-            border: 1px solid #ddd;
-        }
+        .photo-frame img { width: 38mm; height: 45mm; object-fit: cover; }
+        .photo-frame .no-photo { color: #94a3b8; font-size: 7.5pt; padding-top: 19mm; display: block; }
 
-        /* ── RIGHT COLUMN ── */
-        td.right-col {
-            padding: 10mm 8mm 8mm;
+        .body-photo-wrap { margin-top: 3mm; text-align: center; }
+        .body-photo-wrap img { width: 38mm; border: 1px solid #cbd5e1; }
+
+        td.fields-cell { padding-left: 5mm; }
+
+        table.fields { width: 100%; border-collapse: collapse; }
+        table.fields td { padding: 1.4mm 2mm; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+        table.fields td.lbl {
+            width: 42mm;
+            color: #1a365d;
+            font-weight: 700;
+            white-space: nowrap;
         }
-        .section { margin-bottom: 4mm; }
-        .section-title {
-            font-size: 10pt;
+        table.fields td.lbl .tr {
+            display: block;
+            color: #64748b;
+            font-weight: 400;
+            font-size: 8.5pt;
+        }
+        table.fields td.val { color: #111827; }
+
+        .sec-title {
+            font-size: 9.5pt;
             font-weight: 700;
             color: #1a365d;
-            border-bottom: 2px solid #1a365d;
-            padding-bottom: 0.8mm;
-            margin-bottom: 2mm;
             text-transform: uppercase;
             letter-spacing: 1px;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 0.8mm;
+            margin: 5mm 0 2mm;
         }
 
-        .entry { margin-bottom: 3mm; }
-        .entry-title { font-weight: 700; font-size: 9.5pt; color: #1a365d; }
-        .entry-sub { font-size: 8.5pt; color: #2563eb; }
-        .entry-date { font-size: 7.5pt; color: #888; margin-bottom: 0.3mm; }
-        .entry-desc { font-size: 8pt; color: #555; margin-top: 0.5mm; padding-left: 2mm; border-left: 1.5px solid #d1d5db; }
+        table.grid { width: 100%; border-collapse: collapse; margin-bottom: 2mm; }
+        table.grid th {
+            background: #1a365d;
+            color: #fff;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1.6mm 2mm;
+            text-align: left;
+        }
+        table.grid th .tr { display: block; font-weight: 400; opacity: .85; text-transform: none; }
+        table.grid td { padding: 1.5mm 2mm; border: 1px solid #dbe2ea; font-size: 9pt; }
+
+        table.chk { width: 100%; border-collapse: collapse; }
+        table.chk td { padding: 1.4mm 2mm; border: 1px solid #dbe2ea; font-size: 9pt; width: 50%; }
+        table.chk td .yn { font-weight: 700; color: #1a365d; }
+
+        .badge {
+            display: inline-block;
+            border: 1px solid #cbd5e1;
+            background: #f1f5f9;
+            padding: 0.4mm 2mm;
+            margin: 0 1mm 1mm 0;
+            font-size: 8.5pt;
+        }
 
         .footer {
-            text-align: center;
-            font-size: 6.5pt;
-            color: #bbb;
             margin-top: 6mm;
-            border-top: 1px solid #eee;
             padding-top: 2mm;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 7.5pt;
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
-    <div class="page">
+@php
+    $locale = $locale ?? app()->getLocale();
 
-        <table class="frame" cellpadding="0" cellspacing="0">
-        <tr>
+    // Bilingual label: English first, translated label beneath (matches sample).
+    $label = function (string $key) use ($locale) {
+        $en = e(__('resume.' . $key, [], 'en'));
+        $out = $en;
+        if ($locale && $locale !== 'en') {
+            $tr = __('resume.' . $key, [], $locale);
+            if ($tr && $tr !== __('resume.' . $key, [], 'en')) {
+                $out .= '<span class="tr">' . e($tr) . '</span>';
+            }
+        }
+        return $out;
+    };
 
-        {{-- ── LEFT COLUMN ── --}}
-        <td class="left-col">
+    // Engine-agnostic <img> from a storage/app/public relative path (base64).
+    $img = function (?string $relative, string $class = '') {
+        if (! $relative) {
+            return '';
+        }
+        $path = storage_path('app/public/' . ltrim($relative, '/'));
+        if (! is_file($path)) {
+            return '';
+        }
+        $mime = @mime_content_type($path) ?: 'image/png';
+        return '<img class="' . e($class) . '" src="data:' . $mime . ';base64,' . base64_encode(file_get_contents($path)) . '">';
+    };
 
-            @if ($applicant->photo)
-                <img src="{{ storage_path('app/public/' . $applicant->photo) }}" alt="Photo" class="portrait">
+    $eduLevels = [
+        'high_school' => 'High School',
+        'vocational'  => 'Vocational / Associate',
+        'bachelor'    => "Bachelor's Degree",
+        'master'      => "Master's Degree",
+    ];
+
+    $gender = $applicant->gender ? ucfirst(strtolower($applicant->gender)) : null;
+    $passport = $applicant->has_passport === 'with' ? __('resume.yes', [], 'en')
+        : ($applicant->has_passport === 'without' ? __('resume.no', [], 'en') : null);
+
+    $rows = [];
+    $rows[] = ['name', $applicant->full_name];
+    $rows[] = ['position', $applicant->position?->name];
+    $rows[] = ['salary', $applicant->expected_salary];
+    $rows[] = ['passport', $passport];
+    $rows[] = ['contact', $applicant->contact];
+    $rows[] = ['address', $applicant->address];
+    $rows[] = ['nationality', $applicant->nationality?->name];
+    $rows[] = ['date_of_birth', $applicant->birthdate ? \Illuminate\Support\Carbon::parse($applicant->birthdate)->format('d M Y') : null];
+    $rows[] = ['gender', $gender];
+    $rows[] = ['age', $applicant->age];
+    $rows[] = ['religion', $applicant->religion?->name];
+    $rows[] = ['marital_status', $applicant->civilStatus?->label];
+    $rows[] = ['education', $applicant->education_level ? ($eduLevels[$applicant->education_level] ?? ucfirst(str_replace('_', ' ', $applicant->education_level))) : null];
+    $rows = array_values(array_filter($rows, fn ($r) => ! is_null($r[1]) && $r[1] !== ''));
+
+    $languages = $applicant->relationLoaded('languages') ? $applicant->languages : collect();
+@endphp
+
+<div class="page">
+
+    {{-- ── LETTERHEAD ── --}}
+    <div class="letterhead">
+        @if ($agency && $agency->logo && ($logoImg = $img($agency->logo)))
+            {!! $logoImg !!}
+        @else
+            <div class="agency-name">{{ $agency?->name ?? config('app.name') }}</div>
+            @if ($agency?->city)
+                <div class="agency-sub">{{ $agency->city }}</div>
             @endif
-
-            <h1>{{ strtoupper($applicant->last_name) }}<br>{{ ucfirst($applicant->first_name) }}{{ $applicant->middle_name ? ' ' . strtoupper(substr($applicant->middle_name,0,1)) . '.' : '' }}</h1>
-
-            <div class="subtitle">
-                @if ($applicant->position)
-                    {{ $applicant->position->name }}
-                @else
-                    Applicant
-                @endif
-            </div>
-
-            <div class="sb-line"></div>
-
-            {{-- Contact --}}
-            <div class="sb-title">Contact</div>
-            @if ($applicant->contact)
-                <div class="contact-row">{{ $applicant->contact }}</div>
-            @endif
-            @if ($applicant->email)
-                <div class="contact-row">{{ $applicant->email }}</div>
-            @endif
-            @if ($applicant->address)
-                <div class="contact-row">{{ $applicant->address }}</div>
-            @endif
-
-            {{-- Personal Details --}}
-            <div class="sb-title">Details</div>
-            <div class="sb-item"><strong>Gender:</strong> {{ ucfirst($applicant->gender ?? '—') }}</div>
-            <div class="sb-item"><strong>Age:</strong> {{ $applicant->age ?? '—' }}</div>
-            <div class="sb-item"><strong>Birthdate:</strong> {{ $applicant->birthdate ? date('M d, Y', strtotime($applicant->birthdate)) : '—' }}</div>
-            <div class="sb-item"><strong>Branch:</strong> {{ $applicant->branch?->name ?? '—' }}</div>
-            @if($applicant->agent)
-            <div class="sb-item"><strong>Agent:</strong> {{ $applicant->agent->name }}</div>
-            @endif
-            <div class="sb-item"><strong>FRA:</strong>
-                @switch($applicant->fra)
-                    @case('for_fra') For FRA @break
-                    @case('fra_completed') FRA Completed @break
-                    @case('none') No FRA @break
-                    @default —
-                @endswitch
-            </div>
-            <div class="sb-item"><strong>Status:</strong> {{ $applicant->statusCode?->label ?? $applicant->status ?? '—' }}</div>
-            <div class="sb-item"><strong>Firstimer/Ex-Abroad:</strong>
-                @switch($applicant->firstimer_type)
-                    @case('firstimer') Firstimer @break
-                    @case('ex-abroad') Ex-Abroad @break
-                    @default —
-                @endswitch
-            </div>
-            <div class="sb-item"><strong>Encoder:</strong> {{ $applicant->encoder ?? '—' }}</div>
-            <div class="sb-item"><strong>Civil Status:</strong> {{ $applicant->civilStatus?->label ?? '—' }}</div>
-            <div class="sb-item"><strong>Nationality:</strong> {{ $applicant->nationality?->name ?? '—' }}</div>
-            @if($applicant->religion)
-            <div class="sb-item"><strong>Religion:</strong> {{ $applicant->religion->name }}</div>
-            @endif
-            <div class="sb-item"><strong>Passport:</strong> {{ $applicant->has_passport === 'with' ? 'Yes' : ($applicant->has_passport === 'without' ? 'No' : '—') }}</div>
-
-            @if($applicant->country)
-            <div class="sb-title">Destination</div>
-            <div class="sb-item">{{ $applicant->country->name }}</div>
-            @endif
-
-            {{-- Skills --}}
-            @if($applicant->skills->count())
-            <div class="sb-title">Skills</div>
-            <div>
-                @foreach($applicant->skills as $skill)
-                    <span class="skill-badge">{{ $skill->name }}</span>
-                @endforeach
-            </div>
-            @endif
-
-            {{-- Full Body Photo --}}
-            @if($applicant->full_body_photo)
-            <div class="body-photo-wrap">
-                <img src="{{ storage_path('app/public/' . $applicant->full_body_photo) }}" alt="Full body">
-            </div>
-            @endif
-
-        </td>
-
-        {{-- ── RIGHT COLUMN ── --}}
-        <td class="right-col">
-
-            {{-- Work Experience --}}
-            @if($applicant->workExperiences->count())
-            <div class="section">
-                <div class="section-title">Work Experience</div>
-                @foreach($applicant->workExperiences as $exp)
-                <div class="entry">
-                    <div class="entry-title">{{ $exp->position_title ?? $exp->position }}</div>
-                    <div class="entry-sub">{{ $exp->company }}</div>
-                    <div class="entry-date">
-                        {{ $exp->from_date ?? $exp->date_from ? \Carbon\Carbon::parse($exp->from_date ?? $exp->date_from)->format('M Y') : '' }}
-                        —
-                        {{ $exp->to_date ?? $exp->date_to ? \Carbon\Carbon::parse($exp->to_date ?? $exp->date_to)->format('M Y') : 'Present' }}
-                    </div>
-                    @if($exp->description)
-                    <div class="entry-desc">{{ $exp->description }}</div>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-            @endif
-
-            {{-- Education --}}
-            @if($applicant->education->count())
-            <div class="section">
-                <div class="section-title">Education</div>
-                @foreach($applicant->education as $edu)
-                <div class="entry">
-                    <div class="entry-title">{{ $edu->degree ?? $edu->course }}</div>
-                    <div class="entry-sub">{{ $edu->school }}</div>
-                    <div class="entry-date">
-                        {{ $edu->year_start ?? '' }}
-                        @if($edu->year_start && $edu->year_end) — @endif
-                        {{ $edu->year_end ?? $edu->year_graduated ?? '' }}
-                    </div>
-                </div>
-                @endforeach
-            </div>
-            @endif
-
-            {{-- Certificates --}}
-            @if($applicant->certificates->count())
-            <div class="section">
-                <div class="section-title">Certificates</div>
-                @foreach($applicant->certificates as $cert)
-                <div class="entry">
-                    <div class="entry-title">{{ $cert->name ?? $cert->certificate_name ?? $cert->certificate_no }}</div>
-                    <div class="entry-sub">{{ $cert->issued_by ?? $cert->institution ?? '' }}</div>
-                    @if($cert->issued_date ?? $cert->issue_date)
-                    <div class="entry-date">{{ \Carbon\Carbon::parse($cert->issued_date ?? $cert->issue_date)->format('M d, Y') }}</div>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-            @endif
-
-            {{-- References --}}
-            @if($applicant->references->count())
-            <div class="section">
-                <div class="section-title">References</div>
-                @foreach($applicant->references as $ref)
-                <div class="entry">
-                    <div class="entry-title">{{ $ref->name }}</div>
-                    <div class="entry-sub">{{ $ref->position }}{{ $ref->company ? ' — '.$ref->company : '' }}</div>
-                    @if($ref->contact)
-                    <div class="entry-date">{{ $ref->contact }}</div>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-            @endif
-
-            <div class="footer">
-                CV generated on {{ now()->format('F d, Y') }}
-            </div>
-
-        </td>
-
-        </tr>
-        </table>
-
+        @endif
     </div>
+
+    <div class="doc-title">{!! $label('title') !!}</div>
+
+    {{-- ── IDENTITY + PERSONAL FIELDS ── --}}
+    <table class="bio">
+        <tr>
+            <td class="photo-cell">
+                <div class="photo-frame">
+                    @if ($applicant->photo && ($photoImg = $img($applicant->photo)))
+                        {!! $photoImg !!}
+                    @else
+                        <span class="no-photo">{{ __('resume.photo', [], 'en') }}</span>
+                    @endif
+                </div>
+                @if ($applicant->full_body_photo && ($bodyImg = $img($applicant->full_body_photo)))
+                    <div class="body-photo-wrap">{!! $bodyImg !!}</div>
+                @endif
+            </td>
+            <td class="fields-cell">
+                <table class="fields">
+                    @foreach ($rows as [$key, $value])
+                        <tr>
+                            <td class="lbl">{!! $label($key) !!}</td>
+                            <td class="val">{{ $value }}</td>
+                        </tr>
+                    @endforeach
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ── POSITION / DESTINATION ── --}}
+    <div class="sec-title">{!! $label('destination') !!}</div>
+    <table class="grid">
+        <tr>
+            <th>{!! $label('position') !!}</th>
+            <th>{!! $label('country') !!}</th>
+            <th>{!! $label('duration') !!}</th>
+        </tr>
+        <tr>
+            <td>{{ $applicant->position?->name ?? '—' }}</td>
+            <td>{{ $applicant->country?->name ?? '—' }}</td>
+            <td>{{ $applicant->remarks ?: '—' }}</td>
+        </tr>
+    </table>
+
+    {{-- ── LANGUAGES ── --}}
+    @if ($languages->count())
+        <div class="sec-title">{!! $label('languages') !!}</div>
+        <table class="chk">
+            <tr>
+                @foreach ($languages as $i => $lang)
+                    <td>{{ $lang->name }} <span class="yn">— {{ __('resume.yes', [], 'en') }}</span></td>
+                    @if ($i % 2 === 1)</tr><tr>@endif
+                @endforeach
+                @if ($languages->count() % 2 === 1)<td></td>@endif
+            </tr>
+        </table>
+    @endif
+
+    {{-- ── SKILLS ── --}}
+    @if ($applicant->skills->count())
+        <div class="sec-title">{!! $label('skills') !!}</div>
+        <div>
+            @foreach ($applicant->skills as $skill)
+                <span class="badge">{{ $skill->name }}</span>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- ── WORK EXPERIENCE ── --}}
+    @if ($applicant->workExperiences->count())
+        <div class="sec-title">{{ __('resume.position', [], 'en') }} / Experience</div>
+        <table class="grid">
+            @foreach ($applicant->workExperiences as $exp)
+                <tr>
+                    <td>
+                        <strong>{{ $exp->position_title ?? $exp->position }}</strong>
+                        @if ($exp->company) — {{ $exp->company }} @endif
+                    </td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
+
+    <div class="footer">
+        {{ __('resume.generated_on', [], 'en') }} {{ now()->format('F d, Y') }}
+        @if ($agency) &nbsp;•&nbsp; {{ $agency->name }} @endif
+    </div>
+
+</div>
 </body>
 </html>
