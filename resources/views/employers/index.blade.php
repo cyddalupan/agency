@@ -77,7 +77,9 @@
                                 @endif
                             </td>
                             <td class="text-right">
-                                <div class="flex items-center justify-end gap-2">
+                                {{-- (Mjolnir "FRA Module" 2026-10-08) Delete must be clearly visible
+                                     to Admin (Cyd: "wala ko makita delete function"), not a tiny icon. --}}
+                                <div class="flex items-center justify-end gap-2 whitespace-nowrap">
                                     <a href="{{ route('employers.show', $employer) }}" class="btn btn-ghost btn-xs btn-square" title="View">👁️</a>
                                     @if (! auth()->user()->isRestOfAccount())
                                     <a href="{{ route('employers.edit', $employer) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">✏️</a>
@@ -87,7 +89,9 @@
                                           onsubmit="return confirm('Delete FRA {{ $employer->name }}? Its job positions will be removed too.');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">🗑️</button>
+                                        <button type="submit" class="btn btn-error btn-xs gap-1 font-semibold" title="Delete this FRA">
+                                            <span>🗑️</span> Delete
+                                        </button>
                                     </form>
                                     @endif
                                 </div>
