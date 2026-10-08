@@ -6,6 +6,7 @@ use App\Models\Applicant;
 use App\Models\Employer;
 use App\Models\JobPosition;
 use App\Models\StatusCode;
+use App\Services\ExpiryNotificationService;
 use Illuminate\Support\Facades\DB;
 
 class AgencyDashboardController extends Controller
@@ -145,11 +146,19 @@ class AgencyDashboardController extends Controller
         $pipelineCountries = \App\Models\Country::orderBy('name')->get(['id', 'name']);
         $pipelineYears     = range((int) date('Y'), (int) date('Y') - 4);
 
+        // ── Expiry pop-up ───────────────────────────────────────────────────
+        // Mjolnir card "LANDAS: POP-UP Expire notification", 2026-10-08.
+        // Medicals expiring within 2 weeks and visas within 1 month.
+        $expiryService    = app(ExpiryNotificationService::class);
+        $expiringMedicals = $expiryService->medicals($user);
+        $expiringVisas    = $expiryService->visas($user);
+
         return view('agency.dashboard', compact(
             'user', 'agency', 'stats', 'statusCodes', 'statusCounts',
             'monthlyTotals', 'employerGrowth', 'chartStatusData', 'employerCounts',
             'pipelineStages', 'pipelineEmployers', 'stageTotalsByEmployer',
-            'pipelineTotals', 'pipelineCountries', 'pipelineYears'
+            'pipelineTotals', 'pipelineCountries', 'pipelineYears',
+            'expiringMedicals', 'expiringVisas'
         ));
     }
 }

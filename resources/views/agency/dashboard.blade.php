@@ -229,4 +229,6 @@
     </div>
     @endif
 </div>
+
+@include('agency.partials.expiry-notification')
 @endsection
