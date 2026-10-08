@@ -74,31 +74,11 @@
     </div>
 
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <h3 class="card-title text-lg mb-2">⚡ Quick Actions</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <a href="{{ route('applicants.create') }}" class="btn btn-outline btn-primary btn-block h-auto py-4 flex-col gap-1">
-                        <span class="text-2xl">➕</span>
-                        <span class="text-xs">New Applicant</span>
-                    </a>
-                    <a href="{{ route('employers.create') }}" class="btn btn-outline btn-secondary btn-block h-auto py-4 flex-col gap-1">
-                        <span class="text-2xl">🏢</span>
-                        <span class="text-xs">New FRA</span>
-                    </a>
-                    <a href="{{ route('applicants.index') }}" class="btn btn-outline btn-accent btn-block h-auto py-4 flex-col gap-1">
-                        <span class="text-2xl">👥</span>
-                        <span class="text-xs">Browse Applicants</span>
-                    </a>
-                    <a href="{{ route('employers.index') }}" class="btn btn-outline btn-info btn-block h-auto py-4 flex-col gap-1">
-                        <span class="text-2xl">🏢</span>
-                        <span class="text-xs">Browse FRAs</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
+    {{-- "Quick Actions" card removed per client request (Mjolnir card
+         "Quick Actions - REMOVE", 2026-10-08): the same links already live
+         in the sidebar, so the card was redundant. Deployment Pipeline now
+         spans the full width. --}}
+    <div class="grid grid-cols-1 gap-6 mb-8">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h3 class="card-title text-lg mb-2">📋 Deployment Pipeline</h3>
