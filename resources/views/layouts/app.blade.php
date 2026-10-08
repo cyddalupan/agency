@@ -277,9 +277,14 @@
                         // see the Accounting Dashboard group — they file expenses/receivables
                         // for any branch. Other branch accounts stay trimmed as before.
                         $showAccountingNav = ! $navUser->isBranchAccount() || $navUser->isMainOffice();
-                        // (Cyd 2026-09-28) Statistics is restricted to the privileged
-                        // accounts (Mae/Evelyn/Angel); everyone else loses it.
-                        $showStats       = $navUser->canAccessModule('accounting') && $navUser->isPrivileged();
+                        // (Mjolnir "LANDAS: Transaction Statistics" 2026-10-08) The
+                        // Statistics page (Receivable + Expenses) is shown ONLY to
+                        // Admin + Accounting users. Use the module map as the single
+                        // source of truth: `accounting` is allowed for super_admin /
+                        // admin / billing and denied for everyone else (already
+                        // enforced server-side by the module.access middleware), so
+                        // the sidebar now matches the actual access.
+                        $showStats       = $navUser->canAccessModule('accounting');
                         // (Cyd 2026-09-28 #6) Rest-of-Account staff must ALWAYS keep
                         // Receivable + Expense & Payments (to file requests) — even
                         // branch accounts — so no longer gated on Main Office.
