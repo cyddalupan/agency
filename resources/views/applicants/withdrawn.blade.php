@@ -46,12 +46,19 @@
         @endforeach
     </div>
 
-    {{-- (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs --}}
-    <div class="tabs tabs-boxed mb-4">
-        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
-           class="tab {{ ($type ?? 'skilled') === 'skilled' ? 'tab-active' : '' }}">💼 Skilled ({{ $typeCounts['skilled'] ?? 0 }})</a>
+    {{-- (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first, prominent coloured box. --}}
+    @php $activeType = $type ?? 'skilled'; @endphp
+    <div class="grid grid-cols-2 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
         <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
-           class="tab {{ ($type ?? '') === 'household' ? 'tab-active' : '' }}">🏠 Household ({{ $typeCounts['household'] ?? 0 }})</a>
+           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'household' ? 'bg-primary text-primary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl">🏠</span><span>HOUSEHOLD</span>
+            <span class="badge badge-lg {{ $activeType === 'household' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['household'] ?? 0 }}</span>
+        </a>
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
+           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'skilled' ? 'bg-secondary text-secondary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl">💼</span><span>SKILLED</span>
+            <span class="badge badge-lg {{ $activeType === 'skilled' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['skilled'] ?? 0 }}</span>
+        </a>
     </div>
 
     @if($applicants->count())

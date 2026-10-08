@@ -39,7 +39,8 @@ class ApplicantController extends Controller
             ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses);
 
-        // (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs.
+        // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD is shown first,
+        // but SKILLED stays the default landing tab (backward compatible).
         $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
             ? Applicant::TYPE_HOUSEHOLD
             : Applicant::TYPE_SKILLED;
@@ -125,7 +126,8 @@ class ApplicantController extends Controller
             ->forBranchUser()
             ->whereIn('status_code', $withdrawnStatuses);
 
-        // (Mjolnir "Skilled Applicants" 2026-10-06) HOUSEHOLD / SKILLED tabs.
+        // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first tab,
+        // SKILLED remains the default landing tab.
         $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
             ? Applicant::TYPE_HOUSEHOLD
             : Applicant::TYPE_SKILLED;

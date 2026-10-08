@@ -43,24 +43,43 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
-     * Scope to a single applicant type (household|skilled). Legacy rows with a
-     * NULL applicant_type are treated as Skilled so they stay visible on the
-     * Skilled tab.
+     * Scope to a single applicant type (household|skilled).
+     *
+     * Legacy rows with a NULL applicant_type are derived from their position's
+     * category (household positions -> Household; everything else -> Skilled),
+     * so imported domestic helpers stay on the HOUSEHOLD tab.
+     * (Mjolnir "Skilled Applicants" follow-up, 2026-10-08.)
      */
     public function scopeOfType($query, ?string $type)
     {
-        if ($type === self::TYPE_HOUSEHOLD) {
-            return $query->where('applicant_type', self::TYPE_HOUSEHOLD);
+        if (! in_array($type, [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED], true)) {
+            return $query;
         }
 
-        if ($type === self::TYPE_SKILLED) {
-            return $query->where(function ($q) {
-                $q->where('applicant_type', self::TYPE_SKILLED)
-                    ->orWhereNull('applicant_type');
+        $householdPositionIds = \App\Models\Position::household()->pluck('id')->all();
+
+        if ($type === self::TYPE_HOUSEHOLD) {
+            return $query->where(function ($q) use ($householdPositionIds) {
+                $q->where('applicant_type', self::TYPE_HOUSEHOLD)
+                    ->orWhere(function ($q2) use ($householdPositionIds) {
+                        $q2->whereNull('applicant_type')
+                            ->whereIn('position_id', $householdPositionIds);
+                    });
             });
         }
 
-        return $query;
+        // Skilled: explicit skilled, or NULL-type whose position is not a
+        // household position (including applicants with no position at all).
+        return $query->where(function ($q) use ($householdPositionIds) {
+            $q->where('applicant_type', self::TYPE_SKILLED)
+                ->orWhere(function ($q2) use ($householdPositionIds) {
+                    $q2->whereNull('applicant_type')
+                        ->where(function ($q3) use ($householdPositionIds) {
+                            $q3->whereNull('position_id')
+                                ->orWhereNotIn('position_id', $householdPositionIds);
+                        });
+                });
+        });
     }
 
     /**

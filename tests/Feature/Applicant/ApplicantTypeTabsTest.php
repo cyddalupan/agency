@@ -166,4 +166,88 @@ class ApplicantTypeTabsTest extends TestCase
             'applicant_type' => 'skilled',
         ]);
     }
+
+    // ── Follow-up (2026-10-08): DH regression + tab order/emphasis ──────
+
+    #[Test]
+    public function legacy_household_position_applicant_shows_on_the_household_tab(): void
+    {
+        // A legacy DH row: applicant_type NULL, position on the domestic
+        // roster. It must land on HOUSEHOLD, not SKILLED.
+        $maid = Position::firstOrCreate(['name' => 'Maid'], ['category' => Position::CATEGORY_HOUSEHOLD]);
+        $maid->update(['category' => Position::CATEGORY_HOUSEHOLD]);
+
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'LegacyMaid',
+            'applicant_type' => null,
+            'position_id' => $maid->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('applicants.index', ['type' => 'household']))
+            ->assertOk()
+            ->assertSee('LegacyMaid');
+
+        $this->actingAs($this->admin)
+            ->get(route('applicants.index', ['type' => 'skilled']))
+            ->assertOk()
+            ->assertDontSee('LegacyMaid');
+    }
+
+    #[Test]
+    public function household_position_is_excluded_from_the_skilled_tab_even_without_a_type(): void
+    {
+        $house = Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'DomesticNoType',
+            'applicant_type' => null,
+        ]);
+        $house->position()->associate(Position::where('name', 'Domestic Helper')->first());
+        $house->save();
+
+        $this->actingAs($this->admin)
+            ->get(route('applicants.index', ['type' => 'skilled']))
+            ->assertOk()
+            ->assertDontSee('DomesticNoType');
+    }
+
+    #[Test]
+    public function index_defaults_to_the_skilled_tab(): void
+    {
+        // HOUSEHOLD is rendered first, but SKILLED remains the default landing
+        // tab (backward compatible with the existing list behaviour).
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'DefaultHouse',
+            'applicant_type' => Applicant::TYPE_HOUSEHOLD,
+        ]);
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'DefaultSkill',
+            'applicant_type' => Applicant::TYPE_SKILLED,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('applicants.index'))
+            ->assertOk()
+            ->assertSee('DefaultSkill')
+            ->assertDontSee('DefaultHouse');
+    }
+
+    #[Test]
+    public function household_tab_is_rendered_before_skilled(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('applicants.index'))
+            ->assertOk()
+            ->getContent();
+
+        $householdPos = strpos($html, 'HOUSEHOLD');
+        $skilledPos = strpos($html, 'SKILLED');
+
+        $this->assertNotFalse($householdPos, 'HOUSEHOLD tab should render');
+        $this->assertNotFalse($skilledPos, 'SKILLED tab should render');
+        $this->assertLessThan($skilledPos, $householdPos, 'HOUSEHOLD tab must render before SKILLED');
+    }
 }
