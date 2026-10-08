@@ -102,26 +102,82 @@
                     @endforeach
                 </div>
 
-                @if(isset($employerCounts) && $employerCounts->isNotEmpty())
-                <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2 mt-4">By Employer</p>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('applicants.index', ['status' => request('status')]) }}"
-                       class="badge badge-lg {{ request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">
-                        🏢 All
-                    </a>
-                    @foreach($employerCounts as $ec)
-                        @if($ec->applicants_count > 0)
-                        <a href="{{ route('applicants.index', ['employer' => $ec->id, 'status' => request('status')]) }}"
-                           class="badge badge-lg {{ (int)request('employer') === $ec->id ? 'badge-secondary' : 'badge-ghost' }}">
-                            {{ $ec->name }}
-                            <span class="ml-1">{{ $ec->applicants_count }}</span>
-                        </a>
-                        @endif
-                    @endforeach
-                </div>
-                @endif
+                {{-- Deployment Pipeline (table form) — Mjolnir card
+                     "DEPLOYMENT PIPELINE - (Table form)", 2026-10-08. --}}
+                <form method="GET" action="{{ route('agency.dashboard') }}"
+                      class="flex flex-wrap items-end gap-3 mt-4 mb-3">
+                    @if(request('status') !== null)
+                        <input type="hidden" name="status" value="{{ request('status') }}">
+                    @endif
+                    <div>
+                        <label class="text-xs opacity-50 uppercase tracking-wider font-semibold block mb-1">Year</label>
+                        <select name="pipeline_year" class="select select-bordered select-sm">
+                            <option value="">All</option>
+                            @foreach ($pipelineYears as $y)
+                                <option value="{{ $y }}" {{ (string) request('pipeline_year') === (string) $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs opacity-50 uppercase tracking-wider font-semibold block mb-1">Month</label>
+                        <select name="pipeline_month" class="select select-bordered select-sm">
+                            <option value="">All</option>
+                            @foreach (range(1, 12) as $m)
+                                <option value="{{ $m }}" {{ (string) request('pipeline_month') === (string) $m ? 'selected' : '' }}>{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs opacity-50 uppercase tracking-wider font-semibold block mb-1">Country</label>
+                        <select name="pipeline_country" class="select select-bordered select-sm">
+                            <option value="">All</option>
+                            @foreach ($pipelineCountries as $c)
+                                <option value="{{ $c->id }}" {{ (string) request('pipeline_country') === (string) $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                    <a href="{{ route('agency.dashboard') }}" class="btn btn-sm btn-ghost">Reset</a>
+                </form>
 
-                <p class="text-sm opacity-50 mt-3">📊 Click a status or employer to filter applicants below.</p>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th class="whitespace-nowrap">FRA</th>
+                                @foreach (array_keys($pipelineStages) as $stage)
+                                    <th class="text-center whitespace-nowrap">{{ $stage }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($pipelineEmployers as $emp)
+                                <tr>
+                                    <td class="whitespace-nowrap">{{ $emp->name }}</td>
+                                    @foreach (array_keys($pipelineStages) as $stage)
+                                        <td class="text-center">{{ $stageTotalsByEmployer[$emp->id][$stage] ?? 0 }}</td>
+                                    @endforeach
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="{{ count($pipelineStages) + 1 }}" class="text-center opacity-60 py-4">
+                                        No applicants in the pipeline stages yet.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr class="font-semibold">
+                                <th class="whitespace-nowrap">TOTAL</th>
+                                @foreach (array_keys($pipelineStages) as $stage)
+                                    <th class="text-center">{{ $pipelineTotals[$stage] ?? 0 }}</th>
+                                @endforeach
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <p class="text-sm opacity-50 mt-3">📊 Click a status above to filter applicants below.</p>
             </div>
         </div>
     </div>

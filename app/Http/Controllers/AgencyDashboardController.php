@@ -78,9 +78,78 @@ class AgencyDashboardController extends Controller
                 'color' => $sc->color ?? '#3b82f6',
             ]);
 
+        // ── Deployment Pipeline (table form) ────────────────────────────────
+        // Mjolnir card "DEPLOYMENT PIPELINE - (Table form)", 2026-10-08.
+        // One row per FRA (employer), one column per stage, plus a TOTAL row.
+        // Stage labels fold the round-2 variants ("Reserved 2" → Reserved, …).
+        $pipelineStages = [
+            'Reserved'  => ['Reserved', 'Reserved 2'],
+            'Selected'  => ['Selected', 'Selected 2'],
+            'Interview' => ['Interview', 'Interview 2'],
+            'Contract'  => ['Contract', 'Contract 2'],
+            'OEC'       => ['OEC'],
+            'OWWA'      => ['OWWA'],
+            'Visa'      => ['Visa'],
+            'Deployed'  => ['Deployed', 'Deployed 2'],
+            'Repat'     => ['Repatriated'],
+            'Backout'   => ['Backout'],
+        ];
+
+        $labelToCode = StatusCode::pluck('code', 'label');
+        $codeToStage = [];
+        foreach ($pipelineStages as $stage => $labels) {
+            foreach ($labels as $label) {
+                if (isset($labelToCode[$label])) {
+                    $codeToStage[$labelToCode[$label]] = $stage;
+                }
+            }
+        }
+        $stageCodes = array_keys($codeToStage);
+
+        $pipelineYear    = request('pipeline_year');
+        $pipelineMonth   = request('pipeline_month');
+        $pipelineCountry = request('pipeline_country');
+
+        $stageTotalsByEmployer = [];
+        $pipelineRows = Applicant::query()
+            ->forBranchUser()
+            ->whereIn('status_code', $stageCodes)
+            ->when($pipelineYear, fn ($q) => $q->whereYear('created_at', (int) $pipelineYear))
+            ->when($pipelineYear && $pipelineMonth, fn ($q) => $q->whereMonth('created_at', (int) $pipelineMonth))
+            ->when($pipelineCountry, fn ($q) => $q->whereHas('employer', fn ($e) => $e->where('country_id', (int) $pipelineCountry)))
+            ->selectRaw('employer_id, status_code, count(*) as total')
+            ->groupBy('employer_id', 'status_code')
+            ->get();
+
+        foreach ($pipelineRows as $row) {
+            $stage = $codeToStage[$row->status_code] ?? null;
+            if (! $stage || ! $row->employer_id) {
+                continue;
+            }
+            $stageTotalsByEmployer[$row->employer_id][$stage] =
+                ($stageTotalsByEmployer[$row->employer_id][$stage] ?? 0) + (int) $row->total;
+        }
+
+        $pipelineEmployers = Employer::whereIn('id', array_keys($stageTotalsByEmployer))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $pipelineTotals = [];
+        foreach (array_keys($pipelineStages) as $stage) {
+            $pipelineTotals[$stage] = array_sum(array_map(
+                fn ($byStage) => $byStage[$stage] ?? 0,
+                $stageTotalsByEmployer
+            ));
+        }
+
+        $pipelineCountries = \App\Models\Country::orderBy('name')->get(['id', 'name']);
+        $pipelineYears     = range((int) date('Y'), (int) date('Y') - 4);
+
         return view('agency.dashboard', compact(
             'user', 'agency', 'stats', 'statusCodes', 'statusCounts',
-            'monthlyTotals', 'employerGrowth', 'chartStatusData', 'employerCounts'
+            'monthlyTotals', 'employerGrowth', 'chartStatusData', 'employerCounts',
+            'pipelineStages', 'pipelineEmployers', 'stageTotalsByEmployer',
+            'pipelineTotals', 'pipelineCountries', 'pipelineYears'
         ));
     }
 }
