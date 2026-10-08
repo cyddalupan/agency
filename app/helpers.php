@@ -298,6 +298,66 @@ if (!function_exists('app_site_banner_style')) {
     }
 }
 
+if (!function_exists('app_color_themes')) {
+    /**
+     * All selectable Color Themes (from config/color_themes.php).
+     */
+    function app_color_themes(): array
+    {
+        return config('color_themes.themes', []);
+    }
+}
+
+if (!function_exists('app_color_theme')) {
+    /**
+     * The agency's selected Color Theme key, always resolvable to a known theme
+     * ('default' when unset or unknown).
+     */
+    function app_color_theme(?\App\Models\Agency $agency = null): string
+    {
+        $agency = $agency ?? resolve_agency();
+        $key = 'default';
+
+        if ($agency) {
+            $settings = $agency->settings;
+            $settings = is_object($settings) ? $settings->toArray() : (array) ($settings ?? []);
+            $key = (string) ($settings['color_theme'] ?? 'default');
+        }
+
+        return array_key_exists($key, app_color_themes()) ? $key : 'default';
+    }
+}
+
+if (!function_exists('app_color_theme_style')) {
+    /**
+     * CSS custom properties that recolour the DaisyUI primary/secondary/accent
+     * tokens for the agency's chosen Color Theme. Empty string for 'default'
+     * (no override — the system keeps its built-in palette).
+     */
+    function app_color_theme_style(?\App\Models\Agency $agency = null): string
+    {
+        $theme  = app_color_theme($agency);
+        $colors = app_color_themes()[$theme]['colors'] ?? [];
+
+        if (! $colors) {
+            return '';
+        }
+
+        $css = '';
+        foreach (['primary', 'secondary', 'accent'] as $token) {
+            $hex = $colors[$token] ?? null;
+            if (! is_string($hex) || ! preg_match('/^#[0-9a-fA-F]{6}$/', $hex)) {
+                continue;
+            }
+
+            $content = app_hex_is_light($hex) ? '#1a2744' : '#ffffff';
+            $css .= "--color-{$token}:{$hex};--color-{$token}-content:{$content};";
+        }
+
+        return $css;
+    }
+}
+
 if (!function_exists('app_hex_is_light')) {
     /**
      * True when a #rrggbb color reads as light (WCAG-ish relative luminance).

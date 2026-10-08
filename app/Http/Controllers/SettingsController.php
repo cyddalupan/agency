@@ -103,4 +103,41 @@ class SettingsController extends Controller
         return redirect()->route('settings.applicants-table-columns')
             ->with('success', 'Applicants table columns saved.');
     }
+
+    /**
+     * Show the per-agency Color Theme picker.
+     */
+    public function colorTheme()
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+
+        $themes   = app_color_themes();
+        $selected = app_color_theme($agency);
+
+        return view('settings.color-theme', compact('agency', 'themes', 'selected'));
+    }
+
+    /**
+     * Persist the agency's chosen Color Theme (JSON on agencies.settings).
+     * Only known theme keys are accepted.
+     */
+    public function updateColorTheme(Request $request)
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+
+        $validated = $request->validate([
+            'color_theme' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(app_color_themes()))],
+        ]);
+
+        $settings = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
+        $settings['color_theme'] = $validated['color_theme'];
+        $agency->update(['settings' => $settings]);
+
+        $label = app_color_themes()[$validated['color_theme']]['label'] ?? $validated['color_theme'];
+
+        return redirect()->route('settings.color-theme')
+            ->with('success', "Color theme set to {$label}.");
+    }
 }

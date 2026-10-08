@@ -527,6 +527,10 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::get('/settings/site-display', [SettingsController::class, 'siteDisplay'])->name('settings.site-display');
     Route::post('/settings/site-display', [SettingsController::class, 'updateSiteDisplay'])->name('settings.site-display.update');
 
+    // Per-agency Color Theme (changes the system colour palette)
+    Route::get('/settings/color-theme', [SettingsController::class, 'colorTheme'])->name('settings.color-theme');
+    Route::post('/settings/color-theme', [SettingsController::class, 'updateColorTheme'])->name('settings.color-theme.update');
+
     // Per-agency Agency Settings (sidebar visibility toggles)
     Route::get('/settings/agency', [SettingsController::class, 'agencySettings'])->name('settings.agency');
     Route::post('/settings/agency', [SettingsController::class, 'updateAgencySettings'])->name('settings.agency.update');

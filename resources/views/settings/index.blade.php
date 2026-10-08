@@ -57,6 +57,15 @@
                 <p class="text-sm opacity-70">Choose which columns appear on the Applicants list for your agency.</p>
             </div>
         </a>
+
+        @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
+        <a href="{{ route('settings.color-theme') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">🎨 Color Theme</h2>
+                <p class="text-sm opacity-70">Change the system color theme for your whole agency.</p>
+            </div>
+        </a>
+        @endif
     </div>
 </div>
 @endsection
