@@ -43,6 +43,9 @@ class User extends Authenticatable
         'paralegal'   => 'Paralegal',
         'branch'      => 'Branch',
         'operation'   => 'Operation',
+        // (Mjolnir card "User Access Level 'Encoder'", 2026-10-08) Narrowest
+        // tier: can ONLY reach the Dashboard + Applicant module.
+        'encoder'     => 'Encoder',
     ];
 
     /** Display label for a user_type (presets first, fall back to raw role). */
