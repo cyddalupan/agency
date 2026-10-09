@@ -97,7 +97,11 @@ class ApplicantController extends Controller
         // Per-agency table column selection (see app_applicant_table_columns).
         $tableColumns = app_applicant_table_columns();
 
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
+        // withQueryString(): keep ?type / ?search / ?status / filters on the
+        // pagination links. Without it, changing page dropped every query
+        // param and fell back to the default SKILLED tab -> blank list when
+        // that tab had fewer pages. (Toybits report 2026-10-09.)
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
         // Tab counters (ignoring the funnel filters, but never the withdrawn ones).
         $base = Applicant::query()->forBranchUser()->whereNotIn('status_code', $withdrawnStatuses);
@@ -177,7 +181,9 @@ class ApplicantController extends Controller
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
 
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(15);
+        // withQueryString(): see index() — keep the active tab/filters when
+        // changing page (Toybits report 2026-10-09).
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
         $base = Applicant::query()->forBranchUser()->whereIn('status_code', $withdrawnStatuses);
         $typeCounts = [
