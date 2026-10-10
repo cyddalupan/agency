@@ -4,198 +4,230 @@
     <meta charset="utf-8">
     <title>{{ $applicant->full_name }} — {{ __('resume.title', [], 'en') }}</title>
     <style>
-        @page { margin: 0; }
+        /* ─────────────────────────────────────────────────────────────────
+         * Bilingual "bio-data" resume — design copied from the agency
+         * sample: full-width letterhead, gold section bars, 3-column
+         * EN-label / value / AR-label field rows, black-bordered tables,
+         * worker photo on the right, + page 2 worker summary.
+         *  (Mjolnir "LANDAS: Resume" 2026-10-10)
+         * ───────────────────────────────────────────────────────────────*/
+        @page { size: A4; margin: 3mm 14mm 6mm; }
         * { box-sizing: border-box; }
         body {
-            font-family: 'DejaVu Sans', 'Noto Naskh Arabic', 'WenQuanYi Zen Hei', Arial, sans-serif;
-            font-size: 9.5pt;
-            color: #1f2937;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 9pt;
+            color: #000;
             margin: 0;
+            padding: 0;
         }
-        .page { width: 210mm; min-height: 270mm; padding: 9mm 11mm 10mm; }
+        .page { width: auto; }
+        .page.break { page-break-before: always; }
 
-        /* Letterhead */
-        .letterhead {
-            text-align: center;
-            border-bottom: 3px double #1a365d;
-            padding-bottom: 3mm;
-            margin-bottom: 4mm;
+        /* ── Letterhead ── */
+        .letterhead { text-align: center; margin-bottom: 1mm; }
+        .letterhead img { max-height: 30mm; max-width: 100%; }
+        .letterhead .agency-name { font-size: 16pt; font-weight: 700; color: #b33c00; }
+        .letterhead .agency-sub { font-size: 8.5pt; color: #333; }
+
+        /* ── Gold blocks ── */
+        .goldbar { background: #daa520; color: #000; font-weight: 700; }
+        .goldbar .en { display: block; line-height: 1.15; }
+        .goldbar .ar { display: block; font-size: 8pt; font-weight: 400; line-height: 1.15; direction: rtl; }
+        .goldbar.center { text-align: center; text-transform: uppercase; letter-spacing: .5px; padding: 0.6mm 2mm; }
+
+        /* ── Header (FULL NAME / POSITION) ── */
+        table.head { width: 100%; border-collapse: collapse; margin-bottom: 2mm; table-layout: fixed; }
+        table.head td { vertical-align: top; }
+        table.head td.c1 { width: 99mm; }
+        .headbar { display: inline-block; vertical-align: top; padding: 1mm 2mm; text-align: center; }
+        .headval { display: inline-block; vertical-align: top; padding: 1mm 0 0 3mm; font-size: 11pt; font-weight: 700; }
+        .headval.small { font-size: 9.5pt; }
+
+        /* ── Main two-column body: fields (left) + photo (right) ── */
+        table.body2 { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table.body2 > tbody > tr > td { vertical-align: top; }
+        td.fields-cell { width: 112mm; }
+        td.photo-cell { width: 70mm; text-align: center; }
+        .photo-frame { width: 62mm; height: 110mm; border: 1px solid #000; overflow: hidden; margin: 0 auto; }
+        .photo-frame img { width: 62mm; height: 110mm; object-fit: cover; }
+        .photo-frame .no-photo { display: block; color: #999; font-size: 8pt; padding-top: 50mm; }
+
+        /* ── Field rows: EN label | value | AR label ── */
+        table.fields { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table.fields td { padding: 0.6mm 1mm; vertical-align: top; font-size: 9pt; }
+        table.fields td.lbl { width: 34mm; font-weight: 700; }
+        table.fields td.val { width: 56mm; }
+        table.fields td.ar { width: 22mm; text-align: right; direction: rtl; font-weight: 700; }
+
+        /* ── Gold section header bar ── */
+        .secbar {
+            background: #daa520; color: #000; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .3px; font-size: 9pt;
+            padding: 0.8mm 2mm; margin: 2.5mm 0 1.2mm;
         }
-        .letterhead img { max-height: 20mm; max-width: 100%; }
-        .letterhead .agency-name { font-size: 15pt; font-weight: 700; color: #1a365d; line-height: 1.15; }
-        .letterhead .agency-sub { font-size: 8pt; color: #6b7280; margin-top: 0.5mm; }
+        .secbar .ar { font-weight: 400; text-transform: none; direction: rtl; float: right; }
 
-        .doc-title {
-            text-align: center;
-            font-size: 12pt;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #1a365d;
-            text-transform: uppercase;
-            margin: 1mm 0 4mm;
-        }
-
-        /* Bio-data layout */
-        table.bio { width: 100%; border-collapse: collapse; }
-        table.bio > tbody > tr > td { vertical-align: top; }
-
-        td.photo-cell { width: 42mm; }
-        .photo-frame {
-            width: 38mm; height: 45mm;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            text-align: center;
-        }
-        .photo-frame img { width: 38mm; height: 45mm; object-fit: cover; }
-        .photo-frame .no-photo { color: #94a3b8; font-size: 7.5pt; padding-top: 19mm; display: block; }
-
-        .body-photo-wrap { margin-top: 3mm; text-align: center; }
-        .body-photo-wrap img { width: 38mm; border: 1px solid #cbd5e1; }
-
-        td.fields-cell { padding-left: 5mm; }
-
-        table.fields { width: 100%; border-collapse: collapse; }
-        table.fields td { padding: 1.4mm 2mm; border-bottom: 1px solid #eef2f7; vertical-align: top; }
-        table.fields td.lbl {
-            width: 42mm;
-            color: #1a365d;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-        table.fields td.lbl .tr {
-            display: block;
-            color: #64748b;
-            font-weight: 400;
-            font-size: 8.5pt;
-        }
-        table.fields td.val { color: #111827; }
-
-        .sec-title {
-            font-size: 9.5pt;
-            font-weight: 700;
-            color: #1a365d;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 2px solid #1a365d;
-            padding-bottom: 0.8mm;
-            margin: 5mm 0 2mm;
-        }
-
-        table.grid { width: 100%; border-collapse: collapse; margin-bottom: 2mm; }
+        /* ── Data tables ── */
+        table.grid { width: 100%; border-collapse: collapse; margin-bottom: 1mm; }
         table.grid th {
-            background: #1a365d;
-            color: #fff;
-            font-size: 8.5pt;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 1.6mm 2mm;
-            text-align: left;
+            background: #f3e2b8; border: 1px solid #000; font-size: 8pt;
+            text-transform: uppercase; padding: 0.8mm 2mm; text-align: left;
         }
-        table.grid th .tr { display: block; font-weight: 400; opacity: .85; text-transform: none; }
-        table.grid td { padding: 1.5mm 2mm; border: 1px solid #dbe2ea; font-size: 9pt; }
+        table.grid th .ar { display: block; font-weight: 400; text-transform: none; direction: rtl; text-align: right; }
+        table.grid td { border: 1px solid #000; padding: 0.8mm 2mm; font-size: 9pt; }
 
+        /* ── Skills / language check grid ── */
         table.chk { width: 100%; border-collapse: collapse; }
-        table.chk td { padding: 1.4mm 2mm; border: 1px solid #dbe2ea; font-size: 9pt; width: 50%; }
-        table.chk td .yn { font-weight: 700; color: #1a365d; }
+        table.chk td { border: 1px solid #000; padding: 0.8mm 2mm; font-size: 8.5pt; }
+        table.chk td.k { font-weight: 700; width: 24%; }
+        table.chk td.v { text-align: center; width: 26%; }
+        table.chk td.a { direction: rtl; text-align: right; width: 24%; font-size: 8pt; }
 
-        .badge {
-            display: inline-block;
-            border: 1px solid #cbd5e1;
-            background: #f1f5f9;
-            padding: 0.4mm 2mm;
-            margin: 0 1mm 1mm 0;
-            font-size: 8.5pt;
-        }
+        .summary td { font-size: 9.5pt; }
+        .summary .k { width: 55mm; font-weight: 700; }
+        .summary .v { }
+        .passport-scan { text-align: center; margin-top: 4mm; }
+        .passport-scan img { max-width: 90mm; border: 1px solid #000; }
 
-        .footer {
-            margin-top: 6mm;
-            padding-top: 2mm;
-            border-top: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 7.5pt;
-            color: #94a3b8;
-        }
+        .footer { margin-top: 4mm; border-top: 1px solid #ddd; padding-top: 1.5mm; text-align: center; font-size: 7.5pt; color: #888; }
     </style>
 </head>
 <body>
 @php
     $locale = $locale ?? app()->getLocale();
+    $agency = $agency ?? null;
 
-    // Bilingual label: English first, translated label beneath (matches sample).
-    $label = function (string $key) use ($locale) {
-        $en = e(__('resume.' . $key, [], 'en'));
-        $out = $en;
-        if ($locale && $locale !== 'en') {
-            $tr = __('resume.' . $key, [], $locale);
-            if ($tr && $tr !== __('resume.' . $key, [], 'en')) {
-                $out .= '<span class="tr">' . e($tr) . '</span>';
-            }
+    $tr = function (string $key) use ($locale) {
+        $args = func_get_args();
+        array_shift($args);
+        $out = __($key, [], $locale);
+        if ($args) {
+            $params = [];
+            foreach ($args as $i => $v) { $params[':' . ($i + 1)] = $v; }
+            $out = strtr($out, $params);
         }
-        return $out;
+        return e($out);
     };
 
-    // Engine-agnostic <img> from a storage/app/public relative path (base64).
-    $img = function (?string $relative, string $class = '') {
-        if (! $relative) {
-            return '';
-        }
+    // <img> from a storage/app/public relative path (base64, engine-agnostic).
+    $img = function (?string $relative) {
+        if (! $relative) { return ''; }
         $path = storage_path('app/public/' . ltrim($relative, '/'));
-        if (! is_file($path)) {
-            return '';
-        }
+        if (! is_file($path)) { return ''; }
         $mime = @mime_content_type($path) ?: 'image/png';
-        return '<img class="' . e($class) . '" src="data:' . $mime . ';base64,' . base64_encode(file_get_contents($path)) . '">';
+        return '<img src="data:' . $mime . ';base64,' . base64_encode(file_get_contents($path)) . '">';
     };
 
     $eduLevels = [
-        'high_school' => 'High School',
-        'vocational'  => 'Vocational / Associate',
-        'bachelor'    => "Bachelor's Degree",
-        'master'      => "Master's Degree",
+        'high_school'   => 'HIGH SCHOOL',
+        'vocational'    => 'VOCATIONAL',
+        'bachelor'      => 'COLLEGE GRADUATE',
+        'master'        => "MASTER'S DEGREE",
+        'college'       => 'COLLEGE UNDERGRADUATE',
+        'elementary'    => 'ELEMENTARY',
     ];
 
-    $gender = $applicant->gender ? ucfirst(strtolower($applicant->gender)) : null;
-    $passport = $applicant->has_passport === 'with' ? __('resume.yes', [], 'en')
-        : ($applicant->has_passport === 'without' ? __('resume.no', [], 'en') : null);
+    $ynYes = __('resume.yes', [], 'en');
 
     $rows = [];
-    $rows[] = ['name', $applicant->full_name];
-    $rows[] = ['position', $applicant->position?->name];
-    $rows[] = ['salary', $applicant->expected_salary];
-    $rows[] = ['passport', $passport];
-    $rows[] = ['contact', $applicant->contact];
-    $rows[] = ['address', $applicant->address];
-    $rows[] = ['nationality', $applicant->nationality?->name];
-    $rows[] = ['date_of_birth', $applicant->birthdate ? \Illuminate\Support\Carbon::parse($applicant->birthdate)->format('d M Y') : null];
-    $rows[] = ['gender', $gender];
-    $rows[] = ['age', $applicant->age];
-    $rows[] = ['religion', $applicant->religion?->name];
-    $rows[] = ['marital_status', $applicant->civilStatus?->label];
-    $rows[] = ['education', $applicant->education_level ? ($eduLevels[$applicant->education_level] ?? ucfirst(str_replace('_', ' ', $applicant->education_level))) : null];
-    $rows = array_values(array_filter($rows, fn ($r) => ! is_null($r[1]) && $r[1] !== ''));
+    $rows[] = ['monthly_salary', $applicant->expected_salary !== null
+        ? rtrim(rtrim(number_format((float) $applicant->expected_salary, 2), '0'), '.') . ' USD' : null];
+    $rows[] = ['mobile', $applicant->contact];
+    $rows[] = ['contract_period', $applicant->contract];
+    $rows[] = ['passport', optional($applicant->passport)->passport_no
+        ?? optional($applicant->passport)->passport_number];
+    $rows = array_values(array_filter($rows, fn ($r) => $r[1] !== null && $r[1] !== ''));
+
+    $nok = $applicant->relationLoaded('emergencyContacts')
+        ? $applicant->emergencyContacts->first() : null;
+
+    $personal = [];
+    $personal[] = ['nationality', $applicant->nationality?->name];
+    $personal[] = ['address', $applicant->address];
+    $personal[] = ['date_of_birth', $applicant->birthdate
+        ? \Illuminate\Support\Carbon::parse($applicant->birthdate)->format('d M Y') : null];
+    $personal[] = ['age', $applicant->birthdate ? \Illuminate\Support\Carbon::parse($applicant->birthdate)->age : null];
+    $personal[] = ['religion', $applicant->religion?->name];
+    $personal[] = ['marital_status', $applicant->civilStatus?->label ?? $applicant->civilStatus?->name];
+    $personal[] = ['number_of_children', $applicant->number_of_children ?? null];
+    $personal[] = ['education', $applicant->education_level
+        ? ($eduLevels[$applicant->education_level] ?? strtoupper(str_replace('_', ' ', $applicant->education_level))) : null];
+    $personal = array_values(array_filter($personal, fn ($r) => $r[1] !== null && $r[1] !== ''));
 
     $languages = $applicant->relationLoaded('languages') ? $applicant->languages : collect();
+    $skills    = $applicant->relationLoaded('skills') ? $applicant->skills : collect();
+    $work      = $applicant->relationLoaded('workExperiences') ? $applicant->workExperiences : collect();
 @endphp
 
+{{-- ══════════════════════════ PAGE 1 ══════════════════════════ --}}
 <div class="page">
 
-    {{-- ── LETTERHEAD ── --}}
     <div class="letterhead">
         @if ($agency && $agency->logo && ($logoImg = $img($agency->logo)))
             {!! $logoImg !!}
-        @else
-            <div class="agency-name">{{ $agency?->name ?? config('app.name') }}</div>
-            @if ($agency?->city)
-                <div class="agency-sub">{{ $agency->city }}</div>
-            @endif
+        @elseif ($agency)
+            <div class="agency-name">{{ $agency->name }}</div>
+            @if ($agency->city) <div class="agency-sub">{{ $agency->city }}</div> @endif
         @endif
     </div>
 
-    <div class="doc-title">{!! $label('title') !!}</div>
-
-    {{-- ── IDENTITY + PERSONAL FIELDS ── --}}
-    <table class="bio">
+    <table class="head">
         <tr>
+            <td class="c1">
+                <span class="headbar goldbar">
+                    <span class="en">{{ $tr('resume.full_name') }}</span>
+                    <span class="ar" dir="rtl">{{ $tr('resume.full_name_ar') }}</span>
+                </span>
+                <span class="headval">{{ $applicant->full_name }}</span>
+            </td>
+            <td>
+                <span class="headbar goldbar">
+                    <span class="en">{{ $tr('resume.position') }}</span>
+                    <span class="ar" dir="rtl">{{ $tr('resume.position_ar') }}</span>
+                </span>
+                <span class="headval small">{{ $applicant->position?->name ?? '—' }}</span>
+            </td>
+        </tr>
+    </table>
+
+    <table class="body2">
+        <tr>
+            <td class="fields-cell">
+                <table class="fields">
+                    @foreach ($rows as [$key, $value])
+                        <tr>
+                            <td class="lbl">{{ $tr('resume.' . $key) }}</td>
+                            <td class="val">{{ $value }}</td>
+                            <td class="ar" dir="rtl">{{ $tr('resume.ar.' . $key) }}</td>
+                        </tr>
+                    @endforeach
+
+                    @if ($nok)
+                        <tr><td colspan="3"><div class="secbar center">{{ $tr('resume.next_of_kin') }}</div></td></tr>
+                        <tr>
+                            <td class="lbl">{{ $tr('resume.nok_name') }}</td>
+                            <td class="val">{{ $nok->name }}</td>
+                            <td class="ar" dir="rtl">{{ $tr('resume.ar.name') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">{{ $tr('resume.nok_contact') }}</td>
+                            <td class="val">{{ $nok->contact }}</td>
+                            <td class="ar" dir="rtl">{{ $tr('resume.ar.contact') }}</td>
+                        </tr>
+                    @endif
+
+                    @if (count($personal))
+                        <tr><td colspan="3"><div class="secbar center">{{ $tr('resume.personal_details') }}</div></td></tr>
+                        @foreach ($personal as [$key, $value])
+                            <tr>
+                                <td class="lbl">{{ $tr('resume.' . $key) }}</td>
+                                <td class="val">{{ $value }}</td>
+                                <td class="ar" dir="rtl">{{ $tr('resume.ar.' . $key) }}</td>
+                            </tr>
+                        @endforeach
+                    @endif
+                </table>
+            </td>
             <td class="photo-cell">
                 <div class="photo-frame">
                     @if ($applicant->photo && ($photoImg = $img($applicant->photo)))
@@ -204,72 +236,112 @@
                         <span class="no-photo">{{ __('resume.photo', [], 'en') }}</span>
                     @endif
                 </div>
-                @if ($applicant->full_body_photo && ($bodyImg = $img($applicant->full_body_photo)))
-                    <div class="body-photo-wrap">{!! $bodyImg !!}</div>
-                @endif
-            </td>
-            <td class="fields-cell">
-                <table class="fields">
-                    @foreach ($rows as [$key, $value])
-                        <tr>
-                            <td class="lbl">{!! $label($key) !!}</td>
-                            <td class="val">{{ $value }}</td>
-                        </tr>
-                    @endforeach
-                </table>
             </td>
         </tr>
     </table>
 
-    {{-- ── POSITION / DESTINATION ── --}}
-    <div class="sec-title">{!! $label('destination') !!}</div>
+    <div class="secbar">{{ $tr('resume.prev_employment') }}</div>
     <table class="grid">
         <tr>
-            <th>{!! $label('position') !!}</th>
-            <th>{!! $label('country') !!}</th>
-            <th>{!! $label('duration') !!}</th>
+            <th>{{ $tr('resume.position') }}</th>
+            <th>{{ $tr('resume.country') }}</th>
+            <th>{{ $tr('resume.duration') }}</th>
         </tr>
-        <tr>
-            <td>{{ $applicant->position?->name ?? '—' }}</td>
-            <td>{{ $applicant->country?->name ?? '—' }}</td>
-            <td>{{ $applicant->remarks ?: '—' }}</td>
-        </tr>
+        @forelse ($work as $exp)
+            <tr>
+                <td>{{ $exp->position ?? '—' }}</td>
+                <td>{{ $exp->company ?? '—' }}</td>
+                <td>{{ ($exp->date_from || $exp->date_to) ? trim(($exp->date_from ?: '') . ' - ' . ($exp->date_to ?: ''), ' -') : '—' }}</td>
+            </tr>
+        @empty
+            <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        @endforelse
     </table>
 
-    {{-- ── LANGUAGES ── --}}
-    @if ($languages->count())
-        <div class="sec-title">{!! $label('languages') !!}</div>
-        <table class="chk">
+    <div class="secbar">{{ $tr('resume.knowledge_languages') }}</div>
+    <table class="grid">
+        <tr>
+            <th>{{ $tr('resume.ar.language') }}</th>
+            <th style="width:20mm" class="">{{ __('resume.proficiency', [], 'en') }}</th>
+        </tr>
+        @forelse ($languages as $lang)
             <tr>
-                @foreach ($languages as $i => $lang)
-                    <td>{{ $lang->name }} <span class="yn">— {{ __('resume.yes', [], 'en') }}</span></td>
-                    @if ($i % 2 === 1)</tr><tr>@endif
-                @endforeach
-                @if ($languages->count() % 2 === 1)<td></td>@endif
+                <td>{{ strtoupper($lang->name) }}</td>
+                <td>{{ strtoupper($lang->proficiency ?: $ynYes) }}</td>
             </tr>
+        @empty
+            <tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+        @endforelse
+    </table>
+
+    <div class="secbar">{{ $tr('resume.skills_experience') }}</div>
+    <table class="chk">
+        @forelse ($skills->chunk(2) as $pair)
+            <tr>
+                @foreach ($pair as $skill)
+                    <td class="k">{{ strtoupper($skill->skill_name) }}</td>
+                    <td class="v">{{ strtoupper($skill->proficiency ?: $ynYes) }}</td>
+                    <td class="a" dir="rtl">{{ $tr('resume.ar.skill') }}</td>
+                @endforeach
+                @if ($pair->count() === 1)
+                    <td class="k"></td><td class="v"></td><td class="a"></td>
+                @endif
+            </tr>
+        @empty
+            <tr><td class="k">&nbsp;</td><td class="v">&nbsp;</td><td class="a">&nbsp;</td>
+                <td class="k">&nbsp;</td><td class="v">&nbsp;</td><td class="a">&nbsp;</td></tr>
+        @endforelse
+    </table>
+
+    @if ($applicant->relationLoaded('education') && $applicant->education->count())
+        <div class="secbar">{{ $tr('resume.education_history') }}</div>
+        <table class="grid">
+            <tr>
+                <th>{{ $tr('resume.school') }}</th>
+                <th>{{ $tr('resume.degree') }}</th>
+                <th style="width:30mm">{{ $tr('resume.year') }}</th>
+            </tr>
+            @foreach ($applicant->education as $edu)
+                <tr>
+                    <td>{{ $edu->school }}</td>
+                    <td>{{ $edu->degree ?: $edu->course }}</td>
+                    <td>{{ trim(($edu->year_start ?: '') . ' - ' . ($edu->year_end ?: ($edu->year_graduated ?: '')), ' -') }}</td>
+                </tr>
+            @endforeach
         </table>
     @endif
 
-    {{-- ── SKILLS ── --}}
-    @if ($applicant->skills->count())
-        <div class="sec-title">{!! $label('skills') !!}</div>
-        <div>
-            @foreach ($applicant->skills as $skill)
-                <span class="badge">{{ $skill->name }}</span>
+    @if ($applicant->relationLoaded('certificates') && $applicant->certificates->count())
+        <div class="secbar">{{ $tr('resume.certificates') }}</div>
+        <table class="grid">
+            <tr>
+                <th>{{ $tr('resume.certificate') }}</th>
+                <th>{{ $tr('resume.issued_by') }}</th>
+                <th style="width:30mm">{{ $tr('resume.year') }}</th>
+            </tr>
+            @foreach ($applicant->certificates as $cert)
+                <tr>
+                    <td>{{ $cert->name ?: $cert->certificate_name }}</td>
+                    <td>{{ $cert->issued_by ?: $cert->institution }}</td>
+                    <td>{{ $cert->issued_date ? \Illuminate\Support\Carbon::parse($cert->issued_date)->format('Y') : ($cert->date_obtained ? \Illuminate\Support\Carbon::parse($cert->date_obtained)->format('Y') : '') }}</td>
+                </tr>
             @endforeach
-        </div>
+        </table>
     @endif
 
-    {{-- ── WORK EXPERIENCE ── --}}
-    @if ($applicant->workExperiences->count())
-        <div class="sec-title">{{ __('resume.position', [], 'en') }} / Experience</div>
+    @if ($applicant->relationLoaded('references') && $applicant->references->count())
+        <div class="secbar">{{ $tr('resume.references') }}</div>
         <table class="grid">
-            @foreach ($applicant->workExperiences as $exp)
+            <tr>
+                <th>{{ $tr('resume.name') }}</th>
+                <th>{{ $tr('resume.contact') }}</th>
+                <th>{{ $tr('resume.position') }}</th>
+            </tr>
+            @foreach ($applicant->references as $ref)
                 <tr>
-                    <td>
-                        <strong>{{ $exp->position_title ?? $exp->position }}</strong>
-                        @if ($exp->company) — {{ $exp->company }} @endif
-                    </td>
+                    <td>{{ $ref->name }}</td>
+                    <td>{{ $ref->contact }}</td>
+                    <td>{{ $ref->position }}{{ $ref->company ? ' — ' . $ref->company : '' }}</td>
                 </tr>
             @endforeach
         </table>
@@ -279,7 +351,36 @@
         {{ __('resume.generated_on', [], 'en') }} {{ now()->format('F d, Y') }}
         @if ($agency) &nbsp;•&nbsp; {{ $agency->name }} @endif
     </div>
+</div>
 
+{{-- ══════════════════════════ PAGE 2 ══════════════════════════ --}}
+<div class="page break">
+    <table class="grid summary">
+        <tr><td class="k">{{ $tr('resume.name_of_worker') }}</td><td class="v">{{ strtoupper($applicant->full_name) }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.position') }}</td><td class="v">{{ strtoupper($applicant->position?->name ?? '') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.address') }}</td><td class="v">{{ strtoupper($applicant->address ?? '') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.marital_status') }}</td><td class="v">{{ strtoupper($applicant->civilStatus?->label ?? '') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.have_kids') }}</td><td class="v">{{ $applicant->number_of_children ?: '' }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.contact') }}</td><td class="v">{{ $applicant->contact }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.passport') }}</td><td class="v">{{ optional($applicant->passport)->passport_no ?? optional($applicant->passport)->passport_number }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.date_of_issue') }}</td><td class="v">{{ optional($applicant->passport)->issue_date ? \Illuminate\Support\Carbon::parse($applicant->passport->issue_date)->format('M. d, Y') : '' }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.place_of_issue') }}</td><td class="v">{{ optional($applicant->passport)->place_of_issue }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.name_of_nok') }}</td><td class="v">{{ $nok->name ?? '' }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.contact_number_of_nok') }}</td><td class="v">{{ $nok->contact ?? '' }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.language_spoken') }}</td><td class="v">{{ $languages->pluck('name')->map(fn ($n) => strtoupper($n))->implode(', ') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.religion') }}</td><td class="v">{{ strtoupper($applicant->religion?->name ?? '') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.employment_status') }}</td><td class="v">{{ strtoupper($applicant->firstimer_type ?? '') }}</td></tr>
+        <tr><td class="k">{{ $tr('resume.skills') }}</td><td class="v">{{ $skills->pluck('skill_name')->map(fn ($n) => strtoupper($n))->implode(', ') }}</td></tr>
+    </table>
+
+    @if ($applicant->passport && ($passImg = $img($applicant->passport->file_path)))
+        <div class="passport-scan">{!! $passImg !!}</div>
+    @endif
+
+    <div class="footer">
+        {{ __('resume.generated_on', [], 'en') }} {{ now()->format('F d, Y') }}
+        @if ($agency) &nbsp;•&nbsp; {{ $agency->name }} @endif
+    </div>
 </div>
 </body>
 </html>

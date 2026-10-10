@@ -127,7 +127,7 @@ class ReportController extends Controller
         $applicant->load([
             'country', 'agent', 'statusCode', 'skills', 'languages',
             'nationality', 'religion', 'civilStatus', 'position', 'branch',
-            'agency', 'employer.country',
+            'agency', 'employer.country', 'passport', 'emergencyContacts',
         ]);
         $this->loadResumeRelations($applicant);
 
