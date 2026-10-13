@@ -54,7 +54,8 @@ class ApplicantIndexTest extends TestCase
     #[Test]
     public function applicant_list_paginates(): void
     {
-        Applicant::factory()->count(25)->create([
+        // Page size is 50 (APPLICANTS MODULE card, 2026-10-13; was 15).
+        Applicant::factory()->count(60)->create([
             'agency_id' => $this->agency->id,
         ]);
 
@@ -62,7 +63,7 @@ class ApplicantIndexTest extends TestCase
             ->get(route('applicants.index'));
 
         $response->assertOk();
-        $this->assertCount(15, $response->viewData('applicants'));
+        $this->assertCount(50, $response->viewData('applicants'));
     }
 
     #[Test]

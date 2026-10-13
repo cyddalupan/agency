@@ -30,8 +30,12 @@
     @endif
 
     {{-- Status Pipeline Chips --}}
+    {{-- Chips preserve the active type tab (?type=household|skilled) so
+         clicking a stage while on HOUSEHOLD no longer bounces back to the
+         default SKILLED tab (which can be empty) — mirrors withdrawn.blade.php.
+         (APPLICANTS MODULE card, 2026-10-13.) --}}
     <div class="flex flex-wrap gap-2 mb-3">
-        <a href="{{ route('applicants.index') }}"
+        <a href="{{ route('applicants.index', request()->only(['type'])) }}"
            class="btn btn-xs gap-1 {{ request()->query('status') === null ? 'btn-primary' : 'btn-ghost' }}">
             All
             <span class="badge badge-xs {{ request()->query('status') === null ? 'badge-outline' : '' }}">{{ $statusCounts->sum() }}</span>
@@ -39,7 +43,7 @@
         @foreach($statusCodes as $sc)
             @php $count = $statusCounts->get($sc->code, 0); @endphp
             @if($count > 0)
-            <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+            <a href="{{ route('applicants.index', request()->only(['type']) + ['status' => $sc->code]) }}"
                class="btn btn-xs gap-1 {{ request('status') === (string)$sc->code ? 'btn-primary' : 'btn-ghost' }}"
                @if(request('status') !== (string)$sc->code) style="background-color: {{ $sc->color ?? '#e5e7eb' }}15;" @endif>
                 {{ $sc->label }}

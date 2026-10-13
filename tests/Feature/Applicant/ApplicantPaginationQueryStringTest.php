@@ -52,8 +52,9 @@ class ApplicantPaginationQueryStringTest extends TestCase
     #[Test]
     public function index_pagination_links_keep_the_active_tab(): void
     {
-        $this->seedType(Applicant::TYPE_HOUSEHOLD, 20);
-        $this->seedType(Applicant::TYPE_SKILLED, 20);
+        // 60 > 50/page so a page-2 link is rendered.
+        $this->seedType(Applicant::TYPE_HOUSEHOLD, 60);
+        $this->seedType(Applicant::TYPE_SKILLED, 60);
 
         $this->actingAs($this->admin)
             ->get(route('applicants.index', ['type' => 'household']))
@@ -65,7 +66,13 @@ class ApplicantPaginationQueryStringTest extends TestCase
     #[Test]
     public function index_pagination_links_keep_active_filters(): void
     {
-        $this->seedType(Applicant::TYPE_SKILLED, 20);
+        // 55 rows share a token so a broad search still returns 2+ pages.
+        Applicant::factory()->count(55)->create([
+            'agency_id' => $this->agency->id,
+            'applicant_type' => Applicant::TYPE_SKILLED,
+            'status_code' => 7,
+            'first_name' => 'FilterableName',
+        ]);
 
         $this->actingAs($this->admin)
             ->get(route('applicants.index', ['type' => 'skilled', 'search' => 'zzz']))
@@ -73,9 +80,9 @@ class ApplicantPaginationQueryStringTest extends TestCase
         // No rows match 'zzz', so no pagination is rendered — nothing to leak.
         // With a broad search we get pagination and the filter must persist.
         $this->actingAs($this->admin)
-            ->get(route('applicants.index', ['type' => 'skilled', 'search' => 'a']))
+            ->get(route('applicants.index', ['type' => 'skilled', 'search' => 'FilterableName']))
             ->assertOk()
-            ->assertSee('search=a&amp;page=2', false);
+            ->assertSee('search=FilterableName&amp;page=2', false);
     }
 
     #[Test]
@@ -83,7 +90,7 @@ class ApplicantPaginationQueryStringTest extends TestCase
     {
         // Mirrors the reported Finas case: household has 2+ pages but skilled
         // is short. Page 2 must stay on household and show rows.
-        $this->seedType(Applicant::TYPE_HOUSEHOLD, 20);
+        $this->seedType(Applicant::TYPE_HOUSEHOLD, 60);
         $this->seedType(Applicant::TYPE_SKILLED, 2);
 
         $html = $this->actingAs($this->admin)
@@ -99,8 +106,8 @@ class ApplicantPaginationQueryStringTest extends TestCase
     public function withdrawn_pagination_links_keep_the_active_tab(): void
     {
         // Withdrawn statuses: Repatriated (35), Cancel (38), Backout (50).
-        $this->seedType(Applicant::TYPE_HOUSEHOLD, 20, 38);
-        $this->seedType(Applicant::TYPE_SKILLED, 20, 38);
+        $this->seedType(Applicant::TYPE_HOUSEHOLD, 60, 38);
+        $this->seedType(Applicant::TYPE_SKILLED, 60, 38);
 
         $this->actingAs($this->admin)
             ->get(route('applicants.withdrawn', ['type' => 'household']))
