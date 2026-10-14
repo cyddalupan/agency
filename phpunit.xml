@@ -31,5 +31,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Branch feature: tests default to restrictions ON (normal behaviour).
+             Disabled-state tests set config('mjolnir.branch_restrictions', false). -->
+        <env name="BRANCH_RESTRICTIONS" value="true"/>
     </php>
 </phpunit>

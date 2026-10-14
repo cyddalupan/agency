@@ -149,7 +149,20 @@ class User extends Authenticatable
      */
     public function isBranchAccount(): bool
     {
+        if (! self::branchRestrictionsEnabled()) {
+            return false;
+        }
+
         return (int) $this->branch_id > 0;
+    }
+
+    /**
+     * Global kill-switch for the Branch feature (see config/mjolnir.php).
+     * TRUE = branch restrictions apply (normal). FALSE = temporary lift.
+     */
+    public static function branchRestrictionsEnabled(): bool
+    {
+        return (bool) config('mjolnir.branch_restrictions', true);
     }
 
     /**
@@ -252,6 +265,13 @@ class User extends Authenticatable
      */
     public function isBranchLocked(): bool
     {
+        // Temporary kill-switch (Mjolnir/Cyd 2026-10-14): when branch
+        // restrictions are disabled nobody is branch-locked, so branch
+        // accounts can view/edit records for any branch.
+        if (! self::branchRestrictionsEnabled()) {
+            return false;
+        }
+
         if ((int) $this->branch_id <= 0) {
             return false;
         }

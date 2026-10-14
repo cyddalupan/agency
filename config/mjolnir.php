@@ -21,4 +21,26 @@ return [
         fn ($v) => strtoupper(trim($v)),
         explode(',', (string) env('MJOLNIR_PRIVILEGED_ACCOUNTS', 'MAE,EVELYN,ANGEL'))
     ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branch user restrictions (TEMPORARY kill-switch)
+    |--------------------------------------------------------------------------
+    |
+    | When TRUE (default) branch accounts keep the normal Branch feature:
+    | they are auto-scoped to their own branch, get 403 on other branches'
+    | records, have locked branch dropdowns, and a trimmed sidebar.
+    |
+    | When FALSE the branch restrictions are lifted GLOBALLY: branch accounts
+    | can see / edit records for ANY branch (and pick any branch on forms).
+    | Module access per account type is unchanged. Set via env
+    | `BRANCH_RESTRICTIONS=false` and re-run `php artisan config:clear`.
+    |
+    | (Mjolnir/Cyd 2026-10-14: "temporarily disable the branch user
+    | restrictions" so branch users can fix wrong data across branches.)
+    */
+    'branch_restrictions' => filter_var(
+        env('BRANCH_RESTRICTIONS', true),
+        FILTER_VALIDATE_BOOLEAN
+    ),
 ];
