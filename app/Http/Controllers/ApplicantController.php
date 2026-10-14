@@ -430,24 +430,29 @@ class ApplicantController extends Controller
         $sampleStatus1 = $statusLabels[0] ?? 'Pending';
         $sampleStatus2 = $statusLabels[1] ?? 'For Interview';
 
+        // Toybits 2026-10-14 (Cyd/Gulf) — added Age + Experience
+        // (Firstimer / Ex-Abroad) to the template, alongside Date Applied.
         $headers = [
-            'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Gender', 'Birthdate',
+            'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Gender', 'Birthdate', 'Age',
             'Contact', 'Email', 'Address', 'Nationality', 'Religion', 'Civil Status',
+            'Experience (Firstimer / Ex-Abroad)',
             'Country', 'Position', 'Employer', 'Agent', 'Branch', 'Source', 'Status', 'Remarks',
             'Date Applied', 'Passport #', 'Date Issued', 'Place Issued', 'Expiration',
         ];
 
         $sampleRows = [
             [
-                'Juan', 'P.', 'Dela Cruz', '', 'Male', '1995-03-14', '09171234567',
+                'Juan', 'P.', 'Dela Cruz', '', 'Male', '1995-03-14', '31', '09171234567',
                 'juan.sample@email.com', '123 Sample St, Manila', 'Filipino', 'Christian', 'Single',
+                'Firstimer',
                 'Saudi Arabia', 'Caregiver', '', '', '', 'Walk-in', $sampleStatus1,
                 'SAMPLE ROW - replace with real data then delete',
                 '2026-09-15', 'P1234567A', '2021-05-10', 'DFA Manila', '2031-05-09',
             ],
             [
-                'Maria', 'S.', 'Santos', '', 'Female', '1990-07-22', '09179876543',
+                'Maria', 'S.', 'Santos', '', 'Female', '1990-07-22', '36', '09179876543',
                 'maria.sample@email.com', '456 Another St, Cebu City', 'Filipino', 'Christian', 'Married',
+                'Ex-Abroad',
                 'UAE', 'Chef', '', '', '', 'Facebook', $sampleStatus2,
                 'SAMPLE ROW - replace with real data then delete',
                 '2026-09-20', '', '', '', '',
@@ -574,6 +579,22 @@ class ApplicantController extends Controller
             $remarks = trim((string) ($d['remarks'] ?? ''));
             $source = trim((string) ($d['source'] ?? ''));
 
+            // ---- Experience (Firstimer / Ex-Abroad) — maps to firstimer_type
+            // (Toybits 2026-10-14, Cyd/Gulf). Case/space/punctuation-insensitive. ----
+            $firstimerType = null;
+            $expRaw = trim((string) ($d['firstimer_type'] ?? ''));
+            if ($expRaw !== '') {
+                $expKey = preg_replace('/[^a-z0-9]+/', '', mb_strtolower($expRaw));
+                $firstimerType = match ($expKey) {
+                    'firstimer', 'firsttimer', '1sttimer', 'firstime', 'firsttime', 'new', 'newbie', 'firstimerapplicant' => 'firstimer',
+                    'exabroad', 'ex', 'formerofw', 'ofw', 'exabroadofw', 'exabroadworker' => 'ex-abroad',
+                    default => null,
+                };
+                if ($firstimerType === null) {
+                    $rowErrors[] = "Experience '{$expRaw}' not recognized. Use \"Firstimer\" or \"Ex-Abroad\".";
+                }
+            }
+
             if (mb_strlen($middle) > 255) {
                 $rowErrors[] = 'Middle Name is too long (max 255).';
             }
@@ -601,6 +622,26 @@ class ApplicantController extends Controller
                 } catch (\Throwable $e) {
                     $rowErrors[] = "Birthdate '{$birthRaw}' is not a valid date.";
                 }
+            }
+
+            // ---- Age (optional). The applicants table has no age column —
+            // Age is always derived from Birthdate (Browse Applicants). When the
+            // file supplies only Age (no Birthdate), we approximate the birthdate
+            // so the Age column still shows. (Toybits 2026-10-14, Cyd/Gulf) ----
+            $age = null;
+            $ageRaw = trim((string) ($d['age'] ?? ''));
+            if ($ageRaw !== '') {
+                if (! preg_match('/^\d{1,3}$/', $ageRaw)) {
+                    $rowErrors[] = "Age '{$ageRaw}' is not a valid number.";
+                } elseif ((int) $ageRaw < 1 || (int) $ageRaw > 120) {
+                    $rowErrors[] = "Age '{$ageRaw}' is out of range (1-120).";
+                } else {
+                    $age = (int) $ageRaw;
+                }
+            }
+            if ($birthRaw === '' && $age !== null) {
+                // Birthday unknown — anchor to today, age years back.
+                $birthdate = Carbon::now()->subYears($age)->format('Y-m-d');
             }
 
             // ---- Date Applied (optional; maps to the applicant's "Date Applied",
@@ -746,6 +787,7 @@ class ApplicantController extends Controller
                 'address' => $address !== '' ? $address : null,
                 'remarks' => $remarks !== '' ? $remarks : null,
                 'source' => $source !== '' ? $source : null,
+                'firstimer_type' => $firstimerType,
                 'nationality_id' => $nationalityId,
                 'religion_id' => $religionId,
                 'civil_status_id' => $civilStatusId,
@@ -991,6 +1033,8 @@ class ApplicantController extends Controller
             'dateofbirth' => 'birthdate',
             'dob' => 'birthdate',
             'birthday' => 'birthdate',
+            'age' => 'age',
+            'yearsold' => 'age',
             'contact' => 'contact',
             'contactno' => 'contact',
             'contactnumber' => 'contact',
@@ -1024,6 +1068,17 @@ class ApplicantController extends Controller
             'dateapplied' => 'date_applied',
             'dateofapplication' => 'date_applied',
             'applied' => 'date_applied',
+            // Toybits 2026-10-14 (Cyd/Gulf) — Experience = Firstimer / Ex-Abroad,
+            // stored on the existing applicants.firstimer_type column.
+            'experience' => 'firstimer_type',
+            'firstimer' => 'firstimer_type',
+            'firsttimer' => 'firstimer_type',
+            'firstimerexabroad' => 'firstimer_type',
+            'firsttimerorexabroad' => 'firstimer_type',
+            'firstimerexabroadtype' => 'firstimer_type',
+            'experiencefirstimerexabroad' => 'firstimer_type',
+            'experiencefirsttimerorexabroad' => 'firstimer_type',
+            'exabroad' => 'firstimer_type',
             'passport' => 'passport_no',
             'passportno' => 'passport_no',
             'passportnumber' => 'passport_no',

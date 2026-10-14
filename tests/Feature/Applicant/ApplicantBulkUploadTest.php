@@ -48,9 +48,67 @@ class ApplicantBulkUploadTest extends TestCase
         $response->assertOk();
 
         $body = $response->streamedContent();
-        foreach (['Date Applied', 'Passport #', 'Date Issued', 'Place Issued', 'Expiration'] as $header) {
+        foreach (['Date Applied', 'Passport #', 'Date Issued', 'Place Issued', 'Expiration', 'Age', 'Experience (Firstimer / Ex-Abroad)'] as $header) {
             $this->assertStringContainsString($header, $body);
         }
+    }
+
+    /**
+     * Cyd 2026-10-14 (Gulf) — bulk upload must accept Age and Experience
+     * (Firstimer / Ex-Abroad), on top of Date Applied + passport columns.
+     */
+    #[Test]
+    public function import_stores_firstimer_type_for_experience_column(): void
+    {
+        $csv = "First Name,Last Name,Experience (Firstimer / Ex-Abroad)\n"
+            ."Faye,Lim,Ex-Abroad\n"
+            ."Gio,Ramos,Firstimer\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertRedirect(route('applicants.index'));
+        $response->assertSessionHas('success');
+        $this->assertSame('ex-abroad', Applicant::where('first_name', 'Faye')->first()->firstimer_type);
+        $this->assertSame('firstimer', Applicant::where('first_name', 'Gio')->first()->firstimer_type);
+    }
+
+    #[Test]
+    public function import_derives_birthdate_from_age_when_birthdate_missing(): void
+    {
+        $csv = "First Name,Last Name,Age\n"
+            ."Hana,Cruz,30\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertRedirect(route('applicants.index'));
+        $applicant = Applicant::where('first_name', 'Hana')->first();
+        $this->assertNotNull($applicant);
+        // Age is derived from birthdate — no age column exists.
+        $this->assertSame(30, $applicant->age);
+    }
+
+    #[Test]
+    public function import_rejects_unrecognized_experience_value(): void
+    {
+        $csv = "First Name,Last Name,Experience\n"
+            ."Ivy,Tan,Veteran\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertSessionHas('bulk_errors');
+        $this->assertDatabaseCount('applicants', 0);
+    }
+
+    #[Test]
+    public function import_rejects_out_of_range_age(): void
+    {
+        $csv = "First Name,Last Name,Age\n"
+            ."Jon,Diaz,500\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertSessionHas('bulk_errors');
+        $this->assertDatabaseCount('applicants', 0);
     }
 
     #[Test]
