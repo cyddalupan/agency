@@ -112,6 +112,64 @@ class ApplicantSearchFilterTest extends TestCase
         $this->assertCount(2, $response->viewData('applicants'));
     }
 
+    #[Test]
+    public function search_matches_full_name_across_columns(): void
+    {
+        // Regression (Toybits 2026-10-14): typing "Sofia Reyes" used to match
+        // no column and return zero rows; tokens must span first + last name.
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'Sofia',
+            'last_name' => 'Reyes',
+        ]);
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'Reyes',
+            'last_name' => 'Cruz',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('applicants.index', ['search' => 'Sofia Reyes']));
+
+        $response->assertOk();
+        $response->assertSee('Sofia Reyes');
+        $this->assertCount(1, $response->viewData('applicants'));
+    }
+
+    #[Test]
+    public function search_matches_name_in_reverse_order(): void
+    {
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'Sofia',
+            'last_name' => 'Reyes',
+        ]);
+
+        // "Reyes Sofia" — last name typed first; still must match.
+        $response = $this->actingAs($this->user)
+            ->get(route('applicants.index', ['search' => 'Reyes Sofia']));
+
+        $response->assertOk();
+        $this->assertCount(1, $response->viewData('applicants'));
+    }
+
+    #[Test]
+    public function search_tokens_can_span_first_middle_last(): void
+    {
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'Sofia',
+            'middle_name' => 'Mendoza',
+            'last_name' => 'Reyes',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('applicants.index', ['search' => 'Sofia Mendoza Reyes']));
+
+        $response->assertOk();
+        $this->assertCount(1, $response->viewData('applicants'));
+    }
+
     // ──────────── FILTER BY STATUS ────────────
 
     #[Test]

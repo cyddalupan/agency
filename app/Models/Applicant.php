@@ -100,6 +100,38 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
+     * Name search across first / middle / last name.
+     *
+     * Splits the term on whitespace and requires EVERY token to appear in at
+     * least one name column. This lets staff type a full name like
+     * "Sofia Reyes" and still match a row whose first_name is "Sofia" and
+     * last_name is "Reyes" — the old single-string LIKE matched no column and
+     * silently returned zero applicants. Single-token searches behave exactly
+     * as before.
+     * (Toybits report 2026-10-14.)
+     */
+    public function scopeSearchName($query, ?string $search)
+    {
+        $search = trim((string) $search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $tokens = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach ($tokens as $token) {
+            $query->where(function ($q) use ($token) {
+                $q->where('first_name', 'like', "%{$token}%")
+                    ->orWhere('last_name', 'like', "%{$token}%")
+                    ->orWhere('middle_name', 'like', "%{$token}%");
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * True when the given user is branch-scoped: a non-admin account that
      * belongs to a branch. Admins are never branch-scoped, even when their
      * account carries a branch_id.

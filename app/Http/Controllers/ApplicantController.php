@@ -46,14 +46,10 @@ class ApplicantController extends Controller
             : Applicant::TYPE_SKILLED;
         $query->ofType($type);
 
-        // Search by name (first, last, middle)
-        if ($search = $request->input('search')) {
-            $search = trim($search);
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('middle_name', 'like', "%{$search}%");
-            });
+        // Search by name — multi-word aware, so "Sofia Reyes" matches a row
+        // whose first/last names live in separate columns. (Toybits 2026-10-14.)
+        if ($request->filled('search')) {
+            $query->searchName($request->input('search'));
         }
 
         // Filter by status code
@@ -140,14 +136,9 @@ class ApplicantController extends Controller
             : Applicant::TYPE_SKILLED;
         $query->ofType($type);
 
-        // Search by name (first, last, middle)
-        if ($search = $request->input('search')) {
-            $search = trim($search);
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('middle_name', 'like', "%{$search}%");
-            });
+        // Search by name — multi-word aware (see index()). (Toybits 2026-10-14.)
+        if ($request->filled('search')) {
+            $query->searchName($request->input('search'));
         }
 
         // Filter by status code (within the three)
@@ -1493,12 +1484,7 @@ class ApplicantController extends Controller
 
         // Apply the same filters as index()
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('middle_name', 'like', "%{$search}%");
-            });
+            $query->searchName($request->input('search'));
         }
         if ($request->filled('status')) {
             $query->where('status_code', $request->integer('status'));
@@ -1578,12 +1564,7 @@ class ApplicantController extends Controller
 
         // Apply the same filters as withdrawn()
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('middle_name', 'like', "%{$search}%");
-            });
+            $query->searchName($request->input('search'));
         }
         if ($request->filled('status')) {
             $query->where('status_code', $request->integer('status'));
