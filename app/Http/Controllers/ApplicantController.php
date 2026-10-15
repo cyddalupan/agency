@@ -546,7 +546,16 @@ class ApplicantController extends Controller
             $first = trim((string) ($d['first_name'] ?? ''));
             $last = trim((string) ($d['last_name'] ?? ''));
             if ($first === '' && $last === '') {
-                continue; // fully empty line -> skip silently
+                // Fully blank CSV lines are already dropped by the parser, so a
+                // row reaching here that still has NO name is a broken data row
+                // (e.g. shifted columns), not a blank line. Flag it instead of
+                // skipping silently — otherwise a file with junk rows still
+                // reports success and imports the rest. (Toybits 2026-10-15, Cyd/Gulf.)
+                $errors[] = [
+                    'line' => $line,
+                    'errors' => ['Row has no name — First Name and Last Name are both empty. Fix the row or delete it, then upload again.'],
+                ];
+                continue;
             }
 
             // ---- Plain fields ----

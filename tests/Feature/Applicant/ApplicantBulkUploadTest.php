@@ -175,6 +175,61 @@ class ApplicantBulkUploadTest extends TestCase
     }
 
     /**
+     * Cyd 2026-10-15 (Gulf) — a row with other data but NO name used to be
+     * skipped silently, so a broken file still reported success and imported
+     * the good rows. Validate-first now flags any nameless data row and
+     * imports nothing until the file is fixed.
+     */
+    #[Test]
+    public function import_rejects_row_that_has_data_but_no_name(): void
+    {
+        $csv = "First Name,Middle Name,Last Name,Gender,Status\n"
+            ."Goodcase,Test,Person,Male,Pending\n"
+            .",,mysterystatus,,Pending\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertSessionHas('bulk_errors');
+        $response->assertSessionMissing('success');
+        $this->assertDatabaseCount('applicants', 0);
+    }
+
+    #[Test]
+    public function import_rejects_a_fully_nameless_row_with_other_columns_filled(): void
+    {
+        $csv = "First Name,Middle Name,Last Name,Gender,Status\n"
+            .",,,Male,Pending\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertSessionHas('bulk_errors');
+        $this->assertDatabaseCount('applicants', 0);
+
+        $errors = session('bulk_errors');
+        $this->assertIsArray($errors);
+        $this->assertStringContainsStringIgnoringCase('no name', implode(' ', $errors[0]['errors']));
+    }
+
+    /**
+     * Blank lines between data rows are still tolerated (the parser drops
+     * them) — the hardening only targets rows that carry data but no name.
+     */
+    #[Test]
+    public function blank_lines_between_rows_are_still_ignored(): void
+    {
+        $csv = "First Name,Last Name\n"
+            ."Ana,Reyes\n"
+            ."\n"
+            ."Ben,Santos\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertRedirect(route('applicants.index'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseCount('applicants', 2);
+    }
+
+    /**
      * Cyd 2026-10-07 (Gulf) — a valid template file failed with "No header row
      * found" whose preview showed the header intact with commas. Root cause: the
      * file used lone-CR (\r) line endings (Excel for Mac), so fgetcsv read the
