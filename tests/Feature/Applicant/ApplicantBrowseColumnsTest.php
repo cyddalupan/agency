@@ -174,6 +174,26 @@ class ApplicantBrowseColumnsTest extends TestCase
     }
 
     #[Test]
+    public function branch_column_shows_main_branch_when_applicant_has_no_branch(): void
+    {
+        // Applicants with no branch belong to the main office ("main branch").
+        // They used to render blank/"—"; the table must now show "Main Branch".
+        // (Toybits report 2026-10-16.)
+        Applicant::factory()->create([
+            'agency_id'  => $this->agency->id,
+            'first_name' => 'NoBranch',
+            'last_name'  => 'Applicant',
+            'branch_id'  => null,
+            'created_by' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('applicants.index'));
+
+        $response->assertOk();
+        $response->assertSee('Main Branch');
+    }
+
+    #[Test]
     public function applicant_age_is_derived_from_birthdate(): void
     {
         $applicant = Applicant::factory()->create([

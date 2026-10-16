@@ -384,4 +384,16 @@ class Applicant extends Model implements AuthenticatableContract
         }
         return (int) \Illuminate\Support\Carbon::parse($this->birthdate)->age;
     }
+
+    /**
+     * Display label for the Branch column.
+     *
+     * Applicants with no branch assigned belong to the agency's main office
+     * ("main branch"); they used to render blank/"—" on the table views, so
+     * show "Main Branch" instead. (Toybits report 2026-10-16.)
+     */
+    public function getBranchLabelAttribute(): string
+    {
+        return $this->branch?->name ?? 'Main Branch';
+    }
 }

@@ -222,7 +222,8 @@
                                 </td>
                                 @elseif($col === 'branch')
                                 <td class="text-sm">
-                                    {{ $applicant->branch?->name ?? '—' }}
+                                    {{-- No branch = main office ("main branch"); show it instead of blank. (2026-10-16) --}}
+                                    {{ $applicant->branch_label }}
                                 </td>
                                 @elseif($col === 'agent')
                                 <td class="text-sm">
