@@ -474,6 +474,16 @@ if (!function_exists('app_sanitize_page_html')) {
             return '';
         }
 
+        // Normalize before parsing: editors love to emit &nbsp; (0xC2 0xA0) and
+        // stray control bytes inside tag markup, and libxml answers that with
+        // "error parsing attribute name" — silently dropping every attribute on
+        // the tag (that is how images lost their src on save).
+        $html = str_replace(["\xC2\xA0", "\xC2"], [' ', ''], $html);
+        $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $html);
+        if (! mb_check_encoding($html, 'UTF-8')) {
+            $html = iconv('UTF-8', 'UTF-8//IGNORE', $html) ?: '';
+        }
+
         // Wrap in a known container so DOMDocument tolerates fragment content.
         $doc = new DOMDocument();
         libxml_use_internal_errors(true);

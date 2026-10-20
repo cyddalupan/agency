@@ -568,8 +568,17 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::post('cases', [CaseController::class, 'store'])->name('cases.store')->middleware('throttle:29,1');
     });
 
-    // Per-agency Company Profile (WYSIWYG page content)
+    // Per-agency Company Profile page (4 tabs, one WYSIWYG block per tab).
+    // Default (no tab) routes are declared first so /company-profile/edit is not
+    // swallowed by the {tab} pattern.
     Route::get('/company-profile', [CompanyProfileController::class, 'show'])->name('company-profile.show');
     Route::get('/company-profile/edit', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
     Route::post('/company-profile', [CompanyProfileController::class, 'update'])->name('company-profile.update');
+    Route::post('/company-profile/image', [CompanyProfileController::class, 'uploadImage'])->name('company-profile.image');
+    Route::get('/company-profile/{tab}/edit', [CompanyProfileController::class, 'edit'])
+        ->whereIn('tab', \App\Support\CompanyProfileTabs::slugs())->name('company-profile.tab.edit');
+    Route::post('/company-profile/{tab}', [CompanyProfileController::class, 'update'])
+        ->whereIn('tab', \App\Support\CompanyProfileTabs::slugs())->name('company-profile.tab.update');
+    Route::get('/company-profile/{tab}', [CompanyProfileController::class, 'show'])
+        ->whereIn('tab', \App\Support\CompanyProfileTabs::slugs())->name('company-profile.tab');
 });
