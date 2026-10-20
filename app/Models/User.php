@@ -38,6 +38,9 @@ class User extends Authenticatable
         'super_admin' => 'Super Admin',
         'admin'       => 'Admin',
         'billing'     => 'Accounting',
+        // FINAS access roles (Mjolnir card "FINAS: User Access", 2026-10-20).
+        'recruitment' => 'Recruitment',
+        'welfare'     => 'Welfare',
         'staff'       => 'Receptionist',
         'processor'   => 'Processing',
         'paralegal'   => 'Paralegal',
@@ -61,7 +64,21 @@ class User extends Authenticatable
      */
     public function canAccessModule(string $module): bool
     {
-        return \App\Support\ModuleAccess::allows($this->user_type, $module);
+        return \App\Support\ModuleAccess::allows($this->user_type, $module, $this->agency_id);
+    }
+
+    /**
+     * Case / Welfare / Accounting are view-only for Recruitment and Branch
+     * accounts (FINAS card: "Case, Welfare & Accounting - view only, no add
+     * transaction"). Welfare itself keeps full Case/Welfare access.
+     */
+    public function isApplicantSubModuleReadOnly(string $type): bool
+    {
+        if (! in_array((string) $this->user_type, ['recruitment', 'branch'], true)) {
+            return false;
+        }
+
+        return in_array($type, ['cases', 'welfare', 'accounting'], true);
     }
 
     /** True for the limited "Rest of Account" tier (everyone below admin/accounting). */

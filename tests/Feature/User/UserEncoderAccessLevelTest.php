@@ -126,12 +126,15 @@ class UserEncoderAccessLevelTest extends TestCase
     // ---------- Route enforcement (middleware) ----------
 
     #[Test]
-    public function encoder_can_reach_dashboard_and_applicants(): void
+    public function encoder_can_reach_dashboard_and_add_applicant(): void
     {
         $encoder = $this->encoder();
 
         $this->actingAs($encoder)->get(route('agency.dashboard'))->assertOk();
-        $this->actingAs($encoder)->get(route('applicants.index'))->assertOk();
+        // FINAS "Encoder - Separate link, Add Applicant function only" (2026-10-20):
+        // the list is no longer reachable — only the Add Applicant form is.
+        $this->actingAs($encoder)->get(route('applicants.create'))->assertOk();
+        $this->actingAs($encoder)->get(route('applicants.index'))->assertForbidden();
     }
 
     #[Test]
@@ -154,7 +157,7 @@ class UserEncoderAccessLevelTest extends TestCase
     // ---------- Sidebar contract ----------
 
     #[Test]
-    public function encoder_sidebar_shows_only_dashboard_and_applicants(): void
+    public function encoder_sidebar_shows_only_dashboard_and_add_applicant(): void
     {
         $html = $this->actingAs($this->encoder())
             ->get(route('agency.dashboard'))
@@ -165,7 +168,9 @@ class UserEncoderAccessLevelTest extends TestCase
         preg_match('/<nav\b[^>]*>(.*?)<\/nav>/s', $html, $m);
         $nav = $m[1] ?? $html;
 
-        $this->assertStringContainsString(route('applicants.index'), $nav);
+        $this->assertStringContainsString(route('applicants.create'), $nav);
+        $this->assertStringContainsString('Add Applicant', $nav);
+        $this->assertStringNotContainsString('href="'.route('applicants.index').'"', $nav);
         $this->assertStringContainsString(route('agency.dashboard'), $nav);
 
         foreach ([

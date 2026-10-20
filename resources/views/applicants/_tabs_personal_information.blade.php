@@ -466,8 +466,11 @@
             <section data-pi-panel="cases" class="hidden">
                 <div class="flex items-center justify-between mb-3">
                     <h4 class="font-semibold">⚖️ Cases</h4>
+                    @unless (auth()->user()->isApplicantSubModuleReadOnly('cases'))
                     <button type="button" class="btn btn-primary btn-xs" onclick="document.getElementById('form-cases').classList.toggle('hidden')">➕ Add Case</button>
+                    @endunless
                 </div>
+                @unless (auth()->user()->isApplicantSubModuleReadOnly('cases'))
                 <div id="form-cases" class="hidden border rounded-lg p-4 bg-base-200 mb-4">
                     <form action="{{ route('applicants.sub.store', [$applicant, 'cases']) }}" method="POST">
                         @csrf
@@ -478,6 +481,7 @@
                         </div>
                     </form>
                 </div>
+                @endunless
                 @php $caseRecs = $pi->cases ?? collect(); @endphp
                 @if ($caseRecs->count() > 0)
                     @include('applicants.sub-lists.cases', ['records' => $caseRecs, 'routeKey' => 'cases'])

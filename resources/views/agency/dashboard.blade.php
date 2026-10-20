@@ -41,7 +41,11 @@
                 </div>
                 <p class="text-4xl font-bold text-primary mt-1">{{ $stats['total_applicants'] }}</p>
                 <div class="mt-3">
+                    @if (auth()->user()->user_type === 'encoder')
+                    <a href="{{ route('applicants.create') }}" class="link link-primary text-sm">Add applicant &rarr;</a>
+                    @else
                     <a href="{{ route('applicants.index') }}" class="link link-primary text-sm">View all &rarr;</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -53,9 +57,11 @@
                     <div class="stat-icon bg-secondary/10 text-secondary">🏢</div>
                 </div>
                 <p class="text-4xl font-bold text-secondary mt-1">{{ $stats['total_employers'] }}</p>
+                @if (auth()->user()->canAccessModule('employers'))
                 <div class="mt-3">
                     <a href="{{ route('employers.index') }}" class="link link-secondary text-sm">View all &rarr;</a>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -66,9 +72,11 @@
                     <div class="stat-icon bg-accent/10 text-accent">💼</div>
                 </div>
                 <p class="text-4xl font-bold text-accent mt-1">{{ $stats['total_job_positions'] }}</p>
+                @if (auth()->user()->canAccessModule('employers'))
                 <div class="mt-3">
                     <a href="{{ route('employers.index') }}" class="link link-accent text-sm">View FRAs &rarr;</a>
                 </div>
+                @endif
             </div>
         </div>
     </div>
@@ -78,6 +86,9 @@
          "Quick Actions - REMOVE", 2026-10-08): the same links already live
          in the sidebar, so the card was redundant. Deployment Pipeline now
          spans the full width. --}}
+    {{-- Encoders have no applicant list access ("Add Applicant function only"),
+         so the pipeline/recent-applicant widgets are hidden for them. --}}
+    @if (auth()->user()->user_type !== 'encoder')
     <div class="grid grid-cols-1 gap-6 mb-8">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
@@ -181,6 +192,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- D3 Charts Section --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

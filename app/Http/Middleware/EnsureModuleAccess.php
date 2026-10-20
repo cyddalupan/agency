@@ -35,8 +35,29 @@ class EnsureModuleAccess
         $name   = $route ? (string) $route->getName() : '';
         $module = ModuleAccess::moduleFor($name, $request->path());
 
-        if (! ModuleAccess::allows($type, $module)) {
+        if (! ModuleAccess::allows($type, $module, $user->agency_id)) {
             abort(403, 'Your account does not have access to this module.');
+        }
+
+        // Encoder (FINAS): "Add Applicant function only" — separate link straight
+        // to the Add Applicant form. Listing/viewing/editing applicants is denied.
+        if ($type === 'encoder' && $module === 'applicants' && ! in_array($name, [
+            'applicants.create',
+            'applicants.store',
+            'applicants.check_duplicates',
+        ], true)) {
+            abort(403, 'Encoder accounts can only add applicants.');
+        }
+
+        // Recruitment / Branch: Case, Welfare & Accounting are view-only
+        // (no add transaction). Sub-table writes are blocked here.
+        if (in_array($type, ['recruitment', 'branch'], true)
+            && in_array($name, ['applicants.sub.store', 'applicants.sub.update', 'applicants.sub.destroy'], true)) {
+            $subType = $route ? (string) $route->parameter('type') : '';
+
+            if (in_array($subType, ['cases', 'welfare', 'accounting'], true)) {
+                abort(403, 'Your account can view but cannot change this section.');
+            }
         }
 
         // Accounting keeps full FRA/Reports; the read-only limits apply to Rest of Account.

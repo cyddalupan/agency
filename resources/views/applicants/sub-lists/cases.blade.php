@@ -39,6 +39,7 @@
                     @endif
                 </td>
                 <td class="flex gap-1">
+                    @unless (auth()->user()->isApplicantSubModuleReadOnly('cases'))
                     <button type="button" class="btn btn-ghost btn-xs"
                             onclick="document.getElementById('edit-case-{{ $r->id }}').classList.toggle('hidden')">✏️ Edit</button>
                     <form action="{{ route('applicants.sub.destroy', [$r->applicant_id, 'cases', $r->id]) }}" method="POST"
@@ -46,8 +47,10 @@
                         @csrf @method('DELETE')
                         <button class="btn btn-ghost btn-xs text-error">Delete</button>
                     </form>
+                    @endunless
                 </td>
             </tr>
+            @unless (auth()->user()->isApplicantSubModuleReadOnly('cases'))
             <tr id="edit-case-{{ $r->id }}" class="hidden bg-base-200/40">
                 <td colspan="9" class="p-3">
                     <form action="{{ route('applicants.sub.update', [$r->applicant_id, 'cases', $r->id]) }}" method="POST">
@@ -63,6 +66,7 @@
                     </form>
                 </td>
             </tr>
+            @endunless
             @endforeach
         </tbody>
     </table>

@@ -44,6 +44,75 @@ class ModuleAccess
         'applicants',
     ];
 
+    /**
+     * FINAS access roles (Mjolnir card "FINAS: User Access", 2026-10-20).
+     *
+     * Recruitment: Applicants + FRA + Reference Data + Lookups. Case,
+     * Welfare and Accounting inside the applicant are view-only (no add/edit).
+     */
+    public const RECRUITMENT_ALLOWED = [
+        'dashboard',
+        'notifications',
+        'ai',
+        'logout',
+        'storage',
+        'api',
+        'applicants',
+        'employers',
+        'branches',
+        'countries',
+        'positions',
+        'status-codes',
+        'languages',
+        'skills',
+    ];
+
+    /**
+     * Branch: same as Recruitment EXCEPT Reference Data and Lookups
+     * (no branches/countries/positions/status-codes/languages/skills).
+     */
+    public const BRANCH_ALLOWED = [
+        'dashboard',
+        'notifications',
+        'ai',
+        'logout',
+        'storage',
+        'api',
+        'applicants',
+        'employers',
+    ];
+
+    /**
+     * Welfare: Applicants only, with full Case & Welfare tabs.
+     * No FRA, Reports, Accounting, Reference Data or Lookups.
+     */
+    public const WELFARE_ALLOWED = [
+        'dashboard',
+        'notifications',
+        'ai',
+        'logout',
+        'storage',
+        'api',
+        'applicants',
+    ];
+
+    /**
+     * FINAS Accounting (user_type = billing on the finas tenant). The FINAS
+     * card is narrower than the default Accounting preset: only Applicants,
+     * the Accounting (Statistics) dashboard and the Accounts module.
+     */
+    public const FINAS_ACCOUNTING_ALLOWED = [
+        'dashboard',
+        'notifications',
+        'ai',
+        'logout',
+        'storage',
+        'api',
+        'applicants',
+        'accounting',
+        'accounts',
+    ];
+
     /** Modules "Rest of Account" may access (everything else is 403). */
     public const STAFF_ALLOWED = [
         'dashboard',
@@ -71,7 +140,9 @@ class ModuleAccess
         'custom-fields'            => 'custom-fields',
         'custom-field-definitions' => 'custom-fields',
         'settings'                 => 'settings',
-        'accounts'                 => 'settings',
+        // Accounts is its own module: Accounting (billing) keeps it while
+        // Settings stays admin-only (FINAS card "Access to ... Accounts module").
+        'accounts'                 => 'accounts',
         'status-codes'             => 'status-codes',
         'languages'                => 'languages',
         'skills'                   => 'skills',
@@ -122,8 +193,8 @@ class ModuleAccess
         return $segment !== '' ? $segment : 'other';
     }
 
-    /** Whether a user_type may access a module at all. */
-    public static function allows(?string $userType, string $module): bool
+    /** Whether a user_type may access a module at all (optionally per agency). */
+    public static function allows(?string $userType, string $module, ?int $agencyId = null): bool
     {
         $userType = (string) $userType;
 
@@ -132,6 +203,11 @@ class ModuleAccess
         }
 
         if ($userType === 'billing') {
+            // FINAS tenant: narrowed Accounting role per the FINAS card.
+            if (self::isFinasAgency($agencyId)) {
+                return in_array($module, self::FINAS_ACCOUNTING_ALLOWED, true);
+            }
+
             return ! in_array($module, self::ACCOUNTING_DENIED, true);
         }
 
@@ -139,7 +215,29 @@ class ModuleAccess
             return in_array($module, self::ENCODER_ALLOWED, true);
         }
 
+        if ($userType === 'recruitment') {
+            return in_array($module, self::RECRUITMENT_ALLOWED, true);
+        }
+
+        if ($userType === 'branch') {
+            return in_array($module, self::BRANCH_ALLOWED, true);
+        }
+
+        if ($userType === 'welfare') {
+            return in_array($module, self::WELFARE_ALLOWED, true);
+        }
+
         return in_array($module, self::STAFF_ALLOWED, true);
+    }
+
+    /** True when the given agency is the FINAS tenant (subdomain = finas). */
+    public static function isFinasAgency(?int $agencyId): bool
+    {
+        if (! $agencyId) {
+            return false;
+        }
+
+        return strtolower((string) \App\Models\Agency::whereKey($agencyId)->value('subdomain')) === 'finas';
     }
 
     /** True for the limited "Rest of Account" tier (everyone below admin/accounting, except Encoder). */
@@ -149,6 +247,12 @@ class ModuleAccess
 
         // Encoder is its own (narrower) tier — the FRA/Reports read-only
         // carve-outs do not apply to it (those modules are denied outright).
-        return ! in_array($userType, ['super_admin', 'admin', 'billing', 'encoder'], true);
+        // The FINAS roles (Recruitment / Branch / Welfare) also have their own
+        // explicit allowlists; the generic Rest-of-Account FRA/Reports
+        // read-only carve-outs must not override them.
+        return ! in_array($userType, [
+            'super_admin', 'admin', 'billing', 'encoder',
+            'recruitment', 'branch', 'welfare',
+        ], true);
     }
 }
