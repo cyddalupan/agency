@@ -227,6 +227,13 @@ class ModuleAccess
             return in_array($module, self::WELFARE_ALLOWED, true);
         }
 
+        if ($userType === 'employer') {
+            // FRA portal accounts (Mjolnir card "FINAS: FRA Feature"). They live
+            // in /fra and must never reach agency-panel modules; only app chrome
+            // is allowed so logout/notification links keep working.
+            return in_array($module, ['notifications', 'logout', 'storage'], true);
+        }
+
         return in_array($module, self::STAFF_ALLOWED, true);
     }
 
@@ -252,7 +259,7 @@ class ModuleAccess
         // read-only carve-outs must not override them.
         return ! in_array($userType, [
             'super_admin', 'admin', 'billing', 'encoder',
-            'recruitment', 'branch', 'welfare',
+            'recruitment', 'branch', 'welfare', 'employer',
         ], true);
     }
 }

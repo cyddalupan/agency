@@ -84,7 +84,7 @@ class FraLineUpTabTest extends TestCase
             'last_name'   => 'UpTest',
             'position_id' => 1,
             'status_code' => 0,
-            'employer_id' => null,
+            'employer_id' => $this->employer->id,
             'status'      => 'active',
         ], $overrides);
 

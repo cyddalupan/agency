@@ -5,6 +5,8 @@ namespace Tests\Feature\Fra;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Agency;
+use App\Models\Employer;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -17,12 +19,18 @@ class FraNavigationTest extends TestCase
      */
     protected function createEmployer(): User
     {
+        // FRA logins are bound to one employer record (card "FINAS: FRA Feature").
+        $agency = Agency::factory()->create(['status' => 'active']);
+        $employer = Employer::factory()->create(['agency_id' => $agency->id]);
+
         return User::factory()->create([
-            'email'     => 'employer@test.com',
-            'username'  => 'employer_user',
-            'password'  => Hash::make('password-123'),
-            'user_type' => 'employer',
-            'status'    => 'active',
+            'email'       => 'employer@test.com',
+            'username'    => 'employer_user',
+            'password'    => Hash::make('password-123'),
+            'user_type'   => 'employer',
+            'agency_id'   => $agency->id,
+            'employer_id' => $employer->id,
+            'status'      => 'active',
         ]);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Applicant;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -12,19 +13,49 @@ use Illuminate\View\View;
 
 class FraDashboardController extends Controller
 {
+    /**
+     * Applicant query pre-scoped to the logged-in FRA account's employer.
+     *
+     * Every FRA logins is bound to exactly one employer (users.employer_id).
+     * Before this, the FRA portal showed the whole database to any employer
+     * account — this is the tenant boundary for the portal.
+     */
+    private function applicants(User $user)
+    {
+        $query = Applicant::query();
+
+        if ($user->isFraAccount()) {
+            $query->where('employer_id', $user->employer_id);
+        }
+
+        return $query;
+    }
+
+    /** 403 when an FRA account touches an applicant that is not its own. */
+    private function authorizeFraApplicant(User $user, Applicant $applicant): void
+    {
+        if (! $user->isFraAccount()) {
+            return;
+        }
+
+        if ((int) $applicant->employer_id !== (int) $user->employer_id) {
+            abort(403, 'This applicant is not assigned to your account.');
+        }
+    }
+
     public function index(): View
     {
         $user = Auth::user();
 
         // KPI counts for dashboard (match actual tab status code ranges)
-        $selected = Applicant::whereIn('status_code', [4, 5, 6])->count();
-        $onprocess = Applicant::whereIn('status_code', [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,29,30,31,32,39,40,41,42])->count();
-        $flight = Applicant::whereIn('status_code', [21, 22])->count();
-        $deployed = Applicant::whereIn('status_code', [8, 33, 34])->count();
+        $selected = $this->applicants($user)->whereIn('status_code', [4, 5, 6])->count();
+        $onprocess = $this->applicants($user)->whereIn('status_code', [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,29,30,31,32,39,40,41,42])->count();
+        $flight = $this->applicants($user)->whereIn('status_code', [21, 22])->count();
+        $deployed = $this->applicants($user)->whereIn('status_code', [8, 33, 34])->count();
 
         // Chart data: pipeline funnel
         $pipelineStages = [
-            ['label' => 'Line Up', 'count' => Applicant::whereIn('status_code', [0,1,2,3])->count()],
+            ['label' => 'Line Up', 'count' => $this->applicants($user)->whereIn('status_code', [0,1,2,3])->count()],
             ['label' => 'Selected', 'count' => $selected],
             ['label' => 'On Process', 'count' => $onprocess],
             ['label' => 'Flight', 'count' => $flight],
@@ -33,12 +64,12 @@ class FraDashboardController extends Controller
 
         // Chart data: status breakdown (grouped by pipeline zone)
         $statusGroups = [
-            ['zone' => 'Line Up', 'count' => Applicant::whereIn('status_code', [0,1,2,3])->count(), 'color' => '#3b82f6'],
+            ['zone' => 'Line Up', 'count' => $this->applicants($user)->whereIn('status_code', [0,1,2,3])->count(), 'color' => '#3b82f6'],
             ['zone' => 'Selected', 'count' => $selected, 'color' => '#a855f7'],
             ['zone' => 'On Process', 'count' => $onprocess, 'color' => '#f97316'],
             ['zone' => 'Flight', 'count' => $flight, 'color' => '#eab308'],
             ['zone' => 'Deployed', 'count' => $deployed, 'color' => '#22c55e'],
-            ['zone' => 'Cancelled', 'count' => Applicant::whereIn('status_code', [36,37,38])->count(), 'color' => '#ef4444'],
+            ['zone' => 'Cancelled', 'count' => $this->applicants($user)->whereIn('status_code', [36,37,38])->count(), 'color' => '#ef4444'],
         ];
 
         // Top positions this agency is hiring for
@@ -72,7 +103,7 @@ class FraDashboardController extends Controller
 
         $lineUpCodes = [0, 1, 2, 3, 4, 5, 6];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'statusCode'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'statusCode'])
             ->whereIn('status_code', $lineUpCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -100,7 +131,7 @@ class FraDashboardController extends Controller
 
         $selectedCodes = [4, 5, 6];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'statusCode'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'statusCode'])
             ->whereIn('status_code', $selectedCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -136,7 +167,7 @@ class FraDashboardController extends Controller
             'applicant_ids.*' => 'exists:applicants,id',
         ]);
 
-        $count = Applicant::whereIn('id', $request->applicant_ids)
+        $count = $this->applicants($user)->whereIn('id', $request->applicant_ids)
             ->whereIn('status_code', [4, 5, 6])
             ->update(['status_code' => 0]);
 
@@ -150,7 +181,7 @@ class FraDashboardController extends Controller
 
         $cancelledCodes = [36, 37, 38];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'statusCode'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'statusCode'])
             ->whereIn('status_code', $cancelledCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -179,7 +210,7 @@ class FraDashboardController extends Controller
         // On-process status codes: document processing through visa/completion
         $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'contractRecords'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -206,6 +237,8 @@ class FraDashboardController extends Controller
      */
     public function selectApplicant(Applicant $applicant)
     {
+        $this->authorizeFraApplicant(Auth::user(), $applicant);
+
         $applicant->update(['status_code' => 4]);
         return redirect()->route('fra.lineup')->with('success', $applicant->full_name . ' has been selected and moved to Selected tab.');
     }
@@ -213,6 +246,7 @@ class FraDashboardController extends Controller
     public function viewApplicant(Applicant $applicant): View
     {
         $user = Auth::user();
+        $this->authorizeFraApplicant($user, $applicant);
         $applicant->load(['position', 'passport', 'workExperiences', 'statusCode']);
 
         $totalYears = 0;
@@ -234,9 +268,11 @@ class FraDashboardController extends Controller
      */
     public function lineupExport()
     {
+        $user = Auth::user();
+
         $lineUpCodes = [0, 1, 2, 3, 4, 5, 6];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'statusCode'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'statusCode'])
             ->whereIn('status_code', $lineUpCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
@@ -264,7 +300,7 @@ class FraDashboardController extends Controller
 
         $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
 
-        $applicants = Applicant::with(['position', 'passport', 'workExperiences', 'contractRecords'])
+        $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')

@@ -49,7 +49,17 @@ class User extends Authenticatable
         // (Mjolnir card "User Access Level 'Encoder'", 2026-10-08) Narrowest
         // tier: can ONLY reach the Dashboard + Applicant module.
         'encoder'     => 'Encoder',
+        // FRA portal account (Mjolnir card "FINAS: FRA Feature", 2026-10-20).
+        // Logs into /fra only, tied to one employer (FRA) record, and sees
+        // that employer's applicants exclusively.
+        'employer'    => 'FRA (Employer)',
     ];
+
+    /** True for FRA portal accounts (user_type = employer). */
+    public function isFraAccount(): bool
+    {
+        return (string) $this->user_type === 'employer';
+    }
 
     /** Display label for a user_type (presets first, fall back to raw role). */
     public static function accessLabel(string $userType): string

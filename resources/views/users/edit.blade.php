@@ -99,6 +99,18 @@
                 </fieldset>
             </div>
 
+            <fieldset class="fieldset" id="employer-field" style="display:none">
+                <legend class="fieldset-legend">🏭 FRA / Employer <span class="text-error">*</span></legend>
+                <select name="employer_id" class="select w-full">
+                    <option value="">Select employer...</option>
+                    @foreach($employers as $employer)
+                        <option value="{{ $employer->id }}" @selected(old('employer_id', $user->employer_id) == $employer->id)>{{ $employer->name }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs opacity-60">Required for FRA (Employer) accounts — the login only sees this employer's applicants.</p>
+                @error('employer_id') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+            </fieldset>
+
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">📊 Status <span class="text-error">*</span></legend>
                 <select name="status" required class="select w-full">
@@ -121,6 +133,17 @@
                 <input type="password" name="password_confirmation" class="input w-full"
                     placeholder="Repeat the new password" autocomplete="new-password">
             </fieldset>
+
+            <script>
+                (function () {
+                    const select = document.querySelector('select[name="user_type"]');
+                    const field = document.getElementById('employer-field');
+                    if (!select || !field) return;
+                    const toggle = () => { field.style.display = select.value === 'employer' ? '' : 'none'; };
+                    select.addEventListener('change', toggle);
+                    toggle();
+                })();
+            </script>
 
             <div class="flex gap-2 pt-2">
                 <button type="submit" class="btn btn-primary">Update User</button>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Employer;
 use App\Models\ActivityLog;
 use App\Services\SensitiveActionLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -61,8 +62,9 @@ class UserController extends Controller
         $this->authorize('create', User::class);
 
         $branches = Branch::where('agency_id', auth()->user()->agency_id)->orderBy('name')->get();
+        $employers = $this->employersForSelect(auth()->user()->agency_id);
 
-        return view('users.create', compact('branches') + ['assignableRoles' => $this->assignableRoles()]);
+        return view('users.create', compact('branches', 'employers') + ['assignableRoles' => $this->assignableRoles()]);
     }
 
     /**
@@ -87,11 +89,17 @@ class UserController extends Controller
                 $q->where('agency_id', auth()->user()->agency_id);
             })],
             'status'      => ['required', 'string', 'in:active,inactive,suspended'],
+            'employer_id' => ['nullable', Rule::exists('employers', 'id')->where(function ($q) {
+                $q->where('agency_id', auth()->user()->agency_id);
+            })],
         ]);
 
         // (Branch feature) Branch accounts may only create users under their own
         // branch: omitted defaults to their branch, a different branch is rejected.
         $this->applyBranchDefaults($validated);
+
+        // FRA accounts must be tied to an employer (FRA) record; other roles must not.
+        $this->applyEmployerDefaults($validated, auth()->user()->agency_id);
 
         User::create([
             'agency_id'   => auth()->user()->agency_id,
@@ -100,6 +108,7 @@ class UserController extends Controller
             'surname'     => $validated['surname'] ?? null,
             'contact'     => $validated['contact'] ?? null,
             'branch_id'   => $validated['branch_id'] ?? null,
+            'employer_id' => $validated['employer_id'] ?? null,
             'email'       => $validated['email'],
             'username'    => $validated['username'] ?? null,
             'password'    => Hash::make($validated['password']),
@@ -119,8 +128,9 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         $branches = Branch::where('agency_id', $user->agency_id ?? auth()->user()->agency_id)->orderBy('name')->get();
+        $employers = $this->employersForSelect($user->agency_id ?? auth()->user()->agency_id);
 
-        return view('users.edit', compact('user', 'branches') + ['assignableRoles' => $this->assignableRoles()]);
+        return view('users.edit', compact('user', 'branches', 'employers') + ['assignableRoles' => $this->assignableRoles()]);
     }
 
     /**
@@ -145,12 +155,18 @@ class UserController extends Controller
             })],
             'status'    => ['required', 'string', 'in:active,inactive,suspended'],
             'password'  => ['nullable', 'string', 'confirmed'],
+            'employer_id' => ['nullable', Rule::exists('employers', 'id')->where(function ($q) use ($user) {
+                $q->where('agency_id', $user->agency_id);
+            })],
         ]);
 
         $data = $validated;
 
         // (Branch feature) Branch accounts may only keep users in their own branch.
         $this->applyBranchDefaults($data);
+
+        // FRA accounts must stay tied to an employer (FRA) record.
+        $this->applyEmployerDefaults($data, $user->agency_id);
 
         // Toybits 2026-08-16: admin can reset a user's password from the edit
         // page. Only hash/update when a new password is provided.
@@ -164,6 +180,50 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * Employer (FRA) records available in the access-level dropdown. Only the
+     * current agency's active employers are listed (tenant isolation).
+     */
+    private function employersForSelect(?int $agencyId)
+    {
+        return Employer::query()
+            ->where('agency_id', $agencyId)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    /**
+     * FRA portal accounts (user_type = employer) must point at an employer
+     * record from the same agency; every other access level clears the link so
+     * a role change cannot leave a stray employer scope behind.
+     */
+    private function applyEmployerDefaults(array &$validated, ?int $agencyId): void
+    {
+        if (($validated['user_type'] ?? null) !== 'employer') {
+            $validated['employer_id'] = null;
+
+            return;
+        }
+
+        if (blank($validated['employer_id'] ?? null)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'employer_id' => 'Select the FRA / employer this account belongs to.',
+            ]);
+        }
+
+        $belongs = Employer::query()
+            ->where('agency_id', $agencyId)
+            ->whereKey($validated['employer_id'])
+            ->exists();
+
+        if (! $belongs) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'employer_id' => 'The selected employer does not belong to this agency.',
+            ]);
+        }
     }
 
     /**

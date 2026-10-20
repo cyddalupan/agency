@@ -4,6 +4,7 @@ namespace Tests\Feature\FRA;
 
 use App\Models\User;
 use App\Models\Agency;
+use App\Models\Employer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -23,12 +24,16 @@ class FraSessionTest extends TestCase
             'name' => 'Test Agency',
         ]);
 
+        // FRA logins are bound to one employer record (card "FINAS: FRA Feature").
+        $employer = Employer::factory()->create(['agency_id' => $this->agency->id]);
+
         $this->user = User::factory()->create([
             'email' => 'employer@test.com',
             'password' => bcrypt('password123'),
             'user_type' => 'employer',
             'status' => 'active',
             'agency_id' => $this->agency->id,
+            'employer_id' => $employer->id,
         ]);
     }
 

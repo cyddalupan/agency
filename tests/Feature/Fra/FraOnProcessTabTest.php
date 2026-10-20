@@ -11,6 +11,8 @@ use App\Models\ApplicantPassport;
 use App\Models\ApplicantWorkExperience;
 use App\Models\ApplicantContract;
 use App\Models\StatusCode;
+use App\Models\Agency;
+use App\Models\Employer;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -18,14 +20,22 @@ class FraOnProcessTabTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?Employer $employer = null;
+
     protected function createEmployer(): User
     {
+        // FRA logins are bound to one employer record (card "FINAS: FRA Feature").
+        $agency = Agency::factory()->create(['status' => 'active']);
+        $this->employer = Employer::factory()->create(['agency_id' => $agency->id]);
+
         return User::factory()->create([
-            'email'     => 'employer@test.com',
-            'username'  => 'employer_user',
-            'password'  => Hash::make('password-123'),
-            'user_type' => 'employer',
-            'status'    => 'active',
+            'email'       => 'employer@test.com',
+            'username'    => 'employer_user',
+            'password'    => Hash::make('password-123'),
+            'user_type'   => 'employer',
+            'agency_id'   => $agency->id,
+            'employer_id' => $this->employer->id,
+            'status'      => 'active',
         ]);
     }
 
@@ -61,8 +71,8 @@ class FraOnProcessTabTest extends TestCase
             'last_name'   => 'Dela Cruz',
             'position_id' => 1,
             'status_code' => 7,
-            'employer_id' => null,
-            'agency_id'   => 1,
+            'employer_id' => $this->employer?->id,
+            'agency_id'   => $this->employer?->agency_id,
             'status'      => 'active',
         ], $overrides);
 
@@ -375,6 +385,7 @@ class FraOnProcessTabTest extends TestCase
             'status_code' => 15,
         ]);
         $outside = Applicant::create([
+            'employer_id' => $this->employer?->id,
             'first_name'  => 'Outside',
             'last_name'   => 'Status',
             'position_id' => $pos->id,

@@ -20,6 +20,18 @@ class EnsureUserIsFra
             return redirect()->route('fra.login');
         }
 
+        // Every FRA login must be bound to an employer (FRA) record — without
+        // it the portal has no tenant to scope applicants to.
+        if (! $user->employer_id) {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('fra.login')->withErrors([
+                'login' => 'This FRA account is not linked to an employer yet. Please contact the agency admin.',
+            ]);
+        }
+
         return $next($request);
     }
 }

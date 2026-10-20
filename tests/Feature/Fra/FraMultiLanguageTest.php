@@ -5,6 +5,8 @@ namespace Tests\Feature\Fra;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Agency;
+use App\Models\Employer;
 use PHPUnit\Framework\Attributes\Test;
 
 class FraMultiLanguageTest extends TestCase
@@ -13,10 +15,17 @@ class FraMultiLanguageTest extends TestCase
 
     private function createEmployer(): User
     {
+        // FRA logins are bound to one employer record (card "FINAS: FRA Feature").
+        $agency = Agency::factory()->create(['status' => 'active']);
+        $employer = Employer::factory()->create(['agency_id' => $agency->id]);
+
         return User::factory()->create([
-            'name'      => 'Employer User',
-            'email'     => 'employer@test.com',
-            'user_type' => 'employer',
+            'name'        => 'Employer User',
+            'email'       => 'employer@test.com',
+            'user_type'   => 'employer',
+            'agency_id'   => $agency->id,
+            'employer_id' => $employer->id,
+            'status'      => 'active',
         ]);
     }
 
