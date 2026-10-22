@@ -78,6 +78,11 @@ class ApplicantController extends Controller
             $query->where('country_id', $request->integer('country'));
         }
 
+        // Filter by branch
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->integer('branch'));
+        }
+
         // Chips/dropdown exclude withdrawn statuses too (they have their own tab).
         $statusCodes = StatusCode::whereNotIn('code', $withdrawnStatuses)
             ->orderBy('sort_order')
@@ -100,6 +105,14 @@ class ApplicantController extends Controller
 
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
+        // Branch filter options (card "LANDAS: Applicant Branch filter",
+        // 2026-10-22). Branch-locked accounts only ever see their own branch,
+        // matching the forBranchUser() scope on the list itself.
+        $branchQuery = Branch::where('agency_id', resolve_agency_id())->orderBy('name');
+        if (auth()->user()->isBranchLocked()) {
+            $branchQuery->where('id', auth()->user()->branch_id);
+        }
+        $branches = $branchQuery->get(['id', 'name']);
 
         // Per-agency table column selection (see app_applicant_table_columns).
         $tableColumns = app_applicant_table_columns();
@@ -121,7 +134,7 @@ class ApplicantController extends Controller
             'all' => (clone $base)->count(),
         ];
 
-        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'tableColumns', 'type', 'typeCounts'));
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'tableColumns', 'type', 'typeCounts'));
     }
 
     /**
@@ -176,6 +189,11 @@ class ApplicantController extends Controller
             $query->where('country_id', $request->integer('country'));
         }
 
+        // Filter by branch (same as index()).
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->integer('branch'));
+        }
+
         $statusCodes = StatusCode::whereIn('code', $withdrawnStatuses)->orderBy('sort_order')->get();
 
         // Get status counts for the three statuses, scoped to the active type
@@ -192,6 +210,11 @@ class ApplicantController extends Controller
 
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
+        $branchQuery = Branch::where('agency_id', resolve_agency_id())->orderBy('name');
+        if (auth()->user()->isBranchLocked()) {
+            $branchQuery->where('id', auth()->user()->branch_id);
+        }
+        $branches = $branchQuery->get(['id', 'name']);
 
         // withQueryString(): see index() — keep the active tab/filters when
         // changing page (Toybits report 2026-10-09). 50/page per the
@@ -205,7 +228,7 @@ class ApplicantController extends Controller
             'all' => (clone $base)->count(),
         ];
 
-        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'type', 'typeCounts'));
+        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'type', 'typeCounts'));
     }
 
     /**
@@ -1545,6 +1568,10 @@ class ApplicantController extends Controller
         if ($request->filled('country')) {
             $query->where('country_id', $request->integer('country'));
         }
+        // Branch filter (card "LANDAS: Applicant Branch filter", 2026-10-22).
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->integer('branch'));
+        }
 
         $applicants = $query->get();
 
@@ -1635,6 +1662,9 @@ class ApplicantController extends Controller
         }
         if ($request->filled('country')) {
             $query->where('country_id', $request->integer('country'));
+        }
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->integer('branch'));
         }
 
         $applicants = $query->get();

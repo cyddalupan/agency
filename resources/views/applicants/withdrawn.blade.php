@@ -77,7 +77,7 @@
                         <span>🔍</span>
                         <input type="text" name="search" class="grow" placeholder="Search by name, email, or contact..."
                                value="{{ request('search') }}" />
-                        @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
+                        @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
                             <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
@@ -85,7 +85,7 @@
             </div>
 
             {{-- Row 2: Filters in a responsive grid --}}
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 items-end">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
                 {{-- Status filter (from pipeline chips) --}}
                 <div class="form-control w-full">
                     <select name="status" class="select select-bordered select-sm" onchange="this.form.submit()">
@@ -131,10 +131,22 @@
                     </select>
                 </div>
 
+                {{-- Branch filter (card "Applicant Branch filter", 2026-10-22) --}}
+                <div class="form-control w-full">
+                    <select name="branch" class="select select-bordered select-sm" onchange="this.form.submit()">
+                        <option value="">🏬 Branch</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ request('branch') == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Submit / Clear --}}
                 <div class="flex gap-2 items-end">
                     <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
-                    @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
+                    @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
                         <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
                     @endif
                 </div>
@@ -145,11 +157,11 @@
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm">
             <div class="flex flex-wrap gap-2">
                 <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
-                @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
+                @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->total() }} matching</span>
                 @endif
             </div>
-            <a href="{{ route('applicants.withdrawn.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
+            <a href="{{ route('applicants.withdrawn.export', request()->only(['search', 'status', 'gender', 'employer', 'country', 'branch'])) }}"
                class="btn btn-sm btn-outline btn-success gap-1">
                 <span>📥</span> Export to CSV
             </a>
@@ -292,7 +304,7 @@
             {{ $applicants->links() }}
         </div>
     @else
-        @php $hasFilters = request('search') || request('status') || request('gender') || request('employer') || request('country'); @endphp
+        @php $hasFilters = request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'); @endphp
         {{-- Empty state --}}
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">
