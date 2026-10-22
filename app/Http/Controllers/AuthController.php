@@ -65,6 +65,12 @@ class AuthController extends Controller
             // Agency user logged in on main domain - set tenant context
             $this->bindTenantFromUser();
 
+            // Portal accounts must ignore any stored "intended" URL — a prior
+            // visit to an agency page would bounce them straight back into the 403.
+            if ($this->isPortalAccount(auth()->user())) {
+                return redirect($this->homeFor(auth()->user()));
+            }
+
             return redirect()->intended(route('agency.dashboard'));
         }
 
@@ -128,6 +134,12 @@ class AuthController extends Controller
 
             $this->bindTenantFromUser();
 
+            // Portal accounts must ignore any stored "intended" URL — a prior
+            // visit to an agency page would bounce them straight back into the 403.
+            if ($this->isPortalAccount(auth()->user())) {
+                return redirect($this->homeFor(auth()->user()));
+            }
+
             return redirect()->intended(route('agency.dashboard'));
         }
 
@@ -160,6 +172,30 @@ class AuthController extends Controller
         // agency-branded login page. `/agency-login` remains only as a
         // restricted non-subdomain fallback for testing.
         return redirect()->route('login');
+    }
+
+    /** FRA (employer) and sponsor accounts have their own portal, not the agency panel. */
+    private function isPortalAccount(?User $user): bool
+    {
+        return in_array($user?->user_type, ['employer', 'sponsor'], true);
+    }
+
+    /**
+     * Landing route for a user who just authenticated on the agency login form.
+     *
+     * FRA (user_type employer) and sponsor accounts do NOT belong to the agency
+     * panel — ModuleAccess denies every agency module, so sending them to
+     * /agency/dashboard produced a bare 403 ("Your account does not have access
+     * to this module.") after a successful login (Mjolnir card "FINAS: FRA
+     * Feature", Josh report 2026-10-22). Send them to their own portal instead.
+     */
+    private function homeFor(?User $user): string
+    {
+        return match ($user?->user_type) {
+            'employer' => route('fra.dashboard'),
+            'sponsor'  => route('sponsor.dashboard'),
+            default    => route('agency.dashboard'),
+        };
     }
 
     private function bindTenantFromUser(): void
