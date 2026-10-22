@@ -432,20 +432,29 @@ class ExpenseRequestController extends Controller
 
     public function bulkTemplate()
     {
+        // Column set + order mirror the agency's own Expense sheet
+        // (Expense Template.csv on the Trello card "LANDAS: Expense &
+        // Receivable Bulk Upload - Formats").
+        //  - Ref #          : auto-generated per agency, ignored on import.
+        //  - User           : encoder (matched by name/email; blank = uploading user).
+        //  - Office         : same as the Branch column.
+        //  - Request Status : pending | approved | for_releasing | released | cancelled
+        //                     (blank = Pending).
         $headers = [
-            'Date', 'Charge', 'Account', 'Applicant', 'Agent', 'Country',
-            'Currency', 'Amount', 'Payment', 'Particular', 'Branch', 'Notes',
+            'Ref #', 'User', 'Date', 'Charge', 'Account', 'Applicant', 'Agent',
+            'Country', 'Currency', 'Amount', 'Payment', 'Particular/Description',
+            'Office', 'Request Status',
         ];
 
         $today = now()->toDateString();
         $sampleRows = [
             [
-                $today, 'Office', 'Rent', '', '', '',
-                'PHP', '1000.00', '0', 'Monthly office rent', '', '',
+                '', '', $today, 'Office', 'Rent', '', '',
+                '', 'PHP', '1000.00', '0', 'Monthly office rent', '', 'Pending',
             ],
             [
-                $today, 'Agent', 'Commission', '', 'Juan Dela Cruz', '',
-                'PHP', '2500.00', '', 'Agent commission payout', '', '',
+                '', '', $today, 'Agent', 'Commission', '', 'Juan Dela Cruz',
+                '', 'PHP', '2500.00', '', 'Agent commission payout', '', 'Pending',
             ],
         ];
 
@@ -458,6 +467,13 @@ class ExpenseRequestController extends Controller
 
             foreach ($sampleRows as $row) {
                 fputcsv($file, $row);
+            }
+
+            // Blank filler rows, like the agency's sheet, so there is room to
+            // type without inserting rows in Excel.
+            $blankRow = array_fill(0, count($headers), '');
+            for ($i = 0; $i < 25; $i++) {
+                fputcsv($file, $blankRow);
             }
 
             fclose($file);
@@ -578,6 +594,12 @@ class ExpenseRequestController extends Controller
             } else {
                 $charge = $chargeKey;
             }
+
+            // ---- Request Status (optional; blank = Pending) ----
+            $status = $this->resolveBulkStatus($d['status'] ?? '', $rowErrors);
+
+            // ---- User / encoder (optional; blank or unknown = importing user) ----
+            $encoderId = $this->resolveBulkUser($d['user'] ?? '', (int) $agencyId);
 
             // ---- Branch (by name; optional) ----
             $branchId = null;
@@ -709,6 +731,8 @@ class ExpenseRequestController extends Controller
 
             $validatedRows[] = [
                 'date'         => $date,
+                'status'       => $status,
+                'user_id'      => $encoderId,
                 'charge'       => $charge,
                 'branch_id'    => $branchId,
                 'agent_id'     => $agentId,
@@ -737,10 +761,10 @@ class ExpenseRequestController extends Controller
             foreach ($validatedRows as $data) {
                 $parent = ExpenseRequest::create([
                     'agency_id'    => $agencyId,
-                    'user_id'      => auth()->id(),
+                    'user_id'      => $data['user_id'] ?? auth()->id(),
                     'reference_no' => $this->nextReference($agencyId),
                     'date'         => $data['date'],
-                    'status'       => ExpenseRequest::STATUS_PENDING,
+                    'status'       => $data['status'],
                     'branch_id'    => $data['branch_id'],
                     'notes'        => $data['notes'],
                 ]);
@@ -750,8 +774,10 @@ class ExpenseRequestController extends Controller
                     'agency_id'          => $agencyId,
                     'user_id'            => auth()->id(),
                     'from_status'        => null,
-                    'to_status'          => ExpenseRequest::STATUS_PENDING,
-                    'note'               => 'Request created',
+                    'to_status'          => $data['status'],
+                    'note'               => $data['status'] === ExpenseRequest::STATUS_PENDING
+                        ? 'Request created'
+                        : 'Imported from CSV with status '.ExpenseRequest::STATUS_LABELS[$data['status']],
                 ]);
 
                 ExpenseRequestItem::create([
@@ -914,6 +940,66 @@ class ExpenseRequestController extends Controller
     }
 
     /**
+     * Map the template's Request Status column onto an expense request status.
+     * Blank means Pending, the default for a freshly imported row.
+     */
+    private function resolveBulkStatus($raw, array &$rowErrors): string
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return ExpenseRequest::STATUS_PENDING;
+        }
+
+        $key = mb_strtolower(preg_replace('/[^a-z0-9]+/i', '', $raw));
+        $map = [
+            'pending'      => ExpenseRequest::STATUS_PENDING,
+            'open'         => ExpenseRequest::STATUS_PENDING,
+            'approved'     => ExpenseRequest::STATUS_APPROVED,
+            'forreleasing' => ExpenseRequest::STATUS_FOR_RELEASING,
+            'releasing'    => ExpenseRequest::STATUS_FOR_RELEASING,
+            'released'     => ExpenseRequest::STATUS_RELEASED,
+            'paid'         => ExpenseRequest::STATUS_RELEASED,
+            'cancelled'    => ExpenseRequest::STATUS_CANCELLED,
+            'canceled'     => ExpenseRequest::STATUS_CANCELLED,
+        ];
+
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+
+        $rowErrors[] = "Request Status '{$raw}' not found. Use Pending, Approved, For Releasing, Released or Cancelled (or leave blank for Pending).";
+
+        return ExpenseRequest::STATUS_PENDING;
+    }
+
+    /**
+     * Resolve the template's User column to an encoder id (name or email).
+     * Blank / unmatched values fall back to the importing user so a migrated
+     * sheet with legacy usernames still imports.
+     */
+    private function resolveBulkUser($raw, int $agencyId): ?int
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return auth()->id();
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+        $needle = $norm($raw);
+
+        $users = User::where('agency_id', $agencyId)->get(['id', 'name', 'surname', 'email']);
+        foreach ($users as $user) {
+            if ($norm($user->email) === $needle
+                || $norm($user->name) === $needle
+                || $norm(trim($user->name.' '.$user->surname)) === $needle) {
+                return $user->id;
+            }
+        }
+
+        return auth()->id();
+    }
+
+    /**
      * Map normalized header labels to canonical expense request fields.
      *
      * @return array<string, string>
@@ -923,6 +1009,18 @@ class ExpenseRequestController extends Controller
         return [
             'date' => 'date',
             'transactiondate' => 'date',
+            // Display columns from the agency's sheet: Ref # is generated by the
+            // app; User / Request Status / Office are honoured when filled.
+            'ref' => 'ref',
+            'refno' => 'ref',
+            'referenceno' => 'ref',
+            'user' => 'user',
+            'encoder' => 'user',
+            'encodedby' => 'user',
+            'status' => 'status',
+            'requeststatus' => 'status',
+            'office' => 'branch',
+            'officename' => 'branch',
             'charge' => 'charge',
             'chargetype' => 'charge',
             'account' => 'account',

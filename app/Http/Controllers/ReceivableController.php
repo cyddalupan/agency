@@ -370,20 +370,27 @@ class ReceivableController extends Controller
 
     public function bulkTemplate()
     {
+        // Column set + order mirror the agency's own Receivable sheet
+        // (Receivable_Template.csv on the Trello card "LANDAS: Expense &
+        // Receivable Bulk Upload - Formats").
+        //  - Code #   : auto-generated per agency, ignored on import.
+        //  - User     : encoder (matched by name/email; blank = the uploading user).
+        //  - Status   : Pending | Received (blank = Pending).
+        //  - Deposit Bank: receivable's deposit (debit) account.
         $headers = [
-            'Date', 'Ref#/AR#', 'Agent', 'Applicant', 'Amount',
-            'Account', 'Debit Account', 'Type', 'Mode', 'Particular',
+            'Code #', 'Date', 'User', 'Status', 'Ref#/AR#', 'Applicant', 'Agent',
+            'Amount', 'Account', 'Particular', 'Mode', 'Type', 'Deposit Bank',
         ];
 
         $today = now()->toDateString();
         $sampleRows = [
             [
-                $today, 'AR-1001', 'Juan Dela Cruz', '', '15000.00',
-                'Placement Fee', 'Receivable', 'Full Payment', 'GCash', 'Partial placement fee',
+                '', $today, '', 'Pending', 'AR-1001', '', 'Juan Dela Cruz',
+                '15000.00', 'Placement Fee', 'Partial placement fee', 'GCash', 'Full Payment', 'Receivable',
             ],
             [
-                $today, '', 'Juan Dela Cruz', '', '5000.00',
-                'Monthly Collection', 'Dollar Request', 'Partial', 'Fund Transfer', 'Monthly collection',
+                '', $today, '', 'Pending', '', '', 'Juan Dela Cruz',
+                '5000.00', 'Monthly Collection', 'Monthly collection', 'Fund Transfer', 'Partial', 'Dollar Request',
             ],
         ];
 
@@ -484,6 +491,12 @@ class ReceivableController extends Controller
             $refAr = trim((string) ($d['ref_ar'] ?? ''));
             $refAr = $refAr !== '' ? $refAr : null;
 
+            // ---- Status (optional; blank = Pending) ----
+            $status = $this->resolveBulkStatus($d['status'] ?? '', $rowErrors);
+
+            // ---- User / encoder (optional; blank or unknown = importing user) ----
+            $encoderId = $this->resolveBulkUser($d['user'] ?? '', (int) $agencyId);
+
             // ---- Agent (required by full name) ----
             $agentId = null;
             $agentRaw = trim((string) ($d['agent'] ?? ''));
@@ -552,6 +565,8 @@ class ReceivableController extends Controller
 
             $validatedRows[] = [
                 'date'          => $date,
+                'status'        => $status,
+                'user_id'       => $encoderId,
                 'ref_ar'        => $refAr,
                 'agent_id'      => $agentId,
                 'applicant_id'  => $applicantId,
@@ -578,12 +593,12 @@ class ReceivableController extends Controller
             foreach ($validatedRows as $data) {
                 Receivable::create([
                     'agency_id'     => $agencyId,
-                    'user_id'       => auth()->id(),
+                    'user_id'       => $data['user_id'] ?? auth()->id(),
                     'agent_id'      => $data['agent_id'],
                     'applicant_id'  => $data['applicant_id'],
                     'code'          => Receivable::nextCode($agencyId),
                     'date'          => $data['date'],
-                    'status'        => Receivable::STATUS_PENDING,
+                    'status'        => $data['status'],
                     'ref_ar'        => $data['ref_ar'],
                     'amount'        => $data['amount'],
                     'account'       => $data['account'],
@@ -604,6 +619,63 @@ class ReceivableController extends Controller
      * Mode) case/space-insensitively against its canonical list. Blank is
      * allowed (nullable columns); unknown values push a row error.
      */
+    /**
+     * Map the template's Status column onto a receivable status. Blank means
+     * Pending, which is what a freshly imported row defaults to.
+     */
+    private function resolveBulkStatus($raw, array &$rowErrors): string
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return Receivable::STATUS_PENDING;
+        }
+
+        $key = mb_strtolower(preg_replace('/[^a-z0-9]+/i', '', $raw));
+        $map = [
+            'pending'   => Receivable::STATUS_PENDING,
+            'unpaid'    => Receivable::STATUS_PENDING,
+            'open'      => Receivable::STATUS_PENDING,
+            'received'  => Receivable::STATUS_RECEIVED,
+            'paid'      => Receivable::STATUS_RECEIVED,
+            'collected' => Receivable::STATUS_RECEIVED,
+        ];
+
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+
+        $rowErrors[] = "Status '{$raw}' not found. Use 'Pending' or 'Received' (or leave blank for Pending).";
+
+        return Receivable::STATUS_PENDING;
+    }
+
+    /**
+     * Resolve the template's User column to an encoder id (name or email).
+     * Blank / unmatched values fall back to the importing user so a migrated
+     * sheet with legacy usernames still imports.
+     */
+    private function resolveBulkUser($raw, int $agencyId): ?int
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return auth()->id();
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+        $needle = $norm($raw);
+
+        $users = User::where('agency_id', $agencyId)->get(['id', 'name', 'surname', 'email']);
+        foreach ($users as $user) {
+            if ($norm($user->email) === $needle
+                || $norm($user->name) === $needle
+                || $norm(trim($user->name.' '.$user->surname)) === $needle) {
+                return $user->id;
+            }
+        }
+
+        return auth()->id();
+    }
+
     private function resolveEnumValue($raw, array $byKey, string $label, array &$rowErrors): ?string
     {
         $raw = trim((string) $raw);
@@ -770,6 +842,13 @@ class ReceivableController extends Controller
         return [
             'date' => 'date',
             'transactiondate' => 'date',
+            // Display columns from the agency's sheet: Code # is generated by
+            // the app, User/Status are honoured when filled.
+            'code' => 'code',
+            'user' => 'user',
+            'encoder' => 'user',
+            'encodedby' => 'user',
+            'status' => 'status',
             'refar' => 'ref_ar',
             'arref' => 'ref_ar',
             'refno' => 'ref_ar',
@@ -786,6 +865,8 @@ class ReceivableController extends Controller
             'debitaccount' => 'debit_account',
             'debit' => 'debit_account',
             'depositaccount' => 'debit_account',
+            'depositbank' => 'debit_account',
+            'bank' => 'debit_account',
             'type' => 'type',
             'paymenttype' => 'type',
             'mode' => 'mode',
