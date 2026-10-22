@@ -15,16 +15,21 @@ class DashboardController extends Controller
         $agency = tenant_agency();
         $user = auth()->user();
 
-        // Get status counts
+        // Get status counts. Exclude withdrawn/repat statuses, because the
+        // applicants page (where these chips link) excludes them too — a chip
+        // that says 216 but opens 0 rows is the "list disappeared" bug.
+        // (Toybits filtering fix, 2026-10-22.)
         $statusCounts = Applicant::query()
+            ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
+            ->whereNotIn('status_code', [35, 38, 50])
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
         // Get employer counts for pipeline
         $employerCounts = Employer::select(['id', 'name'])
-            ->withCount(['applicants' => fn($q) => $q->whereNotNull('status_code'),
+            ->withCount(['applicants' => fn($q) => $q->forBranchUser()->whereNotNull('status_code')->whereNotIn('status_code', [35, 38, 50]),
         ])->orderByDesc('applicants_count')->limit(10)->get();
 
         // Get recent applicants, optionally filtered by status and/or employer

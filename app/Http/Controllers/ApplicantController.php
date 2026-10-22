@@ -41,10 +41,16 @@ class ApplicantController extends Controller
 
         // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD is shown first,
         // but SKILLED stays the default landing tab (backward compatible).
-        $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
-            ? Applicant::TYPE_HOUSEHOLD
-            : Applicant::TYPE_SKILLED;
-        $query->ofType($type);
+        // "all" is the combined view (no type filter) so dashboard chips can
+        // land on a list whose size equals the count they displayed.
+        // (Toybits filtering fix, 2026-10-22.)
+        $type = $request->input('type');
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+            $type = Applicant::TYPE_SKILLED;
+        }
+        if ($type !== 'all') {
+            $query->ofType($type);
+        }
 
         // Search by name — multi-word aware, so "Sofia Reyes" matches a row
         // whose first/last names live in separate columns. (Toybits 2026-10-14.)
@@ -77,15 +83,20 @@ class ApplicantController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        // Get status counts for all applicants (ignoring filters), excluding
-        // the withdrawn & repat statuses.
-        $statusCounts = Applicant::query()
+        // Get status counts for the active type tab, excluding the withdrawn &
+        // repat statuses. Counts must be scoped by type: the chip says how many
+        // rows you get when you click it, so counting every type made
+        // "For Passporting 694" open a SKILLED tab with 4 rows.
+        // (Toybits filtering fix, 2026-10-22.)
+        $statusCountQuery = Applicant::query()
             ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
-            ->whereNotIn('status_code', $withdrawnStatuses)
-            ->groupBy('status_code')
-            ->pluck('total', 'status_code');
+            ->whereNotIn('status_code', $withdrawnStatuses);
+        if ($type !== 'all') {
+            $statusCountQuery->ofType($type);
+        }
+        $statusCounts = $statusCountQuery->groupBy('status_code')->pluck('total', 'status_code');
 
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
@@ -107,6 +118,7 @@ class ApplicantController extends Controller
         $typeCounts = [
             Applicant::TYPE_SKILLED => (clone $base)->ofType(Applicant::TYPE_SKILLED)->count(),
             Applicant::TYPE_HOUSEHOLD => (clone $base)->ofType(Applicant::TYPE_HOUSEHOLD)->count(),
+            'all' => (clone $base)->count(),
         ];
 
         return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'tableColumns', 'type', 'typeCounts'));
@@ -130,11 +142,14 @@ class ApplicantController extends Controller
             ->whereIn('status_code', $withdrawnStatuses);
 
         // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first tab,
-        // SKILLED remains the default landing tab.
-        $type = $request->input('type') === Applicant::TYPE_HOUSEHOLD
-            ? Applicant::TYPE_HOUSEHOLD
-            : Applicant::TYPE_SKILLED;
-        $query->ofType($type);
+        // SKILLED remains the default landing tab. "all" = combined view.
+        $type = $request->input('type');
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+            $type = Applicant::TYPE_SKILLED;
+        }
+        if ($type !== 'all') {
+            $query->ofType($type);
+        }
 
         // Search by name — multi-word aware (see index()). (Toybits 2026-10-14.)
         if ($request->filled('search')) {
@@ -163,14 +178,17 @@ class ApplicantController extends Controller
 
         $statusCodes = StatusCode::whereIn('code', $withdrawnStatuses)->orderBy('sort_order')->get();
 
-        // Get status counts for the three statuses (ignoring filters)
-        $statusCounts = Applicant::query()
+        // Get status counts for the three statuses, scoped to the active type
+        // tab so chip counts match the rows they open.
+        $statusCountQuery = Applicant::query()
             ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereIn('status_code', $withdrawnStatuses)
-            ->whereNotNull('status_code')
-            ->groupBy('status_code')
-            ->pluck('total', 'status_code');
+            ->whereNotNull('status_code');
+        if ($type !== 'all') {
+            $statusCountQuery->ofType($type);
+        }
+        $statusCounts = $statusCountQuery->groupBy('status_code')->pluck('total', 'status_code');
 
         $employers = Employer::orderBy('name')->get(['id', 'name']);
         $countries = Country::orderBy('name')->get(['id', 'name']);
@@ -184,6 +202,7 @@ class ApplicantController extends Controller
         $typeCounts = [
             Applicant::TYPE_SKILLED => (clone $base)->ofType(Applicant::TYPE_SKILLED)->count(),
             Applicant::TYPE_HOUSEHOLD => (clone $base)->ofType(Applicant::TYPE_HOUSEHOLD)->count(),
+            'all' => (clone $base)->count(),
         ];
 
         return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'type', 'typeCounts'));
@@ -526,6 +545,11 @@ class ApplicantController extends Controller
         $civilStatusMap = $nameMap(CivilStatus::all());
         $countryMap = $nameMap(Country::all());
         $positionMap = $nameMap(Position::all());
+        // Type is captured at upload time (same rule as the create form), so
+        // bulk rows no longer land with applicant_type = NULL and drift
+        // between tabs when a position is re-categorised.
+        // (Toybits filtering fix, 2026-10-22.)
+        $householdPositionIds = Position::household()->pluck('id')->all();
 
         $statusByLabel = [];
         $statusByCode = [];
@@ -793,6 +817,9 @@ class ApplicantController extends Controller
                 'civil_status_id' => $civilStatusId,
                 'country_id' => $countryId,
                 'position_id' => $positionId,
+                'applicant_type' => ($positionId && in_array((int) $positionId, $householdPositionIds, true))
+                    ? Applicant::TYPE_HOUSEHOLD
+                    : Applicant::TYPE_SKILLED,
                 'employer_id' => $employerId,
                 'agent_id' => $agentId,
                 'branch_id' => $branchId,
@@ -1488,10 +1515,21 @@ class ApplicantController extends Controller
         $withdrawnStatuses = [35, 38, 50];
 
         $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+            ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
 
-        // Apply the same filters as index()
+        // Apply the same filters as index() — including the type tab and
+        // country, which the export link was already sending but this method
+        // ignored, and the branch scope, which kept branch users from
+        // exporting other branches. (Toybits filtering fix, 2026-10-22.)
+        $type = $request->input('type');
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+            $type = Applicant::TYPE_SKILLED;
+        }
+        if ($type !== 'all') {
+            $query->ofType($type);
+        }
         if ($request->filled('search')) {
             $query->searchName($request->input('search'));
         }
@@ -1503,6 +1541,9 @@ class ApplicantController extends Controller
         }
         if ($request->filled('employer')) {
             $query->where('employer_id', $request->integer('employer'));
+        }
+        if ($request->filled('country')) {
+            $query->where('country_id', $request->integer('country'));
         }
 
         $applicants = $query->get();
@@ -1568,10 +1609,18 @@ class ApplicantController extends Controller
         $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
 
         $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+            ->forBranchUser()
             ->whereIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
 
-        // Apply the same filters as withdrawn()
+        // Apply the same filters as withdrawn() — type + country included.
+        $type = $request->input('type');
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+            $type = Applicant::TYPE_SKILLED;
+        }
+        if ($type !== 'all') {
+            $query->ofType($type);
+        }
         if ($request->filled('search')) {
             $query->searchName($request->input('search'));
         }
@@ -1583,6 +1632,9 @@ class ApplicantController extends Controller
         }
         if ($request->filled('employer')) {
             $query->where('employer_id', $request->integer('employer'));
+        }
+        if ($request->filled('country')) {
+            $query->where('country_id', $request->integer('country'));
         }
 
         $applicants = $query->get();

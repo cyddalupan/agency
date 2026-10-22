@@ -16,17 +16,19 @@ class AgencyDashboardController extends Controller
         $user = auth()->user();
         $agency = $user->agency;
 
-        // Get status counts
+        // Get status counts. Exclude withdrawn/repat statuses so the chip
+        // count matches the applicants page it opens. (Toybits 2026-10-22.)
         $statusCounts = Applicant::query()
             ->forBranchUser()
             ->selectRaw('status_code, count(*) as total')
             ->whereNotNull('status_code')
+            ->whereNotIn('status_code', [35, 38, 50])
             ->groupBy('status_code')
             ->pluck('total', 'status_code');
 
         // Get employer counts for pipeline (branch-scoped for branch accounts)
         $employerCounts = Employer::select(['id', 'name'])
-            ->withCount(['applicants' => fn($q) => $q->forBranchUser()->whereNotNull('status_code'),
+            ->withCount(['applicants' => fn($q) => $q->forBranchUser()->whereNotNull('status_code')->whereNotIn('status_code', [35, 38, 50]),
         ])->orderByDesc('applicants_count')->limit(10)->get();
 
         // Get recent applicants, optionally filtered by status and/or employer

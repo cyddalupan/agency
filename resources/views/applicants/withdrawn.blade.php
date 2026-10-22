@@ -48,7 +48,7 @@
 
     {{-- (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first, prominent coloured box. --}}
     @php $activeType = $type ?? 'skilled'; @endphp
-    <div class="grid grid-cols-2 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
+    <div class="grid grid-cols-3 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
         <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
            class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'household' ? 'bg-primary text-primary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
             <span class="text-2xl">🏠</span><span>HOUSEHOLD</span>
@@ -59,10 +59,15 @@
             <span class="text-2xl">💼</span><span>SKILLED</span>
             <span class="badge badge-lg {{ $activeType === 'skilled' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['skilled'] ?? 0 }}</span>
         </a>
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'all'])) }}"
+           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'all' ? 'bg-neutral text-neutral-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl">👥</span><span>ALL TYPES</span>
+            <span class="badge badge-lg {{ $activeType === 'all' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['all'] ?? 0 }}</span>
+        </a>
     </div>
 
-    @if($applicants->count())
-        {{-- Search & Filters --}}
+    {{-- Filters remain visible on zero results (see index()). --}}
+    {{-- Search & Filters --}}
         <form method="GET" action="{{ route('applicants.withdrawn') }}" class="mb-4" id="filter-form">
             <input type="hidden" name="type" value="{{ $type ?? 'skilled' }}">
             {{-- Row 1: Search bar full width --}}
@@ -73,7 +78,7 @@
                         <input type="text" name="search" class="grow" placeholder="Search by name, email, or contact..."
                                value="{{ request('search') }}" />
                         @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
-                            <a href="{{ route('applicants.withdrawn') }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
+                            <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
                 </div>
@@ -130,7 +135,7 @@
                 <div class="flex gap-2 items-end">
                     <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
                     @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
-                        <a href="{{ route('applicants.withdrawn') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                        <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
                     @endif
                 </div>
             </div>
@@ -141,7 +146,7 @@
             <div class="flex flex-wrap gap-2">
                 <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
                 @if(request('search') || request('status') || request('gender') || request('employer') || request('country'))
-                    <span class="badge badge-warning badge-lg">🔍 {{ $applicants->count() }} matching</span>
+                    <span class="badge badge-warning badge-lg">🔍 {{ $applicants->total() }} matching</span>
                 @endif
             </div>
             <a href="{{ route('applicants.withdrawn.export', request()->only(['search', 'status', 'gender', 'employer', 'country'])) }}"
@@ -150,6 +155,7 @@
             </a>
         </div>
 
+        @if($applicants->count())
         {{-- Table --}}
         <div class="card bg-base-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
@@ -286,21 +292,30 @@
             {{ $applicants->links() }}
         </div>
     @else
+        @php $hasFilters = request('search') || request('status') || request('gender') || request('employer') || request('country'); @endphp
         {{-- Empty state --}}
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">
-                <span class="text-6xl mb-4">👤</span>
-                <h3 class="text-xl font-bold mb-2">No applicants found</h3>
+                <span class="text-6xl mb-4">{{ $hasFilters ? '🔍' : '👤' }}</span>
+                <h3 class="text-xl font-bold mb-2">{{ $hasFilters ? 'No applicants match your filters' : 'No applicants found' }}</h3>
                 <p class="opacity-60 mb-6 max-w-md">
-                    No applicants currently have Cancel, Backout, or Repatriated status.
+                    {{ $hasFilters
+                        ? 'Try a different keyword or clear the filters to see the full list.'
+                        : 'No applicants currently have Cancel, Backout, or Repatriated status.' }}
                 </p>
                 <div class="flex flex-wrap justify-center gap-3">
-                    <a href="{{ route('applicants.index') }}" class="btn btn-primary btn-lg">
-                        <span>👥</span> Go to All Applicants
-                    </a>
-                    <a href="{{ route('employers.create') }}" class="btn btn-outline btn-lg">
-                        <span>🏢</span> Add an Employer First
-                    </a>
+                    @if($hasFilters)
+                        <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-primary btn-lg">
+                            <span>✕</span> Clear Filters
+                        </a>
+                    @else
+                        <a href="{{ route('applicants.index') }}" class="btn btn-primary btn-lg">
+                            <span>👥</span> Go to All Applicants
+                        </a>
+                        <a href="{{ route('employers.create') }}" class="btn btn-outline btn-lg">
+                            <span>🏢</span> Add an Employer First
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

@@ -194,7 +194,7 @@
             <h3 class="card-title text-lg mb-4">📋 Deployment Pipeline</h3>
             <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2">By Status</p>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('applicants.index') }}"
+                <a href="{{ route('applicants.index', ['type' => 'all']) }}"
                    class="badge badge-lg {{ request()->query('status') === null && request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">
                     📋 All
                     <span class="ml-1">{{ $statusCounts->sum() }}</span>
@@ -202,7 +202,7 @@
                 @foreach($statusCodes as $sc)
                     @php $count = $statusCounts->get($sc->code, 0); @endphp
                     @if($count > 0)
-                    <a href="{{ route('applicants.index', ['status' => $sc->code]) }}"
+                    <a href="{{ route('applicants.index', ['status' => $sc->code, 'type' => 'all']) }}"
                        class="badge badge-lg {{ request('status') === (string)$sc->code ? 'badge-primary' : '' }}" style="{{ request('status') === (string)$sc->code ? '' : 'background-color: ' . ($sc->color ?? '#e5e7eb') . '; color: #fff;' }}">
                         {{ $sc->label }}
                         <span class="ml-1">{{ $count }}</span>
@@ -214,13 +214,13 @@
             @if(isset($employerCounts) && $employerCounts->isNotEmpty())
             <p class="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2 mt-4">By FRA</p>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('applicants.index', ['status' => request('status')]) }}"
+                <a href="{{ route('applicants.index', ['status' => request('status'), 'type' => 'all']) }}"
                    class="badge badge-lg {{ request()->query('employer') === null ? 'badge-primary' : 'badge-ghost' }}">
                     🏢 All
                 </a>
                 @foreach($employerCounts as $ec)
                     @if($ec->applicants_count > 0)
-                    <a href="{{ route('applicants.index', ['employer' => $ec->id, 'status' => request('status')]) }}"
+                    <a href="{{ route('applicants.index', ['employer' => $ec->id, 'status' => request('status'), 'type' => 'all']) }}"
                        class="badge badge-lg {{ (int)request('employer') === $ec->id ? 'badge-secondary' : 'badge-ghost' }}">
                         {{ $ec->name }}
                         <span class="ml-1">{{ $ec->applicants_count }}</span>

@@ -118,13 +118,28 @@ class Applicant extends Model implements AuthenticatableContract
             return $query;
         }
 
+        // Strip punctuation from each token so "Cruz," / "Jr." / "Reyes;" still
+        // match. Each token may hit any identity column, matching the search
+        // box placeholder (name, email, contact). (Toybits filtering fix,
+        // 2026-10-22.)
         $tokens = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY);
+        $tokens = array_values(array_filter(array_map(
+            fn ($token) => trim($token, " \t\n\r\0\x0B.,;:"),
+            $tokens
+        )));
+
+        if ($tokens === []) {
+            return $query;
+        }
 
         foreach ($tokens as $token) {
             $query->where(function ($q) use ($token) {
                 $q->where('first_name', 'like', "%{$token}%")
                     ->orWhere('last_name', 'like', "%{$token}%")
-                    ->orWhere('middle_name', 'like', "%{$token}%");
+                    ->orWhere('middle_name', 'like', "%{$token}%")
+                    ->orWhere('suffix', 'like', "%{$token}%")
+                    ->orWhere('email', 'like', "%{$token}%")
+                    ->orWhere('contact', 'like', "%{$token}%");
             });
         }
 

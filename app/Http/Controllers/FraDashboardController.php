@@ -49,7 +49,7 @@ class FraDashboardController extends Controller
 
         // KPI counts for dashboard (match actual tab status code ranges)
         $selected = $this->applicants($user)->whereIn('status_code', [4, 5, 6])->count();
-        $onprocess = $this->applicants($user)->whereIn('status_code', [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,29,30,31,32,39,40,41,42])->count();
+        $onprocess = $this->applicants($user)->whereIn('status_code', [7,9,10,11,12,13,14,15,16,17,18,19,20,29,30,31,32,39,40,41,42,43,44,51])->count();
         $flight = $this->applicants($user)->whereIn('status_code', [21, 22])->count();
         $deployed = $this->applicants($user)->whereIn('status_code', [8, 33, 34])->count();
 
@@ -208,7 +208,7 @@ class FraDashboardController extends Controller
         $user = Auth::user();
 
         // On-process status codes: document processing through visa/completion
-        $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
+        $onProcessCodes = [7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 29, 30, 31, 32, 39, 40, 41, 42, 43, 44, 51];
 
         $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
@@ -298,7 +298,7 @@ class FraDashboardController extends Controller
     {
         $user = Auth::user();
 
-        $onProcessCodes = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 39, 40, 41, 42];
+        $onProcessCodes = [7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 29, 30, 31, 32, 39, 40, 41, 42, 43, 44, 51];
 
         $applicants = $this->applicants($user)->with(['position', 'passport', 'workExperiences', 'contractRecords'])
             ->whereIn('status_code', $onProcessCodes)
