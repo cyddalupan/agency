@@ -342,6 +342,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Employer routes (admin, super_admin only)
     Route::group([], function () {
         // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an employer id)
+        Route::get('employers/export', [EmployerController::class, 'export'])->name('employers.export');
         Route::get('employers/bulk', [EmployerController::class, 'bulkUpload'])->name('employers.bulk');
         Route::get('employers/bulk/template', [EmployerController::class, 'bulkTemplate'])->name('employers.bulk.template');
         Route::post('employers/bulk/import', [EmployerController::class, 'bulkImport'])->name('employers.bulk.import');
@@ -396,6 +397,13 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::resource('languages', \App\Http\Controllers\LanguageController::class);
         Route::resource('skills', \App\Http\Controllers\SkillController::class);
         Route::resource('countries', \App\Http\Controllers\CountryController::class);
+        // Positions CSV: define fixed paths before the resource so
+        // /positions/export and /positions/bulk are not captured as {position}.
+        Route::get('positions/export', [\App\Http\Controllers\PositionController::class, 'export'])->name('positions.export');
+        Route::get('positions/bulk', [\App\Http\Controllers\PositionController::class, 'bulkUpload'])->name('positions.bulk');
+        Route::get('positions/bulk/template', [\App\Http\Controllers\PositionController::class, 'bulkTemplate'])->name('positions.bulk.template');
+        Route::post('positions/bulk/import', [\App\Http\Controllers\PositionController::class, 'bulkImport'])->name('positions.bulk.import');
+
         Route::resource('positions', \App\Http\Controllers\PositionController::class);
         Route::resource('status-codes', \App\Http\Controllers\StatusCodeController::class);
     });

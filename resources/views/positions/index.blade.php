@@ -3,7 +3,7 @@
 @section('title', 'Positions')
 
 @section('content')
-<div class="max-w-3xl mx-auto">
+<div class="max-w-5xl mx-auto">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold flex items-center gap-2">
@@ -11,7 +11,13 @@
             </h2>
             <p class="opacity-60 text-sm mt-1">Manage available job positions</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('positions.export') }}" class="btn btn-outline gap-1" title="Export all positions to CSV">
+                <span>📤</span> Export CSV
+            </a>
+            <a href="{{ route('positions.bulk') }}" class="btn btn-outline gap-1" title="Bulk upload positions from CSV">
+                <span>📥</span> Bulk Upload
+            </a>
             <a href="{{ route('positions.create') }}" class="btn btn-primary">
                 <span>➕</span> New Position
             </a>
@@ -32,13 +38,26 @@
                     <thead>
                         <tr class="bg-base-200/80">
                             <th>Name</th>
+                            <th>Category</th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($positions as $position)
                         <tr class="hover transition-colors">
-                            <td class="font-medium">{{ $position->name }}</td>
+                            <td>
+                                <div class="font-medium">{{ $position->name }}</div>
+                                @if($position->description)
+                                    <div class="text-xs opacity-60">{{ \Illuminate\Support\Str::limit($position->description, 90) }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                @if(($position->category ?? 'skilled') === 'household')
+                                    <span class="badge badge-sm badge-warning">🏠 Household</span>
+                                @else
+                                    <span class="badge badge-sm badge-info">💼 Skilled</span>
+                                @endif
+                            </td>
                             <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('positions.edit', $position) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">✏️</a>

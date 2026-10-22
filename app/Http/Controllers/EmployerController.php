@@ -130,6 +130,50 @@ class EmployerController extends Controller
         }
     }
 
+    /**
+     * Export the FRA list as CSV (same columns as the bulk template, plus the
+     * login account status so it can be audited in one file).
+     */
+    public function export()
+    {
+        $employers = Employer::with(['country', 'users'])
+            ->orderBy('name')
+            ->get();
+
+        $callback = function () use ($employers) {
+            $file = fopen('php://output', 'w');
+
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, [
+                'Company Name', 'Company No.', 'Status', 'Contact Person',
+                'Contact', 'Email', 'Address', 'Country', 'Login Email', 'Login Status',
+            ]);
+
+            foreach ($employers as $employer) {
+                $login = $employer->users->first();
+                fputcsv($file, [
+                    $employer->name,
+                    $employer->company_no ?? '',
+                    ucfirst($employer->status ?? 'active'),
+                    $employer->contact_person ?? '',
+                    $employer->contact ?? '',
+                    $employer->email ?? '',
+                    $employer->address ?? '',
+                    $employer->country?->name ?? '',
+                    $login?->email ?? '',
+                    $login?->status ?? '',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type'        => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename=fras.csv',
+        ]);
+    }
+
     // ---------------------------------------------------------------------
     // Bulk CSV upload (mirrors the applicant bulk upload flow)
     // ---------------------------------------------------------------------

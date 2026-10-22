@@ -17,6 +17,9 @@
             <a href="{{ route('employers.create') }}" class="btn btn-primary">
                 <span>➕</span> Add FRA
             </a>
+            <a href="{{ route('employers.export') }}" class="btn btn-outline gap-1" title="Export all FRAs to CSV">
+                <span>📤</span> Export CSV
+            </a>
             <a href="{{ route('employers.bulk') }}" class="btn btn-outline gap-1" title="Bulk upload FRAs from CSV">
                 <span>📥</span> Bulk Upload
             </a>

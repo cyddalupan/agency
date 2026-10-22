@@ -41,6 +41,16 @@
             </fieldset>
 
             <fieldset class="fieldset">
+                <legend class="fieldset-legend">📂 Category</legend>
+                <select name="category" class="select w-full">
+                    <option value="skilled" @selected(old('category', $position->category ?? 'skilled') === 'skilled')>💼 Skilled</option>
+                    <option value="household" @selected(old('category', $position->category ?? 'skilled') === 'household')>🏠 Household</option>
+                </select>
+                <p class="text-xs opacity-60 mt-1">Household positions are grouped under the Household tab in Applicants.</p>
+                @error('category') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            </fieldset>
+
+            <fieldset class="fieldset">
                 <legend class="fieldset-legend">📝 Description</legend>
                 <textarea name="description" class="textarea w-full" rows="4"
                     placeholder="Describe this position...">{{ old('description', $position->description) }}</textarea>

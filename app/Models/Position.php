@@ -25,4 +25,14 @@ class Position extends Model
             $q->where('category', self::CATEGORY_SKILLED)->orWhereNull('category');
         });
     }
+
+    public function applicants()
+    {
+        return $this->hasMany(Applicant::class);
+    }
+
+    public function jobPositions()
+    {
+        return $this->hasMany(JobPosition::class);
+    }
 }
