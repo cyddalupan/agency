@@ -13,8 +13,13 @@ class CompanyProfileController extends Controller
     /**
      * Show the agency's Company Profile page (read-only view), one tab at a time.
      */
-    public function show(Request $request, string $tab = CompanyProfileTabs::COMPANY_PROFILE)
+    public function show(Request $request, ?string $tab = null)
     {
+        // Legacy links pass the tab as a query string (?tab=organizational-chart)
+        // because /company-profile has no {tab} segment; without this they all
+        // fell back to tab 1. (Card "FINAS: QMS PREPARATION" follow-up, 2026-10-22.)
+        $tab = (string) ($tab ?: $request->query('tab') ?: CompanyProfileTabs::COMPANY_PROFILE);
+
         $agency = resolve_agency();
         abort_if(! $agency, 403, 'No agency context.');
         abort_unless(CompanyProfileTabs::isValid($tab), 404);
@@ -35,8 +40,16 @@ class CompanyProfileController extends Controller
     /**
      * WYSIWYG editor for one tab of the Company Profile page.
      */
-    public function edit(string $tab = CompanyProfileTabs::COMPANY_PROFILE)
+    public function edit(Request $request, ?string $tab = null)
     {
+        // Honour ?tab= as well as the {tab} route segment. The "Edit this tab"
+        // button used route('company-profile.edit', ['tab' => $slug]), which
+        // only ever produced /company-profile/edit?tab=... — and because this
+        // method ignored the query string, every tab opened (and then saved)
+        // the Company Profile tab's content over the tab being edited.
+        // (Josh report 2026-10-22: "Hndi ko maedit ibang tab".)
+        $tab = (string) ($tab ?: $request->query('tab') ?: CompanyProfileTabs::COMPANY_PROFILE);
+
         $agency = resolve_agency();
         abort_if(! $agency, 403, 'No agency context.');
         abort_unless(CompanyProfileTabs::isValid($tab), 404);

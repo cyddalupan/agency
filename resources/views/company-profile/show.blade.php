@@ -13,7 +13,7 @@
             </p>
         </div>
         @if(in_array(auth()->user()->user_type, ['admin', 'super_admin']))
-            <a href="{{ route('company-profile.edit', ['tab' => $activeTab]) }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('company-profile.tab.edit', ['tab' => $activeTab]) }}" class="btn btn-primary btn-sm" data-edit-tab="{{ $activeTab }}">
                 ✏️ Edit this tab
             </a>
         @endif

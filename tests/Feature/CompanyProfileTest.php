@@ -284,4 +284,56 @@ class CompanyProfileTest extends TestCase
             'image' => UploadedFile::fake()->image('chart.png'),
         ])->assertForbidden();
     }
+
+    #[Test]
+    public function edit_link_opens_the_tab_that_was_clicked(): void
+    {
+        // Josh report 2026-10-22: "Hndi ko maedit ibang tab" — the "Edit this
+        // tab" button produced /company-profile/edit?tab=..., which the
+        // controller ignored, so every tab opened the Company Profile editor.
+        $admin = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
+
+        foreach (['organizational-chart', 'recruitment-process', 'system-user-guide'] as $tab) {
+            $response = $this->actingAs($admin)->get(route('company-profile.edit', ['tab' => $tab]));
+            $response->assertOk();
+            $response->assertViewIs('company-profile.edit');
+            $this->assertSame($tab, $response->viewData('activeTab'), "edit() opened the wrong tab for {$tab}");
+        }
+    }
+
+    #[Test]
+    public function edit_button_and_tab_links_point_at_the_tab_edit_routes(): void
+    {
+        $admin = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('company-profile.tab', ['tab' => 'organizational-chart']));
+        $response->assertOk();
+        $response->assertSee(route('company-profile.tab.edit', ['tab' => 'organizational-chart']), false);
+    }
+
+    #[Test]
+    public function saving_via_the_tab_route_stores_that_tab_only(): void
+    {
+        $admin = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
+        $this->agency->update(['company_profile' => '<p>Tab one body</p>']);
+
+        $this->actingAs($admin)
+            ->post(route('company-profile.tab.update', ['tab' => 'recruitment-process']), [
+                'content' => '<p>Five step process</p>',
+            ])
+            ->assertRedirect(route('company-profile.tab', ['tab' => 'recruitment-process']));
+
+        $this->agency->refresh();
+        $this->assertStringContainsString('Five step process', (string) $this->agency->pageTabContent('recruitment-process'));
+        $this->assertStringContainsString('Tab one body', (string) $this->agency->company_profile);
+    }
 }

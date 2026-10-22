@@ -18,7 +18,7 @@
 @section('content')
 <div class="max-w-5xl mx-auto">
     <div class="mb-6">
-        <a href="{{ route('company-profile.show', ['tab' => $activeTab]) }}" class="link link-secondary text-sm">← Back to Company Profile</a>
+        <a href="{{ route('company-profile.tab', ['tab' => $activeTab]) }}" class="link link-secondary text-sm">← Back to Company Profile</a>
     </div>
 
     <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 p-4">
@@ -33,7 +33,7 @@
     <div role="tablist" class="tabs tabs-boxed flex flex-wrap gap-1 mb-4 bg-base-200 p-1 rounded-xl">
         @foreach($tabs as $slug => $meta)
             <a role="tab"
-               href="{{ route('company-profile.edit', ['tab' => $slug]) }}"
+               href="{{ route('company-profile.tab.edit', ['tab' => $slug]) }}"
                data-tab-link="{{ $slug }}"
                class="tab tab-lg {{ $activeTab === $slug ? 'tab-active font-semibold' : '' }}">
                 <span class="mr-1">{{ $meta['icon'] }}</span>{{ $meta['label'] }}
@@ -82,7 +82,7 @@
                     <span class="loading loading-spinner loading-xs"></span> Uploading image…
                 </span>
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('company-profile.show', ['tab' => $activeTab]) }}" class="btn btn-ghost" id="cancel-link">Cancel</a>
+                    <a href="{{ route('company-profile.tab', ['tab' => $activeTab]) }}" class="btn btn-ghost" id="cancel-link">Cancel</a>
                     <button type="submit" class="btn btn-primary">💾 Save {{ $tabs[$activeTab]['label'] ?? 'page' }}</button>
                 </div>
             </div>
