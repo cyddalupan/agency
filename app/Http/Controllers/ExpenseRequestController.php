@@ -387,6 +387,7 @@ class ExpenseRequestController extends Controller
                         'currency'           => $line['currency'],
                         'amount'             => $line['amount'],
                         'payment'            => $line['payment'] ?? 0,
+                        'status'             => ExpenseRequest::STATUS_PENDING,
                         'account_id'         => $account->id,
                         'particular'         => $line['particular'] ?? null,
                         'file_path'          => $this->storeLineFile($request, $index),
@@ -881,6 +882,7 @@ class ExpenseRequestController extends Controller
                     'currency'           => $data['currency'],
                     'amount'             => $data['amount'],
                     'payment'            => $data['payment'] ?? 0,
+                    'status'             => $data['status'],
                     'account_id'         => $data['account_id'],
                     'particular'         => $data['particular'],
                     'file_path'          => null,
@@ -1284,56 +1286,164 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * Admin-only batch status change (Toybits 2026-08-31): one status applied to
-     * many selected requests at once via the checkboxes on the index page.
-     * Each changed request gets its own history entry + Paid-entry sync, inside
-     * a single transaction. Requests already in the target status are skipped.
+     * Admin-only batch status change (Toybits 2026-08-31), per transaction
+     * (Cyd 2026-10-23): one expense request can hold several transactions and
+     * they are approved one at a time, so the list posts the selected line-item
+     * ids (`item_ids[]`) instead of request ids. Request ids are still accepted
+     * (and used by the "no line items" rows) and mean "every transaction of
+     * that request". Each touched request gets one history entry and the
+     * request status is rolled up from its transactions afterwards.
      */
     public function bulkUpdateStatus(Request $request): RedirectResponse
     {
         $this->authorizeStatusChange();
 
         $validated = $request->validate([
-            'ids'    => ['required', 'array', 'min:1'],
-            'ids.*'  => ['integer'],
-            'status' => ['required', 'in:' . implode(',', ExpenseRequest::STATUSES)],
-            'note'   => ['nullable', 'string'],
+            'ids'        => ['required_without:item_ids', 'array', 'min:1'],
+            'ids.*'      => ['integer'],
+            'item_ids'   => ['required_without:ids', 'array', 'min:1'],
+            'item_ids.*' => ['integer'],
+            'status'     => ['required', 'in:' . implode(',', ExpenseRequest::STATUSES)],
+            'note'       => ['nullable', 'string'],
         ]);
 
         $to   = $validated['status'];
         $note = $validated['note'] ?? null;
 
-        // Only the caller's own agency's requests are ever touched (plus, for
-        // branch-locked users, only their own branch's requests).
-        $requests = ExpenseRequest::where('agency_id', auth()->user()->agency_id)
-            ->whereIn('id', $validated['ids'])
-            ->when($this->branchLocked(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+        $itemIds    = array_values(array_filter((array) ($validated['item_ids'] ?? [])));
+        $requestIds = array_values(array_filter((array) ($validated['ids'] ?? [])));
+
+        if (empty($itemIds) && empty($requestIds)) {
+            return redirect()->route('expense_request.index')
+                ->with('error', 'Select at least one transaction.');
+        }
+
+        // Only the caller's own agency's transactions are ever touched (plus,
+        // for branch-locked users, only their own branch's).
+        $items = ExpenseRequestItem::query()
+            ->whereHas('expenseRequest', function ($q) {
+                $q->where('agency_id', auth()->user()->agency_id)
+                    ->when($this->branchLocked(), fn ($qq) => $qq->where('branch_id', auth()->user()->branch_id));
+            })
+            ->where(function ($q) use ($itemIds, $requestIds) {
+                if (! empty($itemIds)) {
+                    $q->whereIn('id', $itemIds);
+                }
+                if (! empty($requestIds)) {
+                    // Request-level selection (rows with no line items yet) means
+                    // "every transaction of this request".
+                    $q->orWhereIn('expense_request_id', $requestIds);
+                }
+            })
             ->get();
 
-        if ($requests->isEmpty()) {
+        if ($items->isEmpty()) {
             return redirect()->route('expense_request.index')
-                ->with('error', 'No matching expense requests selected.');
+                ->with('error', 'No matching transactions selected.');
         }
 
         $changed = 0;
+        $wholeRequests = true;
 
-        DB::transaction(function () use ($requests, $to, $note, &$changed) {
-            foreach ($requests as $expenseRequest) {
-                if ($expenseRequest->status === $to) {
+        DB::transaction(function () use ($items, $to, $note, &$changed, &$wholeRequests) {
+            foreach ($items->groupBy('expense_request_id') as $requestId => $group) {
+                $expenseRequest = ExpenseRequest::find($requestId);
+                if (! $expenseRequest) {
                     continue;
                 }
-                $this->applyStatusChange($expenseRequest, $to, $note);
-                $changed++;
+
+                $from = $expenseRequest->status;
+
+                // Request already in the target status: nothing to do. Repair any
+                // drifted line-item statuses silently (no history, no counter).
+                if ($from === $to) {
+                    $expenseRequest->items()->where('status', '!=', $to)->update(['status' => $to]);
+
+                    continue;
+                }
+
+                $touched = 0;
+
+                if ($group->count() < $expenseRequest->items()->count()) {
+                    $wholeRequests = false; // only part of this request's transactions
+                }
+
+                foreach ($group as $item) {
+                    if ($item->status === $to) {
+                        continue;
+                    }
+                    $item->update(['status' => $to]);
+                    $this->syncPaidEntryForItem($expenseRequest, $item, $to);
+                    $touched++;
+                }
+
+                if ($touched === 0) {
+                    continue;
+                }
+
+                $changed += $touched;
+                $this->rollupRequestStatus($expenseRequest);
+
+                ExpenseRequestStatusHistory::create([
+                    'expense_request_id' => $expenseRequest->id,
+                    'agency_id'          => $expenseRequest->agency_id,
+                    'user_id'            => auth()->id(),
+                    'from_status'        => $from,
+                    'to_status'          => $expenseRequest->status,
+                    'note'               => $note ?: ($touched === $group->count()
+                        ? 'All transactions set to ' . ExpenseRequest::STATUS_LABELS[$to]
+                        : $touched . ' transaction(s) set to ' . ExpenseRequest::STATUS_LABELS[$to]),
+                ]);
             }
         });
 
         $message = $changed === 0
             ? "All selected requests were already {$to}."
-            : "Updated {$changed} expense request(s) to {$to}.";
+            : ($wholeRequests
+                ? "Updated {$changed} expense request(s) to {$to}."
+                : "Updated {$changed} transaction(s) to " . (ExpenseRequest::STATUS_LABELS[$to] ?? $to) . '.');
 
         // Back to the same status tab the admin was viewing.
         return redirect()->back()
             ->with('success', $message);
+    }
+
+    /**
+     * Roll a request's status up from its transactions (Cyd 2026-10-23).
+     * Cancelled rows are ignored; if everything is cancelled the request is
+     * cancelled; a mixed request shows the least-advanced remaining status so
+     * it still reads as work in progress on the dashboards.
+     */
+    private function rollupRequestStatus(ExpenseRequest $expenseRequest): void
+    {
+        $statuses = $expenseRequest->items()->pluck('status')->all();
+
+        if (empty($statuses)) {
+            return;
+        }
+
+        $open = array_values(array_filter($statuses, fn ($s) => $s !== ExpenseRequest::STATUS_CANCELLED));
+
+        if (empty($open)) {
+            $rolled = ExpenseRequest::STATUS_CANCELLED;
+        } else {
+            $rank = array_flip([
+                ExpenseRequest::STATUS_PENDING,
+                ExpenseRequest::STATUS_APPROVED,
+                ExpenseRequest::STATUS_FOR_RELEASING,
+                ExpenseRequest::STATUS_RELEASED,
+            ]);
+            $rolled = $open[0];
+            foreach ($open as $status) {
+                if (($rank[$status] ?? 0) < ($rank[$rolled] ?? 0)) {
+                    $rolled = $status;
+                }
+            }
+        }
+
+        if ($expenseRequest->status !== $rolled) {
+            $expenseRequest->update(['status' => $rolled]);
+        }
     }
 
     /**
@@ -1346,6 +1456,10 @@ class ExpenseRequestController extends Controller
         $from = $expenseRequest->status;
 
         $expenseRequest->update(['status' => $to]);
+
+        // Whole-request changes (Review page) apply to every transaction, so the
+        // line items never drift from the request. (Cyd 2026-10-23)
+        $expenseRequest->items()->where('status', '!=', $to)->update(['status' => $to]);
 
         ExpenseRequestStatusHistory::create([
             'expense_request_id' => $expenseRequest->id,
@@ -1373,17 +1487,25 @@ class ExpenseRequestController extends Controller
     }
 
     /**
-     * On approval, agent-charged items become Paid entries in the agent report's
-     * Deductions & Paid tab (net = amount − payment, converted to PHP). On cancel,
-     * linked Paid entries are removed.
+     * On approval, agent-charged transactions become Paid entries in the agent
+     * report's Deductions & Paid tab (net = amount − payment, converted to PHP).
+     * Cancelling removes them again. Synced per transaction (Cyd 2026-10-23) so
+     * approving one line item of a multi-line request only pays that one out.
      */
     private function syncPaidEntriesFromApproval(ExpenseRequest $expenseRequest, string $to): void
     {
+        foreach ($expenseRequest->items as $item) {
+            $this->syncPaidEntryForItem($expenseRequest, $item, $to);
+        }
+    }
+
+    /**
+     * Sync a single transaction to the agent report's Paid/Deductions tab.
+     */
+    private function syncPaidEntryForItem(ExpenseRequest $expenseRequest, ExpenseRequestItem $item, string $to): void
+    {
         if ($to === ExpenseRequest::STATUS_CANCELLED) {
-            AgentDeduction::whereIn(
-                'expense_request_item_id',
-                $expenseRequest->items()->pluck('id')
-            )->delete();
+            AgentDeduction::where('expense_request_item_id', $item->id)->delete();
 
             return;
         }
@@ -1392,31 +1514,29 @@ class ExpenseRequestController extends Controller
             return;
         }
 
+        if ($item->charge !== 'agent' || ! $item->agent_id) {
+            return; // only agent-charged transactions flow into the agent report
+        }
+
         $converter = new CurrencyConverter();
 
-        foreach ($expenseRequest->items as $item) {
-            if ($item->charge !== 'agent' || ! $item->agent_id) {
-                continue; // only agent-charged items flow into the agent report
-            }
+        $net = (float) $item->amount - (float) ($item->payment ?? 0);
 
-            $net = (float) $item->amount - (float) ($item->payment ?? 0);
-
-            AgentDeduction::updateOrCreate(
-                ['expense_request_item_id' => $item->id],
-                [
-                    'agency_id'    => $expenseRequest->agency_id,
-                    'user_id'      => auth()->id(),
-                    'agent_id'     => $item->agent_id,
-                    'applicant_id' => $item->applicant_id,
-                    'date'         => $expenseRequest->date->toDateString(),
-                    'account'      => AgentDeduction::ACCOUNT_PAID,
-                    'amount'       => round($converter->toPhp($net, $item->currency), 2),
-                    'particular'   => $item->particular
-                        ? 'Expense #' . $expenseRequest->reference_no . ': ' . $item->particular
-                        : 'Expense #' . $expenseRequest->reference_no,
-                ]
-            );
-        }
+        AgentDeduction::updateOrCreate(
+            ['expense_request_item_id' => $item->id],
+            [
+                'agency_id'    => $expenseRequest->agency_id,
+                'user_id'      => auth()->id(),
+                'agent_id'     => $item->agent_id,
+                'applicant_id' => $item->applicant_id,
+                'date'         => $expenseRequest->date->toDateString(),
+                'account'      => AgentDeduction::ACCOUNT_PAID,
+                'amount'       => round($converter->toPhp($net, $item->currency), 2),
+                'particular'   => $item->particular
+                    ? 'Expense #' . $expenseRequest->reference_no . ': ' . $item->particular
+                    : 'Expense #' . $expenseRequest->reference_no,
+            ]
+        );
     }
 
     /**

@@ -38,6 +38,7 @@
                 <table class="table table-sm">
                     <thead>
                         <tr class="bg-base-200/70">
+                            <th>Status</th>
                             <th>Charge</th>
                             <th>Applicant</th>
                             <th>Agent</th>
@@ -52,6 +53,7 @@
                     <tbody>
                         @foreach($request->items as $item)
                             <tr>
+                                <td><span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span></td>
                                 <td><span class="badge badge-sm {{ $item->charge === 'office' ? 'badge-ghost' : 'badge-info' }}">{{ $item->charge }}</span></td>
                                 <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>

@@ -215,24 +215,26 @@
                                         $isDup = in_array($dupKey, $duplicateKeys, true);
                                     @endphp
                                     <tr class="{{ $isDup ? 'duplicate-row bg-warning/25' : '' }}">
-                                        {{-- Select checkbox spans the whole request's rows, so only emit it on the first line item. --}}
-                                        @if($loop->first && auth()->user()->canChangeExpenseStatus())
-                                            <td rowspan="{{ $request->items->count() }}">
-                                                <input type="checkbox" name="ids[]" value="{{ $request->id }}" form="bulk-status-form" class="checkbox checkbox-sm checkbox-primary request-checkbox"
-                                                       data-status="{{ $request->status }}"
-                                                       data-php="{{ (float) $request->items->where('currency', 'PHP')->sum('amount') }}"
-                                                       data-usd="{{ (float) $request->items->where('currency', 'USD')->sum('amount') }}"
-                                                       title="Select {{ $request->reference_no }}">
+                                        {{-- One checkbox per transaction (Cyd 2026-10-23): a request can hold
+                                             several transactions and they are approved one at a time. --}}
+                                        @if(auth()->user()->canChangeExpenseStatus())
+                                            <td>
+                                                <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" form="bulk-status-form" class="checkbox checkbox-sm checkbox-primary request-checkbox"
+                                                       data-status="{{ $item->status }}"
+                                                       data-php="{{ $item->currency === 'PHP' ? (float) ($item->amount - ($item->payment ?? 0)) : 0 }}"
+                                                       data-usd="{{ $item->currency === 'USD' ? (float) ($item->amount - ($item->payment ?? 0)) : 0 }}"
+                                                       title="Select transaction of {{ $request->reference_no }}">
                                             </td>
                                         @endif
                                         @if($loop->first)
                                             <td class="font-mono" rowspan="{{ $request->items->count() }}">{{ $request->reference_no }}</td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->created_at?->format('Y-m-d H:i') }}</td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
-                                            <td rowspan="{{ $request->items->count() }}">
-                                                <span class="badge badge-sm {{ $request->statusBadge() }}">{{ $request->statusLabel() }}</span>
-                                            </td>
                                         @endif
+                                        <td>
+                                            {{-- Per-transaction status (Cyd 2026-10-23) --}}
+                                            <span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
+                                        </td>
                                         @if($loop->first)
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->branch?->name ?? '—' }}</td>
                                         @endif
