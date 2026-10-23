@@ -27,6 +27,8 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
 
     private User $user;
 
+    private ?Account $account = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,7 +42,9 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
 
     private function makeRequest(array $items = []): ExpenseRequest
     {
-        $account = Account::factory()->create(['agency_id' => $this->agency->id]);
+        // One shared account per test: the duplicate fingerprint includes the
+        // account, so separate accounts would (correctly) never match.
+        $account = $this->account ??= Account::factory()->create(['agency_id' => $this->agency->id]);
 
         $requestModel = ExpenseRequest::create([
             'agency_id'    => $this->agency->id,
@@ -177,12 +181,14 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
     }
 
     #[Test]
-    public function index_highlights_duplicate_rows_with_background_and_badge(): void
+    public function index_highlights_only_the_repeated_entry(): void
     {
         $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+        // Original entry.
         $this->makeRequest([
             ['applicant_id' => $applicant->id, 'amount' => 400.00],
         ]);
+        // Re-uploaded copy of the same entry — this is the row to colour.
         $this->makeRequest([
             ['applicant_id' => $applicant->id, 'amount' => 400.00],
         ]);
@@ -196,13 +202,61 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
 
         $html = $response->getContent();
 
-        // The two duplicate rows carry the highlight class and a badge.
-        $this->assertSame(2, substr_count($html, 'duplicate-row'));
-        $this->assertSame(2, substr_count($html, 'Duplicate'));
+        // Cyd 2026-10-23: only the repeated entry is coloured, the original stays clean.
+        $this->assertSame(1, substr_count($html, 'duplicate-row'));
+        $this->assertSame(1, substr_count($html, 'Duplicate'));
 
         // The unique row renders once, without any highlight.
         $this->assertSame(1, substr_count($html, '401.00'));
         $this->assertStringNotContainsString('duplicate-row', preg_replace('/.*401\.00.*/s', '', $html));
+    }
+
+    #[Test]
+    public function index_flags_reuploaded_entry_even_when_its_description_is_blank(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+        // Original row with a description...
+        $this->makeRequest([
+            ['applicant_id' => $applicant->id, 'amount' => 3000.00, 'particular' => 'JGL-Gas-Rfid-Mar1-6-2026'],
+        ]);
+        // ...and the re-uploaded copy that arrived with an empty description.
+        // Same date / account / amount => still a duplicate, so it gets coloured.
+        $this->makeRequest([
+            ['applicant_id' => $applicant->id, 'amount' => 3000.00, 'particular' => null],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('expense_request.index'));
+        $response->assertOk();
+
+        $html = $response->getContent();
+
+        $this->assertSame(1, substr_count($html, 'duplicate-row'));
+        $this->assertSame(1, substr_count($html, 'Duplicate'));
+    }
+
+    #[Test]
+    public function index_only_colours_the_duplicate_transaction_not_its_siblings(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+
+        // A multi-entry request where only ONE transaction duplicates an earlier one.
+        $this->makeRequest([
+            ['applicant_id' => $applicant->id, 'amount' => 500.00, 'particular' => 'CASH ADVANCE'],
+        ]);
+        $this->makeRequest([
+            ['applicant_id' => $applicant->id, 'amount' => 500.00, 'particular' => 'CASH ADVANCE'],
+            ['applicant_id' => $applicant->id, 'amount' => 700.00, 'particular' => 'FTW COMMISSION'],
+            ['applicant_id' => $applicant->id, 'amount' => 900.00, 'particular' => 'DEPLOYED'],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('expense_request.index'));
+        $response->assertOk();
+
+        $html = $response->getContent();
+
+        // Exactly one highlighted row: the re-uploaded 500.00 / CASH ADVANCE line.
+        $this->assertSame(1, substr_count($html, 'duplicate-row'));
+        $this->assertSame(1, substr_count($html, 'Duplicate'));
     }
 
     #[Test]

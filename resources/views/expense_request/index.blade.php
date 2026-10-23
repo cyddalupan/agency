@@ -211,8 +211,9 @@
                             @foreach($requests as $request)
                                 @foreach($request->items as $item)
                                     @php
-                                        $dupKey = number_format((float) ($item->amount - ($item->payment ?? 0)), 2) . '|' . ($item->applicant_id ?? 'null');
-                                        $isDup = in_array($dupKey, $duplicateKeys, true);
+                                        // Duplicate = same fingerprint as an earlier entry (Cyd 2026-10-23);
+                                        // only the repeat is coloured, the original stays clean.
+                                        $isDup = in_array((int) $item->id, $duplicateItemIds, true);
                                     @endphp
                                     <tr class="{{ $isDup ? 'duplicate-row bg-warning/25' : '' }}">
                                         {{-- One checkbox per transaction (Cyd 2026-10-23): a request can hold
@@ -240,7 +241,7 @@
                                         @endif
                                         <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}
                                             @if($isDup)
-                                                <span class="badge badge-sm badge-warning ml-1" title="Same amount + applicant as another transaction">Duplicate</span>
+                                                <span class="badge badge-sm badge-warning ml-1" title="Same entry as an earlier transaction (date, account, amount, particular)">Duplicate</span>
                                             @endif
                                         </td>
                                         <td>{{ $item->agent?->name ?? '—' }}</td>

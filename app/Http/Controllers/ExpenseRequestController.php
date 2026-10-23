@@ -84,20 +84,34 @@ class ExpenseRequestController extends Controller
             ];
         }
 
-        // Duplicate detection (Toybits 2026-08-16): an item is a duplicate when
-        // another item in the same agency shares amount + applicant (null matches null).
-        $keyCounts = [];
-        foreach ($requests as $requestModel) {
+        // Duplicate detection (Cyd 2026-10-23): colour ONLY the repeated entries.
+        // The old amount+applicant key flagged 125 of 130 Gulf rows (every NULL
+        // applicant matched every other one) and lit up whole multi-entry
+        // requests. Now the key is date + charge + branch + agent + applicant +
+        // account + currency + amount + payment, the first copy stays
+        // clean, and the other transactions of a multi-entry request are never
+        // dragged into the highlight.
+        $itemsByFingerprint = [];
+        foreach ($allRequests as $requestModel) {
             // A cancelled transaction must not flag a live one as a duplicate.
             if ($requestModel->status === ExpenseRequest::STATUS_CANCELLED) {
                 continue;
             }
             foreach ($requestModel->items as $item) {
-                $key = $this->duplicateKey((float) $item->amount, $item->applicant_id);
-                $keyCounts[$key] = ($keyCounts[$key] ?? 0) + 1;
+                $itemsByFingerprint[$this->itemFingerprint($requestModel, $item)][] = $item;
             }
         }
-        $duplicateKeys = array_keys(array_filter($keyCounts, fn ($c) => $c > 1));
+
+        $duplicateItemIds = [];
+        foreach ($itemsByFingerprint as $group) {
+            if (count($group) < 2) {
+                continue;
+            }
+            usort($group, fn ($a, $b) => [$a->created_at, $a->id] <=> [$b->created_at, $b->id]);
+            foreach (array_slice($group, 1) as $repeat) {
+                $duplicateItemIds[] = (int) $repeat->id;
+            }
+        }
 
         return view('expense_request.index', [
             'requests'         => $requests,
@@ -119,7 +133,7 @@ class ExpenseRequestController extends Controller
             'cancelledPhpTotal'     => $totals['status']['cancelled']['PHP'],
             'cancelledUsdTotal'     => $totals['status']['cancelled']['USD'],
             'statusTotals'     => $statusTotals,
-            'duplicateKeys'    => $duplicateKeys,
+            'duplicateItemIds' => $duplicateItemIds,
             'encoders'         => $encoders,
             'activeEncoder'    => $activeEncoder,
         ]);
@@ -171,6 +185,30 @@ class ExpenseRequestController extends Controller
     private function duplicateKey(?float $amount, ?int $applicantId): string
     {
         return number_format((float) $amount, 2) . '|' . ($applicantId ?? 'null');
+    }
+
+    /**
+     * Fingerprint for the list's duplicate highlight (Cyd 2026-10-23): same
+     * date, charge, branch, agent, applicant, account, currency, amount and
+     * payment. Description and country are deliberately NOT part of the key:
+     * the re-uploaded batch in Gulf arrived with those two columns blank, so
+     * matching on them hid the 62 genuine duplicate rows.
+     */
+    private function itemFingerprint(ExpenseRequest $requestModel, ExpenseRequestItem $item): string
+    {
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        return implode('|', [
+            $requestModel->date?->format('Y-m-d') ?? '',
+            $item->charge,
+            $requestModel->branch_id ?? 'null',
+            $item->agent_id ?? 'null',
+            $item->applicant_id ?? 'null',
+            $item->account_id,
+            strtoupper((string) $item->currency),
+            number_format((float) $item->amount, 2, '.', ''),
+            number_format((float) ($item->payment ?? 0), 2, '.', ''),
+        ]);
     }
 
     /**
