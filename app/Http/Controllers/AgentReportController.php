@@ -984,16 +984,17 @@ class AgentReportController extends Controller
 
     /**
      * (Branch feature) Branch-locked users may only work with agents of their
-     * own branch plus shared/main-office agents (branch_id null) — the same
-     * convention used by the Receivable create form.
+     * own branch.
+     *
+     * (Cyd 2026-10-23, "Agents Report Module") Branch = *only* the agents
+     * registered under their branch — unassigned (branch_id null) agents are
+     * no longer pulled in here. Main Office accounts stay unlocked and see
+     * every agent.
      */
     private function branchLockedAgentCondition($query): void
     {
         $user = auth()->user();
-        $query->where(function ($q) use ($user) {
-            $q->where('branch_id', $user->branch_id)
-              ->orWhereNull('branch_id');
-        });
+        $query->where('branch_id', $user->branch_id);
     }
 
     /** Applicants follow the Agent branch scope (branch users only). */
@@ -1004,10 +1005,8 @@ class AgentReportController extends Controller
 
     private function scopeAgentsByBranch($query)
     {
-        return $query->when($this->ledgerBranchLocked(), fn ($q) => $q->where(function ($w) {
-            $w->where('branch_id', auth()->user()->branch_id)
-              ->orWhereNull('branch_id');
-        }));
+        // Branch accounts: only the agents registered under their branch.
+        return $query->when($this->ledgerBranchLocked(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id));
     }
 
     /** For models that relate to agents via an agent_id column. */
@@ -1023,7 +1022,7 @@ class AgentReportController extends Controller
         if (! $user || ! $this->ledgerBranchLocked()) {
             return;
         }
-        if (! $agent || ((int) $agent->branch_id !== (int) $user->branch_id && $agent->branch_id !== null)) {
+        if (! $agent || (int) $agent->branch_id !== (int) $user->branch_id) {
             abort(404);
         }
     }

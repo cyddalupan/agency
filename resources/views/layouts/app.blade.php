@@ -300,7 +300,9 @@
                         // branch accounts — so no longer gated on Main Office.
                         $showReceivable  = $navUser->canAccessModule('receivable');
                         $showExpenses    = $navUser->canAccessModule('expense_request');
-                        $showAgentReport = $navUser->canAccessModule('agent_report')    && $showAccountingNav;
+                        // (Cyd 2026-10-23) Agents Report is visible to Branch + Main accounts.
+                        // Branch accounts see only the agents registered under their branch.
+                        $showAgentReport = $navUser->canAccessModule('agent_report');
                     @endphp
                     @if ($showStats || $showReceivable || $showExpenses || $showAgentReport)
                     <div class="pt-4 mt-4 border-t border-white/10">

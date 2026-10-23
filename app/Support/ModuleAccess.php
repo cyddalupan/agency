@@ -80,6 +80,9 @@ class ModuleAccess
         'api',
         'applicants',
         'employers',
+        // (Cyd 2026-10-23) Agents Report is shown to every user; branch
+        // accounts only see the agents registered under their own branch.
+        'agent_report',
     ];
 
     /**
