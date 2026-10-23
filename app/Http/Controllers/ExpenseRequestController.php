@@ -755,10 +755,102 @@ class ExpenseRequestController extends Controller
             return back()->with('bulk_errors', $errors)->withInput();
         }
 
-        // ---- All rows valid: insert in one transaction (all-or-nothing) ----
-        $count = count($validatedRows);
-        DB::transaction(function () use ($validatedRows, $agencyId) {
-            foreach ($validatedRows as $data) {
+        // ---- Duplicate protection (Cyd 2026-10-23) ----
+        // Re-uploading the same sheet used to create a second full copy of every
+        // row (Jerry's 62-row JERRY.xlsx became 124 rows after a repeat upload).
+        // Every row is fingerprinted and count-matched against what already
+        // exists for the agency, so a repeat upload is a no-op instead of a
+        // double entry. Count-matching (instead of a flat "already exists" test)
+        // keeps genuinely repeated rows inside one file importable.
+        $fingerprint = function (array $data, ?string $date = null): string {
+            $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+            return implode('|', [
+                $date ?? $data['date'],
+                $data['charge'],
+                $data['branch_id'] ?? 'null',
+                $data['agent_id'] ?? 'null',
+                $data['applicant_id'] ?? 'null',
+                $data['country_id'] ?? 'null',
+                $data['account_id'],
+                strtoupper((string) $data['currency']),
+                number_format((float) $data['amount'], 2, '.', ''),
+                number_format((float) ($data['payment'] ?? 0), 2, '.', ''),
+                $norm($data['particular'] ?? ''),
+                $norm($data['notes'] ?? ''),
+            ]);
+        };
+
+        $fileDates = array_values(array_unique(array_column($validatedRows, 'date')));
+        $fileAccounts = array_values(array_unique(array_column($validatedRows, 'account_id')));
+
+        // Only rows that could collide with this file (same agency, same dates,
+        // same accounts) — cancelled requests never block a re-import.
+        $existingCounts = [];
+        $existingItems = ExpenseRequestItem::query()
+            ->whereHas('expenseRequest', fn ($q) => $q
+                ->where('agency_id', $agencyId)
+                // DATE() so this matches on MySQL datetimes and SQLite alike.
+                ->whereIn(DB::raw('DATE(date)'), $fileDates)
+                ->where('status', '!=', ExpenseRequest::STATUS_CANCELLED))
+            ->whereIn('account_id', $fileAccounts)
+            ->get(['expense_request_id', 'charge', 'agent_id', 'applicant_id', 'country_id', 'account_id', 'currency', 'amount', 'payment', 'particular']);
+
+        if ($existingItems->isNotEmpty()) {
+            $itemDates = ExpenseRequest::whereIn('id', $existingItems->pluck('expense_request_id'))
+                ->pluck('date', 'id')
+                ->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : mb_substr((string) $d, 0, 10));
+
+            foreach ($existingItems as $item) {
+                $key = $fingerprint([
+                    'charge'       => $item->charge,
+                    'branch_id'    => null,
+                    'agent_id'     => $item->agent_id,
+                    'applicant_id' => $item->applicant_id,
+                    'country_id'   => $item->country_id,
+                    'account_id'   => $item->account_id,
+                    'currency'     => $item->currency,
+                    'amount'       => $item->amount,
+                    'payment'      => $item->payment,
+                    'particular'   => $item->particular,
+                    'notes'        => null,
+                ], (string) ($itemDates[$item->expense_request_id] ?? ''));
+
+                $existingCounts[$key] = ($existingCounts[$key] ?? 0) + 1;
+            }
+        }
+
+        $incomingByKey = [];
+        foreach ($validatedRows as $data) {
+            $incomingByKey[$fingerprint($data)][] = $data;
+        }
+
+        $rowsToInsert = [];
+        $skipped = 0;
+        foreach ($incomingByKey as $key => $rowsForKey) {
+            $alreadyOnFile = $existingCounts[$key] ?? 0;
+            $matched = 0;
+            foreach ($rowsForKey as $data) {
+                if ($matched < $alreadyOnFile) {
+                    $matched++;
+                    $skipped++;
+                    continue;
+                }
+                $rowsToInsert[] = $data;
+            }
+        }
+
+        if (empty($rowsToInsert)) {
+            $total = count($validatedRows);
+
+            return redirect()->route('expense_request.index')
+                ->with('error', "Nothing imported: all {$total} row(s) in this file already exist and were skipped as duplicates.");
+        }
+
+        // ---- All valid, non-duplicate rows: insert in one transaction (all-or-nothing) ----
+        $count = count($rowsToInsert);
+        DB::transaction(function () use ($rowsToInsert, $agencyId) {
+            foreach ($rowsToInsert as $data) {
                 $parent = ExpenseRequest::create([
                     'agency_id'    => $agencyId,
                     'user_id'      => $data['user_id'] ?? auth()->id(),
@@ -796,8 +888,12 @@ class ExpenseRequestController extends Controller
             }
         });
 
-        return redirect()->route('expense_request.index')
-            ->with('success', "Bulk upload complete: {$count} expense request(s) imported from CSV.");
+        $message = "Bulk upload complete: {$count} expense request(s) imported from CSV.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} duplicate row(s) skipped (already on file).";
+        }
+
+        return redirect()->route('expense_request.index')->with('success', $message);
     }
 
     /**
@@ -1039,6 +1135,8 @@ class ExpenseRequestController extends Controller
             'paid' => 'payment',
             'particular' => 'particular',
             'particulars' => 'particular',
+            'particulardescription' => 'particular',
+            'particularsdescription' => 'particular',
             'description' => 'particular',
             'branch' => 'branch',
             'branchname' => 'branch',
