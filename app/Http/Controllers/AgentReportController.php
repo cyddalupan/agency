@@ -56,7 +56,7 @@ class AgentReportController extends Controller
         }
         $agentId = $request->input('agent_id');
 
-        $agents = Agent::where('agency_id', $agencyId)
+        $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))
             ->with('branch')
             ->orderBy('name')
             ->get();
@@ -81,6 +81,7 @@ class AgentReportController extends Controller
             ->where('charge', 'agent')
             ->whereNotNull('agent_id')
             ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->when($excludedAccountIds->isNotEmpty(), fn ($q) => $q->whereNotIn('account_id', $excludedAccountIds))
             ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
@@ -93,6 +94,7 @@ class AgentReportController extends Controller
             ->whereNotNull('agent_id')
             ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
             ->when($cashAdvanceAccountIds->isNotEmpty(), fn ($q) => $q->whereIn('account_id', $cashAdvanceAccountIds))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
             ->orderByDesc('created_at')
@@ -104,6 +106,7 @@ class AgentReportController extends Controller
             ->whereNotNull('agent_id')
             ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
             ->when($receivableAccountIds->isNotEmpty(), fn ($q) => $q->whereIn('account_id', $receivableAccountIds))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
             ->orderByDesc('created_at')
@@ -114,6 +117,7 @@ class AgentReportController extends Controller
             ->where('agency_id', $agencyId)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -123,6 +127,7 @@ class AgentReportController extends Controller
             ->where('agency_id', $agencyId)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -132,6 +137,7 @@ class AgentReportController extends Controller
             ->where('agency_id', $agencyId)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -161,7 +167,22 @@ class AgentReportController extends Controller
             'reportRows',
             'totals',
             'converter'
-        ));
+        ) + ['canManageDeductions' => $this->canManageDeductions()]);
+    }
+
+    /**
+     * (Cyd 2026-09-26) Only Admin (super_admin/admin) and Accounting (billing)
+     * may create Deduction transactions. Everyone else has the tab hidden and
+     * the create/store routes return 403.
+     */
+    private function canManageDeductions(): bool
+    {
+        $user = auth()->user();
+
+        // (Cyd 2026-09-28 #11) Only the privileged accounts (Mae, Evelyn,
+        // Angel) may create agent deductions. Everyone else: tab hidden +
+        // create/store 403.
+        return $user && $user->isPrivileged();
     }
 
     // ------------------------------------------------------------------
@@ -170,6 +191,8 @@ class AgentReportController extends Controller
 
     public function deductionCreate(): View
     {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create deduction transactions.');
+
         [$agents, $applicants] = $this->agentApplicantLists();
 
         return view('agent_report.deduction_create', [
@@ -180,6 +203,8 @@ class AgentReportController extends Controller
 
     public function deductionStore(Request $request): RedirectResponse
     {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create deduction transactions.');
+
         $agencyId = auth()->user()->agency_id;
 
         $validated = $request->validate([
@@ -191,6 +216,7 @@ class AgentReportController extends Controller
         ]);
 
         $agent = Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
+        $this->authorizeAgentBranch($agent);
 
         if (! empty($validated['applicant_id'])) {
             $applicant = Applicant::where('agency_id', $agencyId)->find($validated['applicant_id']);
@@ -216,6 +242,7 @@ class AgentReportController extends Controller
     public function deductionShow(AgentDeduction $agentDeduction): View
     {
         $this->authorizeAgency($agentDeduction->agency_id);
+        $this->authorizeAgentBranch($agentDeduction->agent);
 
         return view('agent_report.deduction_show', [
             'deduction' => $agentDeduction->load(['agent', 'applicant', 'encoder']),
@@ -250,6 +277,7 @@ class AgentReportController extends Controller
         ]);
 
         $agent = Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
+        $this->authorizeAgentBranch($agent);
 
         // One starting balance per agent (unique agency_id + agent_id)
         if (StartingBalance::where('agency_id', $agencyId)->where('agent_id', $agent->id)->exists()) {
@@ -281,6 +309,7 @@ class AgentReportController extends Controller
     public function startingBalanceShow(StartingBalance $startingBalance): View
     {
         $this->authorizeAgency($startingBalance->agency_id);
+        $this->authorizeAgentBranch($startingBalance->agent);
 
         return view('agent_report.starting_balance_show', [
             'startingBalance' => $startingBalance->load(['agent', 'applicant', 'encoder']),
@@ -296,7 +325,7 @@ class AgentReportController extends Controller
         $agencyId = auth()->user()->agency_id;
         $agentId  = $request->input('agent_id');
 
-        $agents = Agent::where('agency_id', $agencyId)->with('branch')->orderBy('name')->get();
+        $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->with('branch')->orderBy('name')->get();
         $converter = new CurrencyConverter();
 
         $rows = $this->buildReportRows($agents, $converter, $agentId);
@@ -322,7 +351,7 @@ class AgentReportController extends Controller
         $agencyId = auth()->user()->agency_id;
         $agentId  = $request->input('agent_id');
 
-        $agents = Agent::where('agency_id', $agencyId)->with('branch')->orderBy('name')->get();
+        $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->with('branch')->orderBy('name')->get();
         $converter = new CurrencyConverter();
 
         $rows = $this->buildReportRows($agents, $converter, $agentId);
@@ -363,6 +392,7 @@ class AgentReportController extends Controller
     public function show(Agent $agent): View
     {
         $this->authorizeAgency($agent->agency_id);
+        $this->authorizeAgentBranch($agent);
 
         return view('agent_report.show', $this->agentLedgerData($agent));
     }
@@ -371,6 +401,7 @@ class AgentReportController extends Controller
     public function showPrint(Agent $agent): View
     {
         $this->authorizeAgency($agent->agency_id);
+        $this->authorizeAgentBranch($agent);
 
         $data = $this->agentLedgerData($agent);
         $data['printedAt'] = now();
@@ -467,30 +498,82 @@ class AgentReportController extends Controller
     }
 
     /**
-     * Per-agent ledger rows — Agent Ledger spec:
-     *  - commission    : pending agent-charged items on general accounts
-     *  - cash_advance  : pending agent-charged items on cash-advance accounts
-     *  - backout_repat : pending agent-charged items whose applicant status is
-     *                    Repatriated/Cancel/Backout (35/38/50)
-     *  - receivable    : pending agent-charged items on receivable (AR) accounts
-     *  - payments      : received Receivable module rows
+     * Per-agent ledger rows — Agent Ledger spec. Mirrors agentLedgerData()
+     * (the single-agent view you land on when clicking an agent name) so the
+     * summary table and the agent's own ledger always agree (Cyd 2026-09-26):
+     *  - commission    : RELEASED agent-charged items on commission accounts
+     *                    (Partial/Full/Fit to work/Contract/Deployed/Return);
+     *                    Return rows are shown on the agent ledger but excluded
+     *                    from Total Commission.
+     *  - cash_advance  : RELEASED agent-charged items on cash-advance accounts
+     *  - backout_repat : AgentDeduction rows (account = Deduction)
+     *  - receivable    : received Receivable rows (account = Agents & Applicant Payment)
+     *  - payments      : AgentDeduction rows (account = Paid)
      *  - balance       = cash_advance + backout_repat − receivable − payments
+     *
+     * NOTE: previously this counted PENDING expense items only, so any entry
+     * that had already been Released showed as ₱0 here even though it appeared
+     * in the agent's own ledger. Now both paths read the same RELEASED data.
      */
     private function buildReportRows($agents, CurrencyConverter $converter, ?int $agentId = null)
     {
         $agencyId = auth()->user()->agency_id;
 
+        $commissionAccountIds = Account::where('agency_id', $agencyId)
+            ->whereIn('name', self::RECEIVABLE_ACCOUNT_NAMES)
+            ->pluck('id');
+        $returnAccountIds = Account::where('agency_id', $agencyId)
+            ->where('name', 'Return')
+            ->pluck('id');
         $cashAdvanceAccountIds = Account::where('agency_id', $agencyId)
             ->whereIn('name', self::CASH_ADVANCE_ACCOUNT_NAMES)
             ->pluck('id');
-        $receivableAccountIds = Account::where('agency_id', $agencyId)
-            ->whereIn('name', self::RECEIVABLE_ACCOUNT_NAMES)
-            ->pluck('id');
 
-        // Payments: received receivables
-        $payAgg = Receivable::query()
+        // Commission + Cash Advance: RELEASED agent-charged expense items.
+        $items = $this->scopeQueryAgentsByBranch(ExpenseRequestItem::query())
+            ->where('charge', 'agent')
+            ->whereNotNull('agent_id')
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_RELEASED))
+            ->get(['id', 'agent_id', 'account_id', 'currency', 'amount']);
+
+        $commission = [];
+        $cashAdvance = [];
+        foreach ($items as $item) {
+            $agentKey = (int) $item->agent_id;
+            $amount = $converter->toPhp((float) $item->amount, $item->currency);
+
+            if ($cashAdvanceAccountIds->contains($item->account_id)) {
+                $cashAdvance[$agentKey] = ($cashAdvance[$agentKey] ?? 0.0) + $amount;
+            } elseif ($commissionAccountIds->contains($item->account_id) && ! $returnAccountIds->contains($item->account_id)) {
+                $commission[$agentKey] = ($commission[$agentKey] ?? 0.0) + $amount;
+            }
+        }
+
+        // Backout & Repat (Deduction) + Payments (Paid): AgentDeduction rows.
+        $dedAgg = $this->scopeQueryAgentsByBranch(AgentDeduction::query())
             ->where('agency_id', $agencyId)
             ->whereNotNull('agent_id')
+            ->select('agent_id', 'account')
+            ->selectRaw('COALESCE(SUM(amount),0) as total')
+            ->groupBy('agent_id', 'account')
+            ->get();
+
+        $backoutByAgent = [];
+        $paidByAgent = [];
+        foreach ($dedAgg as $d) {
+            $key = (int) $d->agent_id;
+            if ($d->account === AgentDeduction::ACCOUNT_DEDUCTION) {
+                $backoutByAgent[$key] = (float) $d->total;
+            } elseif ($d->account === AgentDeduction::ACCOUNT_PAID) {
+                $paidByAgent[$key] = (float) $d->total;
+            }
+        }
+
+        // Receivables: received Receivable rows on the agents-payment account.
+        $recAgg = $this->scopeQueryAgentsByBranch(Receivable::query())
+            ->where('agency_id', $agencyId)
+            ->whereNotNull('agent_id')
+            ->where('account', 'Agents & Applicant Payment')
             ->where('status', Receivable::STATUS_RECEIVED)
             ->select('agent_id')
             ->selectRaw('COALESCE(SUM(amount),0) as total')
@@ -498,48 +581,26 @@ class AgentReportController extends Controller
             ->get()
             ->keyBy('agent_id');
 
-        // Bucket every pending agent-charged expense item exactly once.
-        $items = ExpenseRequestItem::query()
-            ->where('charge', 'agent')
-            ->whereNotNull('agent_id')
-            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
-            ->with('applicant:id,status_code')
-            ->get(['id', 'agent_id', 'applicant_id', 'account_id', 'currency', 'amount']);
-
-        $buckets = [];
-        foreach ($items as $item) {
-            $agentKey = (int) $item->agent_id;
-            $amount = $converter->toPhp((float) $item->amount, $item->currency);
-
-            $buckets[$agentKey] ??= ['commission' => 0.0, 'cash_advance' => 0.0, 'backout_repat' => 0.0, 'receivable' => 0.0];
-
-            if ($cashAdvanceAccountIds->contains($item->account_id)) {
-                $buckets[$agentKey]['cash_advance'] += $amount;
-            } elseif ($receivableAccountIds->contains($item->account_id)) {
-                $buckets[$agentKey]['receivable'] += $amount;
-            } elseif ($item->applicant && in_array((int) $item->applicant->status_code, self::BACKOUT_STATUSES, true)) {
-                $buckets[$agentKey]['backout_repat'] += $amount;
-            } else {
-                $buckets[$agentKey]['commission'] += $amount;
-            }
-        }
-
         return $agents
             ->filter(fn (Agent $a) => $agentId === null || (int) $a->id === (int) $agentId)
-            ->map(function (Agent $agent) use ($converter, $payAgg, $buckets) {
-                $b = $buckets[(int) $agent->id] ?? ['commission' => 0.0, 'cash_advance' => 0.0, 'backout_repat' => 0.0, 'receivable' => 0.0];
-                $payments = (float) ($payAgg->get($agent->id)->total ?? 0);
+            ->map(function (Agent $agent) use ($commission, $cashAdvance, $backoutByAgent, $paidByAgent, $recAgg) {
+                $key = (int) $agent->id;
+                $comm    = (float) ($commission[$key] ?? 0);
+                $ca      = (float) ($cashAdvance[$key] ?? 0);
+                $backout = (float) ($backoutByAgent[$key] ?? 0);
+                $paid    = (float) ($paidByAgent[$key] ?? 0);
+                $recv    = (float) ($recAgg->get($agent->id)->total ?? 0);
 
                 return [
                     'id'            => $agent->id,
                     'agent'         => $agent->name,
                     'branch'        => $agent->branch?->name ?? '-',
-                    'commission'    => (float) $b['commission'],
-                    'cash_advance'  => (float) $b['cash_advance'],
-                    'backout_repat' => (float) $b['backout_repat'],
-                    'receivable'    => (float) $b['receivable'],
-                    'payments'      => $payments,
-                    'balance'       => (float) $b['cash_advance'] + (float) $b['backout_repat'] - (float) $b['receivable'] - $payments,
+                    'commission'    => $comm,
+                    'cash_advance'  => $ca,
+                    'backout_repat' => $backout,
+                    'receivable'    => $recv,
+                    'payments'      => $paid,
+                    'balance'       => $ca + $backout - $recv - $paid,
                 ];
             })
             ->sortBy('agent')
@@ -553,12 +614,15 @@ class AgentReportController extends Controller
     {
         $agencyId = auth()->user()->agency_id;
 
-        $agents = Agent::where('agency_id', $agencyId)
+        $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))
             ->with('branch')
             ->orderBy('name')
             ->get();
 
-        $applicants = Applicant::where('agency_id', $agencyId)
+        // (Cyd 2026-10-23) Applicants follow the Agent list: a branch account
+        // only sees applicants whose agent is in its own branch (or a
+        // shared/main-office agent), so an applicant only shows under its agent.
+        $applicants = $this->scopeApplicantsByBranch(Applicant::where('agency_id', $agencyId))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get(['id', 'agent_id', 'first_name', 'last_name']);
@@ -583,4 +647,62 @@ class AgentReportController extends Controller
     {
         return (float) $items->sum(fn ($item) => $converter->toPhp((float) $item->amount, $item->currency));
     }
+    /**
+     * (Cyd 2026-09-28 #3) Main Office accounts must see ALL agents — they are
+     * head-office users, not branch-scoped. Only non-main-office branch
+     * accounts stay scoped to their own branch (+ shared/main-office agents).
+     */
+    private function ledgerBranchLocked(): bool
+    {
+        $user = auth()->user();
+
+        return $user && $user->isBranchLocked() && ! $user->isMainOffice();
+    }
+
+    /**
+     * (Branch feature) Branch-locked users may only work with agents of their
+     * own branch plus shared/main-office agents (branch_id null) — the same
+     * convention used by the Receivable create form.
+     */
+    private function branchLockedAgentCondition($query): void
+    {
+        $user = auth()->user();
+        $query->where(function ($q) use ($user) {
+            $q->where('branch_id', $user->branch_id)
+              ->orWhereNull('branch_id');
+        });
+    }
+
+    /** Applicants follow the Agent branch scope (branch users only). */
+    private function scopeApplicantsByBranch($query)
+    {
+        return $query->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)));
+    }
+
+    private function scopeAgentsByBranch($query)
+    {
+        return $query->when($this->ledgerBranchLocked(), fn ($q) => $q->where(function ($w) {
+            $w->where('branch_id', auth()->user()->branch_id)
+              ->orWhereNull('branch_id');
+        }));
+    }
+
+    /** For models that relate to agents via an agent_id column. */
+    private function scopeQueryAgentsByBranch($query)
+    {
+        return $query->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)));
+    }
+
+    /** 404 when a branch-locked user touches an agent outside their scope. */
+    private function authorizeAgentBranch(?Agent $agent): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $this->ledgerBranchLocked()) {
+            return;
+        }
+        if (! $agent || ((int) $agent->branch_id !== (int) $user->branch_id && $agent->branch_id !== null)) {
+            abort(404);
+        }
+    }
+
 }

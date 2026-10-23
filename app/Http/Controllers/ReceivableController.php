@@ -87,7 +87,14 @@ class ReceivableController extends Controller
 
         $agents = $agents->orderBy('name')->get();
 
+        // (Cyd 2026-10-23) Applicants follow the Agent list: a branch account
+        // only sees applicants whose agent is in its own branch (or a
+        // shared/main-office agent). An applicant therefore only ever appears
+        // under its own agent.
         $applicants = Applicant::where('agency_id', $agencyId)
+            ->when($user && $user->isBranchLocked(), fn ($q) => $q->whereHas('agent', function ($agentQ) use ($user) {
+                $agentQ->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            }))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get(['id', 'agent_id', 'first_name', 'last_name']);

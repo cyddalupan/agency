@@ -205,8 +205,16 @@ class User extends Authenticatable
         }
 
         $name = optional($this->branch)->name;
+        if ($name === null) {
+            return false;
+        }
 
-        return $name !== null && mb_strtolower(trim($name)) === 'main office';
+        // Agencies label the head office differently ("Main Office",
+        // "mAIN BRANCH", ...). Both spellings mean head office, so head-office
+        // accounts are never treated as branch-restricted. (Cyd 2026-10-23)
+        $normalized = mb_strtolower(preg_replace('/\s+/', ' ', trim($name)));
+
+        return in_array($normalized, ['main office', 'main branch'], true);
     }
 
     public function activities()
@@ -303,8 +311,15 @@ class User extends Authenticatable
             return false;
         }
 
-        // Any account assigned to a branch is a branch account — admin or not.
-        // Only super_admin (system-wide) keeps the free branch dropdown.
+        // (Cyd 2026-10-23) Head-office ("Main Office" / "Main Branch") accounts
+        // are never branch-restricted: they see every branch's agents and
+        // applicants. Only *branch* accounts get scoped.
+        if ($this->isMainOffice()) {
+            return false;
+        }
+
+        // Any other account assigned to a branch is a branch account — admin
+        // or not. Only super_admin (system-wide) keeps the free branch dropdown.
         return $this->user_type !== 'super_admin';
     }
 
