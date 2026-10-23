@@ -112,8 +112,8 @@ class AgentReportController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // ---- Tab 2: Payments (Receivable module) ----
-        $payments = Receivable::query()
+        // ---- Tab 3: Deductions & Paid (new table) ----
+        $deductions = AgentDeduction::query()
             ->where('agency_id', $agencyId)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
@@ -122,13 +122,17 @@ class AgentReportController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        // ---- Tab 3: Deductions & Paid (new table) ----
-        $deductions = AgentDeduction::query()
-            ->where('agency_id', $agencyId)
-            ->with(['agent', 'applicant', 'encoder'])
+        // ---- Tab 2: Payments (Expenses & Payments module only) ----
+        // Payments = the "Payment / already paid" amounts recorded on expense
+        // transactions in the Expenses & Payments module. Receivable-module rows
+        // used to be listed here, so batch-uploaded receivables showed up as
+        // payments (Cyd 2026-10-23).
+        $payments = ExpenseRequestItem::query()
+            ->where('payment', '>', 0)
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId))
+            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
             ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
-            ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
 

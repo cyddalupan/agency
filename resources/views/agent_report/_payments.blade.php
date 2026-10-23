@@ -1,57 +1,58 @@
-{{-- Tab 2: Payments — data source: Receivable module --}}
+{{-- Tab 2: Payments — data source: Expenses & Payments module only --}}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
         <h3 class="font-bold mb-3">💳 Payments <span class="badge badge-sm badge-ghost">{{ $payments->count() }}</span></h3>
+        <p class="text-xs opacity-60 mb-2">Payment amounts recorded on transactions in Expenses &amp; Payments. Receivables from the Receivable module are not listed here.</p>
         @if($payments->count())
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>
                         <tr class="bg-base-200/70">
-                            <th>Code</th>
                             <th>Date</th>
+                            <th>Ref#</th>
                             <th>User</th>
                             <th>Status</th>
-                            <th>Ref#/AR#</th>
                             <th>Applicant</th>
                             <th>Agent</th>
-                            <th class="text-right">Amount</th>
+                            <th class="text-right">Payment</th>
+                            <th class="text-right">Gross</th>
                             <th>Account</th>
                             <th>Particular</th>
-                            <th>Mode</th>
-                            <th>Type</th>
-                            <th>Deposit Account</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($payments as $r)
-                            <tr class="{{ $r->status === 'received' ? 'opacity-70' : '' }}">
-                                <td class="font-mono font-semibold">{{ $r->code }}</td>
-                                <td>{{ $r->date->format('M d, Y') }}</td>
-                                <td>{{ $r->encoder->name ?? '—' }}</td>
+                        @foreach($payments as $p)
+                            @php($er = $p->expenseRequest)
+                            <tr>
+                                <td>{{ $er?->date?->format('M d, Y') ?? '—' }}</td>
+                                <td class="font-mono font-semibold">{{ $er->reference_no ?? '—' }}</td>
+                                <td>{{ $er->user->name ?? '—' }}</td>
                                 <td>
-                                    @if($r->status === 'received')
-                                        <span class="badge badge-success badge-sm">RECEIVED</span>
-                                    @else
-                                        <span class="badge badge-warning badge-sm">PENDING</span>
-                                    @endif
+                                    <span class="badge badge-sm
+                                        @switch($er->status ?? '')
+                                            @case('approved') badge-info @break
+                                            @case('for_releasing') badge-primary @break
+                                            @case('released') badge-success @break
+                                            @case('cancelled') badge-error @break
+                                            @default badge-warning
+                                        @endswitch">{{ \App\Models\ExpenseRequest::STATUS_LABELS[$er->status ?? 'pending'] ?? ($er->status ?? '—') }}</span>
                                 </td>
-                                <td>{{ $r->ref_ar ?? '—' }}</td>
                                 <td>
-                                    @if($r->applicant)
-                                        {{ $r->applicant->first_name }} {{ $r->applicant->last_name }}
+                                    @if($p->applicant)
+                                        {{ $p->applicant->last_name }}, {{ $p->applicant->first_name }}
                                     @else —
                                     @endif
                                 </td>
-                                <td>{{ $r->agent->name ?? '—' }}</td>
-                                <td class="text-right font-semibold">₱{{ number_format($r->amount, 2) }}</td>
-                                <td>{{ $r->account ?? '—' }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
-                                <td>{{ $r->mode ?? '—' }}</td>
-                                <td>{{ $r->type ?? '—' }}</td>
-                                <td>{{ $r->debit_account ?? '—' }}</td>
+                                <td>{{ $p->agent->name ?? '—' }}</td>
+                                <td class="text-right font-semibold">{{ $p->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $p->payment, 2) }}</td>
+                                <td class="text-right opacity-60">{{ $p->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $p->amount, 2) }}</td>
+                                <td>{{ $p->account->name ?? '—' }}</td>
+                                <td class="max-w-[14rem] truncate" title="{{ $p->particular }}">{{ $p->particular ?? '—' }}</td>
                                 <td>
-                                    <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                    @if($er)
+                                        <a href="{{ route('expense_request.show', $er) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -59,7 +60,7 @@
                 </table>
             </div>
         @else
-            <p class="opacity-50 text-sm py-6 text-center">No payment transactions yet.</p>
+            <p class="opacity-50 text-sm py-6 text-center">No payments recorded in Expenses &amp; Payments yet.</p>
         @endif
     </div>
 </div>
