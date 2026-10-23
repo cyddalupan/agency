@@ -1,7 +1,16 @@
-{{-- Tab 3: Deductions & Paid — new transaction type (AgentDeduction) --}}
+{{-- Tab 3: Deductions — AgentDeduction rows with account = Deduction (Cyd 2026-10-23) --}}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
-        <h3 class="font-bold mb-3">🧾 Deductions &amp; Paid <span class="badge badge-sm badge-ghost">{{ $deductions->count() }}</span></h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-bold">🧾 Deductions <span class="badge badge-sm badge-ghost">{{ $deductions->count() }}</span></h3>
+            @if($canManageDeductions)
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('agent_report.deduction.bulk') }}" class="btn btn-outline btn-sm">📥 Bulk Upload</a>
+                    <a href="{{ route('agent_report.deduction.create') }}" class="btn btn-primary btn-sm">➕ New Deduction</a>
+                </div>
+            @endif
+        </div>
+        <p class="text-xs opacity-60 mb-2">Deductions only. Payments from Expenses &amp; Payments are listed on the Payments tab.</p>
         @if($deductions->count())
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -43,7 +52,7 @@
                 </table>
             </div>
         @else
-            <p class="opacity-50 text-sm py-6 text-center">No deductions or paid entries yet.</p>
+            <p class="opacity-50 text-sm py-6 text-center">No deductions yet.</p>
         @endif
     </div>
 </div>

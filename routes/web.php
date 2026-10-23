@@ -483,8 +483,14 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('/', [AgentReportController::class, 'index'])->name('index')
             ;
 
-        // Tab 3: Deductions & Paid
+        // Tab 3: Deductions (bulk routes must precede the {agent_deduction} wildcard)
         Route::get('/deductions/create', [AgentReportController::class, 'deductionCreate'])->name('deduction.create')
+            ;
+        Route::get('/deductions/bulk', [AgentReportController::class, 'deductionBulkUpload'])->name('deduction.bulk')
+            ;
+        Route::get('/deductions/bulk/template', [AgentReportController::class, 'deductionBulkTemplate'])->name('deduction.bulk.template')
+            ;
+        Route::post('/deductions/bulk/import', [AgentReportController::class, 'deductionBulkImport'])->name('deduction.bulk.import')
             ;
         Route::post('/deductions', [AgentReportController::class, 'deductionStore'])->name('deduction.store')
             ;

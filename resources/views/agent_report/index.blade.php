@@ -13,7 +13,7 @@
                     <span class="text-3xl">📊</span>
                     <div>
                         <h1 class="text-2xl font-extrabold">Agents Report</h1>
-                        <p class="opacity-70 text-sm mt-0.5">Commission · Cash Advance · Receivables · Payments · Deductions &amp; Paid · Starting Balance · Report</p>
+                        <p class="opacity-70 text-sm mt-0.5">Commission · Cash Advance · Receivables · Payments · Deductions · Starting Balance · Report</p>
                     </div>
                 </div>
             </div>
@@ -22,9 +22,14 @@
                     <a href="{{ route('agent_report.print', ['agent_id' => $agentId]) }}" class="btn btn-sm btn-secondary shadow-md" target="_blank">🖨️ Print</a>
                     <a href="{{ route('agent_report.export', ['agent_id' => $agentId]) }}" class="btn btn-sm btn-secondary shadow-md">⬇️ Export CSV</a>
                 @endif
-                @if(in_array($tab, ['deductions', 'starting-balances'], true))
-                    <a href="{{ $tab === 'deductions' ? route('agent_report.deduction.create') : route('agent_report.starting_balance.create') }}" class="btn btn-sm btn-secondary shadow-md">
-                        {{ $tab === 'deductions' ? '➕ New Deduction' : '➕ New Starting Balance' }}
+                @if($tab === 'deductions' && $canManageDeductions)
+                    <a href="{{ route('agent_report.deduction.create') }}" class="btn btn-sm btn-secondary shadow-md">
+                        ➕ New Deduction
+                    </a>
+                @endif
+                @if($tab === 'starting-balances')
+                    <a href="{{ route('agent_report.starting_balance.create') }}" class="btn btn-sm btn-secondary shadow-md">
+                        ➕ New Starting Balance
                     </a>
                 @endif
                 <span class="badge badge-lg badge-primary gap-2 py-4 border-0">
@@ -48,12 +53,15 @@
                 'cash-advance'      => ['label' => '💰 Cash Advance',      'url' => null],
                 'receivables'       => ['label' => '📊 Receivables',       'url' => null],
                 'payments'          => ['label' => '💳 Payments',          'url' => null],
-                'deductions'        => ['label' => '🧾 Deductions & Paid', 'url' => null],
+                'deductions'        => ['label' => '🧾 Deductions',          'url' => null],
                 'starting-balances' => ['label' => '⚖️ Starting Balance',  'url' => null],
                 'report'            => ['label' => '📑 Agent Ledger',      'url' => null],
             ];
         @endphp
         @foreach($tabDefs as $key => $def)
+            @if($key === 'deductions' && ! $canManageDeductions)
+                @continue
+            @endif
             <a href="{{ route('agent_report.index', ['tab' => $key, 'agent_id' => $agentId]) }}"
                class="tab tab-lg whitespace-nowrap {{ $tab === $key ? 'tab-active bg-primary text-primary-content font-bold shadow-md' : '' }}">
                 {{ $def['label'] }}

@@ -14,6 +14,7 @@ use App\Services\CurrencyConverter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AgentReportController extends Controller
@@ -112,9 +113,12 @@ class AgentReportController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // ---- Tab 3: Deductions & Paid (new table) ----
+        // ---- Tab 3: Deductions (AgentDeduction rows, account = Deduction) ----
+        // Cyd 2026-10-23: Payments and Deductions are separate tabs, so this one
+        // no longer mixes the approval-generated "Paid" rows in with deductions.
         $deductions = AgentDeduction::query()
             ->where('agency_id', $agencyId)
+            ->where('account', AgentDeduction::ACCOUNT_DEDUCTION)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
             ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
@@ -237,6 +241,321 @@ class AgentReportController extends Controller
 
         return redirect()->route('agent_report.index', ['tab' => 'deductions'])
             ->with('success', "{$validated['account']} entry saved.");
+    }
+
+    /**
+     * Bulk upload page for Deductions (Cyd 2026-10-23): one CSV row = one
+     * deduction transaction (Date, Agent, Applicant, Amount, Particular).
+     */
+    public function deductionBulkUpload(): View
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create deduction transactions.');
+
+        return view('agent_report.deduction_bulk');
+    }
+
+    /**
+     * CSV template for the deduction bulk upload.
+     */
+    public function deductionBulkTemplate()
+    {
+        $headers = ['Date', 'Agent', 'Applicant', 'Amount', 'Particular/Description'];
+        $today = now()->toDateString();
+        $sample = [
+            [$today, 'Juan Dela Cruz', 'Dela Cruz, Maria', '1500.00', 'Cash advance balance deduction'],
+            [$today, 'Juan Dela Cruz', '', '250.00', 'Uniform deduction'],
+        ];
+
+        return response()->streamDownload(function () use ($headers, $sample) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            foreach ($sample as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'deductions-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Import the deduction CSV. All-or-nothing: every row is validated first and
+     * nothing is saved when any row has a problem (same contract as the expense
+     * bulk upload, so a half-imported sheet can never happen).
+     */
+    public function deductionBulkImport(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create deduction transactions.');
+
+        $agencyId = auth()->user()->agency_id;
+
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $rows = $this->parseDeductionCsv($request->file('csv_file')->getRealPath());
+        if (is_string($rows)) {
+            return back()->withErrors(['csv_file' => $rows]);
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        $agentByName = [];
+        foreach ($this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->get(['id', 'branch_id', 'name']) as $agent) {
+            $agentByName[$norm($agent->name)][] = $agent;
+        }
+
+        $applicantByAgent = [];
+        foreach (Applicant::where('agency_id', $agencyId)->get(['id', 'agent_id', 'first_name', 'middle_name', 'last_name', 'suffix']) as $applicant) {
+            $applicantByAgent[(int) $applicant->agent_id][$norm($applicant->full_name)] = $applicant;
+            $applicantByAgent[(int) $applicant->agent_id][$norm($applicant->last_name . ', ' . $applicant->first_name)] = $applicant;
+        }
+
+        $errors = [];
+        $validatedRows = [];
+        $duplicateOf = $this->existingDeductionFingerprints($agencyId);
+
+        foreach ($rows as $row) {
+            $line = $row['line'];
+            $d = $row['data'];
+            $rowErrors = [];
+
+            // ---- Date (blank = today) ----
+            $date = now()->toDateString();
+            $dateRaw = trim((string) ($d['date'] ?? ''));
+            if ($dateRaw !== '') {
+                $ts = strtotime($dateRaw);
+                if ($ts === false) {
+                    $rowErrors[] = "Date '{$dateRaw}' is not a valid date.";
+                } else {
+                    $date = date('Y-m-d', $ts);
+                }
+            }
+
+            // ---- Agent (required, must belong to the agency/branch) ----
+            $agent = null;
+            $agentRaw = trim((string) ($d['agent'] ?? ''));
+            if ($agentRaw === '') {
+                $rowErrors[] = 'Agent is required.';
+            } else {
+                $matches = $agentByName[$norm($agentRaw)] ?? [];
+                if (count($matches) === 0) {
+                    $rowErrors[] = "Agent '{$agentRaw}' was not found.";
+                } elseif (count($matches) > 1) {
+                    $rowErrors[] = "Agent '{$agentRaw}' matches more than one agent — use the full name.";
+                } else {
+                    $agent = $matches[0];
+                }
+            }
+
+            // ---- Applicant (optional, must belong to the chosen agent) ----
+            $applicant = null;
+            $applicantRaw = trim((string) ($d['applicant'] ?? ''));
+            if ($applicantRaw !== '' && $agent) {
+                $applicant = $applicantByAgent[(int) $agent->id][$norm($applicantRaw)] ?? null;
+                if (! $applicant) {
+                    $rowErrors[] = "Applicant '{$applicantRaw}' does not belong to agent '{$agent->name}'.";
+                }
+            } elseif ($applicantRaw !== '' && ! $agent) {
+                $rowErrors[] = 'Applicant needs a valid Agent in the same row.';
+            }
+
+            // ---- Amount (required, > 0) ----
+            $amountRaw = trim((string) ($d['amount'] ?? ''));
+            $amountRaw = str_replace([',', '₱', ' '], '', $amountRaw);
+            $amount = null;
+            if ($amountRaw === '') {
+                $rowErrors[] = 'Amount is required.';
+            } elseif (! is_numeric($amountRaw)) {
+                $rowErrors[] = "Amount '{$amountRaw}' must be a number.";
+            } elseif ((float) $amountRaw <= 0) {
+                $rowErrors[] = 'Amount must be greater than zero.';
+            } else {
+                $amount = round((float) $amountRaw, 2);
+            }
+
+            $particular = trim((string) ($d['particular'] ?? '')) ?: null;
+
+            if (empty($rowErrors) && $agent && $amount !== null) {
+                $fingerprint = implode('|', [$agent->id, $date, number_format($amount, 2, '.', ''), $norm($particular ?? ''), $applicant?->id ?? 'null']);
+                if (isset($duplicateOf[$fingerprint])) {
+                    $rowErrors[] = 'This deduction already exists (same agent, date, amount, applicant and description).';
+                } else {
+                    $duplicateOf[$fingerprint] = true;
+                }
+            }
+
+            if ($rowErrors) {
+                $errors[$line] = $rowErrors;
+                continue;
+            }
+
+            $validatedRows[] = [
+                'agency_id'    => $agencyId,
+                'user_id'      => auth()->id(),
+                'agent_id'     => $agent->id,
+                'applicant_id' => $applicant?->id,
+                'date'         => $date,
+                'account'      => AgentDeduction::ACCOUNT_DEDUCTION,
+                'amount'       => $amount,
+                'particular'   => $particular,
+            ];
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors(['csv_file' => 'No rows were imported — ' . count($errors) . ' row(s) need fixing.'])
+                ->with('bulk_errors', $errors)
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($validatedRows) {
+            foreach ($validatedRows as $row) {
+                AgentDeduction::create($row);
+            }
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'deductions'])
+            ->with('success', 'Imported ' . count($validatedRows) . ' deduction transaction(s).');
+    }
+
+    /**
+     * Fingerprints of the deductions already on file, used by the bulk import
+     * so re-uploading the same sheet does not create duplicates.
+     */
+    private function existingDeductionFingerprints(int $agencyId): array
+    {
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+        $map = [];
+
+        foreach (AgentDeduction::where('agency_id', $agencyId)->where('account', AgentDeduction::ACCOUNT_DEDUCTION)->get() as $d) {
+            $key = implode('|', [
+                (int) $d->agent_id,
+                $d->date?->format('Y-m-d') ?? '',
+                number_format((float) $d->amount, 2, '.', ''),
+                $norm($d->particular ?? ''),
+                $d->applicant_id ?? 'null',
+            ]);
+            $map[$key] = true;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Parse the deduction CSV into [{line, data}] with normalized header keys.
+     * Accepts comma/semicolon/tab separators, BOM/UTF-16 (Excel), and any column
+     * order — the header row is matched by name.
+     */
+    private function parseDeductionCsv(string $path)
+    {
+        $raw = @file_get_contents($path);
+        if ($raw === false) {
+            return 'Could not read the uploaded file.';
+        }
+
+        if (str_starts_with($raw, "\xFF\xFE")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16LE');
+        } elseif (str_starts_with($raw, "\xFE\xFF")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16BE');
+        } elseif (str_starts_with($raw, "\xEF\xBB\xBF")) {
+            $raw = substr($raw, 3);
+        }
+        if ($raw !== '' && ! mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+        if (trim($raw) === '') {
+            return 'The file is empty.';
+        }
+
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        $aliases = [
+            'date'         => 'date',
+            'transaction date' => 'date',
+            'agent'        => 'agent',
+            'agent name'   => 'agent',
+            'applicant'    => 'applicant',
+            'applicant name' => 'applicant',
+            'amount'       => 'amount',
+            'particular'   => 'particular',
+            'particular/description' => 'particular',
+            'description'  => 'particular',
+            'particulars'  => 'particular',
+        ];
+
+        $parse = function (string $delimiter) use ($raw, $aliases) {
+            $handle = fopen('php://temp', 'r+');
+            fwrite($handle, $raw);
+            rewind($handle);
+
+            $parsed = [];
+            while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
+                $parsed[] = $cells;
+            }
+            fclose($handle);
+
+            if (empty($parsed)) {
+                return 'The file has no readable rows.';
+            }
+
+            $headerIndex = null;
+            $fieldByIndex = [];
+            foreach (array_slice($parsed, 0, 30, true) as $i => $cells) {
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $candidate = [];
+                foreach ($cells as $idx => $header) {
+                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $field = $aliases[$key] ?? null;
+                    if ($field && ! in_array($field, $candidate, true)) {
+                        $candidate[$idx] = $field;
+                    }
+                }
+                if (in_array('agent', $candidate, true) && in_array('amount', $candidate, true)) {
+                    $headerIndex = $i;
+                    $fieldByIndex = $candidate;
+                    break;
+                }
+            }
+
+            if ($headerIndex === null) {
+                return 'No header row found. The first row must name the columns: Date, Agent, Applicant, Amount, Particular/Description.';
+            }
+
+            $rows = [];
+            $lineNo = $headerIndex + 1;
+            foreach (array_slice($parsed, $headerIndex + 1, null, true) as $i => $cells) {
+                $lineNo = $i + 1;
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $data = [];
+                foreach ($fieldByIndex as $idx => $field) {
+                    $data[$field] = $cells[$idx] ?? '';
+                }
+                $rows[] = ['line' => $lineNo, 'data' => $data];
+            }
+
+            if (empty($rows)) {
+                return 'The file has no data rows — add at least one deduction below the header.';
+            }
+
+            if (count($rows) > 2000) {
+                return 'The file has too many rows (' . count($rows) . '). Split it into batches of 2000 or fewer.';
+            }
+
+            return $rows;
+        };
+
+        $lastError = null;
+        foreach ([',', ';', "\t"] as $delimiter) {
+            $result = $parse($delimiter);
+            if (is_array($result)) {
+                return $result;
+            }
+            $lastError = $result;
+        }
+
+        return $lastError ?? 'Could not read the file.';
     }
 
     /**
