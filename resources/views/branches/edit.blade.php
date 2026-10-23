@@ -36,7 +36,7 @@
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">🏷️ Name <span class="text-error">*</span></legend>
                 <input type="text" name="name" value="{{ old('name', $branch->name) }}" required
-                    class="input w-full" placeholder="e.g. Main Branch">
+                    class="input w-full" placeholder="e.g. Main Office">
                 @error('name') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
             </fieldset>
 

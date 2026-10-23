@@ -403,12 +403,12 @@ class Applicant extends Model implements AuthenticatableContract
     /**
      * Display label for the Branch column.
      *
-     * Applicants with no branch assigned belong to the agency's main office
-     * ("main branch"); they used to render blank/"—" on the table views, so
-     * show "Main Branch" instead. (Toybits report 2026-10-16.)
+     * Applicants with no branch assigned belong to the agency's head office;
+     * they used to render blank/"—" on the table views, so show "Main Office"
+     * instead. (Toybits report 2026-10-16; Cyd renamed it 2026-10-23.)
      */
     public function getBranchLabelAttribute(): string
     {
-        return $this->branch?->name ?? 'Main Branch';
+        return $this->branch?->name ?? 'Main Office';
     }
 }

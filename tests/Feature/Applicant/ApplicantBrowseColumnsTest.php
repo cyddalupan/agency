@@ -174,11 +174,11 @@ class ApplicantBrowseColumnsTest extends TestCase
     }
 
     #[Test]
-    public function branch_column_shows_main_branch_when_applicant_has_no_branch(): void
+    public function branch_column_shows_main_office_when_applicant_has_no_branch(): void
     {
-        // Applicants with no branch belong to the main office ("main branch").
-        // They used to render blank/"—"; the table must now show "Main Branch".
-        // (Toybits report 2026-10-16.)
+        // Applicants with no branch belong to the agency's head office.
+        // They used to render blank/"—"; the table must now show "Main Office".
+        // (Toybits report 2026-10-16; Cyd renamed Main Branch -> Main Office 2026-10-23.)
         Applicant::factory()->create([
             'agency_id'  => $this->agency->id,
             'first_name' => 'NoBranch',
@@ -190,7 +190,7 @@ class ApplicantBrowseColumnsTest extends TestCase
         $response = $this->actingAs($this->user)->get(route('applicants.index'));
 
         $response->assertOk();
-        $response->assertSee('Main Branch');
+        $response->assertSee('Main Office');
     }
 
     #[Test]
