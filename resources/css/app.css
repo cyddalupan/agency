@@ -58,6 +58,39 @@ main {
     height: 60%;
 }
 
+/* ───────────── READABLE TABLES INSIDE ALERTS ───────────── */
+/* Bulk-upload error blocks render a table inside `alert alert-error`.
+   daisyUI's table-zebra paints even rows with base-200 (near-white) while the
+   alert's own text colour stays light — white-on-white, so the error words are
+   unreadable. Inside an alert we keep ONE colour (the alert's) for every row
+   and cell: background transparent, text inherited. */
+.alert table,
+.alert table thead,
+.alert table tbody,
+.alert table tr,
+.alert table th,
+.alert table td {
+    background-color: transparent !important;
+}
+.alert table th,
+.alert table td,
+.alert table th *,
+.alert table td * {
+    color: inherit !important;
+}
+.alert table th,
+.alert table td {
+    border-color: color-mix(in oklab, currentColor 25%, transparent) !important;
+}
+.alert table thead th {
+    font-weight: 700;
+    opacity: 0.9;
+}
+.alert table tbody tr:hover,
+.alert table tbody tr:hover td {
+    background-color: color-mix(in oklab, currentColor 8%, transparent) !important;
+}
+
 /* ───────────── BADGE GLOW ───────────── */
 .badge-glow {
     animation: glowPulse 2s ease-in-out infinite;
