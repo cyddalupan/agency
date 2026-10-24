@@ -1515,6 +1515,42 @@ class ExpenseRequestController extends Controller
     }
 
     /**
+     * Admin-only soft delete (Cyd 2026-10-24, card "Transactions: Expense and
+     * Receivable 'Delete'"). The reason is kept on the status history so the
+     * transaction can still be explained after it disappears from the lists.
+     */
+    public function destroy(Request $request, ExpenseRequest $expenseRequest): RedirectResponse
+    {
+        $this->authorizeAgency($expenseRequest);
+
+        if (! in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true)) {
+            abort(403, 'Only admin can delete expense transactions.');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($expenseRequest, $validated) {
+            ExpenseRequestStatusHistory::create([
+                'expense_request_id' => $expenseRequest->id,
+                'agency_id'          => $expenseRequest->agency_id,
+                'user_id'            => auth()->id(),
+                'from_status'        => $expenseRequest->status,
+                'to_status'          => 'deleted',
+                'note'               => $validated['reason'],
+            ]);
+
+            // Line items stay in place: agent paid entries reference them, and
+            // the soft-deleted request already hides them from every list.
+            $expenseRequest->delete();
+        });
+
+        return redirect()->route('expense_request.index')
+            ->with('success', 'Expense transaction deleted.');
+    }
+
+    /**
      * Only admin/super_admin may change expense request statuses (single or batch).
      */
     private function authorizeStatusChange(): void

@@ -266,6 +266,11 @@
                                             <td rowspan="{{ $request->items->count() }}">
                                                 <div class="flex items-center gap-2">
                                                     <a href="{{ route('expense_request.show', $request) }}" class="link link-primary">Review</a>
+                                                    {{-- Admin-only delete (Cyd 2026-10-24) --}}
+                                                    @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
+                                                        <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                                onclick="document.getElementById('delete-request-{{ $request->id }}').showModal()">Delete</button>
+                                                    @endif
                                                 </div>
                                             </td>
                                         @endif
@@ -283,7 +288,19 @@
                                         <td class="font-mono">{{ $request->reference_no }}</td>
                                         <td>{{ $request->created_at?->format('Y-m-d H:i') }}</td>
                                         <td>{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
-                                        <td colspan="{{ in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']) ? 11 : 10 }}" class="opacity-50">No line items</td>
+                                        @php $showReview = in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing'], true); @endphp
+                                        <td colspan="{{ $showReview ? 10 : 10 }}" class="opacity-50">No line items</td>
+                                        @if($showReview)
+                                            <td>
+                                                <div class="flex items-center gap-2">
+                                                    <a href="{{ route('expense_request.show', $request) }}" class="link link-primary">Review</a>
+                                                    @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
+                                                        <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                                onclick="document.getElementById('delete-request-{{ $request->id }}').showModal()">Delete</button>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        @endif
                                     </tr>
                                 @endif
 
@@ -293,6 +310,27 @@
                 </div>
             @else
                 <p class="opacity-60">No expense requests yet. <a href="{{ route('expense_request.create') }}" class="link link-primary">Create one</a>.</p>
+            @endif
+
+            {{-- Admin-only delete dialogs (Cyd 2026-10-24): the reason is stored on the status history. --}}
+            @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
+                @foreach($requests as $request)
+                    <dialog id="delete-request-{{ $request->id }}" class="modal">
+                        <div class="modal-box">
+                            <h3 class="font-bold text-lg">Delete {{ $request->reference_no }}?</h3>
+                            <p class="text-sm opacity-70 mt-1">The transaction is hidden from every list (soft delete). Tell us why.</p>
+                            <form method="POST" action="{{ route('expense_request.destroy', $request) }}" class="mt-4 space-y-3">
+                                @csrf
+                                @method('DELETE')
+                                <textarea name="reason" class="textarea textarea-bordered w-full" rows="3" required placeholder="Reason for deleting this transaction"></textarea>
+                                <div class="modal-action">
+                                    <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+                                    <button type="submit" class="btn btn-error">Delete</button>
+                                </div>
+                            </form>
+                        </div>
+                    </dialog>
+                @endforeach
             @endif
         </div>
     </div>

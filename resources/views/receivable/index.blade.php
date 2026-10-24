@@ -135,7 +135,14 @@
                                 <td>{{ $r->type ?? '—' }}</td>
                                 <td>{{ $r->debit_account ?? '—' }}</td>
                                 <td>
-                                    <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                        {{-- Admin-only delete (Cyd 2026-10-24) --}}
+                                        @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
+                                            <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                    onclick="document.getElementById('delete-receivable-{{ $r->id }}').showModal()">Delete</button>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach
@@ -144,6 +151,27 @@
                 </div>
             @else
                 <p class="opacity-50 text-sm py-6 text-center">No receivable transactions yet.</p>
+            @endif
+
+            {{-- Admin-only delete dialogs (Cyd 2026-10-24): reason goes into the receivable history. --}}
+            @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
+                @foreach($receivables as $r)
+                    <dialog id="delete-receivable-{{ $r->id }}" class="modal">
+                        <div class="modal-box">
+                            <h3 class="font-bold text-lg">Delete {{ $r->code }}?</h3>
+                            <p class="text-sm opacity-70 mt-1">The receivable is hidden from every list (soft delete). Tell us why.</p>
+                            <form method="POST" action="{{ route('receivable.destroy', $r) }}" class="mt-4 space-y-3">
+                                @csrf
+                                @method('DELETE')
+                                <textarea name="reason" class="textarea textarea-bordered w-full" rows="3" required placeholder="Reason for deleting this receivable"></textarea>
+                                <div class="modal-action">
+                                    <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+                                    <button type="submit" class="btn btn-error">Delete</button>
+                                </div>
+                            </form>
+                        </div>
+                    </dialog>
+                @endforeach
             @endif
         </div>
     </div>

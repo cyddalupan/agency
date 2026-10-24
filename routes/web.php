@@ -474,6 +474,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
             ;
         Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
             ;
+        // Admin-only delete (Cyd 2026-10-24)
+        Route::delete('/{expense_request}', [ExpenseRequestController::class, 'destroy'])->name('destroy')
+            ;
     });
 
     // Receivable & Payments module — Tab 3: Agents Report
