@@ -97,6 +97,7 @@ if (!function_exists('app_applicant_form_defaults')) {
             'position_ids'     => [],
             'status_codes'     => [],
             'sources'          => ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'],
+            'custom_sources'   => [],
             'enable_firstimer' => true,
             'firstimer_options'=> ['Firstimer', 'Ex-Abroad'],
         ];
@@ -114,12 +115,59 @@ if (!function_exists('app_applicant_form_defaults')) {
 
 if (!function_exists('app_source_options')) {
     /**
-     * Known, canonical source options (used by the settings selector UI).
-     * Agencies enable a subset; unknown/typo values are never rendered.
+     * Canonical (built-in) source options shipped with the app.
+     * Agencies may additionally add their own sources in Settings — see
+     * app_agency_source_options().
      */
     function app_source_options(): array
     {
         return ['Facebook', 'Referral', 'Walk-in', 'Website', 'Other', 'Branch'];
+    }
+}
+
+if (!function_exists('app_normalize_source_name')) {
+    /**
+     * Clean a user-typed source name: strip tags, collapse whitespace, trim,
+     * and cap the length. Returns '' when nothing usable is left.
+     */
+    function app_normalize_source_name(?string $value): string
+    {
+        $value = strip_tags((string) $value);
+        $value = preg_replace('/\s+/u', ' ', $value) ?? '';
+        $value = trim($value);
+
+        return \Illuminate\Support\Str::limit($value, 40, '');
+    }
+}
+
+if (!function_exists('app_agency_source_options')) {
+    /**
+     * All source options available to an agency: the canonical list plus any
+     * custom sources the agency added in Settings (deduped case-insensitively,
+     * canonical order first, then customs in the order they were added).
+     */
+    function app_agency_source_options(?\App\Models\Agency $agency = null): array
+    {
+        $agency = $agency ?? resolve_agency();
+        $options = app_source_options();
+
+        if (! $agency) {
+            return $options;
+        }
+
+        $defaults = app_applicant_form_defaults($agency);
+        foreach ((array) ($defaults['custom_sources'] ?? []) as $custom) {
+            $custom = app_normalize_source_name(is_string($custom) ? $custom : '');
+            if ($custom === '') {
+                continue;
+            }
+            if (in_array(mb_strtolower($custom), array_map('mb_strtolower', $options), true)) {
+                continue;
+            }
+            $options[] = $custom;
+        }
+
+        return $options;
     }
 }
 

@@ -11,8 +11,8 @@
     <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 p-4">
         <h2 class="text-2xl font-bold">📋 Applicant Form Defaults</h2>
         <p class="opacity-60 text-sm mt-1">
-            Choose which options appear on your agency's "Add Applicant" form. Options are picked
-            from existing reference data — no typing, so no typos.
+            Choose which options appear on your agency's "Add Applicant" form. Positions and statuses
+            are picked from existing reference data; Sources can also be added by hand below.
         </p>
     </div>
 
@@ -64,7 +64,7 @@
                 </div>
             </fieldset>
 
-            {{-- Source (select from fixed known list) --}}
+            {{-- Source (canonical list + agency's own sources) --}}
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">📱 Source</legend>
                 <p class="text-xs opacity-60 mb-2">Tick the Source options available (incl. Branch).</p>
@@ -77,6 +77,29 @@
                             {{ $src }}
                         </label>
                     @endforeach
+                    @foreach($customSources ?? [] as $src)
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="sources[]" value="{{ $src }}"
+                                   class="checkbox checkbox-sm"
+                                   @checked(in_array($src, $defaults['sources'] ?? []))>
+                            {{ $src }}
+                            <span class="badge badge-xs badge-ghost">custom</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="mt-4 p-3 rounded-lg bg-base-200/50">
+                    <label class="label" for="new_sources">
+                        <span class="label-text font-medium">➕ Add source</span>
+                    </label>
+                    <input type="text" id="new_sources" name="new_sources"
+                           class="input input-bordered input-sm w-full"
+                           placeholder="e.g. TikTok, Job Fair, Flyer"
+                           value="{{ old('new_sources') }}">
+                    <p class="text-xs opacity-60 mt-2">
+                        Separate multiple sources with a comma. New sources are added and ticked automatically.
+                        Untick a custom source to remove it from the list.
+                    </p>
                 </div>
             </fieldset>
 

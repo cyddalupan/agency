@@ -283,7 +283,8 @@ class ApplicantController extends Controller
         $religions = Religion::orderBy('name')->get();
         $civilStatuses = CivilStatus::orderBy('name')->get();
 
-        $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        // Canonical sources + any the agency added in Settings ("Add source").
+        $sources = $this->configuredSources($defaults);
         $branches = $this->assignableBranches();
         $agents = $this->assignableAgents();
 
@@ -1224,7 +1225,7 @@ class ApplicantController extends Controller
         // Same configurable source list as the Add Applicant form — never a
         // hardcoded list. This keeps Add and Edit in sync so sources like
         // "Branch" (and any agency-enabled source) render and stay selected.
-        $sources = array_values(array_intersect(app_source_options(), $defaults['sources'] ?? []));
+        $sources = $this->configuredSources($defaults);
         $branches = $this->assignableBranches();
         $agents = $this->assignableAgents();
 
@@ -1445,6 +1446,27 @@ class ApplicantController extends Controller
         }
 
         return $query->orderBy('name')->get();
+    }
+
+    /**
+     * Sources shown on Add/Edit Applicant: the agency's ticked sources (canonical
+     * plus any it added in Settings), in the order they were configured.
+     */
+    private function configuredSources(array $defaults): array
+    {
+        $allowed = app_agency_source_options();
+        $picked  = (array) ($defaults['sources'] ?? []);
+
+        if (! $picked) {
+            return array_values($allowed);
+        }
+
+        $sources = array_values(array_filter(
+            $picked,
+            fn ($src) => is_string($src) && in_array($src, $allowed, true)
+        ));
+
+        return $sources ?: array_values($allowed);
     }
 
     /**
