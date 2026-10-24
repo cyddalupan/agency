@@ -59,6 +59,55 @@ class AgentDeductionBulkUploadTest extends TestCase
     }
 
     #[Test]
+    public function plain_admin_accounts_can_manage_deductions(): void
+    {
+        // Josh @ LANDAS 2026-10-23: "wala xa sa admin side, meron sa accounting"
+        // — a plain Admin (name not in the privileged list) must get the forms.
+        $admin = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'branch_id' => $this->branch->id,
+            'user_type' => 'admin',
+            'name'      => 'Gulf Admin',
+        ]);
+
+        $this->actingAs($admin)->get(route('agent_report.deduction.bulk'))->assertOk();
+        $this->actingAs($admin)->get(route('agent_report.deduction.create'))->assertOk();
+        $this->actingAs($admin)->get(route('agent_report.index', ['tab' => 'deductions']))
+            ->assertOk()
+            ->assertSee('Bulk Upload');
+    }
+
+    #[Test]
+    public function accounting_accounts_can_manage_deductions(): void
+    {
+        $accounting = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'branch_id' => $this->branch->id,
+            'user_type' => 'billing',
+            'name'      => 'Accounting Staff',
+        ]);
+
+        $this->actingAs($accounting)->get(route('agent_report.deduction.bulk'))->assertOk();
+    }
+
+    #[Test]
+    public function branch_accounts_still_cannot_create_deductions(): void
+    {
+        $branchUser = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'branch_id' => $this->branch->id,
+            'user_type' => 'branch',
+            'name'      => 'ILOILO BRANCH',
+        ]);
+
+        $this->actingAs($branchUser)->get(route('agent_report.deduction.bulk'))->assertForbidden();
+        $this->actingAs($branchUser)->get(route('agent_report.deduction.create'))->assertForbidden();
+        $this->actingAs($branchUser)->get(route('agent_report.index', ['tab' => 'deductions']))
+            ->assertOk()
+            ->assertDontSee('Bulk Upload');
+    }
+
+    #[Test]
     public function deductions_tab_lists_only_deduction_rows(): void
     {
         AgentDeduction::create([

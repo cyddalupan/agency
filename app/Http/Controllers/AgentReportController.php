@@ -179,18 +179,25 @@ class AgentReportController extends Controller
     }
 
     /**
-     * (Cyd 2026-09-26) Only Admin (super_admin/admin) and Accounting (billing)
-     * may create Deduction transactions. Everyone else has the tab hidden and
-     * the create/store routes return 403.
+     * (Cyd 2026-09-26) Admin (super_admin/admin) and Accounting (billing) may
+     * create Deduction transactions; everyone else gets the tab without the
+     * create/bulk buttons and a 403 on the create/store/bulk routes.
+     *
+     * (Josh @ LANDAS 2026-10-23) "wala xa sa admin side, meron sa accounting" —
+     * the buttons were hidden for plain Admin accounts. Admin is now included
+     * on purpose, alongside the privileged accounts (Mae, Evelyn, Angel) that
+     * Cyd listed on 2026-09-28.
      */
     private function canManageDeductions(): bool
     {
         $user = auth()->user();
 
-        // (Cyd 2026-09-28 #11) Only the privileged accounts (Mae, Evelyn,
-        // Angel) may create agent deductions. Everyone else: tab hidden +
-        // create/store 403.
-        return $user && $user->isPrivileged();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->isPrivileged()
+            || in_array((string) $user->user_type, ['super_admin', 'admin', 'billing'], true);
     }
 
     // ------------------------------------------------------------------
