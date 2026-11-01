@@ -184,6 +184,119 @@ class ReceivableController extends Controller
     }
 
     /**
+     * Edit form for an existing transaction (Cyd 2026-11-01: Admin + Accounting
+     * may edit Receivable and Expenses & Payments transactions).
+     */
+    public function edit(Receivable $receivable): View
+    {
+        $this->authorizeAgency($receivable);
+        $this->authorizeBranch($receivable);
+        $this->authorizeTransactionEdit();
+
+        $agencyId = auth()->user()->agency_id;
+        $user = auth()->user();
+
+        $agents = Agent::where('agency_id', $agencyId)->with('branch');
+        if ($user->isBranchLocked()) {
+            $agents->where(function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+
+        $applicants = Applicant::where('agency_id', $agencyId);
+        if ($user->isBranchLocked()) {
+            $applicants->whereHas('agent', function ($agentQ) use ($user) {
+                $agentQ->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+
+        return view('receivable.create', [
+            'record'         => $receivable,
+            'isEdit'         => true,
+            'agents'         => $agents->orderBy('name')->get(),
+            'applicants'     => $applicants->orderBy('last_name')->orderBy('first_name')->get(['id', 'agent_id', 'first_name', 'last_name']),
+            'code'           => $receivable->code,
+            'accounts'       => Receivable::ACCOUNTS,
+            'debitAccounts'  => Receivable::DEBIT_ACCOUNTS,
+            'types'          => Receivable::TYPES,
+            'modes'          => Receivable::MODES,
+        ]);
+    }
+
+    /**
+     * Save the edited transaction. Code, status and encoder stay untouched.
+     */
+    public function update(Request $request, Receivable $receivable): RedirectResponse
+    {
+        $this->authorizeAgency($receivable);
+        $this->authorizeBranch($receivable);
+        $this->authorizeTransactionEdit();
+
+        $agencyId = auth()->user()->agency_id;
+
+        $validated = $request->validate([
+            'date'          => ['required', 'date'],
+            'ref_ar'        => ['nullable', 'string', 'max:100'],
+            // Legacy rows may carry no agent at all; keep them editable instead
+            // of forcing the user to attach one just to fix a typo.
+            'agent_id'      => [$receivable->agent_id ? 'required' : 'nullable', 'integer', 'exists:agents,id'],
+            'applicant_id'  => ['nullable', 'integer', 'exists:applicants,id'],
+            'amount'        => ['required', 'numeric', 'min:0.01'],
+            'account'       => ['nullable', 'string', 'max:80'],
+            'debit_account' => ['nullable', 'string', 'max:40'],
+            'type'          => ['nullable', 'string', 'max:40'],
+            'mode'          => ['nullable', 'string', 'max:40'],
+            'particular'    => ['nullable', 'string'],
+        ]);
+
+        $agent = ! empty($validated['agent_id'])
+            ? Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id'])
+            : null;
+
+        $user = auth()->user();
+        if ($agent && $user->isBranchLocked()) {
+            $agentBranchId = $agent->branch_id;
+            if ($agentBranchId !== null && (int) $agentBranchId !== (int) $user->branch_id) {
+                return back()->withErrors([
+                    'agent_id' => 'You can only file receivables for agents in your own branch.',
+                ])->withInput();
+            }
+        }
+
+        if (! empty($validated['applicant_id'])) {
+            $applicant = Applicant::where('agency_id', $agencyId)->find($validated['applicant_id']);
+            if (! $applicant || ($agent && (int) $applicant->agent_id !== (int) $agent->id)) {
+                return back()->withErrors(['applicant_id' => 'Applicant must belong to the selected agent.'])->withInput();
+            }
+        }
+
+        $receivable->update($validated);
+
+        ReceivableHistory::create([
+            'receivable_id' => $receivable->id,
+            'agency_id'     => $receivable->agency_id,
+            'user_id'       => auth()->id(),
+            'from_status'   => $receivable->status,
+            'to_status'     => $receivable->status,
+            'note'          => 'Transaction details edited by ' . ($user->name ?? 'user'),
+        ]);
+
+        return redirect()->route('receivable.show', $receivable)
+            ->with('success', "Receivable {$receivable->code} updated.");
+    }
+
+    /**
+     * Admin + Accounting (billing) may edit transactions.
+     */
+    private function authorizeTransactionEdit(): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->canEditTransactions()) {
+            abort(403, 'Only Admin and Accounting can edit transactions.');
+        }
+    }
+
+    /**
      * Admin-only: change status and log the change.
      */
     public function updateStatus(Request $request, Receivable $receivable): RedirectResponse

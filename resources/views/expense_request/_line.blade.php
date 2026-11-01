@@ -1,6 +1,9 @@
 @php $idx = (int) $index; @endphp
 <div class="card bg-base-200/50 border border-base-300 expense-line" data-index="{{ $index }}">
     <div class="card-body p-4">
+        @if(!empty($line['id']))
+            <input type="hidden" name="lines[{{ $index }}][id]" value="{{ $line['id'] }}">
+        @endif
         <div class="flex items-center justify-between mb-2">
             <h4 class="font-bold text-sm">Line #{{ $idx + 1 }}</h4>
             <button type="button" class="btn btn-ghost btn-xs remove-line">✕ Remove</button>
@@ -90,22 +93,32 @@
         </div>
 
         {{-- Account Type (sub account): gated by Charge; main is auto-derived from charge --}}
+        {{-- Toybits 2026-09-23: wrapped in a searchable combobox (the flat account list is long). --}}
         <div class="form-control mt-1">
             <label class="label"><span class="label-text">Account Type *</span></label>
-            <select name="lines[{{ $index }}][sub_account_id]" class="select select-bordered select-sm" required>
-                <option value="">- select -</option>
-                @foreach($allAccounts as $acct)
-                    <option value="{{ $acct->id }}" data-offset="{{ $acct->charge_type }}" {{ ($line['sub_account_id'] ?? '') == $acct->id ? 'selected' : '' }}>
-                        {{ $acct->name }}
-                    </option>
-                @endforeach
-            </select>
+            <div class="searchable-select relative" data-ss data-search-placeholder="Search account type…">
+                <input type="text" class="input input-bordered input-sm ss-input w-full"
+                       placeholder="Search account type…" autocomplete="off" autocapitalize="off" spellcheck="false"
+                       role="combobox" aria-expanded="false" aria-autocomplete="list">
+                <div class="ss-menu hidden" role="listbox" hidden></div>
+                <select name="lines[{{ $index }}][sub_account_id]" class="ss-native select select-bordered select-sm" required>
+                    <option value="">- select -</option>
+                    @foreach($allAccounts as $acct)
+                        <option value="{{ $acct->id }}" data-offset="{{ $acct->charge_type }}" {{ ($line['sub_account_id'] ?? '') == $acct->id ? 'selected' : '' }}>
+                            {{ $acct->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
         {{-- Upload --}}
         <div class="form-control mt-1">
             <label class="label"><span class="label-text">Attachment</span></label>
             <input type="file" name="lines[{{ $index }}][file]" class="file-input file-input-bordered file-input-sm">
+            @if(!empty($line['has_file']))
+                <p class="text-xs opacity-60 mt-1">A file is already attached — upload a new one to replace it.</p>
+            @endif
         </div>
     </div>
 </div>

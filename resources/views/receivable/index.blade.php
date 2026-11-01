@@ -137,6 +137,10 @@
                                 <td>
                                     <div class="flex items-center gap-1">
                                         <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                        {{-- Admin + Accounting may edit (Cyd 2026-11-01) --}}
+                                        @if(auth()->user()->canEditTransactions())
+                                            <a href="{{ route('receivable.edit', $r->id) }}" class="btn btn-xs btn-outline whitespace-nowrap">✏️ Edit</a>
+                                        @endif
                                         {{-- Admin-only delete (Cyd 2026-10-24) --}}
                                         @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
                                             <button type="button" class="btn btn-xs btn-error btn-outline"

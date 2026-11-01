@@ -266,6 +266,280 @@ class ExpenseRequestController extends Controller
     }
 
     /**
+     * Edit form for an existing expense request (Cyd 2026-11-01: Admin +
+     * Accounting may edit Receivable and Expenses & Payments transactions).
+     * Reuses the create screen — it is pre-filled with the saved lines.
+     */
+    public function edit(ExpenseRequest $expenseRequest): View
+    {
+        $this->authorizeAgency($expenseRequest);
+
+        $user = auth()->user();
+        if (! $user->canEditTransactions()) {
+            abort(403, 'Only Admin and Accounting can edit transactions.');
+        }
+        if ($this->branchLocked($user) && $expenseRequest->branch_id !== null
+            && (int) $expenseRequest->branch_id !== (int) $user->branch_id) {
+            abort(403, 'You can only edit expense requests for your own branch.');
+        }
+
+        $agencyId = auth()->user()->agency_id;
+
+        $branches = Branch::where('agency_id', $agencyId);
+        $agents = Agent::where('agency_id', $agencyId)->with('branch');
+        if ($this->branchLocked($user)) {
+            $branches->where('id', $user->branch_id);
+            $agents->where(function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id)->orWhereNull('branch_id');
+            });
+        }
+        $branches = $branches->orderBy('name')->get();
+        $agents = $agents->orderBy('name')->get();
+        $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
+        $countries = Country::orderBy('name')->get();
+
+        $mains = Account::mains()->with('children')
+            ->where('agency_id', $agencyId)
+            ->orderBy('name')
+            ->get();
+
+        $allAccounts = collect();
+        foreach ($mains as $main) {
+            foreach ($main->children as $child) {
+                $allAccounts->push((object) [
+                    'id'          => $child->id,
+                    'parent_id'   => $main->id,
+                    'name'        => $main->name . ' → ' . $child->name,
+                    'charge_type' => $child->charge_type ?? 'office',
+                ]);
+            }
+            if ($main->children->isEmpty()) {
+                $allAccounts->push((object) [
+                    'id'          => $main->id,
+                    'parent_id'   => $main->id,
+                    'name'        => $main->name,
+                    'charge_type' => $main->charge_type ?? 'office',
+                ]);
+            }
+        }
+
+        $existingLines = $expenseRequest->items->map(function (ExpenseRequestItem $item) {
+            return [
+                'id'           => $item->id,
+                'charge'       => $item->charge,
+                'agent_id'     => $item->agent_id,
+                'applicant_id' => $item->applicant_id,
+                'country_id'   => $item->country_id,
+                'currency'     => $item->currency,
+                'amount'       => $item->amount,
+                'payment'      => $item->payment,
+                'particular'   => $item->particular,
+                'account_id'   => $item->account_id,
+                'has_file'     => (bool) $item->file_path,
+            ];
+        })->all();
+
+        return view('expense_request.create', compact(
+            'branches', 'agents', 'applicants', 'countries', 'mains', 'allAccounts'
+        ) + [
+            'record'        => $expenseRequest,
+            'isEdit'        => true,
+            'existingLines' => $existingLines,
+        ]);
+    }
+
+    /**
+     * Save an edited expense request: header + line items (add / update / remove).
+     * The reference number, encoder and status roll-up stay untouched.
+     */
+    public function update(Request $request, ExpenseRequest $expenseRequest): RedirectResponse
+    {
+        $this->authorizeAgency($expenseRequest);
+
+        $user = auth()->user();
+        if (! $user->canEditTransactions()) {
+            abort(403, 'Only Admin and Accounting can edit transactions.');
+        }
+        if ($this->branchLocked($user) && $expenseRequest->branch_id !== null
+            && (int) $expenseRequest->branch_id !== (int) $user->branch_id) {
+            abort(403, 'You can only edit expense requests for your own branch.');
+        }
+
+        $agencyId = $user->agency_id;
+
+        $validated = $request->validate([
+            'date'      => ['nullable', 'date'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'notes'     => ['nullable', 'string'],
+            'lines'     => ['required', 'array', 'min:1'],
+            'lines.*.id'              => ['nullable', 'integer'],
+            'lines.*.charge'          => ['required', 'in:office,agent'],
+            'lines.*.main_account_id' => ['nullable', 'integer', 'exists:accounts,id'],
+            'lines.*.sub_account_id'  => ['nullable', 'integer', 'exists:accounts,id'],
+            'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
+            'lines.*.applicant_id'    => ['nullable', 'integer', 'exists:applicants,id'],
+            'lines.*.country_id'      => ['nullable', 'integer', 'exists:countries,id'],
+            'lines.*.currency'        => ['required', 'in:PHP,USD'],
+            'lines.*.amount'          => ['required', 'numeric', 'min:0.01'],
+            'lines.*.payment'         => ['nullable', 'numeric', 'min:0'],
+            'lines.*.particular'      => ['nullable', 'string'],
+            'lines.*.file'            => ['nullable', 'file', 'max:5120'],
+        ]);
+
+        $branchId = $validated['branch_id'] ?? null;
+
+        if ($this->branchLocked($user)) {
+            if (blank($branchId)) {
+                $branchId = $user->branch_id;
+            } elseif ((int) $branchId !== (int) $user->branch_id) {
+                return back()->withErrors([
+                    'branch_id' => 'You can only file expense requests for your own branch.',
+                ])->withInput();
+            }
+        }
+
+        if ($branchId) {
+            $branch = Branch::where('agency_id', $agencyId)->find($branchId);
+            if (! $branch) {
+                return back()->withErrors(['branch_id' => 'Invalid branch for this agency.'])->withInput();
+            }
+        }
+
+        try {
+            DB::transaction(function () use ($request, $validated, $agencyId, $branchId, $expenseRequest) {
+                $expenseRequest->update([
+                    'date'      => $validated['date'] ?? $expenseRequest->date,
+                    'branch_id' => $branchId,
+                    'notes'     => $validated['notes'] ?? null,
+                ]);
+
+                $keptIds = [];
+
+                foreach ($validated['lines'] as $index => $line) {
+                    // Same account-group rules as store(): the account must match
+                    // the charge (office / agent) and, for office lines, the
+                    // presence of an applicant.
+                    $group = $line['charge'] === 'agent'
+                        ? 'agent'
+                        : (! empty($line['applicant_id']) ? 'applicant' : 'office');
+
+                    $main = null;
+                    if (! empty($line['main_account_id'])) {
+                        $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
+                    } else {
+                        // No explicit main in the payload: derive it from the
+                        // sub-account (or the group's main) so edits that only
+                        // touch the sub-account still resolve.
+                        if (! empty($line['sub_account_id'])) {
+                            $sub = Account::where('agency_id', $agencyId)->find($line['sub_account_id']);
+                            $main = $sub?->parent_id
+                                ? Account::where('agency_id', $agencyId)->find($sub->parent_id)
+                                : null;
+                        }
+                        $main = $main ?: Account::mains()
+                            ->where('agency_id', $agencyId)
+                            ->where('charge_type', $group)
+                            ->orderBy('name')
+                            ->first();
+                    }
+
+                    if (! $main || ! $main->isMain()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            "lines.$index.main_account_id" => 'Selected Main Account is invalid.',
+                        ]);
+                    }
+
+                    if ($main->charge_type !== $group) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            "lines.$index.main_account_id" => 'Account type must match the charge (office/agent).',
+                        ]);
+                    }
+
+                    $account = $main;
+                    if (! empty($line['sub_account_id'])) {
+                        $sub = Account::where('agency_id', $agencyId)
+                            ->where('parent_id', $main->id)
+                            ->find($line['sub_account_id']);
+                        if (! $sub) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                "lines.$index.sub_account_id" => 'Selected Sub Account is invalid.',
+                            ]);
+                        }
+                        if ($sub->charge_type !== $group) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                "lines.$index.sub_account_id" => 'Sub Account type must match the charge (office/agent).',
+                            ]);
+                        }
+                        $account = $sub;
+                    }
+
+                    if (! empty($line['agent_id'])) {
+                        $agentQuery = Agent::where('agency_id', $agencyId);
+                        if ($branchId) {
+                            $agentQuery->where('branch_id', $branchId);
+                        }
+                        if (! $agentQuery->whereKey($line['agent_id'])->exists()) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'lines.*.agent_id' => 'Agent must belong to the selected branch.',
+                            ]);
+                        }
+                    }
+
+                    if (! empty($line['applicant_id'])) {
+                        $applicant = Applicant::where('agency_id', $agencyId)->find($line['applicant_id']);
+                        $agentId = $line['agent_id'] ?? null;
+                        if (! $applicant || ($agentId && $applicant->agent_id !== (int) $agentId)) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'lines.*.applicant_id' => 'Applicant must belong to the selected agent.',
+                            ]);
+                        }
+                    }
+
+                    $payload = [
+                        'charge'       => $line['charge'],
+                        'agent_id'     => $line['agent_id'] ?? null,
+                        'applicant_id' => $line['applicant_id'] ?? null,
+                        'country_id'   => $line['country_id'] ?? null,
+                        'currency'     => $line['currency'],
+                        'amount'       => $line['amount'],
+                        'payment'      => $line['payment'] ?? 0,
+                        'account_id'   => $account->id,
+                        'particular'   => $line['particular'] ?? null,
+                    ];
+
+                    $filePath = $this->storeLineFile($request, $index);
+                    if ($filePath) {
+                        $payload['file_path'] = $filePath;
+                    }
+
+                    $itemId = $line['id'] ?? null;
+                    $item = $itemId
+                        ? $expenseRequest->items()->whereKey($itemId)->first()
+                        : null;
+
+                    if ($item) {
+                        $item->update($payload);
+                        $keptIds[] = $item->id;
+                    } else {
+                        $created = $expenseRequest->items()->create($payload + [
+                            'status' => ExpenseRequest::STATUS_PENDING,
+                        ]);
+                        $keptIds[] = $created->id;
+                    }
+                }
+
+                // Lines dropped from the form are deleted from the request.
+                $expenseRequest->items()->whereNotIn('id', $keptIds)->delete();
+            });
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
+
+        return redirect()->route('expense_request.show', $expenseRequest)
+            ->with('success', "Expense request {$expenseRequest->reference_no} updated.");
+    }
+
+    /**
      * Store an expense request ("Save Request") with multiple line items.
      */
     public function store(Request $request): RedirectResponse

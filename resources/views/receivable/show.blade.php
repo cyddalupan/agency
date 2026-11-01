@@ -11,9 +11,14 @@
                 <h1 class="text-2xl font-bold font-mono">🧾 {{ $receivable->code }}</h1>
                 <p class="opacity-80 mt-1">Receivable Review — {{ $receivable->date->format('M d, Y') }}</p>
             </div>
-            <span class="badge {{ $receivable->status === 'received' ? 'badge-success' : 'badge-warning' }} badge-lg">
-                {{ strtoupper($receivable->status) }}
-            </span>
+            <div class="flex items-center gap-3">
+                @if(auth()->user()->canEditTransactions())
+                    <a href="{{ route('receivable.edit', $receivable->id) }}" class="btn btn-sm btn-secondary shadow-md">✏️ Edit Transaction</a>
+                @endif
+                <span class="badge {{ $receivable->status === 'received' ? 'badge-success' : 'badge-warning' }} badge-lg">
+                    {{ strtoupper($receivable->status) }}
+                </span>
+            </div>
         </div>
     </div>
 

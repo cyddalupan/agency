@@ -15,7 +15,12 @@
                     • {{ $request->branch?->name ?? 'All branches' }} • by {{ $request->user?->name ?? $request->user?->username ?? '—' }}
                 </p>
             </div>
-            <a href="{{ route('expense_request.index') }}" class="btn btn-ghost btn-sm text-primary-content">← Back</a>
+            <div class="flex items-center gap-2">
+                @if(auth()->user()->canEditTransactions())
+                    <a href="{{ route('expense_request.edit', $request) }}" class="btn btn-sm btn-secondary shadow-md">✏️ Edit Transaction</a>
+                @endif
+                <a href="{{ route('expense_request.index') }}" class="btn btn-ghost btn-sm text-primary-content">← Back</a>
+            </div>
         </div>
     </div>
 

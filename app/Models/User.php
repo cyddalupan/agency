@@ -136,6 +136,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user may edit Receivable and Expenses & Payments
+     * transactions (Mjolnir card "Receivable and Expenses & Payment Editable").
+     * Admin (super_admin / admin) + Accounting (billing) only.
+     */
+    public function canEditTransactions(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin', 'billing'], true);
+    }
+
+    /**
      * Whether this user may see accounting data belonging to other users.
      * Admins/Accounting keep full visibility; everyone else is limited to
      * their own records unless they are a privileged account.

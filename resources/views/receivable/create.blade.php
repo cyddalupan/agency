@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'New Receivable')
+@section('title', ($isEdit ?? false) ? 'Edit Receivable ' . $record->code : 'New Receivable')
 
 @section('content')
 <div class="max-w-4xl mx-auto">
 
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6">
-            <h1 class="text-2xl font-bold">➕ New Receivable</h1>
-            <p class="opacity-80 mt-1">Tab 1 — Save Transaction</p>
+            <h1 class="text-2xl font-bold">{{ ($isEdit ?? false) ? '✏️ Edit Receivable ' . $record->code : '➕ New Receivable' }}</h1>
+            <p class="opacity-80 mt-1">{{ ($isEdit ?? false) ? 'Tab 1 — Edit Transaction' : 'Tab 1 — Save Transaction' }}</p>
         </div>
     </div>
 
@@ -30,8 +30,11 @@
         </ul>
     </div>
 
-    <form method="POST" action="{{ route('receivable.store') }}" class="card bg-base-100 shadow-md">
+    <form method="POST" action="{{ ($isEdit ?? false) ? route('receivable.update', $record) : route('receivable.store') }}" class="card bg-base-100 shadow-md">
         @csrf
+        @if($isEdit ?? false)
+            @method('PUT')
+        @endif
 
         <div class="card-body space-y-6">
             {{-- Row: Code / Date / Ref# --}}
@@ -44,11 +47,11 @@
                     </div>
                     <div class="form-control">
                         <label class="label"><span class="label-text">Date *</span></label>
-                        <input type="date" name="date" class="input input-bordered w-full" value="{{ old('date', now()->toDateString()) }}" required>
+                        <input type="date" name="date" class="input input-bordered w-full" value="{{ old('date', isset($record) ? $record->date->toDateString() : now()->toDateString()) }}" required>
                     </div>
                     <div class="form-control">
                         <label class="label"><span class="label-text">Ref# / AR#</span></label>
-                        <input type="text" name="ref_ar" class="input input-bordered w-full" value="{{ old('ref_ar') }}" placeholder="AR-1001">
+                        <input type="text" name="ref_ar" class="input input-bordered w-full" value="{{ old('ref_ar', $record->ref_ar ?? '') }}" placeholder="AR-1001">
                     </div>
                 </div>
             </div>
@@ -59,10 +62,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-control">
                         <label class="label"><span class="label-text">Agent *{{ auth()->user()->isBranchLocked() ? ' (your branch)' : ' (all branches)' }}</span></label>
-                        <select name="agent_id" id="agent_id" class="select select-bordered w-full" required>
+                        <select name="agent_id" id="agent_id" class="select select-bordered w-full"
+                                @if(! ($isEdit ?? false) || ($record->agent_id ?? null)) required @endif>
                             <option value="">Select agent…</option>
                             @foreach($agents as $a)
-                                <option value="{{ $a->id }}" data-branch="{{ $a->branch->name ?? '' }}" {{ old('agent_id') == $a->id ? 'selected' : '' }}>
+                                <option value="{{ $a->id }}" data-branch="{{ $a->branch->name ?? '' }}" {{ old('agent_id', $record->agent_id ?? '') == $a->id ? 'selected' : '' }}>
                                     {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif
                                 </option>
                             @endforeach
@@ -73,7 +77,7 @@
                         <select name="applicant_id" id="applicant_id" class="select select-bordered w-full">
                             <option value="">Select applicant…</option>
                             @foreach($applicants as $ap)
-                                <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ old('applicant_id') == $ap->id ? 'selected' : '' }}>
+                                <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ old('applicant_id', $record->applicant_id ?? '') == $ap->id ? 'selected' : '' }}>
                                     {{ $ap->last_name }}, {{ $ap->first_name }}
                                 </option>
                             @endforeach
@@ -93,7 +97,7 @@
                         <label class="label"><span class="label-text">Amount *</span></label>
                         <div class="relative">
                             <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm opacity-60 font-semibold">₱</span>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="input input-bordered w-full pl-8" value="{{ old('amount') }}" required>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="input input-bordered w-full pl-8" value="{{ old('amount', $record->amount ?? '') }}" required>
                         </div>
                     </div>
                     <div class="form-control">
@@ -101,7 +105,7 @@
                         <select name="account" class="select select-bordered w-full">
                             <option value="">Select account…</option>
                             @foreach($accounts as $ac)
-                                <option value="{{ $ac }}" {{ old('account') == $ac ? 'selected' : '' }}>{{ $ac }}</option>
+                                <option value="{{ $ac }}" {{ old('account', $record->account ?? '') == $ac ? 'selected' : '' }}>{{ $ac }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -117,7 +121,7 @@
                         <select name="debit_account" class="select select-bordered w-full">
                             <option value="">Select…</option>
                             @foreach($debitAccounts as $d)
-                                <option value="{{ $d }}" {{ old('debit_account') == $d ? 'selected' : '' }}>{{ $d }}</option>
+                                <option value="{{ $d }}" {{ old('debit_account', $record->debit_account ?? '') == $d ? 'selected' : '' }}>{{ $d }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -126,7 +130,7 @@
                         <select name="type" class="select select-bordered w-full">
                             <option value="">Select…</option>
                             @foreach($types as $t)
-                                <option value="{{ $t }}" {{ old('type') == $t ? 'selected' : '' }}>{{ $t }}</option>
+                                <option value="{{ $t }}" {{ old('type', $record->type ?? '') == $t ? 'selected' : '' }}>{{ $t }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -135,7 +139,7 @@
                         <select name="mode" class="select select-bordered w-full">
                             <option value="">Select…</option>
                             @foreach($modes as $m)
-                                <option value="{{ $m }}" {{ old('mode') == $m ? 'selected' : '' }}>{{ $m }}</option>
+                                <option value="{{ $m }}" {{ old('mode', $record->mode ?? '') == $m ? 'selected' : '' }}>{{ $m }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -144,12 +148,16 @@
 
             <div class="form-control">
                 <label class="label"><span class="label-text">Particular</span></label>
-                <textarea name="particular" class="textarea textarea-bordered w-full" rows="2" placeholder="Details…">{{ old('particular') }}</textarea>
+                <textarea name="particular" class="textarea textarea-bordered w-full" rows="2" placeholder="Details…">{{ old('particular', $record->particular ?? '') }}</textarea>
             </div>
 
             <div class="flex gap-3 pt-4 border-t border-base-200">
-                <button type="submit" class="btn btn-primary">💾 Save Transaction</button>
-                <a href="{{ route('receivable.index') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">{{ ($isEdit ?? false) ? '💾 Save Changes' : '💾 Save Transaction' }}</button>
+                @if($isEdit ?? false)
+                    <a href="{{ route('receivable.show', $record) }}" class="btn btn-ghost">Cancel</a>
+                @else
+                    <a href="{{ route('receivable.index') }}" class="btn btn-ghost">Cancel</a>
+                @endif
             </div>
         </div>
     </form>

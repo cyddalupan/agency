@@ -441,6 +441,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
             ;
         Route::get('/{receivable}', [ReceivableController::class, 'show'])->name('show')
             ;
+        // Admin + Accounting may edit a transaction (Cyd 2026-11-01)
+        Route::get('/{receivable}/edit', [ReceivableController::class, 'edit'])->name('edit')
+            ;
+        Route::put('/{receivable}', [ReceivableController::class, 'update'])->name('update')
+            ;
         Route::patch('/{receivable}/status', [ReceivableController::class, 'updateStatus'])->name('status')
             ;
         // Batch status change from the index checkboxes (Toybits 2026-08-31).
@@ -471,6 +476,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::post('/bulk-status', [ExpenseRequestController::class, 'bulkUpdateStatus'])->name('bulk_status')
             ;
         Route::get('/{expense_request}', [ExpenseRequestController::class, 'show'])->name('show')
+            ;
+        // Admin + Accounting may edit a transaction (Cyd 2026-11-01)
+        Route::get('/{expense_request}/edit', [ExpenseRequestController::class, 'edit'])->name('edit')
+            ;
+        Route::put('/{expense_request}', [ExpenseRequestController::class, 'update'])->name('update')
             ;
         Route::patch('/{expense_request}/status', [ExpenseRequestController::class, 'updateStatus'])->name('status')
             ;
