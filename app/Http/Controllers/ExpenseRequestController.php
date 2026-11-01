@@ -1037,6 +1037,18 @@ class ExpenseRequestController extends Controller
                 }
             }
 
+            // ---- Particular / Notes (free text, but never unbounded) ----
+            // Cyd 2026-11-01: a 300+ char particular used to hit MySQL's
+            // "Data too long for column" and surface as a 500 during import.
+            $particular = trim((string) ($d['particular'] ?? ''));
+            $notes = trim((string) ($d['notes'] ?? ''));
+            if (mb_strlen($particular) > 5000) {
+                $rowErrors[] = 'Particular is too long (' . mb_strlen($particular) . ' characters) — keep it under 5,000.';
+            }
+            if (mb_strlen($notes) > 5000) {
+                $rowErrors[] = 'Notes are too long (' . mb_strlen($notes) . ' characters) — keep them under 5,000.';
+            }
+
             if (! empty($rowErrors)) {
                 $errors[] = ['line' => $line, 'errors' => $rowErrors];
                 continue;
@@ -1055,8 +1067,8 @@ class ExpenseRequestController extends Controller
                 'currency'     => $currency,
                 'amount'       => $amountRaw,
                 'payment'      => $payment,
-                'particular'   => trim((string) ($d['particular'] ?? '')) !== '' ? trim((string) $d['particular']) : null,
-                'notes'        => trim((string) ($d['notes'] ?? '')) !== '' ? trim((string) $d['notes']) : null,
+                'particular'   => $particular !== '' ? $particular : null,
+                'notes'        => $notes !== '' ? $notes : null,
             ];
         }
 
@@ -1162,7 +1174,8 @@ class ExpenseRequestController extends Controller
 
         // ---- All valid, non-duplicate rows: insert in one transaction (all-or-nothing) ----
         $count = count($rowsToInsert);
-        DB::transaction(function () use ($rowsToInsert, $agencyId) {
+        try {
+            DB::transaction(function () use ($rowsToInsert, $agencyId) {
             foreach ($rowsToInsert as $data) {
                 $parent = ExpenseRequest::create([
                     'agency_id'    => $agencyId,
@@ -1199,8 +1212,17 @@ class ExpenseRequestController extends Controller
                     'particular'         => $data['particular'],
                     'file_path'          => null,
                 ]);
-            }
-        });
+                }
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Never leave the user on a bare 500: report the database reason.
+            report($e);
+
+            return back()->withErrors([
+                'csv_file' => 'Nothing was imported — the database rejected a row. '
+                    . 'Check for text that is too long or a missing account, then try again.',
+            ])->withInput();
+        }
 
         $message = "Bulk upload complete: {$count} expense request(s) imported from CSV.";
         if ($skipped > 0) {

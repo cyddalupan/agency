@@ -392,4 +392,50 @@ class ExpenseRequestBulkUploadTest extends TestCase
         $response->assertSessionHas('bulk_errors');
         $this->assertSame(0, ExpenseRequest::where('agency_id', $this->agency->id)->count());
     }
+
+    // ---------- Long Particular (Cyd 2026-11-01: 500 on import) ----------
+
+    #[Test]
+    public function import_stores_a_particular_longer_than_255_characters(): void
+    {
+        $this->seedChartOfAccounts();
+
+        // A real client description that used to blow up with
+        // "SQLSTATE[22001] ... Data too long for column 'particular'".
+        // No commas/quotes in the fixture: a bare CSV cell would otherwise be
+        // split by the parser and the test would prove nothing about length.
+        $long = 'Victor Buenaventura to pick up Pure Paper Factory employer (Tabuk KSA) at the airport on Aug. 3 at 5:15 PM '
+            . 'and drop him at the hotel. Face-to-face final interview on Aug. 5 2024 at 10 AM. '
+            . 'Transport and allowance included. Requested release on Aug. 2 before 6 PM. '
+            . 'Source note: surprised airline ticket rebooking for the employer interview.';
+
+        $this->assertGreaterThan(255, strlen($long));
+
+        $csv = "Date,Charge,Account,Currency,Amount,Particular\n"
+            .'2026-08-02,Office,'.self::OFFICE_CHILD.',PHP,1750,'.$long."\n";
+
+        $this->uploadCsv($csv)->assertRedirect(route('expense_request.index'));
+
+        $item = ExpenseRequestItem::whereHas('expenseRequest', fn ($q) => $q->where('agency_id', $this->agency->id))
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertSame($long, $item->particular);
+    }
+
+    #[Test]
+    public function an_absurdly_long_particular_is_rejected_with_a_row_error_not_a_500(): void
+    {
+        $this->seedChartOfAccounts();
+
+        $tooLong = str_repeat('x', 6000);
+        $csv = "Date,Charge,Account,Currency,Amount,Particular\n"
+            .'2026-08-02,Office,'.self::OFFICE_CHILD.',PHP,1750,'.$tooLong."\n";
+
+        $response = $this->uploadCsv($csv);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('bulk_errors');
+        $this->assertSame(0, ExpenseRequestItem::count());
+    }
 }
