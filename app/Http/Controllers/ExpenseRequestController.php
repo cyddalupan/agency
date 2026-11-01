@@ -1875,7 +1875,12 @@ class ExpenseRequestController extends Controller
     private function syncPaidEntryForItem(ExpenseRequest $expenseRequest, ExpenseRequestItem $item, string $to): void
     {
         if ($to === ExpenseRequest::STATUS_CANCELLED) {
-            AgentDeduction::where('expense_request_item_id', $item->id)->delete();
+            // forceDelete: the row is system-generated from the approval, so
+            // cancelling must really remove it (AgentDeduction is soft-deleting
+            // since Cyd 2026-11-01, which is only meant for manual admin deletes).
+            AgentDeduction::withTrashed()
+                ->where('expense_request_item_id', $item->id)
+                ->forceDelete();
 
             return;
         }

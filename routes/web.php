@@ -509,6 +509,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
             ;
         Route::get('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionShow'])->name('deduction.show')
             ;
+        // Admin-only delete from the Deductions tab (Cyd 2026-11-01)
+        Route::delete('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionDestroy'])->name('deduction.destroy')
+            ;
 
         // Tab 2: Payments — bulk upload (Cyd 2026-11-01)
         Route::get('/payments/bulk', [AgentReportController::class, 'paymentBulkUpload'])->name('payment.bulk')
@@ -516,6 +519,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('/payments/bulk/template', [AgentReportController::class, 'paymentBulkTemplate'])->name('payment.bulk.template')
             ;
         Route::post('/payments/bulk/import', [AgentReportController::class, 'paymentBulkImport'])->name('payment.bulk.import')
+            ;
+        // Admin-only delete from the Payments tab (Cyd 2026-11-01)
+        Route::delete('/payments/{expense_request_item}', [AgentReportController::class, 'paymentDestroy'])->name('payment.destroy')
             ;
 
         // Tab 4: Starting Balance

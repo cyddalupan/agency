@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\AgentDeduction;
 use App\Models\Applicant;
 use App\Models\ExpenseRequest;
+use App\Models\ExpenseRequestStatusHistory;
 use App\Models\ExpenseRequestItem;
 use App\Models\Receivable;
 use App\Models\StartingBalance;
@@ -205,6 +206,8 @@ class AgentReportController extends Controller
         ) + [
             'canManageDeductions' => $this->canManageDeductions(),
             'canManagePayments'   => $this->canManagePayments(),
+            // Cyd 2026-11-01 (card 124): only Admin may delete Deduction/Payment rows.
+            'canDeleteTransactions' => in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true),
         ]);
     }
 
@@ -944,6 +947,91 @@ class AgentReportController extends Controller
      * Review — admin-only status/history behavior mirrors Receivable review,
      * but AgentDeduction has no status field: this is a read-only review page.
      */
+    /**
+     * Cyd 2026-11-01 (card 124) — "Admin: able to delete transaction on both
+     * Deduction and Payment tabs."
+     *
+     * Deletes never destroy the row outright: the deduction is soft-deleted and
+     * stamped with the admin + reason, and a payment delete only zeroes the
+     * payment amount on the expense item (the expense transaction itself stays
+     * intact for the ledger). Both routes are Admin-only, mirroring the
+     * Expenses module delete gate.
+     */
+    public function deductionDestroy(Request $request, AgentDeduction $agentDeduction): RedirectResponse
+    {
+        $this->authorizeAgency((int) $agentDeduction->agency_id);
+        $this->authorizeTransactionDelete();
+        $this->authorizeAgentBranch($agentDeduction->agent);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($agentDeduction, $validated) {
+            $agentDeduction->forceFill([
+                'deleted_by'    => auth()->id(),
+                'delete_reason' => $validated['reason'],
+            ])->save();
+
+            $agentDeduction->delete();
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'deductions'])
+            ->with('success', 'Deduction transaction deleted.');
+    }
+
+    /**
+     * Payments tab delete: the listed row is the payment amount recorded on an
+     * expense item, so deleting it clears the payment (back to 0) and writes an
+     * audit note on the expense — the expense request and its amount stay put.
+     */
+    public function paymentDestroy(Request $request, ExpenseRequestItem $expenseRequestItem): RedirectResponse
+    {
+        $expenseRequest = $expenseRequestItem->expenseRequest;
+        if (! $expenseRequest) {
+            abort(404);
+        }
+        $this->authorizeAgency((int) $expenseRequest->agency_id);
+        $this->authorizeTransactionDelete();
+        $this->authorizeAgentBranch($expenseRequestItem->agent);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $payment = (float) $expenseRequestItem->payment;
+        if ($payment <= 0) {
+            return redirect()->route('agent_report.index', ['tab' => 'payments'])
+                ->with('error', 'That transaction has no payment to delete.');
+        }
+
+        DB::transaction(function () use ($expenseRequestItem, $expenseRequest, $payment, $validated) {
+            $expenseRequestItem->forceFill(['payment' => 0])->save();
+
+            ExpenseRequestStatusHistory::create([
+                'expense_request_id' => $expenseRequest->id,
+                'agency_id'          => $expenseRequest->agency_id,
+                'user_id'            => auth()->id(),
+                'from_status'        => $expenseRequest->status,
+                'to_status'          => $expenseRequest->status,
+                'note'               => 'Payment of ' . number_format($payment, 2) . ' deleted by '
+                    . (auth()->user()->name ?? auth()->user()->username)
+                    . ': ' . $validated['reason'],
+            ]);
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'payments'])
+            ->with('success', 'Payment transaction deleted.');
+    }
+
+    /** Only Admin (super_admin/admin) may delete Deduction / Payment transactions. */
+    private function authorizeTransactionDelete(): void
+    {
+        if (! in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true)) {
+            abort(403, 'Only Admin can delete transactions.');
+        }
+    }
+
     public function deductionShow(AgentDeduction $agentDeduction): View
     {
         $this->authorizeAgency($agentDeduction->agency_id);

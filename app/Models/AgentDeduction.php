@@ -5,11 +5,12 @@ namespace App\Models;
 use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AgentDeduction extends Model
 {
-    use HasFactory, HasTenant;
+    use HasFactory, HasTenant, SoftDeletes;
 
     /** Account selection per spec: Paid | Deduction */
     public const ACCOUNT_PAID      = 'Paid';
@@ -27,6 +28,8 @@ class AgentDeduction extends Model
         'account',
         'amount',
         'particular',
+        'deleted_by',
+        'delete_reason',
     ];
 
     protected $casts = [
@@ -52,5 +55,13 @@ class AgentDeduction extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(Applicant::class);
+    }
+
+    /**
+     * Cyd 2026-11-01: deletions are audited (who + why), not silent.
+     */
+    public function deleter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 }

@@ -54,9 +54,13 @@
                                 <td class="text-right opacity-60">{{ $p->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $p->amount, 2) }}</td>
                                 <td>{{ $p->account->name ?? '—' }}</td>
                                 <td class="max-w-[14rem] truncate" title="{{ $p->particular }}">{{ $p->particular ?? '—' }}</td>
-                                <td>
+                                <td class="whitespace-nowrap">
                                     @if($er)
                                         <a href="{{ route('expense_request.show', $er) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                    @endif
+                                    @if($canDeleteTransactions ?? false)
+                                        <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                onclick="openTxDelete(@js(route('agent_report.payment.destroy', $p)), @js('Payment · ' . ($er->reference_no ?? '') . ' · ₱' . number_format((float) $p->payment, 2) . ' · ' . ($p->agent->name ?? 'no agent')))">Delete</button>
                                     @endif
                                 </td>
                             </tr>
@@ -69,3 +73,30 @@
         @endif
     </div>
 </div>
+
+@if($canDeleteTransactions ?? false)
+<dialog id="txDeleteModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete payment transaction</h3>
+        <p class="text-sm opacity-70 mt-1" id="txDeleteSummary"></p>
+        <p class="text-xs opacity-60 mt-1">The payment amount is cleared from the expense transaction; the expense itself stays in the ledger.</p>
+        <form method="POST" id="txDeleteForm" class="mt-3">
+            @csrf
+            @method('DELETE')
+            <label class="label" for="txDeleteReason"><span class="label-text">Reason (required)</span></label>
+            <textarea id="txDeleteReason" name="reason" class="textarea textarea-bordered w-full" rows="3" maxlength="1000" required></textarea>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('txDeleteModal').close()">Cancel</button>
+                <button type="submit" class="btn btn-error">Delete</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+<script>
+function openTxDelete(url, label) {
+    document.getElementById('txDeleteForm').action = url;
+    document.getElementById('txDeleteSummary').textContent = label;
+    document.getElementById('txDeleteModal').showModal();
+}
+</script>
+@endif

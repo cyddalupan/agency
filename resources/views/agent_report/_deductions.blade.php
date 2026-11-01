@@ -43,8 +43,12 @@
                                 </td>
                                 <td class="text-right font-semibold">₱{{ number_format((float) $d->amount, 2) }}</td>
                                 <td class="max-w-[16rem] truncate" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
-                                <td>
+                                <td class="whitespace-nowrap">
                                     <a href="{{ route('agent_report.deduction.show', $d) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
+                                    @if($canDeleteTransactions ?? false)
+                                        <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                onclick="openTxDelete(@js(route('agent_report.deduction.destroy', $d)), @js('Deduction · ' . $d->date->format('M d, Y') . ' · ₱' . number_format((float) $d->amount, 2) . ' · ' . ($d->agent->name ?? 'no agent')))">Delete</button>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -63,3 +67,29 @@
         @endif
     </div>
 </div>
+
+@if($canDeleteTransactions ?? false)
+<dialog id="txDeleteModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete deduction transaction</h3>
+        <p class="text-sm opacity-70 mt-1" id="txDeleteSummary"></p>
+        <form method="POST" id="txDeleteForm" class="mt-3">
+            @csrf
+            @method('DELETE')
+            <label class="label" for="txDeleteReason"><span class="label-text">Reason (required)</span></label>
+            <textarea id="txDeleteReason" name="reason" class="textarea textarea-bordered w-full" rows="3" maxlength="1000" required></textarea>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('txDeleteModal').close()">Cancel</button>
+                <button type="submit" class="btn btn-error">Delete</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+<script>
+function openTxDelete(url, label) {
+    document.getElementById('txDeleteForm').action = url;
+    document.getElementById('txDeleteSummary').textContent = label;
+    document.getElementById('txDeleteModal').showModal();
+}
+</script>
+@endif
