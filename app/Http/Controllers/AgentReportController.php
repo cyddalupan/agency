@@ -175,7 +175,10 @@ class AgentReportController extends Controller
             'reportRows',
             'totals',
             'converter'
-        ) + ['canManageDeductions' => $this->canManageDeductions()]);
+        ) + [
+            'canManageDeductions' => $this->canManageDeductions(),
+            'canManagePayments'   => $this->canManagePayments(),
+        ]);
     }
 
     /**
@@ -544,6 +547,351 @@ class AgentReportController extends Controller
 
             if (empty($rows)) {
                 return 'The file has no data rows — add at least one deduction below the header.';
+            }
+
+            if (count($rows) > 2000) {
+                return 'The file has too many rows (' . count($rows) . '). Split it into batches of 2000 or fewer.';
+            }
+
+            return $rows;
+        };
+
+        $lastError = null;
+        foreach ([',', ';', "\t"] as $delimiter) {
+            $result = $parse($delimiter);
+            if (is_array($result)) {
+                return $result;
+            }
+            $lastError = $result;
+        }
+
+        return $lastError ?? 'Could not read the file.';
+    }
+
+    // ------------------------------------------------------------------
+    // Tab 2: Payments — bulk upload (Cyd 2026-11-01)
+    // ------------------------------------------------------------------
+
+    /**
+     * Bulk upload page for Payments: one CSV row = the payment amount recorded
+     * on an existing Expenses & Payments line (matched by Ref# + Applicant /
+     * Particular). Payments are only ever applied to transactions that already
+     * exist — this does not create expense requests.
+     */
+    public function paymentBulkUpload(): View
+    {
+        abort_unless($this->canManagePayments(), 403, 'Only Admin and Accounting can record payments.');
+
+        return view('agent_report.payment_bulk');
+    }
+
+    /**
+     * CSV template for the payment bulk upload.
+     */
+    public function paymentBulkTemplate()
+    {
+        $headers = ['Ref#', 'Applicant', 'Agent', 'Currency', 'Payment', 'Particular'];
+        $sample = [
+            ['28032', 'Dela Cruz, Maria', 'Juan Dela Cruz', 'PHP', '1500.00', 'FTW Commission'],
+            ['28033', '', '', 'PHP', '250.00', ''],
+        ];
+
+        return response()->streamDownload(function () use ($headers, $sample) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            foreach ($sample as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'payments-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Apply the payment CSV. All-or-nothing: every row is validated first, and a
+     * single bad row leaves every transaction untouched.
+     */
+    public function paymentBulkImport(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManagePayments(), 403, 'Only Admin and Accounting can record payments.');
+
+        $agencyId = (int) auth()->user()->agency_id;
+
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $rows = $this->parsePaymentCsv($request->file('csv_file')->getRealPath());
+        if (is_string($rows)) {
+            return back()->withErrors(['csv_file' => $rows]);
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        // Reference number => expense request (agency scoped).
+        $requestsByRef = [];
+        foreach (ExpenseRequest::where('agency_id', $agencyId)
+                     ->with(['items.applicant', 'items.agent', 'items.account'])
+                     ->get() as $expenseRequest) {
+            $ref = $norm($expenseRequest->reference_no);
+            if ($ref !== '') {
+                $requestsByRef[$ref][] = $expenseRequest;
+            }
+        }
+
+        $errors = [];
+        $updates = [];   // item_id => ['payment' => x, 'label' => '...']
+        $touched = [];   // item_id => csv line (duplicate-row guard)
+
+        foreach ($rows as $row) {
+            $line = $row['line'];
+            $d = $row['data'];
+            $rowErrors = [];
+
+            $refRaw = trim((string) ($d['ref'] ?? ''));
+            $expenseRequest = null;
+            if ($refRaw === '') {
+                $rowErrors[] = 'Ref# is required.';
+            } else {
+                $matches = $requestsByRef[$norm($refRaw)] ?? [];
+                if (count($matches) === 0) {
+                    $rowErrors[] = "No expense request with Ref# '{$refRaw}' was found.";
+                } elseif (count($matches) > 1) {
+                    $rowErrors[] = "Ref# '{$refRaw}' matches more than one expense request.";
+                } else {
+                    $expenseRequest = $matches[0];
+                }
+            }
+
+            // ---- Payment amount (required, >= 0) ----
+            $paymentRaw = str_replace([',', '₱', '$', ' '], '', trim((string) ($d['payment'] ?? '')));
+            $payment = null;
+            if ($paymentRaw === '') {
+                $rowErrors[] = 'Payment is required.';
+            } elseif (! is_numeric($paymentRaw)) {
+                $rowErrors[] = "Payment '{$paymentRaw}' must be a number.";
+            } elseif ((float) $paymentRaw < 0) {
+                $rowErrors[] = 'Payment cannot be negative.';
+            } else {
+                $payment = round((float) $paymentRaw, 2);
+            }
+
+            $currency = strtoupper(trim((string) ($d['currency'] ?? '')));
+            $applicantRaw = trim((string) ($d['applicant'] ?? ''));
+            $agentRaw = trim((string) ($d['agent'] ?? ''));
+            $particularRaw = trim((string) ($d['particular'] ?? ''));
+
+            $item = null;
+            if ($expenseRequest) {
+                $candidates = $expenseRequest->items;
+
+                if ($applicantRaw !== '') {
+                    $candidates = $candidates->filter(function ($it) use ($norm, $applicantRaw) {
+                        $name = $it->applicant?->full_name ?? '';
+                        $lastFirst = $it->applicant
+                            ? $it->applicant->last_name . ', ' . $it->applicant->first_name
+                            : '';
+
+                        return $norm($name) === $norm($applicantRaw)
+                            || $norm($lastFirst) === $norm($applicantRaw);
+                    })->values();
+                }
+
+                if ($agentRaw !== '') {
+                    $candidates = $candidates->filter(
+                        fn ($it) => $norm($it->agent?->name ?? '') === $norm($agentRaw)
+                    )->values();
+                }
+
+                if ($particularRaw !== '') {
+                    $candidates = $candidates->filter(
+                        fn ($it) => $norm($it->particular ?? '') === $norm($particularRaw)
+                    )->values();
+                }
+
+                if ($currency !== '') {
+                    $candidates = $candidates->filter(
+                        fn ($it) => strtoupper((string) $it->currency) === $currency
+                    )->values();
+                }
+
+                if ($candidates->count() === 0) {
+                    $rowErrors[] = 'No line on this expense request matches the Applicant / Agent / Particular / Currency given.';
+                } elseif ($candidates->count() > 1) {
+                    $rowErrors[] = 'This expense request has ' . $candidates->count()
+                        . ' matching lines — add the Applicant or Particular to pick one.';
+                } else {
+                    $item = $candidates->first();
+                }
+            }
+
+            if ($item && $this->ledgerBranchLocked()) {
+                $agentBranch = $item->agent?->branch_id;
+                if ($agentBranch !== null && (int) $agentBranch !== (int) auth()->user()->branch_id) {
+                    $rowErrors[] = 'You can only record payments for agents in your own branch.';
+                }
+            }
+
+            if ($item && $payment !== null) {
+                if ($payment > (float) $item->amount) {
+                    $rowErrors[] = 'Payment ' . number_format($payment, 2)
+                        . ' is bigger than the line amount ' . number_format((float) $item->amount, 2) . '.';
+                }
+                if (isset($touched[$item->id])) {
+                    $rowErrors[] = 'Line ' . $touched[$item->id] . ' already sets a payment for this same line.';
+                }
+            }
+
+            if ($rowErrors) {
+                $errors[$line] = $rowErrors;
+                continue;
+            }
+
+            $touched[$item->id] = $line;
+            $updates[$item->id] = [
+                'payment' => $payment,
+                'label'   => ($expenseRequest->reference_no ?? '') . ' · ' . ($item->particular ?: ($item->account?->name ?? 'line')),
+            ];
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors(['csv_file' => 'No payments were saved — ' . count($errors) . ' row(s) need fixing.'])
+                ->with('bulk_errors', $errors)
+                ->withInput();
+        }
+
+        $changed = 0;
+        DB::transaction(function () use ($updates, &$changed) {
+            foreach ($updates as $itemId => $payload) {
+                $item = ExpenseRequestItem::whereKey($itemId)->first();
+                if (! $item) {
+                    continue;
+                }
+                if ((string) $item->payment !== (string) $payload['payment']) {
+                    $changed++;
+                }
+                $item->update(['payment' => $payload['payment']]);
+            }
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'payments'])
+            ->with('success', 'Payment recorded on ' . count($updates) . ' transaction line(s).'
+                . ($changed !== count($updates) ? ' (' . (count($updates) - $changed) . ' already had that amount.)' : ''));
+    }
+
+    /**
+     * Admin + Accounting may record payments (same gate as deductions).
+     */
+    private function canManagePayments(): bool
+    {
+        return $this->canManageDeductions();
+    }
+
+    /**
+     * Parse the payment CSV into ['line' => n, 'data' => [...]] rows.
+     */
+    private function parsePaymentCsv(string $path)
+    {
+        $raw = @file_get_contents($path);
+        if ($raw === false) {
+            return 'Could not read the uploaded file.';
+        }
+
+        if (str_starts_with($raw, "\xFF\xFE")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16LE');
+        } elseif (str_starts_with($raw, "\xFE\xFF")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16BE');
+        } elseif (str_starts_with($raw, "\xEF\xBB\xBF")) {
+            $raw = substr($raw, 3);
+        }
+        if ($raw !== '' && ! mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+        if (trim($raw) === '') {
+            return 'The file is empty.';
+        }
+
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        $aliases = [
+            'ref'                 => 'ref',
+            'ref#'                => 'ref',
+            'ref #'               => 'ref',
+            'ref no'              => 'ref',
+            'ref. no'             => 'ref',
+            'refno'               => 'ref',
+            'reference'           => 'ref',
+            'reference no'        => 'ref',
+            'reference number'    => 'ref',
+            'ref#/ar#'            => 'ref',
+            'applicant'           => 'applicant',
+            'applicant name'      => 'applicant',
+            'agent'               => 'agent',
+            'agent name'          => 'agent',
+            'currency'            => 'currency',
+            'payment'             => 'payment',
+            'payment amount'      => 'payment',
+            'amount'              => 'payment',
+            'amount paid'         => 'payment',
+            'particular'          => 'particular',
+            'particular/description' => 'particular',
+            'description'         => 'particular',
+        ];
+
+        $parse = function (string $delimiter) use ($raw, $aliases) {
+            $handle = fopen('php://temp', 'r+');
+            fwrite($handle, $raw);
+            rewind($handle);
+
+            $parsed = [];
+            while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
+                $parsed[] = $cells;
+            }
+            fclose($handle);
+
+            if (empty($parsed)) {
+                return 'The file has no readable rows.';
+            }
+
+            $headerIndex = null;
+            $fieldByIndex = [];
+            foreach (array_slice($parsed, 0, 30, true) as $i => $cells) {
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $candidate = [];
+                foreach ($cells as $idx => $header) {
+                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $field = $aliases[$key] ?? null;
+                    if ($field && ! in_array($field, $candidate, true)) {
+                        $candidate[$idx] = $field;
+                    }
+                }
+                if (in_array('ref', $candidate, true) && in_array('payment', $candidate, true)) {
+                    $headerIndex = $i;
+                    $fieldByIndex = $candidate;
+                    break;
+                }
+            }
+
+            if ($headerIndex === null) {
+                return 'No header row found. The first row must name the columns: Ref#, Applicant, Agent, Currency, Payment, Particular.';
+            }
+
+            $rows = [];
+            foreach (array_slice($parsed, $headerIndex + 1, null, true) as $i => $cells) {
+                $lineNo = $i + 1;
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $data = [];
+                foreach ($fieldByIndex as $idx => $field) {
+                    $data[$field] = $cells[$idx] ?? '';
+                }
+                $rows[] = ['line' => $lineNo, 'data' => $data];
+            }
+
+            if (empty($rows)) {
+                return 'The file has no data rows — add at least one payment below the header.';
             }
 
             if (count($rows) > 2000) {

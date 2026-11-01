@@ -510,6 +510,14 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionShow'])->name('deduction.show')
             ;
 
+        // Tab 2: Payments — bulk upload (Cyd 2026-11-01)
+        Route::get('/payments/bulk', [AgentReportController::class, 'paymentBulkUpload'])->name('payment.bulk')
+            ;
+        Route::get('/payments/bulk/template', [AgentReportController::class, 'paymentBulkTemplate'])->name('payment.bulk.template')
+            ;
+        Route::post('/payments/bulk/import', [AgentReportController::class, 'paymentBulkImport'])->name('payment.bulk.import')
+            ;
+
         // Tab 4: Starting Balance
         Route::get('/starting-balances/create', [AgentReportController::class, 'startingBalanceCreate'])->name('starting_balance.create')
             ;

@@ -1,7 +1,12 @@
 {{-- Tab 2: Payments — data source: Expenses & Payments module only --}}
 <div class="card bg-base-100 shadow-md">
     <div class="card-body">
-        <h3 class="font-bold mb-3">💳 Payments <span class="badge badge-sm badge-ghost">{{ $payments->count() }}</span></h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-bold">💳 Payments <span class="badge badge-sm badge-ghost">{{ $payments->count() }}</span></h3>
+            @if($canManagePayments ?? false)
+                <a href="{{ route('agent_report.payment.bulk') }}" class="btn btn-outline btn-sm">📤 Bulk Upload</a>
+            @endif
+        </div>
         <p class="text-xs opacity-60 mb-2">Payment amounts recorded on transactions in Expenses &amp; Payments. Receivables from the Receivable module are not listed here.</p>
         @if($payments->count())
             <div class="overflow-x-auto">
