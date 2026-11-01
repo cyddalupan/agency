@@ -49,6 +49,13 @@
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-base-200/70 font-bold">
+                            <td colspan="4" class="text-right">Total Deductions</td>
+                            <td class="text-right">₱{{ number_format((float) $deductions->sum('amount'), 2) }}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         @else

@@ -175,6 +175,42 @@ class AgentDeductionTest extends TestCase
             ->assertDontSee('Deduction for B');
     }
 
+    // ---------- Totals (Cyd 2026-11-01) ----------
+
+    #[Test]
+    public function deductions_tab_shows_total_amount_at_the_bottom(): void
+    {
+        $agent = $this->makeAgent();
+
+        AgentDeduction::create($this->validPayload($agent, ['amount' => 16000.00]));
+        AgentDeduction::create($this->validPayload($agent, ['amount' => 250.75]));
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'deductions']))
+            ->assertOk()
+            ->assertSee('Total Deductions')
+            ->assertSee('₱16,000.00')
+            ->assertSee('₱250.75')
+            ->assertSee('₱16,250.75');
+    }
+
+    #[Test]
+    public function deductions_total_follows_the_agent_filter(): void
+    {
+        $agentA = $this->makeAgent();
+        $agentB = $this->makeAgent();
+
+        AgentDeduction::create($this->validPayload($agentA, ['amount' => 1000.00]));
+        AgentDeduction::create($this->validPayload($agentB, ['amount' => 5000.00]));
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'deductions', 'agent_id' => $agentA->id]))
+            ->assertOk()
+            ->assertSee('Total Deductions')
+            ->assertSee('₱1,000.00')
+            ->assertDontSee('₱6,000.00');
+    }
+
     // ---------- Agency isolation ----------
 
     #[Test]
