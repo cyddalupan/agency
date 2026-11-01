@@ -493,6 +493,7 @@
         @yield('content')
     </main>
     @endguest
+@include('partials.top-scroll')
 @stack('scripts')
 </body>
 </html>
