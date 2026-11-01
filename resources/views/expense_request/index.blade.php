@@ -265,10 +265,10 @@
                                         @if(in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']) && $loop->first)
                                             <td rowspan="{{ $request->items->count() }}">
                                                 <div class="flex items-center gap-2">
-                                                    <a href="{{ route('expense_request.show', $request) }}" class="link link-primary">Review</a>
+                                                    <a href="{{ route('expense_request.show', $request) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                                     {{-- Admin + Accounting may edit (Cyd 2026-11-01) --}}
                                                     @if(auth()->user()->canEditTransactions())
-                                                        <a href="{{ route('expense_request.edit', $request) }}" class="link link-secondary">✏️ Edit</a>
+                                                        <a href="{{ route('expense_request.edit', $request) }}" class="btn btn-xs btn-outline whitespace-nowrap">✏️ Edit</a>
                                                     @endif
                                                     {{-- Admin-only delete (Cyd 2026-10-24) --}}
                                                     @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
@@ -297,7 +297,7 @@
                                         @if($showReview)
                                             <td>
                                                 <div class="flex items-center gap-2">
-                                                    <a href="{{ route('expense_request.show', $request) }}" class="link link-primary">Review</a>
+                                                    <a href="{{ route('expense_request.show', $request) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                                     @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
                                                         <button type="button" class="btn btn-xs btn-error btn-outline"
                                                                 onclick="document.getElementById('delete-request-{{ $request->id }}').showModal()">Delete</button>
