@@ -21,6 +21,90 @@
         </div>
     </div>
 
+    {{-- Status tabs (Toybits 2026-08-18): filter the table by payment status.
+         Cyd 2026-11-01 (card 125): the tabs are the priority — they now sit directly
+         under the header, and the statistics / encoder filters live in a row below. --}}
+    <div class="status-tabs mb-4">
+        <div class="card bg-base-100 shadow-md border border-base-200">
+            <div class="card-body p-2.5">
+                <div class="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5" role="tablist">
+                    {{-- All --}}
+                    <a href="{{ route('expense_request.index', array_filter(['encoder' => $activeEncoder])) }}"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $activeStatus === null ? 'bg-[#0f1724] text-white shadow-md ring-2 ring-primary/60' : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        All
+                        <span class="badge badge-sm {{ $activeStatus === null ? 'badge-primary' : 'badge-ghost' }}">{{ $allRequests->count() }}</span>
+                    </a>
+
+                    @php
+                        $tabStyles = [
+                            'pending'       => ['active' => 'bg-amber-500 text-white shadow-md shadow-amber-500/40 ring-2 ring-amber-300/70',          'badge' => 'badge-warning'],
+                            'approved'      => ['active' => 'bg-sky-500 text-white shadow-md shadow-sky-500/40 ring-2 ring-sky-300/70',             'badge' => 'badge-info'],
+                            'for_releasing' => ['active' => 'bg-violet-500 text-white shadow-md shadow-violet-500/40 ring-2 ring-violet-300/70',    'badge' => 'badge-primary'],
+                            'released'      => ['active' => 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 ring-2 ring-emerald-300/70', 'badge' => 'badge-success'],
+                            'cancelled'     => ['active' => 'bg-rose-500 text-white shadow-md shadow-rose-500/40 ring-2 ring-rose-300/70',          'badge' => 'badge-error'],
+                        ];
+                        $tabIcons = [
+                            'pending'       => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/>',
+                            'approved'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>',
+                            'for_releasing' => '<path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/>',
+                            'released'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 10h18M3 14h18M3 18h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 2l2 2M17 2l2 2"/>',
+                            'cancelled'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/>',
+                        ];
+                    @endphp
+
+                    @foreach(\App\Models\ExpenseRequest::STATUSES as $statusKey)
+                        @php
+                            $isActive = $activeStatus === $statusKey;
+                        @endphp
+                        <a href="{{ route('expense_request.index', array_filter(['status' => $statusKey, 'encoder' => $activeEncoder])) }}"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $isActive ? $tabStyles[$statusKey]['active'] : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">{!! $tabIcons[$statusKey] !!}</svg>
+                            {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }}
+                            <span class="badge badge-sm {{ $isActive ? 'bg-white/20 text-white border border-white/30' : $tabStyles[$statusKey]['badge'] }}">{{ $statusCounts[$statusKey] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+
+                {{-- Statistics / encoder filters (Cyd 2026-11-01, card 125): the tabs are the
+                     priority, so these move to their own row underneath them. --}}
+                <div class="mt-2.5 pt-2.5 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above. --}}
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <span class="text-xs font-semibold opacity-60 whitespace-nowrap">📊 Dashboard totals:</span>
+                        @foreach(\App\Models\ExpenseRequest::STATUSES as $statusKey)
+                            <label class="inline-flex items-center gap-2 text-xs font-medium cursor-pointer whitespace-nowrap rounded-full border border-base-300 bg-base-100 px-3 py-1 hover:bg-base-200 transition-colors" title="Show {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }} in the summary">
+                                <input type="checkbox" class="checkbox checkbox-xs checkbox-primary status-filter" data-status="{{ $statusKey }}" checked>
+                                {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }}
+                            </label>
+                        @endforeach
+                    </div>
+
+                    {{-- Encoder filter (Toybits 2026-10-07): narrow to one encoder, keeps the active status tab. --}}
+                    @if($encoders->count())
+                        <div class="flex flex-wrap items-center gap-2">
+                            <form method="GET" action="{{ route('expense_request.index') }}" class="flex items-center gap-2">
+                                @if($activeStatus)
+                                    <input type="hidden" name="status" value="{{ $activeStatus }}">
+                                @endif
+                                <label for="encoder-filter" class="text-xs font-semibold opacity-60 whitespace-nowrap">🔎 Encoder:</label>
+                                <select name="encoder" id="encoder-filter" class="select select-xs select-bordered" onchange="this.form.submit()">
+                                    <option value="">All</option>
+                                    @foreach($encoders as $encoder)
+                                        <option value="{{ $encoder->id }}" @selected((string) $activeEncoder === (string) $encoder->id)>{{ $encoder->name }}</option>
+                                    @endforeach
+                                </select>
+                                @if($activeEncoder)
+                                    <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus])) }}" class="btn btn-ghost btn-xs" title="Clear encoder filter">✕</a>
+                                @endif
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Summary --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="card bg-base-100 shadow-md">
@@ -72,86 +156,6 @@
             <span>✅ {{ session('success') }}</span>
         </div>
     @endif
-
-    {{-- Status tabs (Toybits 2026-08-18): filter the table by payment status --}}
-    <div class="status-tabs mb-4">
-        <div class="card bg-base-100 shadow-md border border-base-200">
-            <div class="card-body p-2.5">
-                <div class="flex flex-col lg:flex-row lg:items-center gap-2">
-                    <div class="flex flex-nowrap items-center gap-1.5 overflow-x-auto lg:flex-1" role="tablist">
-                    {{-- All --}}
-                    <a href="{{ route('expense_request.index', array_filter(['encoder' => $activeEncoder])) }}"
-                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $activeStatus === null ? 'bg-[#0f1724] text-white shadow-md ring-2 ring-primary/60' : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                        All
-                        <span class="badge badge-sm {{ $activeStatus === null ? 'badge-primary' : 'badge-ghost' }}">{{ $allRequests->count() }}</span>
-                    </a>
-
-                    @php
-                        $tabStyles = [
-                            'pending'       => ['active' => 'bg-amber-500 text-white shadow-md shadow-amber-500/40 ring-2 ring-amber-300/70',          'badge' => 'badge-warning'],
-                            'approved'      => ['active' => 'bg-sky-500 text-white shadow-md shadow-sky-500/40 ring-2 ring-sky-300/70',             'badge' => 'badge-info'],
-                            'for_releasing' => ['active' => 'bg-violet-500 text-white shadow-md shadow-violet-500/40 ring-2 ring-violet-300/70',    'badge' => 'badge-primary'],
-                            'released'      => ['active' => 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 ring-2 ring-emerald-300/70', 'badge' => 'badge-success'],
-                            'cancelled'     => ['active' => 'bg-rose-500 text-white shadow-md shadow-rose-500/40 ring-2 ring-rose-300/70',          'badge' => 'badge-error'],
-                        ];
-                        $tabIcons = [
-                            'pending'       => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/>',
-                            'approved'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>',
-                            'for_releasing' => '<path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/>',
-                            'released'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 10h18M3 14h18M3 18h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 2l2 2M17 2l2 2"/>',
-                            'cancelled'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/>',
-                        ];
-                    @endphp
-
-                    @foreach(\App\Models\ExpenseRequest::STATUSES as $statusKey)
-                        @php
-                            $isActive = $activeStatus === $statusKey;
-                        @endphp
-                        <a href="{{ route('expense_request.index', array_filter(['status' => $statusKey, 'encoder' => $activeEncoder])) }}"
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $isActive ? $tabStyles[$statusKey]['active'] : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">{!! $tabIcons[$statusKey] !!}</svg>
-                            {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }}
-                            <span class="badge badge-sm {{ $isActive ? 'bg-white/20 text-white border border-white/30' : $tabStyles[$statusKey]['badge'] }}">{{ $statusCounts[$statusKey] }}</span>
-                        </a>
-                    @endforeach
-                    </div>
-
-                    {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above. --}}
-                    <div class="shrink-0 lg:border-l lg:border-base-200 lg:pl-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <span class="text-xs font-semibold opacity-60 whitespace-nowrap">📊 Dashboard totals:</span>
-                        @foreach(\App\Models\ExpenseRequest::STATUSES as $statusKey)
-                            <label class="inline-flex items-center gap-2 text-xs font-medium cursor-pointer whitespace-nowrap rounded-full border border-base-300 bg-base-100 px-3 py-1 hover:bg-base-200 transition-colors" title="Show {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }} in the summary">
-                                <input type="checkbox" class="checkbox checkbox-xs checkbox-primary status-filter" data-status="{{ $statusKey }}" checked>
-                                {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }}
-                            </label>
-                        @endforeach
-                    </div>
-
-                    {{-- Encoder filter (Toybits 2026-10-07): narrow to one encoder, keeps the active status tab. --}}
-                    @if($encoders->count())
-                        <div class="shrink-0 lg:border-l lg:border-base-200 lg:pl-4 flex flex-wrap items-center gap-2">
-                            <form method="GET" action="{{ route('expense_request.index') }}" class="flex items-center gap-2">
-                                @if($activeStatus)
-                                    <input type="hidden" name="status" value="{{ $activeStatus }}">
-                                @endif
-                                <label for="encoder-filter" class="text-xs font-semibold opacity-60 whitespace-nowrap">🔎 Encoder:</label>
-                                <select name="encoder" id="encoder-filter" class="select select-xs select-bordered" onchange="this.form.submit()">
-                                    <option value="">All</option>
-                                    @foreach($encoders as $encoder)
-                                        <option value="{{ $encoder->id }}" @selected((string) $activeEncoder === (string) $encoder->id)>{{ $encoder->name }}</option>
-                                    @endforeach
-                                </select>
-                                @if($activeEncoder)
-                                    <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus])) }}" class="btn btn-ghost btn-xs" title="Clear encoder filter">✕</a>
-                                @endif
-                            </form>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
 
     {{-- Requests table --}}
     <div class="card bg-base-100 shadow-md">
