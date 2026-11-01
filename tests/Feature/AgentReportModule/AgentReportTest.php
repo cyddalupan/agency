@@ -182,13 +182,17 @@ class AgentReportTest extends TestCase
             ->assertSee('Deployed')
             ->assertDontSee('Other Commission');
 
+        // (Cyd 2026-11-01) The Commission tab now also carries a RELEASED
+        // "Fit to work / Deployed" block, so the account names themselves do
+        // appear there. What must stay out is the pending rows seeded above —
+        // assert on their amounts instead of on the account labels.
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'commission']))
             ->assertOk()
             ->assertSee('Other Commission')
-            ->assertDontSee('Partial')
-            ->assertDontSee('Full')
-            ->assertDontSee('Deployed');
+            ->assertDontSee('10,000.00')
+            ->assertDontSee('20,000.00')
+            ->assertDontSee('30,000.00');
     }
 
     #[Test]

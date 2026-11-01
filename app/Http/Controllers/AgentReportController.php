@@ -28,6 +28,9 @@ class AgentReportController extends Controller
     /** Account names that route to the Receivables tab (moved out of Commission). */
     private const RECEIVABLE_ACCOUNT_NAMES = ['Partial', 'Full', 'Fit to work', 'Contract', 'Deployed', 'Return'];
 
+    /** Released expenses shown as their own block on the Commission tab (Cyd 2026-11-01). */
+    private const RELEASED_COMMISSION_ACCOUNT_NAMES = ['Fit to work', 'Deployed'];
+
     /** Account names that route to the Cash Advance tab (moved out of Commission). */
     private const CASH_ADVANCE_ACCOUNT_NAMES = ['Cash advance', 'Agent Advances'];
 
@@ -89,7 +92,29 @@ class AgentReportController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // ---- Tab 1b: Cash Advance (pending agent-charged items on Cash Advance accounts) ----
+        // ---- Tab 1b: Released commission expenses (Cyd 2026-11-01) ----
+        // "Display all released Expenses with Account: Fit to work, Deployed".
+        // Released rows never showed anywhere: the Receivables tab only lists
+        // PENDING items and the Report tab only aggregates them.
+        $releasedCommissionAccountIds = Account::where('agency_id', $agencyId)
+            ->whereIn('name', self::RELEASED_COMMISSION_ACCOUNT_NAMES)
+            ->pluck('id');
+
+        $releasedCommissionItems = ExpenseRequestItem::query()
+            ->where('charge', 'agent')
+            ->whereNotNull('agent_id')
+            ->whereIn('account_id', $releasedCommissionAccountIds)
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_RELEASED))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
+            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
+            ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+            ->orderByDesc('created_at')
+            ->get();
+
+        $releasedCommissionTotal = $releasedCommissionItems
+            ->sum(fn ($item) => $converter->toPhp((float) $item->amount, $item->currency));
+
+        // ---- Tab 1c: Cash Advance (pending agent-charged items on Cash Advance accounts) ----
         $cashAdvanceItems = ExpenseRequestItem::query()
             ->where('charge', 'agent')
             ->whereNotNull('agent_id')
@@ -167,6 +192,8 @@ class AgentReportController extends Controller
             'agents',
             'agentId',
             'commissionItems',
+            'releasedCommissionItems',
+            'releasedCommissionTotal',
             'cashAdvanceItems',
             'receivableItems',
             'payments',
