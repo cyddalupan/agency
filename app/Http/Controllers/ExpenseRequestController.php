@@ -808,7 +808,9 @@ class ExpenseRequestController extends Controller
         }
 
         $request->validate([
-            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:20480'],
+        ], [
+            'csv_file.max' => 'The CSV file must be 20 MB or smaller. Split the file into smaller files if it is larger.',
         ]);
 
         $file = $request->file('csv_file');
