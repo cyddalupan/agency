@@ -64,6 +64,17 @@ class PaymentBulkUploadTest extends TestCase
         return UploadedFile::fake()->createWithContent('payments.csv', implode("\n", $lines) . "\n");
     }
 
+    /** New template: a row is keyed by transaction Date instead of Ref#. */
+    private function csvByDate(array $rows): UploadedFile
+    {
+        $lines = ['"Date","Applicant","Agent","Currency","Payment","Particular"'];
+        foreach ($rows as $row) {
+            $lines[] = implode(',', array_map(fn ($cell) => '"' . str_replace('"', '""', (string) $cell) . '"', $row));
+        }
+
+        return UploadedFile::fake()->createWithContent('payments.csv', implode("\n", $lines) . "\n");
+    }
+
     private function makeRequest(string $ref, array $lines): ExpenseRequest
     {
         $request = ExpenseRequest::create([
@@ -124,8 +135,69 @@ class PaymentBulkUploadTest extends TestCase
 
         $response->assertOk();
         $body = $response->streamedContent();
-        $this->assertStringContainsString('Ref#', $body);
+        $this->assertStringContainsString('Date', $body);
         $this->assertStringContainsString('Payment', $body);
+        // Josh 2026-11-02: the Ref# column is replaced by Date.
+        $this->assertStringNotContainsString('Ref#', $body);
+    }
+
+    #[Test]
+    public function a_payment_can_be_matched_by_transaction_date_instead_of_ref(): void
+    {
+        $req = $this->makeRequest('30010', [['particular' => 'FTW Commission', 'amount' => 5000.00]]);
+
+        $this->actingAs($this->accounting)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([[now()->toDateString(), '', '', 'PHP', '1,500.00', 'FTW Commission']]),
+            ])
+            ->assertRedirect(route('agent_report.index', ['tab' => 'payments']))
+            ->assertSessionHas('success');
+
+        $this->assertSame('1500.00', (string) $req->items()->first()->fresh()->payment);
+    }
+
+    #[Test]
+    public function two_transactions_on_the_same_date_need_the_particular_to_disambiguate(): void
+    {
+        $a = $this->makeRequest('30011', [['particular' => 'Line A', 'amount' => 1000.00]]);
+        $b = $this->makeRequest('30012', [['particular' => 'Line B', 'amount' => 1000.00]]);
+
+        // Ambiguous: same date, no other hint.
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([[now()->toDateString(), '', '', 'PHP', '100.00', '']]),
+            ])
+            ->assertSessionHasErrors('csv_file');
+
+        $this->assertSame(0.0, (float) $a->items()->sum('payment'));
+        $this->assertSame(0.0, (float) $b->items()->sum('payment'));
+
+        // Resolved by the Particular.
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([[now()->toDateString(), '', '', 'PHP', '250.00', 'Line B']]),
+            ])
+            ->assertRedirect(route('agent_report.index', ['tab' => 'payments']));
+
+        $this->assertSame('250.00', (string) $b->items()->first()->fresh()->payment);
+        $this->assertSame(0.0, (float) $a->items()->sum('payment'));
+    }
+
+    #[Test]
+    public function an_unknown_date_blocks_the_whole_file(): void
+    {
+        $req = $this->makeRequest('30013', [['particular' => 'FTW Commission']]);
+
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    [now()->toDateString(), '', '', 'PHP', '100.00', 'FTW Commission'],
+                    ['1999-01-01', '', '', 'PHP', '200.00', ''],
+                ]),
+            ])
+            ->assertSessionHasErrors('csv_file');
+
+        $this->assertSame('0.00', (string) $req->items()->first()->fresh()->payment);
     }
 
     #[Test]

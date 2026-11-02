@@ -58,9 +58,9 @@
         <div class="card-body">
             <h3 class="font-bold mb-2">1 · Get the template</h3>
             <p class="text-sm opacity-70 mb-3">
-                Columns: <strong>Ref#</strong>, <strong>Applicant</strong>, <strong>Agent</strong>, <strong>Currency</strong>,
+                Columns: <strong>Date</strong>, <strong>Applicant</strong>, <strong>Agent</strong>, <strong>Currency</strong>,
                 <strong>Payment</strong>, <strong>Particular</strong>. Column order does not matter.
-                Ref# and Payment are required — the rest are only used to pick the right line when a transaction has several.
+                Date and Payment are required — the rest are only used to pick the right line when a date has several transactions.
             </p>
             <a href="{{ route('agent_report.payment.bulk.template') }}" class="btn btn-outline btn-sm">⬇️ Download CSV template</a>
         </div>
@@ -72,7 +72,7 @@
             <h3 class="font-bold mb-2">2 · Upload your filled-in CSV</h3>
             <input type="file" name="csv_file" accept=".csv,text/csv" class="file-input file-input-bordered w-full" required>
             <p class="text-xs opacity-60 mt-2">
-                The Ref# must already exist in Expenses &amp; Payments — this uploads payment amounts, it does not create
+                The Date must already exist in Expenses &amp; Payments — this uploads payment amounts, it does not create
                 transactions. A payment cannot be bigger than the line amount.
             </p>
             <div class="card-actions justify-end mt-3">

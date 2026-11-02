@@ -620,10 +620,12 @@ class AgentReportController extends Controller
      */
     public function paymentBulkTemplate()
     {
-        $headers = ['Ref#', 'Applicant', 'Agent', 'Currency', 'Payment', 'Particular'];
+        // Josh 2026-11-02 (card 124): the Ref# column is gone — a row is
+        // identified by the transaction *Date* instead.
+        $headers = ['Date', 'Applicant', 'Agent', 'Currency', 'Payment', 'Particular'];
         $sample = [
-            ['28032', 'Dela Cruz, Maria', 'Juan Dela Cruz', 'PHP', '1500.00', 'FTW Commission'],
-            ['28033', '', '', 'PHP', '250.00', ''],
+            [now()->toDateString(), 'Dela Cruz, Maria', 'Juan Dela Cruz', 'PHP', '1500.00', 'FTW Commission'],
+            [now()->toDateString(), '', '', 'PHP', '250.00', ''],
         ];
 
         return response()->streamDownload(function () use ($headers, $sample) {
@@ -657,14 +659,20 @@ class AgentReportController extends Controller
 
         $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
 
-        // Reference number => expense request (agency scoped).
+        // Transactions indexed by Ref# and by Date (agency scoped). Date is the
+        // primary key of the template; Ref# is still accepted for old files.
         $requestsByRef = [];
+        $requestsByDate = [];
         foreach (ExpenseRequest::where('agency_id', $agencyId)
                      ->with(['items.applicant', 'items.agent', 'items.account'])
                      ->get() as $expenseRequest) {
             $ref = $norm($expenseRequest->reference_no);
             if ($ref !== '') {
                 $requestsByRef[$ref][] = $expenseRequest;
+            }
+            $day = optional($expenseRequest->date)->toDateString();
+            if ($day) {
+                $requestsByDate[$day][] = $expenseRequest;
             }
         }
 
@@ -678,18 +686,32 @@ class AgentReportController extends Controller
             $rowErrors = [];
 
             $refRaw = trim((string) ($d['ref'] ?? ''));
+            $dateRaw = trim((string) ($d['date'] ?? ''));
             $expenseRequest = null;
-            if ($refRaw === '') {
-                $rowErrors[] = 'Ref# is required.';
-            } else {
-                $matches = $requestsByRef[$norm($refRaw)] ?? [];
-                if (count($matches) === 0) {
-                    $rowErrors[] = "No expense request with Ref# '{$refRaw}' was found.";
-                } elseif (count($matches) > 1) {
-                    $rowErrors[] = "Ref# '{$refRaw}' matches more than one expense request.";
+            $candidateRequests = [];
+
+            if ($dateRaw !== '') {
+                $dateKey = $this->parsePaymentCsvDate($dateRaw);
+                if (! $dateKey) {
+                    $rowErrors[] = "Date '{$dateRaw}' is not a valid date (use YYYY-MM-DD or MM/DD/YYYY).";
                 } else {
-                    $expenseRequest = $matches[0];
+                    $candidateRequests = $requestsByDate[$dateKey] ?? [];
+                    if (count($candidateRequests) === 0) {
+                        $rowErrors[] = 'No transaction dated ' . Carbon::parse($dateKey)->format('M d, Y') . ' was found.';
+                    }
                 }
+            } elseif ($refRaw !== '') {
+                // Legacy template (Ref# column) — still accepted.
+                $candidateRequests = $requestsByRef[$norm($refRaw)] ?? [];
+                if (count($candidateRequests) === 0) {
+                    $rowErrors[] = "No expense request with Ref# '{$refRaw}' was found.";
+                }
+            } else {
+                $rowErrors[] = 'Date is required.';
+            }
+
+            if (count($candidateRequests) === 1) {
+                $expenseRequest = $candidateRequests[0];
             }
 
             // ---- Payment amount (required, >= 0) ----
@@ -711,8 +733,10 @@ class AgentReportController extends Controller
             $particularRaw = trim((string) ($d['particular'] ?? ''));
 
             $item = null;
-            if ($expenseRequest) {
-                $candidates = $expenseRequest->items;
+            if ($candidateRequests) {
+                $candidates = collect($candidateRequests)
+                    ->flatMap(fn ($er) => $er->items)
+                    ->values();
 
                 if ($applicantRaw !== '') {
                     $candidates = $candidates->filter(function ($it) use ($norm, $applicantRaw) {
@@ -745,12 +769,13 @@ class AgentReportController extends Controller
                 }
 
                 if ($candidates->count() === 0) {
-                    $rowErrors[] = 'No line on this expense request matches the Applicant / Agent / Particular / Currency given.';
+                    $rowErrors[] = 'No line on the matching transaction matches the Applicant / Agent / Particular / Currency given.';
                 } elseif ($candidates->count() > 1) {
-                    $rowErrors[] = 'This expense request has ' . $candidates->count()
+                    $rowErrors[] = $candidates->count()
                         . ' matching lines — add the Applicant or Particular to pick one.';
                 } else {
                     $item = $candidates->first();
+                    $expenseRequest = $item->expenseRequest ?? $expenseRequest;
                 }
             }
 
@@ -817,6 +842,36 @@ class AgentReportController extends Controller
     }
 
     /**
+     * Normalise the Date cell of the payment CSV to Y-m-d (null when invalid).
+     * Accepts Excel serials, ISO, MM/DD/YYYY, DD-MM-YYYY and "M d, Y".
+     */
+    private function parsePaymentCsvDate(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        // Excel serial date = days since 1899-12-30.
+        if (preg_match('/^\d{5}(\.\d+)?$/', $raw)) {
+            return Carbon::create(1899, 12, 30)->addDays((int) $raw)->toDateString();
+        }
+
+        foreach (['Y-m-d', 'm/d/Y', 'n/j/Y', 'd/m/Y', 'm-d-Y', 'd-M-Y', 'M d, Y', 'M j, Y', 'F j, Y'] as $format) {
+            $parsed = \DateTime::createFromFormat('!'.$format, $raw);
+            if ($parsed && $parsed->format($format) === $raw) {
+                return $parsed->format('Y-m-d');
+            }
+        }
+
+        try {
+            return Carbon::parse($raw)->toDateString();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * Parse the payment CSV into ['line' => n, 'data' => [...]] rows.
      */
     private function parsePaymentCsv(string $path)
@@ -843,6 +898,10 @@ class AgentReportController extends Controller
         $raw = str_replace(["\r\n", "\r"], "\n", $raw);
 
         $aliases = [
+            'date'                => 'date',
+            'payment date'        => 'date',
+            'transaction date'    => 'date',
+            'date paid'           => 'date',
             'ref'                 => 'ref',
             'ref#'                => 'ref',
             'ref #'               => 'ref',
@@ -896,7 +955,7 @@ class AgentReportController extends Controller
                         $candidate[$idx] = $field;
                     }
                 }
-                if (in_array('ref', $candidate, true) && in_array('payment', $candidate, true)) {
+                if ((in_array('date', $candidate, true) || in_array('ref', $candidate, true)) && in_array('payment', $candidate, true)) {
                     $headerIndex = $i;
                     $fieldByIndex = $candidate;
                     break;
@@ -904,7 +963,7 @@ class AgentReportController extends Controller
             }
 
             if ($headerIndex === null) {
-                return 'No header row found. The first row must name the columns: Ref#, Applicant, Agent, Currency, Payment, Particular.';
+                return 'No header row found. The first row must name the columns: Date, Applicant, Agent, Currency, Payment, Particular.';
             }
 
             $rows = [];
