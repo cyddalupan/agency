@@ -882,6 +882,8 @@ class ExpenseRequestController extends Controller
         $errors = [];
         $validatedRows = [];
         $lockedBranchId = $this->branchLocked($user) ? (int) $user->branch_id : null;
+        $lastBranchRaw = '';
+        $inheritedBranchRows = 0;
 
         foreach ($rows as $row) {
             $line = $row['line'];
@@ -917,8 +919,18 @@ class ExpenseRequestController extends Controller
             $encoderId = $this->resolveBulkUser($d['user'] ?? '', (int) $agencyId);
 
             // ---- Branch (by name; optional) ----
+            // Excel merged cells export the branch only on the first row of the
+            // group, leaving the rest blank. Carry the last non-blank Office
+            // value down so those rows keep their branch instead of silently
+            // importing with none. (Cyd 2026-11-02)
             $branchId = null;
             $branchRaw = trim((string) ($d['branch'] ?? ''));
+            if ($branchRaw === '' && $lastBranchRaw !== '') {
+                $branchRaw = $lastBranchRaw;
+                $inheritedBranchRows++;
+            } elseif ($branchRaw !== '') {
+                $lastBranchRaw = $branchRaw;
+            }
             if ($branchRaw !== '') {
                 $key = $norm($branchRaw);
                 if (isset($branchMap[$key])) {
@@ -1229,6 +1241,9 @@ class ExpenseRequestController extends Controller
         $message = "Bulk upload complete: {$count} expense request(s) imported from CSV.";
         if ($skipped > 0) {
             $message .= " {$skipped} duplicate row(s) skipped (already on file).";
+        }
+        if ($inheritedBranchRows > 0) {
+            $message .= " {$inheritedBranchRows} row(s) had a blank Office cell and inherited the branch from the row above.";
         }
 
         return redirect()->route('expense_request.index')->with('success', $message);
