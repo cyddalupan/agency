@@ -260,6 +260,21 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
     }
 
     #[Test]
+    public function index_badge_names_the_transaction_the_row_duplicates(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+
+        $original = $this->makeRequest([['applicant_id' => $applicant->id, 'amount' => 4500.00, 'particular' => 'ACCOM GASUL']]);
+        $repeat = $this->makeRequest([['applicant_id' => $applicant->id, 'amount' => 4500.00, 'particular' => 'ACCOM GASUL']]);
+
+        $html = $this->actingAs($this->user)->get(route('expense_request.index'))->getContent();
+
+        // Josh 2026-11-02: the badge reads "Duplicate of <ref>" instead of a bare word.
+        $this->assertStringContainsString('Duplicate of ' . $original->reference_no, $html);
+        $this->assertStringNotContainsString('Duplicate of ' . $repeat->reference_no, $html);
+    }
+
+    #[Test]
     public function index_does_not_highlight_rows_with_same_amount_different_applicant(): void
     {
         $applicantA = Applicant::factory()->create(['agency_id' => $this->agency->id]);

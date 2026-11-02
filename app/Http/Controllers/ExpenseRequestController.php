@@ -103,13 +103,21 @@ class ExpenseRequestController extends Controller
         }
 
         $duplicateItemIds = [];
+        // Josh 2026-11-02: the badge must say WHICH transaction it repeats, so
+        // store the original line's reference for every flagged repeat.
+        $duplicateOrigins = [];   // repeat item id => ['ref' => ..., 'same_request' => bool]
         foreach ($itemsByFingerprint as $group) {
             if (count($group) < 2) {
                 continue;
             }
             usort($group, fn ($a, $b) => [$a->created_at, $a->id] <=> [$b->created_at, $b->id]);
+            $first = $group[0];
             foreach (array_slice($group, 1) as $repeat) {
                 $duplicateItemIds[] = (int) $repeat->id;
+                $duplicateOrigins[(int) $repeat->id] = [
+                    'ref'          => $first->expenseRequest?->reference_no,
+                    'same_request' => (int) $first->expense_request_id === (int) $repeat->expense_request_id,
+                ];
             }
         }
 
@@ -134,6 +142,7 @@ class ExpenseRequestController extends Controller
             'cancelledUsdTotal'     => $totals['status']['cancelled']['USD'],
             'statusTotals'     => $statusTotals,
             'duplicateItemIds' => $duplicateItemIds,
+            'duplicateOrigins' => $duplicateOrigins,
             'encoders'         => $encoders,
             'activeEncoder'    => $activeEncoder,
         ]);

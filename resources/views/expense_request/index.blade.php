@@ -232,7 +232,26 @@
                                             </td>
                                         @endif
                                         @if($loop->first)
-                                            <td class="font-mono" rowspan="{{ $request->items->count() }}">{{ $request->reference_no }}</td>
+                                            @php
+                                                // Josh 2026-11-02: the badge names the transaction it repeats
+                                                // and sits next to the Ref# instead of the Applicant cell.
+                                                $dupInfo = null;
+                                                foreach ($request->items as $reqItem) {
+                                                    $dupInfo = $duplicateOrigins[(int) $reqItem->id] ?? null;
+                                                    if ($dupInfo) {
+                                                        break;
+                                                    }
+                                                }
+                                            @endphp
+                                            <td class="font-mono" rowspan="{{ $request->items->count() }}">
+                                                {{ $request->reference_no }}
+                                                @if($dupInfo)
+                                                    <span class="badge badge-sm badge-warning ml-1 whitespace-nowrap align-middle"
+                                                          title="{{ $dupInfo['same_request'] ? 'This line repeats another line on the same request (date, account, amount, particular)' : 'Same entry as the earlier transaction ' . $dupInfo['ref'] }}">
+                                                        Duplicate{{ (! $dupInfo['same_request'] && $dupInfo['ref']) ? ' of ' . $dupInfo['ref'] : ' line' }}
+                                                    </span>
+                                                @endif
+                                            </td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->date?->format('Y-m-d') }}</td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
                                         @endif
@@ -243,11 +262,7 @@
                                         @if($loop->first)
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->branch?->name ?? '—' }}</td>
                                         @endif
-                                        <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}
-                                            @if($isDup)
-                                                <span class="badge badge-sm badge-warning ml-1" title="Same entry as an earlier transaction (date, account, amount, particular)">Duplicate</span>
-                                            @endif
-                                        </td>
+                                        <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                         <td>{{ $item->agent?->name ?? '—' }}</td>
                                         <td>{{ $item->currency }}</td>
                                         <td class="text-right font-semibold">
