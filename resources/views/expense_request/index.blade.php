@@ -233,7 +233,7 @@
                                         @endif
                                         @if($loop->first)
                                             <td class="font-mono" rowspan="{{ $request->items->count() }}">{{ $request->reference_no }}</td>
-                                            <td rowspan="{{ $request->items->count() }}">{{ $request->created_at?->format('Y-m-d H:i') }}</td>
+                                            <td rowspan="{{ $request->items->count() }}">{{ $request->date?->format('Y-m-d') }}</td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
                                         @endif
                                         <td>
@@ -294,7 +294,7 @@
                                             </td>
                                         @endif
                                         <td class="font-mono">{{ $request->reference_no }}</td>
-                                        <td>{{ $request->created_at?->format('Y-m-d H:i') }}</td>
+                                        <td>{{ $request->date?->format('Y-m-d') }}</td>
                                         <td>{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
                                         @php $showReview = in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing'], true); @endphp
                                         <td colspan="{{ $showReview ? 10 : 10 }}" class="opacity-50">No line items</td>
