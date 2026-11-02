@@ -324,4 +324,48 @@ class PaymentBulkUploadTest extends TestCase
 
         $this->assertSame('0.00', (string) $foreign->items()->first()->fresh()->payment);
     }
+
+    #[Test]
+    public function a_single_line_date_is_matched_even_when_the_sheet_names_a_different_applicant(): void
+    {
+        // Josh 2026-11-02: his sheet carries the Applicant/Agent of his own
+        // records, but office-charged lines in Expenses & Payments have none.
+        // One line on the date is unambiguous — it must not be rejected.
+        $req = $this->makeRequest('30021', [['particular' => 'PD FR. DEP COMM', 'amount' => 7500.00]]);
+
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([[
+                    now()->toDateString(), 'KRISTITA JANE PALANG-AT', 'ROSENE SEMENTILA', 'PHP', '7500.00', 'PD FR. DEP COMM',
+                ]]),
+            ])
+            ->assertRedirect(route('agent_report.index', ['tab' => 'payments']))
+            ->assertSessionHas('success');
+
+        $this->assertSame('7500.00', (string) $req->items()->first()->fresh()->payment);
+    }
+
+    #[Test]
+    public function a_row_that_matches_nothing_lists_the_lines_the_date_actually_has(): void
+    {
+        $this->makeRequest('30022', [['particular' => 'Line A', 'amount' => 4500.00]]);
+        $this->makeRequest('30023', [['particular' => 'Line B', 'amount' => 800.00]]);
+
+        $response = $this->actingAs($this->admin)
+            ->from(route('agent_report.payment.bulk'))
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([[
+                    now()->toDateString(), 'KRISTITA JANE PALANG-AT', '', 'PHP', '7500.00', 'PD FR. DEP COMM',
+                ]]),
+            ]);
+
+        $response->assertSessionHasErrors('csv_file');
+        $bulkErrors = session('bulk_errors');
+        $message = implode(' ', collect($bulkErrors)->flatten()->all());
+
+        $this->assertStringContainsString('No line on the', $message);
+        $this->assertStringContainsString('30022', $message);
+        $this->assertStringContainsString('30023', $message);
+        $this->assertStringContainsString('PD FR. DEP COMM', $message);
+    }
 }

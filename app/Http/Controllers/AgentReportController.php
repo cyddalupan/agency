@@ -689,6 +689,7 @@ class AgentReportController extends Controller
             $dateRaw = trim((string) ($d['date'] ?? ''));
             $expenseRequest = null;
             $candidateRequests = [];
+            $dateKey = null;
 
             if ($dateRaw !== '') {
                 $dateKey = $this->parsePaymentCsvDate($dateRaw);
@@ -738,44 +739,93 @@ class AgentReportController extends Controller
                     ->flatMap(fn ($er) => $er->items)
                     ->values();
 
-                if ($applicantRaw !== '') {
-                    $candidates = $candidates->filter(function ($it) use ($norm, $applicantRaw) {
-                        $name = $it->applicant?->full_name ?? '';
-                        $lastFirst = $it->applicant
-                            ? $it->applicant->last_name . ', ' . $it->applicant->first_name
-                            : '';
+                // Josh 2026-11-02: a hard AND-filter rejected a row the moment one
+                // column differed (blank Applicant on office-charged lines, a
+                // Particular typed slightly differently) and never said which lines
+                // the date actually had. Every line is now scored on the columns the
+                // sheet fills in, and the clear best score wins.
+                $applicantMatches = function ($it) use ($norm, $applicantRaw) {
+                    if ($applicantRaw === '' || ! $it->applicant) {
+                        return false;
+                    }
+                    $lastFirst = ($it->applicant->last_name ?? '') . ', ' . ($it->applicant->first_name ?? '');
 
-                        return $norm($name) === $norm($applicantRaw)
-                            || $norm($lastFirst) === $norm($applicantRaw);
-                    })->values();
-                }
+                    return $norm($it->applicant->full_name ?? '') === $norm($applicantRaw)
+                        || $norm($lastFirst) === $norm($applicantRaw);
+                };
 
-                if ($agentRaw !== '') {
-                    $candidates = $candidates->filter(
-                        fn ($it) => $norm($it->agent?->name ?? '') === $norm($agentRaw)
-                    )->values();
-                }
+                $scored = $candidates->map(function ($it) use (
+                    $norm,
+                    $agentRaw,
+                    $particularRaw,
+                    $currency,
+                    $payment,
+                    $applicantMatches
+                ) {
+                    $score = 0;
+                    if ($applicantMatches($it)) {
+                        $score += 100;
+                    }
+                    if ($agentRaw !== '' && $it->agent
+                        && $norm($it->agent->name ?? '') === $norm($agentRaw)) {
+                        $score += 50;
+                    }
+                    if ($particularRaw !== '' && $norm($it->particular ?? '') === $norm($particularRaw)) {
+                        $score += 50;
+                    }
+                    if ($currency !== '' && strtoupper((string) $it->currency) === $currency) {
+                        $score += 10;
+                    }
+                    if ($payment !== null && abs($payment - (float) $it->amount) < 0.01) {
+                        $score += 25;
+                    }
 
-                if ($particularRaw !== '') {
-                    $candidates = $candidates->filter(
-                        fn ($it) => $norm($it->particular ?? '') === $norm($particularRaw)
-                    )->values();
-                }
+                    return ['item' => $it, 'score' => $score];
+                });
 
-                if ($currency !== '') {
-                    $candidates = $candidates->filter(
-                        fn ($it) => strtoupper((string) $it->currency) === $currency
-                    )->values();
-                }
+                $bestScore = (int) $scored->max('score');
+                $best = $scored->filter(fn ($s) => $s['score'] === $bestScore)->values();
 
-                if ($candidates->count() === 0) {
-                    $rowErrors[] = 'No line on the matching transaction matches the Applicant / Agent / Particular / Currency given.';
-                } elseif ($candidates->count() > 1) {
-                    $rowErrors[] = $candidates->count()
-                        . ' matching lines — add the Applicant or Particular to pick one.';
-                } else {
-                    $item = $candidates->first();
+                // A bare Currency hit (10) is not evidence — two PHP lines must never
+                // be picked at random. One line on the date is always unambiguous.
+                if ($candidates->count() === 1 || ($bestScore > 10 && $best->count() === 1)) {
+                    $item = $best->first()['item'];
                     $expenseRequest = $item->expenseRequest ?? $expenseRequest;
+                } else {
+                    $given = array_values(array_filter([
+                        $applicantRaw !== '' ? "Applicant '{$applicantRaw}'" : null,
+                        $agentRaw !== '' ? "Agent '{$agentRaw}'" : null,
+                        $particularRaw !== '' ? "Particular '{$particularRaw}'" : null,
+                        $currency !== '' ? "Currency '{$currency}'" : null,
+                    ]));
+                    $givenText = $given ? ' (' . implode(' / ', $given) . ')' : '';
+
+                    $label = function ($it) {
+                        $who = $it->applicant
+                            ? trim(($it->applicant->last_name ?? '') . ', ' . ($it->applicant->first_name ?? ''), ', ')
+                            : 'no applicant';
+                        $particular = trim((string) ($it->particular ?? ''));
+
+                        return ($it->expenseRequest->reference_no ?? '#' . $it->id)
+                            . ' · ' . $who
+                            . ' · ' . ($it->agent->name ?? 'no agent')
+                            . ' · ' . ($particular === '' ? 'no particular' : $particular)
+                            . ' · ' . ($it->currency ?: 'PHP') . ' ' . number_format((float) $it->amount, 2);
+                    };
+
+                    $preview = $candidates->take(5)->map($label)->implode(' | ');
+                    $more = $candidates->count() > 5 ? ' | … and ' . ($candidates->count() - 5) . ' more' : '';
+                    $dateText = $dateKey
+                        ? Carbon::parse($dateKey)->format('M d, Y')
+                        : Carbon::parse($expenseRequest->date ?? now())->format('M d, Y');
+
+                    if ($bestScore <= 10) {
+                        $rowErrors[] = 'No line on the ' . $dateText . ' transaction matches' . $givenText
+                            . '. That date has ' . $candidates->count() . ' line(s): ' . $preview . $more;
+                    } else {
+                        $rowErrors[] = $best->count() . ' line(s) match' . $givenText
+                            . ' equally — add the Applicant or Particular to pick one. Lines: ' . $preview . $more;
+                    }
                 }
             }
 
