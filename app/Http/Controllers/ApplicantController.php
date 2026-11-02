@@ -542,6 +542,8 @@ class ApplicantController extends Controller
 
         $user = auth()->user();
         $branchLocked = $user && $user->isBranchLocked();
+        $lastBranchRaw = '';
+        $inheritedBranchRows = 0;
         $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
 
         // ---- Preload lookup maps (name-key => id), scoped for this user ----
@@ -761,8 +763,18 @@ class ApplicantController extends Controller
             $agentId = $resolve($d['agent'] ?? '', $agentMap, 'Agent');
 
             // ---- Branch (respects branch-locked accounts) ----
+            // Excel merged cells export the branch only on the first row of the
+            // group, leaving the rest blank. Carry the last non-blank Branch
+            // value down so those rows keep their branch instead of silently
+            // importing with none. (Cyd 2026-11-02)
             $branchId = null;
             $branchRaw = trim((string) ($d['branch'] ?? ''));
+            if ($branchRaw === '' && $lastBranchRaw !== '') {
+                $branchRaw = $lastBranchRaw;
+                $inheritedBranchRows++;
+            } elseif ($branchRaw !== '') {
+                $lastBranchRaw = $branchRaw;
+            }
             if ($branchRaw !== '') {
                 $branch = $branchMap[$norm($branchRaw)] ?? null;
                 if (! $branch) {
@@ -908,7 +920,8 @@ class ApplicantController extends Controller
         );
 
         return redirect()->route('applicants.index')
-            ->with('success', "Bulk upload complete: {$count} applicant(s) imported from CSV.");
+            ->with('success', "Bulk upload complete: {$count} applicant(s) imported from CSV."
+                .($inheritedBranchRows > 0 ? " {$inheritedBranchRows} row(s) had a blank Branch cell and inherited the branch from the row above." : ''));
     }
 
     /**
