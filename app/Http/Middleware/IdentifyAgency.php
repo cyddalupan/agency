@@ -16,9 +16,15 @@ class IdentifyAgency
 
     public function handle(Request $request, Closure $next): Response
     {
-        $host = $request->getHost();
+        $host = strtolower($request->getHost());
         $parts = explode('.', $host);
         $subdomain = $parts[0] ?? null;
+
+        // Custom (full) domain -> agency slug, e.g. gulfcsdi.com -> gulf
+        $customDomains = config('tenant_domains', []);
+        if (isset($customDomains[$host])) {
+            $subdomain = $customDomains[$host];
+        }
 
         // Skip tenant resolution for system and unknown domains (test/local)
         if (!$subdomain || in_array($subdomain, $this->systemDomains)) {
