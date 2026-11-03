@@ -1319,63 +1319,52 @@ class ExpenseRequestController extends Controller
         fwrite($handle, $raw);
         rewind($handle);
 
-        $parsedRows = [];
-        while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
-            $parsedRows[] = $cells;
-        }
-        fclose($handle);
-
-        if (empty($parsedRows)) {
-            return 'The file has no readable rows.';
-        }
-
         $aliases = $this->bulkHeaderAliases();
 
-        // ---- Find the header row: skip blank lines and stray title lines ----
+        // Stream the file row by row instead of materialising every row first.
+        // A 20 MB export used to build a multi-hundred-MB array here and kill
+        // PHP with "Allowed memory size exhausted" (HTTP 500). (Fixed 2026-11-03)
         $headerIndex = null;
         $fieldByIndex = [];
-        $scanLimit = min(count($parsedRows), 30);
-        for ($i = 0; $i < $scanLimit; $i++) {
-            $cells = $parsedRows[$i];
-            if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
-                continue; // blank line
-            }
-            $candidate = [];
-            foreach ($cells as $idx => $header) {
-                $field = $aliases[$this->normKey($header)] ?? null;
-                if ($field && ! in_array($field, $candidate, true)) {
-                    $candidate[$idx] = $field;
-                }
-            }
-            $fields = array_values($candidate);
-            // A row only counts as the header when it names the required columns.
-            if (in_array('charge', $fields, true) && in_array('account', $fields, true)) {
-                $headerIndex = $i;
-                $fieldByIndex = $candidate;
-                break;
-            }
-        }
-
-        if ($headerIndex === null) {
-            $firstNonBlank = null;
-            foreach (array_slice($parsedRows, 0, 5) as $cells) {
-                if (! empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
-                    $firstNonBlank = implode(' | ', array_map(fn ($c) => trim((string) $c), $cells));
-                    break;
-                }
-            }
-            $preview = mb_substr($firstNonBlank ?? '(empty file)', 0, 160);
-
-            return 'No header row found. The file must have a header row containing "Charge" and "Account" columns (use the downloaded template and keep its first row unchanged). What the parser saw first: "'.$preview.'". If you added a title or blank line above the header, remove it, or just re-download the template and fill it in.';
-        }
-
-        // ---- Data rows = everything after the header row ----
         $rows = [];
-        $line = $headerIndex + 1; // physical CSV line of the header
+        $rowIndex = 0;
         $dataLines = 0;
-        for ($i = $headerIndex + 1; $i < count($parsedRows); $i++) {
-            $line++;
-            $cells = $parsedRows[$i];
+        $sawAnyRow = false;
+        $firstNonBlank = null;
+
+        while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $sawAnyRow = true;
+            $isBlank = empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''));
+
+            // ---- Find the header row: skip blank lines and stray title lines ----
+            if ($headerIndex === null) {
+                if ($rowIndex >= 30) {
+                    break; // header must appear in the first 30 rows
+                }
+                if (! $isBlank) {
+                    if ($firstNonBlank === null && $rowIndex < 5) {
+                        $firstNonBlank = implode(' | ', array_map(fn ($c) => trim((string) $c), $cells));
+                    }
+                    $candidate = [];
+                    foreach ($cells as $idx => $header) {
+                        $field = $aliases[$this->normKey($header)] ?? null;
+                        if ($field && ! in_array($field, $candidate, true)) {
+                            $candidate[$idx] = $field;
+                        }
+                    }
+                    $fields = array_values($candidate);
+                    // A row only counts as the header when it names the required columns.
+                    if (in_array('charge', $fields, true) && in_array('account', $fields, true)) {
+                        $headerIndex = $rowIndex;
+                        $fieldByIndex = $candidate;
+                    }
+                }
+                $rowIndex++;
+                continue;
+            }
+
+            // ---- Data rows = everything after the header row ----
+            $rowIndex++;
             $data = [];
             foreach ($fieldByIndex as $idx => $field) {
                 $data[$field] = trim((string) ($cells[$idx] ?? ''));
@@ -1385,9 +1374,22 @@ class ExpenseRequestController extends Controller
             }
             $dataLines++;
             if ($dataLines > 2000) {
+                fclose($handle);
+
                 return 'Too many rows: the file exceeds 2,000 expense request rows. Split it into smaller files.';
             }
-            $rows[] = ['line' => $line, 'data' => $data];
+            $rows[] = ['line' => $rowIndex, 'data' => $data];
+        }
+        fclose($handle);
+
+        if (! $sawAnyRow) {
+            return 'The file has no readable rows.';
+        }
+
+        if ($headerIndex === null) {
+            $preview = mb_substr($firstNonBlank ?? '(empty file)', 0, 160);
+
+            return 'No header row found. The file must have a header row containing "Charge" and "Account" columns (use the downloaded template and keep its first row unchanged). What the parser saw first: "'.$preview.'". If you added a title or blank line above the header, remove it, or just re-download the template and fill it in.';
         }
 
         if (empty($rows)) {
