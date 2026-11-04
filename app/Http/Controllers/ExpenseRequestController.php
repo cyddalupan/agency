@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ExpenseRequestController extends Controller
@@ -271,7 +272,11 @@ class ExpenseRequestController extends Controller
 
         return view('expense_request.create', compact(
             'branches', 'agents', 'applicants', 'countries', 'mains', 'allAccounts'
-        ));
+        ) + [
+            // CYD 2026-11-04: Main Office / Main Branch users can tag each line
+            // with its own branch. Branch-locked users never see the field.
+            'showLineBranch' => ! $this->branchLocked($user),
+        ]);
     }
 
     /**
@@ -348,6 +353,7 @@ class ExpenseRequestController extends Controller
                 // Account Type picker (and the Payments visibility) now preselects
                 // correctly when editing an existing transaction.
                 'sub_account_id' => $item->account_id,
+                'branch_id'    => $item->branch_id,
                 'has_file'     => (bool) $item->file_path,
             ];
         })->all();
@@ -355,9 +361,10 @@ class ExpenseRequestController extends Controller
         return view('expense_request.create', compact(
             'branches', 'agents', 'applicants', 'countries', 'mains', 'allAccounts'
         ) + [
-            'record'        => $expenseRequest,
-            'isEdit'        => true,
-            'existingLines' => $existingLines,
+            'record'         => $expenseRequest,
+            'isEdit'         => true,
+            'existingLines'  => $existingLines,
+            'showLineBranch' => ! $this->branchLocked($user),
         ]);
     }
 
@@ -387,6 +394,7 @@ class ExpenseRequestController extends Controller
             'lines'     => ['required', 'array', 'min:1'],
             'lines.*.id'              => ['nullable', 'integer'],
             'lines.*.charge'          => ['required', 'in:office,agent'],
+            'lines.*.branch_id'       => ['nullable', 'integer', Rule::exists('branches', 'id')->where('agency_id', $agencyId)],
             'lines.*.main_account_id' => ['nullable', 'integer', 'exists:accounts,id'],
             'lines.*.sub_account_id'  => ['nullable', 'integer', 'exists:accounts,id'],
             'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
@@ -509,6 +517,8 @@ class ExpenseRequestController extends Controller
                     }
 
                     $payload = [
+                        // Per-line branch (main office users); defaults to the request's branch.
+                        'branch_id'    => $line['branch_id'] ?? $branchId,
                         'charge'       => $line['charge'],
                         'agent_id'     => $line['agent_id'] ?? null,
                         'applicant_id' => $line['applicant_id'] ?? null,
@@ -565,6 +575,7 @@ class ExpenseRequestController extends Controller
             'notes'     => ['nullable', 'string'],
             'lines'     => ['required', 'array', 'min:1'],
             'lines.*.charge'          => ['required', 'in:office,agent'],
+            'lines.*.branch_id'       => ['nullable', 'integer', Rule::exists('branches', 'id')->where('agency_id', $agencyId)],
             'lines.*.main_account_id' => ['nullable', 'integer', 'exists:accounts,id'],
             'lines.*.sub_account_id'  => ['required', 'integer', 'exists:accounts,id'],
             'lines.*.agent_id'        => ['nullable', 'integer', 'exists:agents,id'],
@@ -705,6 +716,8 @@ class ExpenseRequestController extends Controller
 
                     ExpenseRequestItem::create([
                         'expense_request_id' => $parent->id,
+                        // Per-line branch (main office users); defaults to the request's branch.
+                        'branch_id'          => $line['branch_id'] ?? $branchId,
                         'charge'             => $line['charge'],
                         'agent_id'           => $line['agent_id'] ?? null,
                         'applicant_id'       => $line['applicant_id'] ?? null,

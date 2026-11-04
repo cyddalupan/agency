@@ -25,6 +25,24 @@
             <button type="button" class="btn btn-ghost btn-xs remove-line">✕ Remove</button>
         </div>
 
+        @if($showLineBranch ?? false)
+            {{-- Branch per line (CYD 2026-11-04): Main Office / Main Branch users file
+                 expenses for several branches in one request, so each line carries
+                 its own branch. Branch-locked users never see this field. --}}
+            <div class="form-control mb-3">
+                <label class="label"><span class="label-text">Branch</span></label>
+                @php
+                    $lineBranch = old("lines.$index.branch_id", $line['branch_id'] ?? ($record->branch_id ?? ''));
+                @endphp
+                <select name="lines[{{ $index }}][branch_id]" class="select select-bordered select-sm line-branch">
+                    <option value="">- select -</option>
+                    @foreach($branches as $b)
+                        <option value="{{ $b->id }}" {{ (string) $lineBranch === (string) $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {{-- Charge --}}
             <div class="form-control">

@@ -12,6 +12,7 @@ class ExpenseRequestItem extends Model
 
     protected $fillable = [
         'expense_request_id',
+        'branch_id',   // per-line branch (CYD 2026-11-04, main office users)
         'charge',        // office|agent
         'agent_id',
         'applicant_id',
@@ -48,6 +49,12 @@ class ExpenseRequestItem extends Model
     public function expenseRequest(): BelongsTo
     {
         return $this->belongsTo(ExpenseRequest::class);
+    }
+
+    /** Per-line branch (falls back to the parent request's branch when null). */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function agent(): BelongsTo
