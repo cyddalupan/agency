@@ -5,6 +5,7 @@ namespace Tests\Feature\Report;
 use App\Models\Agency;
 use App\Models\Agent;
 use App\Models\Applicant;
+use App\Models\Branch;
 use App\Models\User;
 use Database\Seeders\StatusCodesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,6 +80,76 @@ class ReportAgentReportTest extends TestCase
         $csv = $response->streamedContent();
         $this->assertStringContainsString($mine->name, $csv);
         $this->assertStringNotContainsString($theirs->name, $csv);
+    }
+
+    #[Test]
+    public function agents_export_headers_include_branch_after_name(): void
+    {
+        $admin = User::factory()->create(['agency_id' => $this->agency->id, 'user_type' => 'admin']);
+
+        $response = $this->actingAs($admin)
+            ->get(route('reports.agents.export'))
+            ->assertOk();
+
+        $csv = $response->streamedContent();
+        $lines = preg_split('/\r\n|\n/', trim($csv));
+        // Strip the UTF-8 BOM from the first line before parsing
+        $lines[0] = preg_replace('/^\xEF\xBB\xBF/', '', $lines[0]);
+
+        $this->assertSame(
+            ['Name', 'Branch', 'Email', 'Contact', 'Commission Rate', 'Agency', 'Status', 'Created At'],
+            str_getcsv($lines[0])
+        );
+    }
+
+    #[Test]
+    public function agents_export_writes_the_agents_branch_name(): void
+    {
+        $branch = Branch::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Davao Branch',
+        ]);
+        Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Branchy Agent',
+            'branch_id' => $branch->id,
+        ]);
+
+        $admin = User::factory()->create(['agency_id' => $this->agency->id, 'user_type' => 'admin']);
+
+        $csv = $this->actingAs($admin)
+            ->get(route('reports.agents.export'))
+            ->assertOk()
+            ->streamedContent();
+
+        $row = collect(preg_split('/\r\n|\n/', trim($csv)))
+            ->first(fn ($line) => str_contains($line, 'Branchy Agent'));
+
+        $this->assertNotNull($row);
+        $this->assertSame('Davao Branch', str_getcsv($row)[1]);
+    }
+
+    #[Test]
+    public function agents_export_leaves_branch_blank_when_the_agent_has_none(): void
+    {
+        Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'No Branch Agent',
+            'branch_id' => null,
+        ]);
+
+        $admin = User::factory()->create(['agency_id' => $this->agency->id, 'user_type' => 'admin']);
+
+        $csv = $this->actingAs($admin)
+            ->get(route('reports.agents.export'))
+            ->assertOk()
+            ->streamedContent();
+
+        $row = collect(preg_split('/\r\n|\n/', trim($csv)))
+            ->first(fn ($line) => str_contains($line, 'No Branch Agent'));
+
+        $this->assertNotNull($row);
+        $this->assertSame('', str_getcsv($row)[1]);
     }
 
     #[Test]

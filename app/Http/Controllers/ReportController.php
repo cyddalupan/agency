@@ -306,7 +306,7 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId     = auth()->user()->agency_id;
 
-        $query = Agent::with('agency')->orderBy('name');
+        $query = Agent::with(['agency', 'branch'])->orderBy('name');
 
         // Agency users must ONLY see their own agency's agents.
         if (! $isSuperAdmin) {
@@ -326,8 +326,10 @@ class ReportController extends Controller
 
         $agents = $query->get();
 
+        // Toybits 2026-11-04 (CYD: "Add Branch on Export CSV from Reports"): Branch
+        // sits right after Name so the CSV matches the report screenshot.
         $headers = [
-            'Name', 'Email', 'Contact', 'Commission Rate', 'Agency', 'Status', 'Created At',
+            'Name', 'Branch', 'Email', 'Contact', 'Commission Rate', 'Agency', 'Status', 'Created At',
         ];
 
         $callback = function () use ($agents, $headers) {
@@ -338,6 +340,7 @@ class ReportController extends Controller
             foreach ($agents as $agent) {
                 fputcsv($file, [
                     $agent->name,
+                    $agent->branch?->name ?? '',
                     $agent->email,
                     $agent->contact ?? '',
                     $agent->commission_rate ? $agent->commission_rate . '%' : '',
