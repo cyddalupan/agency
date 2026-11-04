@@ -14,7 +14,48 @@
         <a href="{{ route('agents.create') }}" class="btn btn-primary ml-4">
             <span>➕</span> New Agent
         </a>
+        @php
+            // Gulf-only destructive action (CYD 2026-11-04).
+            $manageAgency = auth()->user()->agency ?? request()->attributes->get('tenant_agency');
+            $canDeleteAll = $manageAgency
+                && strtolower((string) $manageAgency->subdomain) === 'gulf'
+                && in_array(auth()->user()->user_type, ['admin', 'super_admin'], true);
+        @endphp
+        @if($canDeleteAll)
+            <button type="button" class="btn btn-error btn-outline ml-2"
+                    onclick="document.getElementById('delete-all-agents').showModal()">
+                <span>🗑️</span> Delete all agents
+            </button>
+        @endif
     </div>
+
+    @if($canDeleteAll)
+        <dialog id="delete-all-agents" class="modal">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg">Delete all registered agents?</h3>
+                <p class="text-sm opacity-70 mt-1">
+                    This permanently deletes all <b>{{ $agents->total() }}</b> registered agent(s) of
+                    <b>{{ $manageAgency->name }}</b>. This cannot be undone.
+                </p>
+                <form method="POST" action="{{ route('agents.delete_all') }}" class="mt-4 space-y-3">
+                    @csrf
+                    <label class="form-control w-full">
+                        <span class="label-text mb-1">Type <b>DELETE ALL</b> (in capitals) to confirm</span>
+                        <input type="text" name="confirmation" class="input input-bordered w-full"
+                               required autocomplete="off" placeholder="DELETE ALL">
+                    </label>
+                    @error('confirmation')
+                        <p class="text-error text-sm">{{ $message }}</p>
+                    @enderror
+                    <div class="modal-action">
+                        <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+                        <button type="submit" class="btn btn-error">Delete all agents</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+    @endif
 
     @if (session('success'))
     <div role="alert" class="alert alert-success text-sm shadow-sm mb-4">

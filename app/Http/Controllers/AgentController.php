@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agent;
+use App\Models\Agency;
 use App\Models\Branch;
+use App\Models\User;
+use App\Services\SensitiveActionLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AgentController extends Controller
@@ -113,6 +117,91 @@ class AgentController extends Controller
 
         return redirect()->route('agents.index')
             ->with('success', 'Agent deactivated.');
+    }
+
+    /**
+     * Delete every registered agent of the Gulf agency (CYD 2026-11-04).
+     *
+     * Gulf-only, admin-only, and guarded by an explicit confirmation phrase.
+     * Agents are hard-deleted only when nothing references them; otherwise the
+     * action is refused so historical deductions/commissions stay intact.
+     */
+    public function deleteAll(Request $request)
+    {
+        $user = auth()->user();
+        $agency = $this->gulfAgencyFor($user);
+
+        abort_unless($agency, 403, 'This action is only available for the Gulf agency.');
+        abort_unless(in_array((string) $user->user_type, ['admin', 'super_admin'], true), 403,
+            'Only an administrator can delete all agents.');
+
+        $request->validate(['confirmation' => ['required', 'string']]);
+
+        if (trim((string) $request->input('confirmation')) !== 'DELETE ALL') {
+            return back()->withErrors([
+                'confirmation' => 'Type DELETE ALL (in capitals) to confirm the deletion.',
+            ]);
+        }
+
+        $agentIds = Agent::where('agency_id', $agency->id)->pluck('id');
+
+        if ($agentIds->isEmpty()) {
+            return redirect()->route('agents.index')->with('success', 'No registered agents to delete.');
+        }
+
+        // Do not break history: refuse when any record still points at an agent.
+        $references = [
+            'applicants'            => 'applicant(s)',
+            'agent_deductions'      => 'deduction(s)',
+            'commissions'           => 'commission(s)',
+            'expense_request_items' => 'expense line(s)',
+            'receivables'           => 'receivable(s)',
+            'starting_balances'     => 'starting balance(s)',
+        ];
+        $blockers = [];
+        foreach ($references as $table => $label) {
+            $count = DB::table($table)->whereIn('agent_id', $agentIds)->count();
+            if ($count > 0) {
+                $blockers[] = $count . ' ' . $label;
+            }
+        }
+
+        if ($blockers) {
+            return back()->with('error',
+                'Cannot delete all agents: they are still referenced by ' . implode(', ', $blockers) . '.');
+        }
+
+        $deleted = DB::transaction(fn () => Agent::whereIn('id', $agentIds)->delete());
+
+        SensitiveActionLogger::log(
+            'agents.delete_all',
+            null,
+            "Deleted all {$deleted} registered agent(s) of the Gulf agency.",
+            ['deleted' => $deleted, 'agency_subdomain' => $agency->subdomain],
+            $agency->id,
+        );
+
+        return redirect()->route('agents.index')
+            ->with('success', "Deleted {$deleted} registered agent(s).");
+    }
+
+    /**
+     * Resolve the Gulf agency for the delete-all action. Agency-bound users get
+     * their own agency; a super admin gets the tenant they are browsing.
+     */
+    private function gulfAgencyFor(?User $user): ?Agency
+    {
+        $agency = $user?->agency;
+
+        if (! $agency && $user?->user_type === 'super_admin') {
+            $agency = request()->attributes->get('tenant_agency');
+        }
+
+        if (! $agency || strtolower((string) $agency->subdomain) !== 'gulf') {
+            return null;
+        }
+
+        return $agency;
     }
 
     /**

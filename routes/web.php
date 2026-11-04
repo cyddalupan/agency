@@ -377,6 +377,8 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('agents/bulk', [AgentController::class, 'bulkUpload'])->name('agents.bulk');
         Route::get('agents/bulk/template', [AgentController::class, 'bulkTemplate'])->name('agents.bulk.template');
         Route::post('agents/bulk/import', [AgentController::class, 'bulkImport'])->name('agents.bulk.import');
+        // Gulf-only destructive action (CYD 2026-11-04): wipe every registered agent.
+        Route::post('agents/delete-all', [AgentController::class, 'deleteAll'])->name('agents.delete_all');
         Route::resource('agents', \App\Http\Controllers\AgentController::class);
 
     Route::resource('custom-fields', CustomFieldDefinitionController::class);
