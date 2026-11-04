@@ -1387,9 +1387,10 @@ class AgentReportController extends Controller
         $totalReturnPayment = $returnPayments
             ->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
 
-        // Total Commission = all commission accounts MINUS Return.
+        // Total Commission = all commission accounts MINUS Return, NET of the
+        // payment already handed to the agent (Cyd 2026-11-04, card 131).
         $totalCommission = $releasedCommission
-            ->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
+            ->sum(fn ($i) => $converter->toPhp($i->netAmount(), $i->currency));
         $totalCashAdvance = $cashAdvance->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
 
         // Backout & Repat (Deduction) and Payment (Paid) from the Deduction & Paid module.
@@ -1510,7 +1511,7 @@ class AgentReportController extends Controller
             ->where('charge', 'agent')
             ->whereNotNull('agent_id')
             ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_RELEASED))
-            ->get(['id', 'agent_id', 'account_id', 'currency', 'amount']);
+            ->get(['id', 'agent_id', 'account_id', 'currency', 'amount', 'payment']);
 
         $commission = [];
         $cashAdvance = [];
@@ -1525,7 +1526,9 @@ class AgentReportController extends Controller
                 // Return Payment (Cyd 2026-11-04): money returned to the agent.
                 $returnPayment[$agentKey] = ($returnPayment[$agentKey] ?? 0.0) + $amount;
             } elseif ($commissionAccountIds->contains($item->account_id)) {
-                $commission[$agentKey] = ($commission[$agentKey] ?? 0.0) + $amount;
+                // Net of payment, so the summary agrees with the agent ledger.
+                $commission[$agentKey] = ($commission[$agentKey] ?? 0.0)
+                    + $converter->toPhp($item->netAmount(), $item->currency);
             }
         }
 

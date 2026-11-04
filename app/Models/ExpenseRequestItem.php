@@ -32,6 +32,16 @@ class ExpenseRequestItem extends Model
     ];
 
     /**
+     * Net amount (Cyd 2026-11-04, card 131): what is actually released to the
+     * agent once the payment already handed over is deducted. Released
+     * Commission must display this, not the gross `amount`.
+     */
+    public function netAmount(): float
+    {
+        return (float) $this->amount - (float) ($this->payment ?? 0);
+    }
+
+    /**
      * Per-transaction status (Cyd 2026-10-23). A request can hold several
      * transactions and they are approved one at a time, so the status lives on
      * the line item; the request keeps a rolled-up status for reports.

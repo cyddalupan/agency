@@ -59,7 +59,7 @@
                 <th>Applicant</th>
                 <th>Account</th>
                 <th>Particular / Description</th>
-                <th class="num">Amount</th>
+                <th class="num">Amount (Net)</th>
             </tr>
         </thead>
         <tbody>
@@ -70,7 +70,7 @@
                     <td>{{ $item->applicant?->full_name ?? '—' }}</td>
                     <td>{{ $item->account?->name ?? '—' }}</td>
                     <td>{{ $item->particular ?? '—' }}</td>
-                    <td class="num">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
+                    <td class="num">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No released commission transactions.</td></tr>

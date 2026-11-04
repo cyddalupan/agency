@@ -89,7 +89,7 @@
                             <th>Mode</th>
                             <th>Account</th>
                             <th>Particular / Description</th>
-                            <th class="text-right">Amount</th>
+                            <th class="text-right">Amount (Net)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,7 +101,7 @@
                                 <td class="opacity-40">—</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td class="max-w-xs truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td class="text-right font-mono">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
+                                <td class="text-right font-mono">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
                             </tr>
                         @empty
                             <tr>
