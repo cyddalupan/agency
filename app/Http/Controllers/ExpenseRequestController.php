@@ -36,6 +36,13 @@ class ExpenseRequestController extends Controller
         // (Toybits 2026-10-07) Encoder filter — optional ?encoder=<userId>.
         $activeEncoder = request()->query('encoder');
 
+        // (Cyd 2026-11-04 card) Search bar — free text over the request header
+        // (ref#, date, encoder) and every transaction line (agent, applicant,
+        // particular, account, country, currency, amount, payment). A request
+        // stays in the list when either its header or one of its lines matches,
+        // so the result is every transaction related to the typed text.
+        $activeSearch = trim((string) request()->query('q'));
+
         // Base scope = agency + row-visibility + branch rules. Both the table
         // and the encoder dropdown derive from it.
         $base = ExpenseRequest::query()
@@ -58,6 +65,7 @@ class ExpenseRequestController extends Controller
                 'user', 'branch',
             ])
             ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
+            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -170,6 +178,7 @@ class ExpenseRequestController extends Controller
             'requests'         => $requests,
             'allRequests'      => $allRequests,
             'activeStatus'     => $activeStatus,
+            'activeSearch'     => $activeSearch,
             'statusCounts'     => $statusCounts,
             'phpTotal'         => $totals['PHP'],
             'usdTotal'         => $totals['USD'],
@@ -2048,5 +2057,49 @@ class ExpenseRequestController extends Controller
         if ((int) $expenseRequest->branch_id !== (int) $user->branch_id) {
             abort(404);
         }
+    }
+
+    /**
+     * (Cyd 2026-11-04 card) Expense & Payment search.
+     *
+     * Matches the request header (reference, date, encoder) and any transaction
+     * line (agent, applicant, particular, account, country, currency, amount,
+     * payment). Header-only matches keep all their lines; so the row that is
+     * highlighted by the search is always a full transaction, never half of it.
+     */
+    private function applySearch($query, string $term)
+    {
+        $like = '%' . addcslashes($term, '%_\\') . '%';
+
+        return $query->where(function ($q) use ($like, $term) {
+            $q->where('reference_no', 'like', $like)
+                ->orWhereHas('user', function ($u) use ($like) {
+                    $u->where('name', 'like', $like)->orWhere('username', 'like', $like);
+                })
+                ->orWhereHas('items', function ($i) use ($like) {
+                    $i->where('particular', 'like', $like)
+                        ->orWhere('currency', 'like', $like)
+                        ->orWhere('status', 'like', $like)
+                        ->orWhere('amount', 'like', $like)
+                        ->orWhere('payment', 'like', $like)
+                        ->orWhereHas('agent', fn ($a) => $a->where('name', 'like', $like))
+                        ->orWhereHas('applicant', function ($a) use ($like) {
+                            $a->where('first_name', 'like', $like)
+                                ->orWhere('last_name', 'like', $like);
+                        })
+                        ->orWhereHas('account', fn ($acc) => $acc->where('name', 'like', $like))
+                        ->orWhereHas('country', fn ($c) => $c->where('name', 'like', $like));
+                });
+
+            // Date search stays portable (MySQL + the sqlite test DB): a full
+            // date, a YYYY-MM month or a bare year each narrow the list.
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $term)) {
+                $q->orWhereDate('date', $term);
+            } elseif (preg_match('/^(\d{4})-(\d{2})$/', $term, $m)) {
+                $q->orWhere(fn ($d) => $d->whereYear('date', (int) $m[1])->whereMonth('date', (int) $m[2]));
+            } elseif (preg_match('/^\d{4}$/', $term)) {
+                $q->orWhereYear('date', (int) $term);
+            }
+        });
     }
 }

@@ -47,21 +47,32 @@
     <div class="card bg-base-100 shadow-md">
         <div class="card-body">
             <h3 class="font-bold mb-3">Transactions</h3>
-            {{-- Encoder filter (Toybits 2026-10-07) — narrow the list to one encoder's rows. --}}
-            @if($encoders->count())
-                <form method="GET" action="{{ route('receivable.index') }}" class="flex flex-wrap items-center gap-2 mb-3">
-                    <label for="encoder-filter" class="text-sm font-semibold">🔎 Encoder:</label>
+            {{-- Search + encoder filter (Cyd 2026-11-04 card).
+                 One box searches every column of the list — code/AR#, agent,
+                 applicant, particular, account, mode, type, deposit account,
+                 encoder, date and amount. --}}
+            <form method="GET" action="{{ route('receivable.index') }}" class="flex flex-wrap items-center gap-2 mb-3">
+                <div class="join">
+                    <input type="search" name="q" value="{{ $activeSearch }}" class="input input-sm input-bordered join-item w-64"
+                           placeholder="🔎 Search code, AR#, agent, applicant, particular…" autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-primary join-item">Search</button>
+                </div>
+                @if($encoders->count())
+                    <label for="encoder-filter" class="text-sm font-semibold ml-1">Encoder:</label>
                     <select name="encoder" id="encoder-filter" class="select select-sm select-bordered" onchange="this.form.submit()">
                         <option value="">All encoders</option>
                         @foreach($encoders as $encoder)
                             <option value="{{ $encoder->id }}" @selected((string) $activeEncoder === (string) $encoder->id)>{{ $encoder->name }}</option>
                         @endforeach
                     </select>
-                    @if($activeEncoder)
-                        <a href="{{ route('receivable.index') }}" class="btn btn-ghost btn-xs">✕ Clear</a>
-                    @endif
-                </form>
-            @endif
+                @endif
+                @if($activeSearch !== '' || $activeEncoder)
+                    <a href="{{ route('receivable.index') }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                @endif
+                @if($activeSearch !== '')
+                    <span class="text-xs opacity-60">{{ $receivables->count() }} transaction(s) match “{{ $activeSearch }}”</span>
+                @endif
+            </form>
             @if($receivables->count())
                 @if(in_array(auth()->user()->user_type, ['super_admin', 'admin']))
                     {{-- Batch status update toolbar (Toybits 2026-08-31) --}}
@@ -154,7 +165,11 @@
                     </table>
                 </div>
             @else
-                <p class="opacity-50 text-sm py-6 text-center">No receivable transactions yet.</p>
+                @if($activeSearch !== '')
+                    <p class="opacity-50 text-sm py-6 text-center">No transactions match “{{ $activeSearch }}”. <a href="{{ route('receivable.index') }}" class="link link-primary">Clear search</a></p>
+                @else
+                    <p class="opacity-50 text-sm py-6 text-center">No receivable transactions yet.</p>
+                @endif
             @endif
 
             {{-- Admin-only delete dialogs (Cyd 2026-10-24): reason goes into the receivable history. --}}

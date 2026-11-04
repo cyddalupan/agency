@@ -27,6 +27,13 @@ class ReceivableController extends Controller
         // narrows the list to the rows that user encoded. Blank/absent = all.
         $activeEncoder = request()->query('encoder');
 
+        // (Cyd 2026-11-04 card) Search bar — free text over the columns the
+        // accountant actually reads: code/AR#, agent, applicant, particular,
+        // account, mode, type, deposit account, status, encoder, date and
+        // amount. Blank/absent = no filter. Applied AFTER the encoder list is
+        // derived so the encoder dropdown always offers every encoder.
+        $activeSearch = trim((string) request()->query('q'));
+
         // Base scope = agency + row-visibility + branch rules. Both the table
         // and the encoder dropdown derive from it, so the dropdown only ever
         // offers encoders the current user is allowed to see.
@@ -52,6 +59,7 @@ class ReceivableController extends Controller
         $receivables = (clone $base)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
+            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -60,6 +68,7 @@ class ReceivableController extends Controller
             'receivables'   => $receivables,
             'encoders'      => $encoders,
             'activeEncoder' => $activeEncoder,
+            'activeSearch'  => $activeSearch,
             'totalAmount'   => round((float) $receivables->sum('amount'), 2),
             'pendingTotal'  => round((float) $receivables->where('status', Receivable::STATUS_PENDING)->sum('amount'), 2),
             'receivedTotal' => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
@@ -1002,5 +1011,47 @@ class ReceivableController extends Controller
     private function normKey($value): string
     {
         return mb_strtolower(preg_replace('/[^a-z0-9]+/i', '', (string) $value));
+    }
+
+    /**
+     * (Cyd 2026-11-04 card) Receivable search.
+     *
+     * One free-text box that looks through every field shown on the list —
+     * including the related agent / applicant / encoder names — so typing
+     * "CAROL", a code, an AR number or part of a particular returns all the
+     * transactions related to it. `%` characters are escaped so a stray
+     * wildcard cannot turn the search into a full table scan of everything.
+     */
+    private function applySearch($query, string $term)
+    {
+        $like = '%' . addcslashes($term, '%_\\') . '%';
+
+        return $query->where(function ($q) use ($like, $term) {
+            $q->where('code', 'like', $like)
+                ->orWhere('ref_ar', 'like', $like)
+                ->orWhere('particular', 'like', $like)
+                ->orWhere('account', 'like', $like)
+                ->orWhere('debit_account', 'like', $like)
+                ->orWhere('mode', 'like', $like)
+                ->orWhere('type', 'like', $like)
+                ->orWhere('status', 'like', $like)
+                ->orWhere('amount', 'like', $like)
+                ->orWhereHas('agent', fn ($a) => $a->where('name', 'like', $like))
+                ->orWhereHas('applicant', function ($a) use ($like) {
+                    $a->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like);
+                })
+                ->orWhereHas('encoder', fn ($u) => $u->where('name', 'like', $like));
+
+            // Date search stays portable (MySQL + the sqlite test DB): a full
+            // date, a YYYY-MM month or a bare year each narrow the list.
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $term)) {
+                $q->orWhereDate('date', $term);
+            } elseif (preg_match('/^(\d{4})-(\d{2})$/', $term, $m)) {
+                $q->orWhere(fn ($d) => $d->whereYear('date', (int) $m[1])->whereMonth('date', (int) $m[2]));
+            } elseif (preg_match('/^\d{4}$/', $term)) {
+                $q->orWhereYear('date', (int) $term);
+            }
+        });
     }
 }

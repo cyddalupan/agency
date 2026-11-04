@@ -69,6 +69,28 @@
                 {{-- Statistics / encoder filters (Cyd 2026-11-01, card 125): the tabs are the
                      priority, so these move to their own row underneath them. --}}
                 <div class="mt-2.5 pt-2.5 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {{-- Search (Cyd 2026-11-04 card): one box over the request header
+                         (ref#, date, encoder) and every transaction line (agent,
+                         applicant, particular, account, country, currency, amount,
+                         payment). Keeps the active status tab + encoder filter. --}}
+                    <form method="GET" action="{{ route('expense_request.index') }}" class="flex flex-wrap items-center gap-2">
+                        @if($activeStatus)
+                            <input type="hidden" name="status" value="{{ $activeStatus }}">
+                        @endif
+                        @if($activeEncoder)
+                            <input type="hidden" name="encoder" value="{{ $activeEncoder }}">
+                        @endif
+                        <div class="join">
+                            <input type="search" name="q" value="{{ $activeSearch }}" class="input input-xs input-bordered join-item w-64"
+                                   placeholder="🔎 Search ref#, agent, applicant, particular…" autocomplete="off">
+                            <button type="submit" class="btn btn-xs btn-primary join-item">Search</button>
+                        </div>
+                        @if($activeSearch !== '')
+                            <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="btn btn-ghost btn-xs">✕ Clear</a>
+                            <span class="text-xs opacity-60">{{ $requests->count() }} request(s) match “{{ $activeSearch }}”</span>
+                        @endif
+                    </form>
+
                     {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above. --}}
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <span class="text-xs font-semibold opacity-60 whitespace-nowrap">📊 Dashboard totals:</span>
@@ -343,7 +365,12 @@
                     </table>
                 </div>
             @else
-                <p class="opacity-60">No expense requests yet. <a href="{{ route('expense_request.create') }}" class="link link-primary">Create one</a>.</p>
+                @if($activeSearch !== '')
+                    <p class="opacity-60">No transactions match “{{ $activeSearch }}”.
+                        <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="link link-primary">Clear search</a>.</p>
+                @else
+                    <p class="opacity-60">No expense requests yet. <a href="{{ route('expense_request.create') }}" class="link link-primary">Create one</a>.</p>
+                @endif
             @endif
 
             {{-- Duplicate detail dialogs (Josh 2026-11-04): clicking the badge lists
