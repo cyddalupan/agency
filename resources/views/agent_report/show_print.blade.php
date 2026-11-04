@@ -44,8 +44,9 @@
         $hasCashAdvance = $cashAdvance->isNotEmpty();
         $hasBackout = $backoutRepat->isNotEmpty();
         $hasReceivables = $receivables->isNotEmpty();
+        $hasReturnPayments = $returnPayments->isNotEmpty();
         $hasPayments = $payments->isNotEmpty();
-        $count = collect([$hasCommission, $hasCashAdvance, $hasBackout, $hasReceivables, $hasPayments])->filter()->count();
+        $count = collect([$hasCommission, $hasCashAdvance, $hasBackout, $hasReceivables, $hasReturnPayments, $hasPayments])->filter()->count();
     @endphp
 
     @if($hasCommission)
@@ -182,6 +183,41 @@
     </table>
     @endif
 
+    @if($hasReturnPayments)
+    <h2>↩️ Return Payment — <span style="text-transform:none">Total: ₱{{ number_format($totalReturnPayment, 2) }}</span></h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Ref #</th>
+                <th>Account</th>
+                <th>Agent</th>
+                <th>Applicant</th>
+                <th>Particular</th>
+                <th class="num">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($returnPayments as $rp)
+                <tr>
+                    <td>{{ $rp->expenseRequest?->date?->format('M d, Y') ?? '—' }}</td>
+                    <td>{{ $rp->expenseRequest?->reference_no ?? '—' }}</td>
+                    <td>{{ $rp->account?->name ?? 'Return' }}</td>
+                    <td>{{ $rp->agent?->name ?? $agent->name }}</td>
+                    <td>{{ $rp->applicant?->full_name ?? '—' }}</td>
+                    <td>{{ $rp->particular ?? '—' }}</td>
+                    <td class="num">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="7">No return payment entries.</td></tr>
+            @endforelse
+        </tbody>
+        <tfoot>
+            <tr><td colspan="6">Total Return Payment</td><td class="num">₱{{ number_format($totalReturnPayment, 2) }}</td></tr>
+        </tfoot>
+    </table>
+    @endif
+
     @if($hasPayments)
     <h2>💳 Payment — <span style="text-transform:none">Total: ₱{{ number_format($totalPayment, 2) }}</span></h2>
     <table>
@@ -222,14 +258,15 @@
             <tr><th>Total Cash Advance</th><td class="num">₱{{ number_format($totalCashAdvance, 2) }}</td></tr>
             <tr><th>Total Backout and Repat</th><td class="num">₱{{ number_format($totalBackoutRepat, 2) }}</td></tr>
             <tr><th>Total Receivable (AR)</th><td class="num">₱{{ number_format($totalReceivables, 2) }}</td></tr>
+            <tr><th>Total Return Payment</th><td class="num">₱{{ number_format($totalReturnPayment, 2) }}</td></tr>
             <tr><th>Total Payment</th><td class="num">₱{{ number_format($totalPayment, 2) }}</td></tr>
             <tr><th>Agent's Balance</th><td class="num {{ $balance < 0 ? 'neg' : 'pos' }}">₱{{ number_format($balance, 2) }}</td></tr>
         </tbody>
     </table>
 
     <div class="note">
-        Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) − Total Payment ·
-        Released Commission transactions only (Return rows are displayed but excluded from the Total Commission) ·
+        Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payment ·
+        Released Commission transactions only (Return rows are displayed on the Return Payment table and excluded from the Total Commission) ·
         Generated {{ $printedAt->format('M d, Y H:i') }} · {{ $agent->name }}
     </div>
 </body>

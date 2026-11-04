@@ -38,7 +38,7 @@
     <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body p-5">
             <h2 class="font-bold text-lg mb-3 flex items-center gap-2">📋 Summary Report</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Commission</p>
                     <p class="text-lg font-extrabold text-primary mt-1">₱{{ number_format($totalCommission, 2) }}</p>
@@ -56,6 +56,10 @@
                     <p class="text-lg font-extrabold text-error mt-1">₱{{ number_format($totalReceivables, 2) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
+                    <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Return Payment</p>
+                    <p class="text-lg font-extrabold text-success mt-1">₱{{ number_format($totalReturnPayment, 2) }}</p>
+                </div>
+                <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Payment</p>
                     <p class="text-lg font-extrabold text-info mt-1">₱{{ number_format($totalPayment, 2) }}</p>
                 </div>
@@ -64,7 +68,7 @@
                     <p class="text-lg font-extrabold mt-1 {{ $balance < 0 ? 'text-error' : 'text-success' }}">₱{{ number_format($balance, 2) }}</p>
                 </div>
             </div>
-            <p class="text-xs opacity-50 mt-3">Balance = Cash Advance + Backout &amp; Repat − Total Receivables − Total Payment · USD converted at {{ number_format($usdToPhp, 2) }} PHP/USD</p>
+            <p class="text-xs opacity-50 mt-3">Balance = Cash Advance + Backout &amp; Repat − Total Receivables + Total Return Payment − Total Payment · USD converted at {{ number_format($usdToPhp, 2) }} PHP/USD</p>
         </div>
     </div>
 
@@ -264,6 +268,57 @@
                         <tr>
                             <td colspan="6" class="py-3">Total Receivables</td>
                             <td class="text-right font-mono">₱{{ number_format($totalReceivables, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Table 4b: Return Payment (Cyd 2026-11-04) --}}
+    <div class="card bg-base-100 border border-base-300 shadow-sm overflow-hidden">
+        <div class="card-body p-0">
+            <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
+                <h2 class="font-bold flex items-center gap-2">↩️ Return Payment</h2>
+                <span class="badge badge-success badge-sm">Total: ₱{{ number_format($totalReturnPayment, 2) }}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-sm">
+                    <thead class="bg-base-200/80 text-xs uppercase tracking-wide">
+                        <tr>
+                            <th class="py-3">Date</th>
+                            <th>Voucher # (From Reference #)</th>
+                            <th>Account</th>
+                            <th>Agent</th>
+                            <th>Applicant</th>
+                            <th>Particular / Description</th>
+                            <th class="text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($returnPayments as $rp)
+                            <tr class="hover transition-colors">
+                                <td class="whitespace-nowrap">{{ $rp->expenseRequest?->date?->format('M d, Y') ?? '—' }}</td>
+                                <td class="font-mono text-xs">{{ $rp->expenseRequest?->reference_no ?? '—' }}</td>
+                                <td>{{ $rp->account?->name ?? 'Return' }}</td>
+                                <td>{{ $rp->agent?->name ?? $agent->name }}</td>
+                                <td>{{ $rp->applicant?->full_name ?? '—' }}</td>
+                                <td class="max-w-xs truncate" title="{{ $rp->particular }}">{{ $rp->particular ?? '—' }}</td>
+                                <td class="text-right font-mono">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-10 opacity-50">
+                                    <span class="text-3xl block mb-1">↩️</span>
+                                    No return payments recorded.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot class="bg-base-200/80 font-bold">
+                        <tr>
+                            <td colspan="6" class="py-3">Total Return Payment</td>
+                            <td class="text-right font-mono">₱{{ number_format($totalReturnPayment, 2) }}</td>
                         </tr>
                     </tfoot>
                 </table>

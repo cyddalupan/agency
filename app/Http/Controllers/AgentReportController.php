@@ -23,8 +23,8 @@ class AgentReportController extends Controller
     /** Withdrawn/Repat statuses: 35 Repatriated, 38 Cancel, 50 Backout. */
     private const BACKOUT_STATUSES = [35, 38, 50];
 
-    /** Agent Report tabs (7 per spec: Commission, Cash Advance, Receivables, Payments, Deductions, Starting Balance, Report). */
-    private const TABS = ['commission', 'cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'];
+    /** Agent Report tabs (Return Payment tab added per Cyd 2026-11-04, card 129). */
+    private const TABS = ['commission', 'cash-advance', 'receivables', 'return-payment', 'payments', 'deductions', 'starting-balances', 'report'];
 
     /** Account names that route to the Receivables tab (moved out of Commission). */
     private const RECEIVABLE_ACCOUNT_NAMES = ['Partial', 'Full', 'Fit to work', 'Contract', 'Deployed', 'Return'];
@@ -139,6 +139,28 @@ class AgentReportController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        // ---- Tab 1d: Return Payment (Cyd 2026-11-04) ----
+        // Expenses charged to the agent on the "Return" account: money handed
+        // back to the agent. Listed on its own tab and added to the agent's
+        // balance. RELEASED only, matching the Agent Ledger totals below.
+        $returnAccountIds = Account::where('agency_id', $agencyId)
+            ->where('name', 'Return')
+            ->pluck('id');
+
+        $returnPaymentItems = ExpenseRequestItem::query()
+            ->where('charge', 'agent')
+            ->whereNotNull('agent_id')
+            ->whereIn('account_id', $returnAccountIds)
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_RELEASED))
+            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
+            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account'])
+            ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+            ->orderByDesc('id')
+            ->get();
+
+        $returnPaymentTotal = $returnPaymentItems
+            ->sum(fn ($item) => $converter->toPhp((float) $item->amount, $item->currency));
+
         // ---- Tab 3: Deductions (AgentDeduction rows, account = Deduction) ----
         // Cyd 2026-10-23: Payments and Deductions are separate tabs, so this one
         // no longer mixes the approval-generated "Paid" rows in with deductions.
@@ -180,12 +202,13 @@ class AgentReportController extends Controller
         $reportRows = $this->buildReportRows($agents, $converter, $agentId);
 
         $totals = [
-            'commission'    => $reportRows->sum('commission'),
-            'cash_advance'  => $reportRows->sum('cash_advance'),
-            'backout_repat' => $reportRows->sum('backout_repat'),
-            'receivable'    => $reportRows->sum('receivable'),
-            'payments'      => $reportRows->sum('payments'),
-            'balance'       => $reportRows->sum('balance'),
+            'commission'     => $reportRows->sum('commission'),
+            'cash_advance'   => $reportRows->sum('cash_advance'),
+            'backout_repat'  => $reportRows->sum('backout_repat'),
+            'receivable'     => $reportRows->sum('receivable'),
+            'return_payment' => $reportRows->sum('return_payment'),
+            'payments'       => $reportRows->sum('payments'),
+            'balance'        => $reportRows->sum('balance'),
         ];
 
         return view('agent_report.index', compact(
@@ -197,6 +220,8 @@ class AgentReportController extends Controller
             'releasedCommissionTotal',
             'cashAdvanceItems',
             'receivableItems',
+            'returnPaymentItems',
+            'returnPaymentTotal',
             'payments',
             'deductions',
             'startingBalances',
@@ -1349,12 +1374,20 @@ class AgentReportController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $releasedCommission = $items->whereIn('account_id', $commissionAccountIds)->values();
+        $releasedCommission = $items->whereIn('account_id', $commissionAccountIds)
+            ->reject(fn ($i) => $returnAccountIds->contains($i->account_id))
+            ->values();
         $cashAdvance        = $items->whereIn('account_id', $cashAdvanceAccountIds)->values();
+
+        // Return Payment (Cyd 2026-11-04): released items on the "Return"
+        // account — money handed back to the agent. Own table on the ledger
+        // and added to the balance.
+        $returnPayments = $items->whereIn('account_id', $returnAccountIds)->values();
+        $totalReturnPayment = $returnPayments
+            ->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
 
         // Total Commission = all commission accounts MINUS Return.
         $totalCommission = $releasedCommission
-            ->reject(fn ($i) => $returnAccountIds->contains($i->account_id))
             ->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
         $totalCashAdvance = $cashAdvance->sum(fn ($i) => $converter->toPhp((float) $i->amount, $i->currency));
 
@@ -1388,13 +1421,15 @@ class AgentReportController extends Controller
             'cashAdvance'        => $cashAdvance,
             'backoutRepat'       => $backoutRepat,
             'receivables'        => $receivables,
+            'returnPayments'     => $returnPayments,
             'payments'           => $payments,
             'totalCommission'    => $totalCommission,
             'totalCashAdvance'   => $totalCashAdvance,
             'totalBackoutRepat'  => $totalBackoutRepat,
             'totalReceivables'   => $totalReceivables,
+            'totalReturnPayment' => $totalReturnPayment,
             'totalPayment'       => $totalPayment,
-            'balance'            => $totalCashAdvance + $totalBackoutRepat - $totalReceivables - $totalPayment,
+            'balance'            => $totalCashAdvance + $totalBackoutRepat - $totalReceivables + $totalReturnPayment - $totalPayment,
             'usdToPhp'           => $converter->usdToPhpRate(),
         ];
     }
@@ -1440,13 +1475,17 @@ class AgentReportController extends Controller
 
         $commission = [];
         $cashAdvance = [];
+        $returnPayment = [];
         foreach ($items as $item) {
             $agentKey = (int) $item->agent_id;
             $amount = $converter->toPhp((float) $item->amount, $item->currency);
 
             if ($cashAdvanceAccountIds->contains($item->account_id)) {
                 $cashAdvance[$agentKey] = ($cashAdvance[$agentKey] ?? 0.0) + $amount;
-            } elseif ($commissionAccountIds->contains($item->account_id) && ! $returnAccountIds->contains($item->account_id)) {
+            } elseif ($returnAccountIds->contains($item->account_id)) {
+                // Return Payment (Cyd 2026-11-04): money returned to the agent.
+                $returnPayment[$agentKey] = ($returnPayment[$agentKey] ?? 0.0) + $amount;
+            } elseif ($commissionAccountIds->contains($item->account_id)) {
                 $commission[$agentKey] = ($commission[$agentKey] ?? 0.0) + $amount;
             }
         }
@@ -1485,24 +1524,26 @@ class AgentReportController extends Controller
 
         return $agents
             ->filter(fn (Agent $a) => $agentId === null || (int) $a->id === (int) $agentId)
-            ->map(function (Agent $agent) use ($commission, $cashAdvance, $backoutByAgent, $paidByAgent, $recAgg) {
+            ->map(function (Agent $agent) use ($commission, $cashAdvance, $returnPayment, $backoutByAgent, $paidByAgent, $recAgg) {
                 $key = (int) $agent->id;
                 $comm    = (float) ($commission[$key] ?? 0);
                 $ca      = (float) ($cashAdvance[$key] ?? 0);
+                $ret     = (float) ($returnPayment[$key] ?? 0);
                 $backout = (float) ($backoutByAgent[$key] ?? 0);
                 $paid    = (float) ($paidByAgent[$key] ?? 0);
                 $recv    = (float) ($recAgg->get($agent->id)->total ?? 0);
 
                 return [
-                    'id'            => $agent->id,
-                    'agent'         => $agent->name,
-                    'branch'        => $agent->branch?->name ?? '-',
-                    'commission'    => $comm,
-                    'cash_advance'  => $ca,
-                    'backout_repat' => $backout,
-                    'receivable'    => $recv,
-                    'payments'      => $paid,
-                    'balance'       => $ca + $backout - $recv - $paid,
+                    'id'             => $agent->id,
+                    'agent'          => $agent->name,
+                    'branch'         => $agent->branch?->name ?? '-',
+                    'commission'     => $comm,
+                    'cash_advance'   => $ca,
+                    'backout_repat'  => $backout,
+                    'receivable'     => $recv,
+                    'return_payment' => $ret,
+                    'payments'       => $paid,
+                    'balance'        => $ca + $backout - $recv + $ret - $paid,
                 ];
             })
             ->sortBy('agent')

@@ -13,6 +13,7 @@
                             <th class="text-right">Total Cash Advance</th>
                             <th class="text-right">Total Backout and Repat</th>
                             <th class="text-right">Total Receivable (AR)</th>
+                            <th class="text-right">Total Return Payment</th>
                             <th class="text-right">Total Payments</th>
                             <th class="text-right">Agent's Balance</th>
                         </tr>
@@ -26,6 +27,7 @@
                                 <td class="text-right">₱{{ number_format($row['cash_advance'], 2) }}</td>
                                 <td class="text-right">₱{{ number_format($row['backout_repat'], 2) }}</td>
                                 <td class="text-right">₱{{ number_format($row['receivable'], 2) }}</td>
+                                <td class="text-right">₱{{ number_format($row['return_payment'], 2) }}</td>
                                 <td class="text-right">₱{{ number_format($row['payments'], 2) }}</td>
                                 <td class="text-right font-extrabold {{ $row['balance'] >= 0 ? 'text-success' : 'text-error' }}">
                                     ₱{{ number_format($row['balance'], 2) }}
@@ -40,6 +42,7 @@
                             <td class="text-right">₱{{ number_format($totals['cash_advance'], 2) }}</td>
                             <td class="text-right">₱{{ number_format($totals['backout_repat'], 2) }}</td>
                             <td class="text-right">₱{{ number_format($totals['receivable'], 2) }}</td>
+                            <td class="text-right">₱{{ number_format($totals['return_payment'], 2) }}</td>
                             <td class="text-right">₱{{ number_format($totals['payments'], 2) }}</td>
                             <td class="text-right {{ $totals['balance'] >= 0 ? 'text-success' : 'text-error' }}">
                                 ₱{{ number_format($totals['balance'], 2) }}
@@ -49,7 +52,7 @@
                 </table>
             </div>
             <div class="mt-3 text-xs opacity-60">
-                <p>Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) − Total Payments</p>
+                <p>Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payments</p>
             </div>
         @else
             <p class="opacity-50 text-sm py-6 text-center">No agents to report.</p>

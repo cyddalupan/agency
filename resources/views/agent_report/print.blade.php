@@ -34,6 +34,7 @@
                 <th>Total Cash Advance</th>
                 <th>Total Backout and Repat</th>
                 <th>Total Receivable (AR)</th>
+                <th>Total Return Payment</th>
                 <th>Total Payments</th>
                 <th>Agent's Balance</th>
             </tr>
@@ -47,6 +48,7 @@
                     <td>₱{{ number_format($row['cash_advance'], 2) }}</td>
                     <td>₱{{ number_format($row['backout_repat'], 2) }}</td>
                     <td>₱{{ number_format($row['receivable'], 2) }}</td>
+                    <td>₱{{ number_format($row['return_payment'], 2) }}</td>
                     <td>₱{{ number_format($row['payments'], 2) }}</td>
                     <td class="{{ $row['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($row['balance'], 2) }}</td>
                 </tr>
@@ -59,6 +61,7 @@
                 <td>₱{{ number_format($totals['cash_advance'], 2) }}</td>
                 <td>₱{{ number_format($totals['backout_repat'], 2) }}</td>
                 <td>₱{{ number_format($totals['receivable'], 2) }}</td>
+                <td>₱{{ number_format($totals['return_payment'], 2) }}</td>
                 <td>₱{{ number_format($totals['payments'], 2) }}</td>
                 <td class="{{ $totals['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($totals['balance'], 2) }}</td>
             </tr>
@@ -66,7 +69,7 @@
     </table>
 
     <div class="note">
-        Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) − Total Payments.
+        Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payments.
     </div>
 
     <script>window.print();</script>

@@ -52,6 +52,7 @@
                 'commission'        => ['label' => '💼 Commission',        'url' => null],
                 'cash-advance'      => ['label' => '💰 Cash Advance',      'url' => null],
                 'receivables'       => ['label' => '📊 Receivables',       'url' => null],
+                'return-payment'    => ['label' => '↩️ Return Payment',    'url' => null],
                 'payments'          => ['label' => '💳 Payments',          'url' => null],
                 'deductions'        => ['label' => '🧾 Deductions',          'url' => null],
                 'starting-balances' => ['label' => '⚖️ Starting Balance',  'url' => null],
@@ -98,6 +99,8 @@
         @include('agent_report._cash_advance')
     @elseif($tab === 'receivables')
         @include('agent_report._receivables')
+    @elseif($tab === 'return-payment')
+        @include('agent_report._return_payment')
     @elseif($tab === 'payments')
         @include('agent_report._payments')
     @elseif($tab === 'deductions')
