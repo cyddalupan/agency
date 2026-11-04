@@ -20,6 +20,9 @@
             $canDeleteAll = $manageAgency
                 && strtolower((string) $manageAgency->subdomain) === 'gulf'
                 && in_array(auth()->user()->user_type, ['admin', 'super_admin'], true);
+
+            // Per-row delete is available to administrators only (CYD 2026-11-04 card).
+            $canDeleteAgent = in_array(auth()->user()->user_type, ['admin', 'super_admin'], true);
         @endphp
         @if($canDeleteAll)
             <button type="button" class="btn btn-error btn-outline ml-2"
@@ -61,6 +64,13 @@
     <div role="alert" class="alert alert-success text-sm shadow-sm mb-4">
         <span>✅</span>
         <span>{{ session('success') }}</span>
+    </div>
+    @endif
+
+    @if (session('error'))
+    <div role="alert" class="alert alert-error text-sm shadow-sm mb-4">
+        <span>⛔</span>
+        <span>{{ session('error') }}</span>
     </div>
     @endif
 
@@ -122,7 +132,14 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('agents.edit', $agent) }}" class="btn btn-ghost btn-xs">✏️ Edit</a>
+                                <div class="flex items-center gap-1">
+                                    <a href="{{ route('agents.edit', $agent) }}" class="btn btn-ghost btn-xs">✏️ Edit</a>
+                                    {{-- Admin-only delete (CYD 2026-11-04 card). --}}
+                                    @if($canDeleteAgent)
+                                        <button type="button" class="btn btn-xs btn-error btn-outline"
+                                                onclick="document.getElementById('delete-agent-{{ $agent->id }}').showModal()">Delete</button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -141,5 +158,31 @@
             @endif
         </div>
     </div>
+
+    {{-- Admin-only delete dialogs (CYD 2026-11-04 card). An agent that is still
+         referenced by applicants/commissions/expenses is refused server-side. --}}
+    @if($canDeleteAgent)
+        @foreach ($agents as $agent)
+            <dialog id="delete-agent-{{ $agent->id }}" class="modal">
+                <div class="modal-box">
+                    <h3 class="font-bold text-lg">Delete {{ $agent->name }}?</h3>
+                    <p class="text-sm opacity-70 mt-1">
+                        This permanently removes the agent. Agents that already have applicants,
+                        commissions, deductions, expense lines, receivables or starting balances
+                        cannot be deleted — set them to Inactive instead.
+                    </p>
+                    <form method="POST" action="{{ route('agents.destroy', $agent) }}" class="mt-4">
+                        @csrf
+                        @method('DELETE')
+                        <div class="modal-action">
+                            <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Cancel</button>
+                            <button type="submit" class="btn btn-error">Delete agent</button>
+                        </div>
+                    </form>
+                </div>
+                <form method="dialog" class="modal-backdrop"><button>close</button></form>
+            </dialog>
+        @endforeach
+    @endif
 </div>
 @endsection

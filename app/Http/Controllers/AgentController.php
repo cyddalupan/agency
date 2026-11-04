@@ -111,12 +111,64 @@ class AgentController extends Controller
             ->with('success', 'Agent updated successfully.');
     }
 
+    /**
+     * Per-row delete (CYD 2026-11-04 card: "Agent module delete — admin only,
+     * currently only bulk delete is available").
+     *
+     * Administrator-only and tenant-scoped. The agent is hard-deleted only when
+     * nothing points at it; otherwise the delete is refused so applicants,
+     * commissions, deductions, expense lines, receivables and starting
+     * balances keep their history (the agent can be set to Inactive instead).
+     */
     public function destroy(Agent $agent)
     {
-        $agent->update(['status' => 'inactive']);
+        $user = auth()->user();
+
+        abort_unless(in_array((string) $user->user_type, ['admin', 'super_admin'], true), 403,
+            'Only an administrator can delete an agent.');
+
+        // Tenant isolation: an admin may only delete agents of their own agency.
+        $agencyId = $this->resolveAgencyId();
+        abort_unless($agencyId && (int) $agent->agency_id === (int) $agencyId, 404);
+
+        // Do not break history: refuse while any record still references the agent.
+        $references = [
+            'applicants'            => 'applicant(s)',
+            'agent_deductions'      => 'deduction(s)',
+            'commissions'           => 'commission(s)',
+            'expense_request_items' => 'expense line(s)',
+            'receivables'           => 'receivable(s)',
+            'starting_balances'     => 'starting balance(s)',
+        ];
+        $blockers = [];
+        foreach ($references as $table => $label) {
+            $count = DB::table($table)->where('agent_id', $agent->id)->count();
+            if ($count > 0) {
+                $blockers[] = $count . ' ' . $label;
+            }
+        }
+
+        if ($blockers) {
+            return back()->with('error',
+                'Cannot delete ' . $agent->name . ': still referenced by ' . implode(', ', $blockers)
+                . '. Set the agent to Inactive instead.');
+        }
+
+        $agentId = $agent->id;
+        $agentName = $agent->name;
+
+        DB::transaction(fn () => $agent->delete());
+
+        SensitiveActionLogger::log(
+            'agents.delete',
+            null,
+            "Deleted agent {$agentName}.",
+            ['agent_id' => $agentId, 'agent_name' => $agentName],
+            $agencyId,
+        );
 
         return redirect()->route('agents.index')
-            ->with('success', 'Agent deactivated.');
+            ->with('success', 'Agent deleted successfully.');
     }
 
     /**
