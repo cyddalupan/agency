@@ -348,12 +348,12 @@
                     <tbody>
                         @forelse($payments as $p)
                             <tr class="hover transition-colors">
-                                <td class="whitespace-nowrap">{{ $p->date?->format('M d, Y') ?? '—' }}</td>
-                                <td>{{ $p->account ?? '—' }}</td>
-                                <td>{{ $p->agent?->name ?? '—' }}</td>
-                                <td>{{ $p->applicant?->full_name ?? '—' }}</td>
-                                <td class="text-right font-mono">₱{{ number_format($p->amount, 2) }}</td>
-                                <td class="max-w-xs truncate" title="{{ $p->particular }}">{{ $p->particular ?? '—' }}</td>
+                                <td class="whitespace-nowrap">{{ $p['date']?->format('M d, Y') ?? '—' }}</td>
+                                <td>{{ $p['account'] ?? '—' }}</td>
+                                <td>{{ $p['agent'] ?? '—' }}</td>
+                                <td>{{ $p['applicant'] ?? '—' }}</td>
+                                <td class="text-right font-mono">₱{{ number_format($p['amount'], 2) }}</td>
+                                <td class="max-w-xs truncate" title="{{ $p['particular'] }}">{{ $p['particular'] ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>

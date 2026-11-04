@@ -234,12 +234,12 @@
         <tbody>
             @forelse($payments as $p)
                 <tr>
-                    <td>{{ $p->date?->format('M d, Y') ?? '—' }}</td>
-                    <td>{{ $p->account ?? '—' }}</td>
-                    <td>{{ $p->agent?->name ?? '—' }}</td>
-                    <td>{{ $p->applicant?->full_name ?? '—' }}</td>
-                    <td>{{ $p->particular ?? '—' }}</td>
-                    <td class="num">₱{{ number_format($p->amount, 2) }}</td>
+                    <td>{{ $p['date']?->format('M d, Y') ?? '—' }}</td>
+                    <td>{{ $p['account'] ?? '—' }}</td>
+                    <td>{{ $p['agent'] ?? '—' }}</td>
+                    <td>{{ $p['applicant'] ?? '—' }}</td>
+                    <td>{{ $p['particular'] ?? '—' }}</td>
+                    <td class="num">₱{{ number_format($p['amount'], 2) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No payment entries.</td></tr>

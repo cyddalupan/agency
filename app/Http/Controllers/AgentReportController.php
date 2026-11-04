@@ -1345,8 +1345,9 @@ class AgentReportController extends Controller
      *  - backoutRepat       : AgentDeduction rows (account = Deduction)
      *  - receivables        : Receivable module rows (account = Agents &
      *    Applicant Payment, status = received)
-     *  - payments           : AgentDeduction rows (account = Paid)
-     *  - balance            = cashAdvance + backoutRepat - receivables - payments
+     *  - payments           : AgentDeduction Paid rows + payment amounts
+     *    recorded on expense transactions (card 130)
+     *  - balance            = cashAdvance + backoutRepat - receivables + returnPayment - payments
      */
     private function agentLedgerData(Agent $agent): array
     {
@@ -1399,7 +1400,44 @@ class AgentReportController extends Controller
             ->orderByDesc('id')
             ->get();
         $backoutRepat = $deductions->where('account', AgentDeduction::ACCOUNT_DEDUCTION)->values();
-        $payments     = $deductions->where('account', AgentDeduction::ACCOUNT_PAID)->values();
+        $paidEntries  = $deductions->where('account', AgentDeduction::ACCOUNT_PAID);
+
+        // Payments (Cyd 2026-11-04, card 130): two complementary sources so a
+        // payment recorded on an expense transaction actually shows up here.
+        //  1. AgentDeduction "Paid" rows — approval-generated net amount
+        //     (amount − payment) plus manual/bulk Paid entries.
+        //  2. the Payment amount recorded on Expense & Payment lines.
+        // No double count: an approval row already nets out the payment.
+        $expensePayments = ExpenseRequestItem::query()
+            ->where('agent_id', $agent->id)
+            ->where('payment', '>', 0)
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId))
+            ->with(['expenseRequest', 'applicant', 'account'])
+            ->orderByDesc('id')
+            ->get();
+
+        $payments = $paidEntries
+            ->map(fn (AgentDeduction $d) => [
+                'date'       => $d->date,
+                'account'    => $d->account,
+                'agent'      => $d->agent?->name ?? $agent->name,
+                'applicant'  => $d->applicant?->full_name,
+                'amount'     => (float) $d->amount,
+                'particular' => $d->particular,
+                'source'     => 'paid_entry',
+            ])
+            ->concat($expensePayments->map(fn (ExpenseRequestItem $i) => [
+                'date'       => $i->expenseRequest?->date,
+                'account'    => $i->account?->name ?? '—',
+                'agent'      => $agent->name,
+                'applicant'  => $i->applicant?->full_name,
+                'amount'     => $converter->toPhp((float) $i->payment, $i->currency),
+                'particular' => 'Expense #' . ($i->expenseRequest?->reference_no ?? '—')
+                    . ($i->particular ? ': ' . $i->particular : ''),
+                'source'     => 'expense_payment',
+            ]))
+            ->sortByDesc(fn (array $p) => $p['date']?->timestamp ?? 0)
+            ->values();
 
         $totalBackoutRepat = (float) $backoutRepat->sum('amount');
         $totalPayment      = (float) $payments->sum('amount');
@@ -1445,8 +1483,9 @@ class AgentReportController extends Controller
      *  - cash_advance  : RELEASED agent-charged items on cash-advance accounts
      *  - backout_repat : AgentDeduction rows (account = Deduction)
      *  - receivable    : received Receivable rows (account = Agents & Applicant Payment)
-     *  - payments      : AgentDeduction rows (account = Paid)
-     *  - balance       = cash_advance + backout_repat − receivable − payments
+     *  - payments      : AgentDeduction Paid rows + payment amounts recorded
+     *                    on expense transactions (card 130)
+     *  - balance       = cash_advance + backout_repat − receivable + return_payment − payments
      *
      * NOTE: previously this counted PENDING expense items only, so any entry
      * that had already been Released showed as ₱0 here even though it appeared
@@ -1508,6 +1547,21 @@ class AgentReportController extends Controller
             } elseif ($d->account === AgentDeduction::ACCOUNT_PAID) {
                 $paidByAgent[$key] = (float) $d->total;
             }
+        }
+
+        // Expense & Payment lines (Cyd 2026-11-04, card 130): a payment recorded
+        // on a transaction counts as a payment on the ledger too. Complementary
+        // to the approval-generated Paid rows (those already net out payment).
+        $expensePayments = $this->scopeQueryAgentsByBranch(ExpenseRequestItem::query())
+            ->whereNotNull('agent_id')
+            ->where('payment', '>', 0)
+            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId))
+            ->get(['agent_id', 'currency', 'payment']);
+
+        foreach ($expensePayments as $p) {
+            $key = (int) $p->agent_id;
+            $paidByAgent[$key] = ($paidByAgent[$key] ?? 0.0)
+                + $converter->toPhp((float) $p->payment, $p->currency);
         }
 
         // Receivables: received Receivable rows on the agents-payment account.
