@@ -1,4 +1,20 @@
-@php $idx = (int) $index; @endphp
+@php
+    $idx = (int) $index;
+    // Toybits 2026-11-04: the Payments field is only relevant when the transaction is
+    // charged to an Agent account of type Partial / Full / Fit to Work / Contract / Deployed.
+    // Everything else (Office charges, Agent Return / Cash advance, no account yet) hides it.
+    $paymentAccountNames = ['partial', 'full', 'fit to work', 'contract', 'deployed'];
+    $paymentSubName = '';
+    if (!empty($line['sub_account_id'])) {
+        $paymentAccount = collect($allAccounts ?? [])->firstWhere('id', $line['sub_account_id']);
+        // Names are rendered as "MAIN → Sub"; only the sub part decides eligibility.
+        $paymentSubName = $paymentAccount
+            ? mb_strtolower(trim(last(explode('→', $paymentAccount->name))))
+            : '';
+    }
+    $showPayment = (($line['charge'] ?? 'office') === 'agent')
+        && in_array($paymentSubName, $paymentAccountNames, true);
+@endphp
 <div class="card bg-base-200/50 border border-base-300 expense-line" data-index="{{ $index }}">
     <div class="card-body p-4">
         @if(!empty($line['id']))
@@ -56,11 +72,13 @@
             </div>
 
             {{-- Payments (already paid to them); net = amount - payment --}}
-            <div class="form-control">
+            {{-- Toybits 2026-11-04: shown only for Charge = Agent + Partial/Full/Fit to Work/Contract/Deployed --}}
+            <div class="form-control payment-field" @if(!$showPayment) style="display:none" @endif>
                 <label class="label"><span class="label-text">Payments</span></label>
                 <input type="number" step="0.01" min="0" name="lines[{{ $index }}][payment]"
                        class="input input-bordered input-sm payment-input"
-                       value="{{ $line['payment'] ?? '' }}" placeholder="0.00">
+                       value="{{ $line['payment'] ?? '' }}" placeholder="0.00"
+                       data-account-name="{{ $paymentSubName }}">
             </div>
         </div>
 

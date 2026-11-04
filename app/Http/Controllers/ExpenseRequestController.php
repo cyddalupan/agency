@@ -344,6 +344,10 @@ class ExpenseRequestController extends Controller
                 'payment'      => $item->payment,
                 'particular'   => $item->particular,
                 'account_id'   => $item->account_id,
+                // Toybits 2026-11-04: the line partial reads sub_account_id, so the
+                // Account Type picker (and the Payments visibility) now preselects
+                // correctly when editing an existing transaction.
+                'sub_account_id' => $item->account_id,
                 'has_file'     => (bool) $item->file_path,
             ];
         })->all();

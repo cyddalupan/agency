@@ -189,6 +189,26 @@
         }
     }
 
+    // Toybits 2026-11-04: Payments is only relevant for Charge = Agent with an
+    // account type of Partial / Full / Fit to Work / Contract / Deployed.
+    const PAYMENT_ACCOUNTS = ['partial', 'full', 'fit to work', 'contract', 'deployed'];
+
+    function updatePaymentField(line, clearWhenHidden) {
+        const wrap = line.querySelector('.payment-field');
+        if (!wrap) return;
+        const charge = line.querySelector('select[name*="[charge]"]')?.value;
+        const subSel = line.querySelector('select[name*="[sub_account_id]"]');
+        const input = line.querySelector('input[name*="[payment]"]');
+        const accountName = subSel && subSel.value && subSel.selectedOptions[0]
+            ? subSel.selectedOptions[0].textContent.split('→').pop().trim().toLowerCase()
+            : '';
+        const show = charge === 'agent' && PAYMENT_ACCOUNTS.indexOf(accountName) !== -1;
+        wrap.style.display = show ? '' : 'none';
+        if (input) input.dataset.accountName = accountName;
+        if (!show && clearWhenHidden && input) input.value = '';
+        if (!show && input) input.placeholder = '0.00';
+    }
+
     // Applicant cascades: only show applicants under the selected agent.
     function filterApplicantsByAgent(line) {
         const agentSel = line.querySelector('select[name*="[agent_id]"]');
@@ -209,7 +229,10 @@
         linesBox.appendChild(node);
         reindex(linesBox);
         // Re-apply visibility on all lines after reindex
-        linesBox.querySelectorAll('.expense-line').forEach(updateAccountType);
+        linesBox.querySelectorAll('.expense-line').forEach(function (el) {
+            updateAccountType(el);
+            updatePaymentField(el, false);
+        });
         const last = linesBox.lastElementChild;
         if (last) last.scrollIntoView({ block: 'nearest' });
     });
@@ -240,6 +263,7 @@
     linesBox.addEventListener('change', function (e) {
         if (e.target.name && e.target.name.includes('[charge]')) {
             updateAccountType(e.target.closest('.expense-line'));
+            updatePaymentField(e.target.closest('.expense-line'), true);
         }
         // Applicant cascades: only show applicants under the selected agent
         if (e.target.name && e.target.name.includes('[agent_id]')) {
@@ -248,6 +272,10 @@
         // Account Type group depends on the applicant (office + applicant -> applicant)
         if (e.target.name && e.target.name.includes('[applicant_id]')) {
             updateAccountType(e.target.closest('.expense-line'));
+        }
+        // Payments visibility depends on Charge + Account Type
+        if (e.target.name && e.target.name.includes('[sub_account_id]')) {
+            updatePaymentField(e.target.closest('.expense-line'), true);
         }
     });
 
@@ -266,6 +294,8 @@
     linesBox.querySelectorAll('.expense-line').forEach(function (line) {
         filterApplicantsByAgent(line);
         updateAccountType(line);
+        // Keep any stored payment on an existing line (no clearing on initial render)
+        updatePaymentField(line, false);
     });
     calcTotals();
 
