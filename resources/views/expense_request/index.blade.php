@@ -69,28 +69,6 @@
                 {{-- Statistics / encoder filters (Cyd 2026-11-01, card 125): the tabs are the
                      priority, so these move to their own row underneath them. --}}
                 <div class="mt-2.5 pt-2.5 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    {{-- Search (Cyd 2026-11-04 card): one box over the request header
-                         (ref#, date, encoder) and every transaction line (agent,
-                         applicant, particular, account, country, currency, amount,
-                         payment). Keeps the active status tab + encoder filter. --}}
-                    <form method="GET" action="{{ route('expense_request.index') }}" class="flex flex-wrap items-center gap-2">
-                        @if($activeStatus)
-                            <input type="hidden" name="status" value="{{ $activeStatus }}">
-                        @endif
-                        @if($activeEncoder)
-                            <input type="hidden" name="encoder" value="{{ $activeEncoder }}">
-                        @endif
-                        <div class="join">
-                            <input type="search" name="q" value="{{ $activeSearch }}" class="input input-xs input-bordered join-item w-64"
-                                   placeholder="🔎 Search ref#, agent, applicant, particular…" autocomplete="off">
-                            <button type="submit" class="btn btn-xs btn-primary join-item">Search</button>
-                        </div>
-                        @if($activeSearch !== '')
-                            <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="btn btn-ghost btn-xs">✕ Clear</a>
-                            <span class="text-xs opacity-60">{{ $requests->count() }} request(s) match “{{ $activeSearch }}”</span>
-                        @endif
-                    </form>
-
                     {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above. --}}
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <span class="text-xs font-semibold opacity-60 whitespace-nowrap">📊 Dashboard totals:</span>
@@ -184,9 +162,11 @@
         <div class="card-body">
             <h3 class="font-bold mb-3">Expense Requests</h3>
             @if($requests->count())
-                @if(auth()->user()->canChangeExpenseStatus())
+                {{-- Toolbar row (Cyd 2026-11-04): the search bar sits in line with Bulk Update. --}}
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    @if(auth()->user()->canChangeExpenseStatus())
                     {{-- Batch status update toolbar (Toybits 2026-08-31) --}}
-                    <form method="POST" action="{{ route('expense_request.bulk_status') }}" id="bulk-status-form" class="mb-3">
+                    <form method="POST" action="{{ route('expense_request.bulk_status') }}" id="bulk-status-form" class="flex-1 min-w-[360px]">
                         @csrf
                         <div class="flex flex-wrap items-center gap-2 bg-base-200/60 rounded-lg px-3 py-2">
                             <span class="text-sm font-semibold">⚡ Bulk update:</span>
@@ -207,7 +187,27 @@
                             @endforeach
                         </div>
                     </form>
-                @endif
+                    @endif
+
+                    {{-- Search (Cyd 2026-11-04): inline with the Bulk Update toolbar. --}}
+                    <form method="GET" action="{{ route('expense_request.index') }}" class="flex flex-wrap items-center gap-2">
+                        @if($activeStatus)
+                            <input type="hidden" name="status" value="{{ $activeStatus }}">
+                        @endif
+                        @if($activeEncoder)
+                            <input type="hidden" name="encoder" value="{{ $activeEncoder }}">
+                        @endif
+                        <div class="join">
+                            <input type="search" name="q" value="{{ $activeSearch }}" class="input input-sm input-bordered join-item w-64"
+                                   placeholder="🔎 Search ref#, agent, applicant, particular…" autocomplete="off">
+                            <button type="submit" class="btn btn-sm btn-primary join-item">Search</button>
+                        </div>
+                        @if($activeSearch !== '')
+                            <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                            <span class="text-xs opacity-60">{{ $requests->count() }} request(s) match “{{ $activeSearch }}”</span>
+                        @endif
+                    </form>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="table table-sm">
                         <thead>
