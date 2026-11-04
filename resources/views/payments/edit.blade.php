@@ -3,7 +3,7 @@
 @section('title', 'Edit Payment #' . $payment->id)
 
 @section('content')
-<div class="max-w-xl mx-auto">
+<div class="w-full">
     <div class="mb-6">
         <a href="{{ route('payments.index') }}" class="link link-secondary text-sm flex items-center gap-1">
             <span>←</span> Back to Payments

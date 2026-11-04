@@ -3,7 +3,7 @@
 @section('title', 'Payments')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="w-full">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold flex items-center gap-2">

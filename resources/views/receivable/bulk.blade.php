@@ -3,7 +3,7 @@
 @section('title', 'Bulk Upload Receivables')
 
 @section('content')
-<div class="max-w-5xl mx-auto">
+<div class="w-full">
     <div class="mb-6">
         <a href="{{ route('receivable.index') }}" class="link link-secondary text-sm flex items-center gap-1">
             <span>←</span> Back to Receivables

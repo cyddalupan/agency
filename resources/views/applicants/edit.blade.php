@@ -3,7 +3,7 @@
 @section('title', 'Edit ' . $applicant->full_name)
 
 @section('content')
-<div class="max-w-3xl mx-auto">
+<div class="w-full">
     <div class="mb-6">
         <a href="{{ route('applicants.show', $applicant) }}" class="link link-secondary text-sm flex items-center gap-1">
             <span>←</span> Back to Applicant

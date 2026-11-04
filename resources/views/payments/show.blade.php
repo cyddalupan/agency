@@ -3,7 +3,7 @@
 @section('title', 'Payment #' . $payment->id)
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div class="w-full">
     <div class="card bg-gradient-to-br from-green-600 via-green-500/90 to-emerald-600 text-white shadow-lg mb-6 card-lift">
         <div class="card-body p-6">
             <a href="{{ route('payments.index') }}" class="text-sm opacity-80 hover:opacity-100 flex items-center gap-1 mb-2">

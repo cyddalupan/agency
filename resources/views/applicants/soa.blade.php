@@ -3,7 +3,7 @@
 @section('title', 'Statement of Account - ' . $applicant->first_name . ' ' . $applicant->last_name)
 
 @section('content')
-<div class="max-w-6xl mx-auto">
+<div class="w-full">
     {{-- Header --}}
     <div class="card bg-gradient-to-br from-secondary via-secondary/80 to-accent text-secondary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6">

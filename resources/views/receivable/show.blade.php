@@ -3,7 +3,7 @@
 @section('title', 'Receivable ' . $receivable->code)
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div class="w-full">
 
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6 flex flex-row items-center justify-between">

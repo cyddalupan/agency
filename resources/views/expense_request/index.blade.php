@@ -3,7 +3,7 @@
 @section('title', 'Expenses & Payments')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="w-full">
 
     {{-- Header --}}
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">

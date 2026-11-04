@@ -3,7 +3,7 @@
 @section('title', $applicant->full_name)
 
 @section('content')
-<div class="max-w-5xl mx-auto">
+<div class="w-full">
     {{-- Header with profile --}}
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6">
