@@ -52,7 +52,11 @@ class ExpenseRequestController extends Controller
         $encoders   = User::whereIn('id', $encoderIds)->orderBy('name')->get(['id', 'name']);
 
         $allRequests = (clone $base)
-            ->with(['items', 'user', 'branch'])
+            ->with([
+                'items.applicant', 'items.agent', 'items.account', 'items.country', 'items.branch',
+                'items.expenseRequest',
+                'user', 'branch',
+            ])
             ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
             ->orderByDesc('date')
             ->orderByDesc('id')
@@ -107,18 +111,58 @@ class ExpenseRequestController extends Controller
         // Josh 2026-11-02: the badge must say WHICH transaction it repeats, so
         // store the original line's reference for every flagged repeat.
         $duplicateOrigins = [];   // repeat item id => ['ref' => ..., 'same_request' => bool]
+        // Josh 2026-11-04: clicking the badge opens the transactions behind the
+        // duplicate, so keep each fingerprint group with its member lines.
+        $duplicateGroups = [];    // group key => ['ref' => ..., 'items' => [...]]
+        $duplicateGroupByItem = []; // repeat item id => group key
+        $groupNo = 0;
         foreach ($itemsByFingerprint as $group) {
             if (count($group) < 2) {
                 continue;
             }
             usort($group, fn ($a, $b) => [$a->created_at, $a->id] <=> [$b->created_at, $b->id]);
             $first = $group[0];
+            $groupKey = 'duplicate-group-' . (++$groupNo);
+
+            $members = [];
+            foreach ($group as $index => $member) {
+                $parent = $member->expenseRequest;
+                $members[] = [
+                    'id'             => (int) $member->id,
+                    'ref'            => $parent?->reference_no,
+                    'date'           => $parent?->date?->format('Y-m-d'),
+                    'user'           => $parent?->user?->name ?? $parent?->user?->username,
+                    'status_label'   => $member->statusLabel(),
+                    'status_badge'   => $member->statusBadge(),
+                    'branch'         => $member->branch?->name ?? $parent?->branch?->name,
+                    'applicant'      => $member->applicant
+                        ? $member->applicant->last_name . ', ' . $member->applicant->first_name
+                        : null,
+                    'agent'          => $member->agent?->name,
+                    'currency'       => $member->currency,
+                    'amount'         => (float) $member->amount,
+                    'payment'        => (float) ($member->payment ?? 0),
+                    'account'        => $member->account?->name,
+                    'country'        => $member->country?->name,
+                    'particular'     => $member->particular,
+                    'charge'         => $member->charge,
+                    'created_at'     => $member->created_at?->format('Y-m-d H:i'),
+                    'is_original'    => $index === 0,
+                ];
+            }
+
+            $duplicateGroups[$groupKey] = [
+                'ref'   => $first->expenseRequest?->reference_no,
+                'items' => $members,
+            ];
+
             foreach (array_slice($group, 1) as $repeat) {
                 $duplicateItemIds[] = (int) $repeat->id;
                 $duplicateOrigins[(int) $repeat->id] = [
                     'ref'          => $first->expenseRequest?->reference_no,
                     'same_request' => (int) $first->expense_request_id === (int) $repeat->expense_request_id,
                 ];
+                $duplicateGroupByItem[(int) $repeat->id] = $groupKey;
             }
         }
 
@@ -144,6 +188,8 @@ class ExpenseRequestController extends Controller
             'statusTotals'     => $statusTotals,
             'duplicateItemIds' => $duplicateItemIds,
             'duplicateOrigins' => $duplicateOrigins,
+            'duplicateGroups'  => $duplicateGroups,
+            'duplicateGroupByItem' => $duplicateGroupByItem,
             'encoders'         => $encoders,
             'activeEncoder'    => $activeEncoder,
         ]);

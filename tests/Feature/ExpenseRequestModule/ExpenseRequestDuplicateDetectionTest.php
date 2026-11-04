@@ -204,7 +204,7 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
 
         // Cyd 2026-10-23: only the repeated entry is coloured, the original stays clean.
         $this->assertSame(1, substr_count($html, 'duplicate-row'));
-        $this->assertSame(1, substr_count($html, 'Duplicate'));
+        $this->assertSame(1, substr_count($html, 'duplicate-badge'));
 
         // The unique row renders once, without any highlight.
         $this->assertSame(1, substr_count($html, '401.00'));
@@ -231,7 +231,7 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
         $html = $response->getContent();
 
         $this->assertSame(1, substr_count($html, 'duplicate-row'));
-        $this->assertSame(1, substr_count($html, 'Duplicate'));
+        $this->assertSame(1, substr_count($html, 'duplicate-badge'));
     }
 
     #[Test]
@@ -256,7 +256,7 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
 
         // Exactly one highlighted row: the re-uploaded 500.00 / CASH ADVANCE line.
         $this->assertSame(1, substr_count($html, 'duplicate-row'));
-        $this->assertSame(1, substr_count($html, 'Duplicate'));
+        $this->assertSame(1, substr_count($html, 'duplicate-badge'));
     }
 
     #[Test]
@@ -272,6 +272,31 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
         // Josh 2026-11-02: the badge reads "Duplicate of <ref>" instead of a bare word.
         $this->assertStringContainsString('Duplicate of ' . $original->reference_no, $html);
         $this->assertStringNotContainsString('Duplicate of ' . $repeat->reference_no, $html);
+    }
+
+    #[Test]
+    public function index_badge_is_clickable_and_lists_the_duplicate_transactions(): void
+    {
+        $applicant = Applicant::factory()->create(['agency_id' => $this->agency->id]);
+
+        $original = $this->makeRequest([['applicant_id' => $applicant->id, 'amount' => 4500.00, 'particular' => 'ACCOM GASUL']]);
+        $repeat = $this->makeRequest([['applicant_id' => $applicant->id, 'amount' => 4500.00, 'particular' => 'ACCOM GASUL']]);
+
+        $html = $this->actingAs($this->user)->get(route('expense_request.index'))->getContent();
+
+        // Josh 2026-11-04: the badge is a button that opens the duplicate detail dialog.
+        $this->assertStringContainsString('duplicate-badge badge', $html);
+        $this->assertMatchesRegularExpression(
+            "/<button[^>]*class=\"[^\"]*duplicate-badge[^\"]*\"[^>]*onclick=\"document\\.getElementById\\('duplicate-group-\\d+'\\)\\.showModal\\(\\)\"/",
+            $html
+        );
+        $this->assertStringNotContainsString('<span class="duplicate-badge', $html);
+
+        // The dialog exists once and shows both transactions behind the duplicate.
+        $this->assertSame(1, substr_count($html, 'id="duplicate-group-'));
+        $this->assertStringContainsString('Duplicate transactions', $html);
+        $this->assertStringContainsString($original->reference_no, $html);
+        $this->assertStringContainsString($repeat->reference_no, $html);
     }
 
     #[Test]
@@ -292,6 +317,6 @@ class ExpenseRequestDuplicateDetectionTest extends TestCase
         $html = $response->getContent();
 
         $this->assertSame(0, substr_count($html, 'duplicate-row'));
-        $this->assertSame(0, substr_count($html, 'Duplicate'));
+        $this->assertSame(0, substr_count($html, 'duplicate-badge'));
     }
 }

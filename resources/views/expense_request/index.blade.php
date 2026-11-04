@@ -246,10 +246,21 @@
                                             <td class="font-mono" rowspan="{{ $request->items->count() }}">
                                                 {{ $request->reference_no }}
                                                 @if($dupInfo)
-                                                    <span class="badge badge-sm badge-warning ml-1 whitespace-nowrap align-middle"
-                                                          title="{{ $dupInfo['same_request'] ? 'This line repeats another line on the same request (date, account, amount, particular)' : 'Same entry as the earlier transaction ' . $dupInfo['ref'] }}">
+                                                    @php
+                                                        $dupGroupKey = null;
+                                                        foreach ($request->items as $reqItem) {
+                                                            if (isset($duplicateGroupByItem[(int) $reqItem->id])) {
+                                                                $dupGroupKey = $duplicateGroupByItem[(int) $reqItem->id];
+                                                                break;
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    <button type="button"
+                                                            class="duplicate-badge badge badge-sm badge-warning ml-1 whitespace-nowrap align-middle cursor-pointer hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-warning/60"
+                                                            title="{{ ($dupInfo['same_request'] ? 'This line repeats another line on the same request (date, account, amount, particular)' : 'Same entry as the earlier transaction ' . $dupInfo['ref']) . '. Click to see the duplicate transactions.' }}"
+                                                            @if($dupGroupKey) onclick="document.getElementById('{{ $dupGroupKey }}').showModal()" @endif>
                                                         Duplicate{{ (! $dupInfo['same_request'] && $dupInfo['ref']) ? ' of ' . $dupInfo['ref'] : ' line' }}
-                                                    </span>
+                                                    </button>
                                                 @endif
                                             </td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->date?->format('Y-m-d') }}</td>
@@ -334,6 +345,63 @@
             @else
                 <p class="opacity-60">No expense requests yet. <a href="{{ route('expense_request.create') }}" class="link link-primary">Create one</a>.</p>
             @endif
+
+            {{-- Duplicate detail dialogs (Josh 2026-11-04): clicking the badge lists
+                 every transaction that shares the same fingerprint. --}}
+            @foreach($duplicateGroups as $groupKey => $group)
+                <dialog id="{{ $groupKey }}" class="modal">
+                    <div class="modal-box w-11/12 max-w-5xl">
+                        <h3 class="font-bold text-lg">Duplicate transactions</h3>
+                        <p class="text-sm opacity-70 mt-1">
+                            {{ count($group['items']) }} entries share the same date, branch, applicant, account, currency and amount.
+                            The highlighted row is the repeat.
+                        </p>
+                        <div class="overflow-x-auto mt-3">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr class="bg-base-200/70">
+                                        <th>Ref#</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Applicant</th>
+                                        <th>Agent</th>
+                                        <th class="text-right">Amount</th>
+                                        <th>Account</th>
+                                        <th>Particular / Description</th>
+                                        <th>Encoded</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($group['items'] as $member)
+                                        <tr class="{{ $member['is_original'] ? '' : 'bg-warning/25' }}">
+                                            <td class="font-mono whitespace-nowrap">
+                                                {{ $member['ref'] ?? '—' }}
+                                                <span class="badge badge-xs ml-1 {{ $member['is_original'] ? 'badge-ghost' : 'badge-warning' }}">
+                                                    {{ $member['is_original'] ? 'Original' : 'Duplicate' }}
+                                                </span>
+                                            </td>
+                                            <td class="whitespace-nowrap">{{ $member['date'] ?? '—' }}</td>
+                                            <td><span class="badge badge-sm {{ $member['status_badge'] }}">{{ $member['status_label'] }}</span></td>
+                                            <td>{{ $member['applicant'] ?? '—' }}</td>
+                                            <td>{{ $member['agent'] ?? '—' }}</td>
+                                            <td class="text-right font-semibold whitespace-nowrap">
+                                                {{ $member['currency'] === 'USD' ? '$' : '₱' }}{{ number_format($member['amount'] - $member['payment'], 2) }}
+                                            </td>
+                                            <td>{{ $member['account'] ?? '—' }}</td>
+                                            <td>{{ $member['particular'] ?? '—' }}</td>
+                                            <td class="whitespace-nowrap opacity-70">{{ $member['created_at'] ?? '—' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-action">
+                            <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close()">Close</button>
+                        </div>
+                    </div>
+                    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+                </dialog>
+            @endforeach
 
             {{-- Admin-only delete dialogs (Cyd 2026-10-24): the reason is stored on the status history. --}}
             @if(in_array(auth()->user()->user_type, ['super_admin', 'admin'], true))
