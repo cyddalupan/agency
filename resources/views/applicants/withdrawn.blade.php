@@ -46,23 +46,29 @@
         @endforeach
     </div>
 
-    {{-- (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first, prominent coloured box. --}}
+    {-- (Mjolnir "Applicant module Tabs" 2026-11-05) Client-specified order:
+         ALL TYPES → HOUSEHOLD → SKILLED. Gulf hides the HOUSEHOLD/SKILLED
+         counters, FINAS keeps them; ALL TYPES always shows its count. --}
     @php $activeType = $type ?? 'skilled'; @endphp
     <div class="grid grid-cols-3 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
-        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
-           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'household' ? 'bg-primary text-primary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
-            <span class="text-2xl">🏠</span><span>HOUSEHOLD</span>
-            <span class="badge badge-lg {{ $activeType === 'household' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['household'] ?? 0 }}</span>
-        </a>
-        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
-           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'skilled' ? 'bg-secondary text-secondary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
-            <span class="text-2xl">💼</span><span>SKILLED</span>
-            <span class="badge badge-lg {{ $activeType === 'skilled' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['skilled'] ?? 0 }}</span>
-        </a>
         <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'all'])) }}"
            class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'all' ? 'bg-neutral text-neutral-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
             <span class="text-2xl">👥</span><span>ALL TYPES</span>
             <span class="badge badge-lg {{ $activeType === 'all' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['all'] ?? 0 }}</span>
+        </a>
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'household'])) }}"
+           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'household' ? 'bg-primary text-primary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl">🏠</span><span>HOUSEHOLD</span>
+            @unless (hide_type_tab_count('household'))
+            <span class="badge badge-lg {{ $activeType === 'household' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['household'] ?? 0 }}</span>
+            @endunless
+        </a>
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'skilled'])) }}"
+           class="flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-lg font-extrabold tracking-wide transition-all {{ $activeType === 'skilled' ? 'bg-secondary text-secondary-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl">💼</span><span>SKILLED</span>
+            @unless (hide_type_tab_count('skilled'))
+            <span class="badge badge-lg {{ $activeType === 'skilled' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['skilled'] ?? 0 }}</span>
+            @endunless
         </a>
     </div>
 

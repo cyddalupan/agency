@@ -705,3 +705,34 @@ if (!function_exists('print_header_filters')) {
         return implode(' · ', $parts);
     }
 }
+
+if (!function_exists('hide_type_tab_count')) {
+    /**
+     * Whether the applicant "type" tab counter should be hidden for the
+     * current agency (Mjolnir card "LANDAS: Applicant module 'Tabs'",
+     * 2026-11-05).
+     *
+     * Gulf hides the HOUSEHOLD / SKILLED counters; FINAS and other agencies
+     * keep them. The ALL TYPES counter is never hidden. Per-agency override:
+     * agencies.settings.applicants.hide_type_tab_counts.
+     */
+    function hide_type_tab_count(string $type): bool
+    {
+        if ($type === 'all') {
+            return false;
+        }
+
+        $agency = resolve_agency();
+        if (! $agency) {
+            return false;
+        }
+
+        $settings = is_array($agency->settings) ? $agency->settings : [];
+        $flag = $settings['applicants']['hide_type_tab_counts'] ?? null;
+        if ($flag !== null) {
+            return (bool) $flag;
+        }
+
+        return str_contains(strtoupper((string) $agency->name), 'GULF');
+    }
+}
