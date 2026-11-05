@@ -130,9 +130,15 @@ class ModuleAccess
         'receivable',
         'expense_request',
         'agent_report',
-        'general_ledger',
         'api',
     ];
+
+    /**
+     * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
+     * 2026-11-05): "Only Admin and Accounting users has this module".
+     * It is therefore NOT in STAFF_ALLOWED — super_admin/admin keep it via
+     * full access and Accounting (billing) via ACCOUNTING_DENIED not listing it.
+     */
 
     /**
      * Route-name prefix => module. Order matters: longer/more specific

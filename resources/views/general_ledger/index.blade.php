@@ -28,23 +28,29 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-0">
                 <div class="overflow-x-auto">
-                    <table class="table table-sm">
+                    <table class="table table-sm w-full">
                         <thead>
                             <tr class="bg-base-200/70">
-                                <th>Main Account</th>
-                                <th>Type</th>
-                                <th>Sub Accounts</th>
-                                <th class="text-right">Amount</th>
-                                <th class="text-center w-24">Actions</th>
+                                <th class="align-bottom">Main Account</th>
+                                <th class="align-bottom">Type</th>
+                                <th class="align-bottom">Sub Accounts</th>
+                                <th class="text-right align-bottom w-40">Amount</th>
+                                <th class="text-center align-bottom w-24">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($group['subs'] as $sub)
+                            @foreach ($group['subs'] as $i => $sub)
                                 <tr class="hover">
-                                    <td class="font-medium">{{ $group['main']->name }}</td>
-                                    <td class="capitalize">{{ $group['main']->type }}</td>
-                                    <td>{{ $sub['account']->name }}</td>
-                                    <td class="text-right font-mono">{{ number_format($sub['amount'], 2) }}</td>
+                                    {{-- Main Account / Type span the whole group so the
+                                         columns stay aligned instead of repeating the
+                                         same label on every sub-account row.
+                                         (Kchanz Josh review, 2026-11-05) --}}
+                                    @if ($i === 0)
+                                        <td rowspan="{{ $group['subs']->count() }}" class="font-medium align-top whitespace-normal">{{ $group['main']->name }}</td>
+                                        <td rowspan="{{ $group['subs']->count() }}" class="capitalize align-top whitespace-normal">{{ $group['main']->type }}</td>
+                                    @endif
+                                    <td class="whitespace-normal">{{ $sub['account']->name }}</td>
+                                    <td class="text-right font-mono whitespace-nowrap">{{ number_format($sub['amount'], 2) }}</td>
                                     <td class="text-center">
                                         <a href="{{ route('general_ledger.review', $sub['account']) }}"
                                            class="btn btn-xs btn-outline btn-primary">Review</a>
@@ -55,7 +61,7 @@
                         <tfoot>
                             <tr class="bg-base-200/60 font-semibold">
                                 <td colspan="3" class="text-right">Total</td>
-                                <td class="text-right font-mono">{{ number_format($group['total'], 2) }}</td>
+                                <td class="text-right font-mono whitespace-nowrap">{{ number_format($group['total'], 2) }}</td>
                                 <td></td>
                             </tr>
                         </tfoot>

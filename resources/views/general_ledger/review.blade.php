@@ -17,13 +17,13 @@
                     </p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <span class="badge badge-lg badge-primary gap-2 py-4 border-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="badge badge-lg badge-primary gap-2 py-4 border-0 whitespace-nowrap">
                     <span class="font-bold">{{ number_format($total['count']) }}</span> transactions
                     · <span class="font-mono">₱{{ number_format($total['amount'], 2) }}</span>
                 </span>
-                <a href="{{ route('general_ledger.review.export', $account) }}" class="btn btn-sm btn-secondary shadow-md">⬇️ Export CSV</a>
-                <a href="{{ route('general_ledger.index') }}" class="btn btn-sm btn-ghost bg-white/20 hover:bg-white/30">← Back</a>
+                <a href="{{ route('general_ledger.review.export', $account) }}" class="btn btn-sm btn-secondary shadow-md whitespace-nowrap">⬇️ Export CSV</a>
+                <a href="{{ route('general_ledger.index') }}" class="btn btn-sm btn-ghost bg-white/20 hover:bg-white/30 whitespace-nowrap">← Back</a>
             </div>
         </div>
     </div>
@@ -31,46 +31,55 @@
     <div class="card bg-base-100 shadow-md">
         <div class="card-body p-0">
             <div class="overflow-x-auto">
-                <table class="table table-sm">
+                <style>
+                    /* General Ledger review: 12 columns must fit the content
+                       area instead of scrolling off to the right
+                       (Kchanz Josh "Fix this too", 2026-11-05). */
+                    .gl-review { table-layout: fixed; width: 100%; }
+                    .gl-review :is(td, th) {
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                </style>
+                <table class="table table-xs gl-review">
+                    <colgroup><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:6%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:12%"></colgroup>
                     <thead>
                         <tr class="bg-base-200/70">
-                            <th>Ref#</th>
-                            <th>Date</th>
-                            <th>User</th>
-                            <th>Status</th>
-                            <th>Offices</th>
-                            <th>Applicant</th>
-                            <th>Agent</th>
-                            <th>Currency</th>
-                            <th class="text-right">Amount</th>
-                            <th>Account</th>
-                            <th>Country</th>
-                            <th>Particular / Description</th>
+                            <th class="whitespace-nowrap">Ref#</th>
+                            <th class="whitespace-nowrap">Date</th>
+                            <th class="whitespace-nowrap">User</th>
+                            <th class="whitespace-nowrap">Status</th>
+                            <th class="whitespace-nowrap">Offices</th>
+                            <th class="whitespace-nowrap">Applicant</th>
+                            <th class="whitespace-nowrap">Agent</th>
+                            <th class="whitespace-nowrap">Currency</th>
+                            <th class="text-right whitespace-nowrap">Amount</th>
+                            <th class="whitespace-nowrap">Account</th>
+                            <th class="whitespace-nowrap">Country</th>
+                            <th class="whitespace-nowrap">Particular / Description</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($items as $item)
                             <tr class="hover">
-                                <td class="font-mono text-xs">{{ $item->expenseRequest->reference_no ?? '—' }}</td>
+                                <td class="font-mono text-xs truncate" title="{{ $item->expenseRequest->reference_no ?? '' }}">{{ $item->expenseRequest->reference_no ?? '—' }}</td>
                                 <td class="whitespace-nowrap">{{ optional($item->expenseRequest->date)->format('Y-m-d') ?? '—' }}</td>
-                                <td>{{ $item->expenseRequest->user->name ?? '—' }}</td>
+                                <td class="truncate" title="{{ $item->expenseRequest->user->name ?? '' }}">{{ $item->expenseRequest->user->name ?? '—' }}</td>
                                 <td>
                                     <span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                                 </td>
-                                <td>{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
+                                <td class="truncate">{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
                                 <td>
-                                    @if ($item->applicant)
-                                        {{ trim(implode(' ', array_filter([$item->applicant->first_name, $item->applicant->middle_name, $item->applicant->last_name, $item->applicant->suffix]))) }}
-                                    @else
-                                        —
-                                    @endif
+                                    @php $applicantName = $item->applicant ? trim(implode(' ', array_filter([$item->applicant->first_name, $item->applicant->middle_name, $item->applicant->last_name, $item->applicant->suffix]))) : '—'; @endphp
+                                    <span class="block truncate" title="{{ $applicantName }}">{{ $applicantName }}</span>
                                 </td>
-                                <td>{{ $item->agent->name ?? '—' }}</td>
-                                <td>{{ $item->currency }}</td>
-                                <td class="text-right font-mono">{{ number_format((float) $item->amount, 2) }}</td>
-                                <td>{{ $item->account->name ?? '—' }}</td>
-                                <td>{{ $item->country->name ?? '—' }}</td>
-                                <td class="max-w-xs truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="truncate" title="{{ $item->agent->name ?? '' }}">{{ $item->agent->name ?? '—' }}</td>
+                                <td class="truncate">{{ $item->currency }}</td>
+                                <td class="text-right font-mono truncate">{{ number_format((float) $item->amount, 2) }}</td>
+                                <td class="truncate" title="{{ $item->account->name ?? '' }}">{{ $item->account->name ?? '—' }}</td>
+                                <td class="truncate" title="{{ $item->country->name ?? '' }}">{{ $item->country->name ?? '—' }}</td>
+                                <td class="truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>

@@ -8,6 +8,7 @@ use App\Models\ExpenseRequest;
 use App\Models\ExpenseRequestItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -168,5 +169,37 @@ class GeneralLedgerTest extends TestCase
         $this->actingAs($this->user)
             ->get(route('general_ledger.review', $foreign))
             ->assertNotFound();
+    }
+
+    #[Test]
+    public function only_admin_and_accounting_users_can_open_the_module(): void
+    {
+        // Kchanz Josh review 2026-11-05: "Only Admin and Accounting users has
+        // this module". Accounting = billing; everyone else is "Rest of Account".
+        $accounting = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'billing',
+        ]);
+        $staff = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'staff',
+        ]);
+
+        $this->actingAs($accounting)->get(route('general_ledger.index'))->assertOk();
+        $this->actingAs($staff)->get(route('general_ledger.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('general_ledger.export'))->assertForbidden();
+    }
+
+    #[Test]
+    public function staff_sidebar_hides_general_ledger(): void
+    {
+        $staff = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'staff',
+        ]);
+
+        $html = $this->actingAs($staff)->get(route('applicants.index'))->getContent();
+
+        $this->assertStringNotContainsString(route('general_ledger.index'), $html);
     }
 }
