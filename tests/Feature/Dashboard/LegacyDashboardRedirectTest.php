@@ -13,18 +13,18 @@ use Tests\TestCase;
  * "Sometimes it displays the old design. I have to click other module before
  * it refreshes to the latest design."
  *
- * /dashboard renders the legacy, non-tenant-scoped dashboard. Login honoured a
- * stale `url.intended` pointing there, so agency users landed on the old screen
- * (0 applicants / 0 FRAs) until they navigated somewhere else. Agency accounts
- * are now bounced to their real dashboard; only super admins keep the legacy
- * view.
+ * /dashboard rendered the legacy, non-tenant-scoped dashboard (0 applicants /
+ * 0 FRAs for an agency admin). Login honoured a stale `url.intended` pointing
+ * there, so agency users landed on the old screen until they navigated
+ * somewhere else. /dashboard now serves the current agency dashboard for agency
+ * accounts; only super admins (no agency) get the legacy view.
  */
 class LegacyDashboardRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
     #[Test]
-    public function agency_users_are_sent_to_the_agency_dashboard(): void
+    public function agency_users_get_the_current_dashboard_on_the_legacy_url(): void
     {
         $agency = Agency::factory()->create(['name' => 'Gulf']);
         $user = User::factory()->create([
@@ -34,7 +34,9 @@ class LegacyDashboardRedirectTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('dashboard'))
-            ->assertRedirect(route('agency.dashboard'));
+            ->assertOk()
+            ->assertViewIs('agency.dashboard')
+            ->assertSee('Deployment Pipeline');
     }
 
     #[Test]
@@ -56,14 +58,12 @@ class LegacyDashboardRedirectTest extends TestCase
             ])
             ->assertRedirect(route('dashboard'));
 
-        // Follow the redirect: the legacy page bounces to the agency dashboard.
-        $this->actingAs($user)
-            ->get(route('dashboard'))
-            ->assertRedirect(route('agency.dashboard'));
+        // Following it must show the current design, not the legacy one.
+        $response = $this->actingAs($user)->get(route('dashboard'))->assertOk();
 
-        $this->actingAs($user)
-            ->get(route('agency.dashboard'))
-            ->assertOk();
+        $response->assertViewIs('agency.dashboard');
+        $response->assertSee('Deployment Pipeline');
+        $response->assertDontSee('Start by adding applicants and FRAs');
     }
 
     #[Test]

@@ -15,15 +15,15 @@ class DashboardController extends Controller
         $agency = tenant_agency();
         $user = auth()->user();
 
-        // Agency accounts have their own (current) dashboard. This controller
-        // renders the legacy generic dashboard, which is NOT tenant scoped —
-        // an agency admin landing here saw 0 applicants / 0 FRAs and the old
-        // layout until they clicked another module (card "LANDAS: DASHBOARD
-        // bug", Cyd 2026-11-05). Login used to honour a stale `url.intended`
-        // pointing at /dashboard, so it hit this page. Bounce them to the
-        // real one; only super admins (no agency) keep this view.
+        // Agency accounts must never see this legacy, non-tenant-scoped
+        // dashboard: an agency admin landing here saw 0 applicants / 0 FRAs
+        // and the old layout until they clicked another module (card
+        // "LANDAS: DASHBOARD bug", Cyd 2026-11-05). Login honoured a stale
+        // `url.intended` pointing at /dashboard, so it hit this page. Serve
+        // the current (agency) dashboard on this URL too — no redirect, so
+        // /dashboard stays a valid landing page for agency users.
         if ($user && $user->agency_id) {
-            return redirect()->route('agency.dashboard');
+            return app(AgencyDashboardController::class)->index();
         }
 
         // Get status counts. Exclude withdrawn/repat statuses, because the
