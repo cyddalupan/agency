@@ -130,6 +130,7 @@ class ModuleAccess
         'receivable',
         'expense_request',
         'agent_report',
+        'general_ledger',
         'api',
     ];
 
@@ -157,6 +158,7 @@ class ModuleAccess
         'receivable'               => 'receivable',
         'expense_request'          => 'expense_request',
         'agent_report'             => 'agent_report',
+        'general_ledger'           => 'general_ledger',
         'agency.dashboard'         => 'dashboard',
         'dashboard'                => 'dashboard',
         'notifications'            => 'notifications',

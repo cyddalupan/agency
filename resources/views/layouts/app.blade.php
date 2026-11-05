@@ -303,8 +303,10 @@
                         // (Cyd 2026-10-23) Agents Report is visible to Branch + Main accounts.
                         // Branch accounts see only the agents registered under their branch.
                         $showAgentReport = $navUser->canAccessModule('agent_report');
+                        // (Mjolnir "New Module: General Ledger", 2026-11-05)
+                        $showGeneralLedger = $navUser->canAccessModule('general_ledger');
                     @endphp
-                    @if ($showStats || $showReceivable || $showExpenses || $showAgentReport)
+                    @if ($showStats || $showReceivable || $showExpenses || $showAgentReport || $showGeneralLedger)
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Accounting Dashboard</p>
                         @if ($showStats)
@@ -337,6 +339,14 @@
                                   {{ request()->routeIs('agent_report.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📈</span>
                             Agents Report
+                        </a>
+                        @endif
+                        @if ($showGeneralLedger)
+                        <a href="{{ route('general_ledger.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('general_ledger.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📚</span>
+                            General Ledger
                         </a>
                         @endif
                     </div>

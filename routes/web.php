@@ -44,6 +44,7 @@ use App\Http\Controllers\ReceivablesController;
 use App\Http\Controllers\ReceivableController;
 use App\Http\Controllers\AgentReportController;
 use App\Http\Controllers\ExpenseRequestController;
+use App\Http\Controllers\GeneralLedgerController;
 use Illuminate\Support\Facades\Route;
 
 // === Health Check ===
@@ -424,6 +425,14 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('/marketing-agency/{marketingAgency}', [AccountingController::class, 'marketingAgency'])->name('marketing-agency');
         Route::get('/marketing-agent/{marketingAgent}', [AccountingController::class, 'marketingAgent'])->name('marketing-agent');
         Route::get('/recruitment-agent/{recruitmentAgent}', [AccountingController::class, 'recruitmentAgent'])->name('recruitment-agent');
+    });
+
+    // General Ledger (Mjolnir card, 2026-11-05) — placed below Agents Report.
+    Route::prefix('general-ledger')->name('general_ledger.')->group(function () {
+        Route::get('/', [GeneralLedgerController::class, 'index'])->name('index');
+        Route::get('/export', [GeneralLedgerController::class, 'export'])->name('export');
+        Route::get('/account/{account}', [GeneralLedgerController::class, 'review'])->name('review');
+        Route::get('/account/{account}/export', [GeneralLedgerController::class, 'reviewExport'])->name('review.export');
     });
 
     // Receivable & Payments module — Tab 1: Receivable
