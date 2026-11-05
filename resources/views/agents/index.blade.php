@@ -3,7 +3,7 @@
 @section('title', 'Agents')
 
 @section('content')
-<div class="max-w-5xl mx-auto">
+<div class="w-full">
     <div class="flex items-center justify-between mb-6">
         <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 p-4 flex-1">
             <h2 class="text-2xl font-bold flex items-center gap-2">
@@ -11,8 +11,8 @@
             </h2>
             <p class="opacity-60 text-sm mt-1">Manage referral agents and commission tracking.</p>
         </div>
-        <a href="{{ route('agents.create') }}" class="btn btn-primary ml-4">
-            <span>➕</span> New Agent
+        <a href="{{ route('agents.bulk') }}" class="btn btn-outline ml-4" title="Bulk upload agents from CSV">
+            <span>📥</span> Bulk Upload
         </a>
         @php
             // Gulf-only destructive action (CYD 2026-11-04).
@@ -30,6 +30,9 @@
                 <span>🗑️</span> Delete all agents
             </button>
         @endif
+        <a href="{{ route('agents.create') }}" class="btn btn-primary ml-2">
+            <span>➕</span> New Agent
+        </a>
     </div>
 
     @if($canDeleteAll)
@@ -106,14 +109,18 @@
         <div class="card-body p-0">
             @if ($agents->count() > 0)
             <div class="overflow-x-auto">
-                <table class="table table-zebra">
+                <table class="table table-zebra table-sm">
                     <thead>
                         <tr>
                             <th>Name</th>
+                            {{-- Branch sits right after Name (client request, 2026-11-05). --}}
+                            <th>Branch</th>
                             <th>Email</th>
                             <th>Contact</th>
                             <th>Commission Rate</th>
                             <th>Status</th>
+                            <th>Created By</th>
+                            <th>Created</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -121,6 +128,7 @@
                         @foreach ($agents as $agent)
                         <tr>
                             <td class="font-medium">{{ $agent->name }}</td>
+                            <td class="whitespace-nowrap">{{ $agent->branch?->name ?? '—' }}</td>
                             <td>{{ $agent->email }}</td>
                             <td>{{ $agent->contact ?? 'N/A' }}</td>
                             <td>{{ $agent->commission_rate ? $agent->commission_rate . '%' : 'N/A' }}</td>
@@ -131,6 +139,8 @@
                                     <span class="badge badge-error badge-sm">Inactive</span>
                                 @endif
                             </td>
+                            <td>{{ $agent->creator?->full_name ?? $agent->creator?->name ?? '—' }}</td>
+                            <td class="whitespace-nowrap">{{ $agent->created_at?->format('M d, Y g:i A') ?? '—' }}</td>
                             <td>
                                 <div class="flex items-center gap-1">
                                     <a href="{{ route('agents.edit', $agent) }}" class="btn btn-ghost btn-xs">✏️ Edit</a>

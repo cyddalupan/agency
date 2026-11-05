@@ -3,7 +3,7 @@
 @section('title', 'Create Agent')
 
 @section('content')
-<div class="max-w-xl mx-auto">
+<div class="w-full">
     <div class="mb-6">
         <a href="{{ route('agents.index') }}" class="link link-secondary text-sm flex items-center gap-1">
             <span>←</span> Back to Agents
@@ -21,26 +21,16 @@
         <div class="card-body space-y-4">
             @csrf
 
-            <fieldset class="fieldset">
+            {{-- Form fills the screen instead of sitting in a narrow column
+                 (client request 2026-11-05). Fields are grouped three-up on
+                 wide screens so nothing looks stretched. --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <fieldset class="fieldset lg:col-span-2">
                 <legend class="fieldset-legend">👤 Name <span class="text-error">*</span></legend>
                 <input type="text" name="name" value="{{ old('name') }}" required
                     class="input w-full" placeholder="Full name">
                 @error('name') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
             </fieldset>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">📧 Email <span class="text-error">*</span></legend>
-                    <input type="email" name="email" value="{{ old('email') }}" required
-                        class="input w-full" placeholder="agent@email.com">
-                    @error('email') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">📱 Contact</legend>
-                    <input type="text" name="contact" value="{{ old('contact') }}"
-                        class="input w-full" placeholder="09XX-XXX-XXXX">
-                </fieldset>
-            </div>
 
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">🏢 Branch</legend>
@@ -62,11 +52,25 @@
             </fieldset>
 
             <fieldset class="fieldset">
+                <legend class="fieldset-legend">📧 Email</legend>
+                <input type="email" name="email" value="{{ old('email') }}"
+                    class="input w-full" placeholder="agent@email.com (optional)">
+                @error('email') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
+            </fieldset>
+
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">📱 Contact</legend>
+                <input type="text" name="contact" value="{{ old('contact') }}"
+                    class="input w-full" placeholder="09XX-XXX-XXXX">
+            </fieldset>
+
+            <fieldset class="fieldset">
                 <legend class="fieldset-legend">💰 Commission Rate (%)</legend>
                 <input type="number" name="commission_rate" value="{{ old('commission_rate') }}"
                     class="input w-full" placeholder="e.g. 10" min="0" max="100" step="0.01">
                 @error('commission_rate') <span class="text-error text-xs mt-1">{{ $message }}</span> @enderror
             </fieldset>
+            </div>
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">
