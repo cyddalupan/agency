@@ -102,7 +102,7 @@
                 </div>
                 <div class="p-3 rounded-lg bg-base-200/50">
                     <dt class="text-xs opacity-60 uppercase tracking-wider">Expected Salary</dt>
-                    <dd class="font-medium mt-1">{{ $applicant->expected_salary ? '₱' . number_format($applicant->expected_salary, 2) : '—' }}</dd>
+                    <dd class="font-medium mt-1">{{ \App\Support\Currencies::format($applicant->expected_salary_currency, $applicant->expected_salary) ?? '—' }}</dd>
                 </div>
                 <div class="p-3 rounded-lg bg-base-200/50">
                     <dt class="text-xs opacity-60 uppercase tracking-wider">Type</dt>

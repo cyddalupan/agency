@@ -130,8 +130,11 @@
     $ynYes = __('resume.yes', [], 'en');
 
     $rows = [];
+    // Currency comes from the applicant record (card "Add Applicant Currency",
+    // 2026-11-05). It used to be hard-coded "USD" for every applicant.
     $rows[] = ['monthly_salary', $applicant->expected_salary !== null
-        ? rtrim(rtrim(number_format((float) $applicant->expected_salary, 2), '0'), '.') . ' USD' : null];
+        ? rtrim(rtrim(number_format((float) $applicant->expected_salary, 2), '0'), '.') . ' '
+            . \App\Support\Currencies::normalise($applicant->expected_salary_currency) : null];
     $rows[] = ['mobile', $applicant->contact];
     $rows[] = ['contract_period', $applicant->contract];
     $rows[] = ['passport', optional($applicant->passport)->passport_no

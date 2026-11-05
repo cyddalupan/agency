@@ -138,7 +138,9 @@ class ReportBuilder
                 'status' => $applicant->statusCode?->label ?? 'Pending',
                 'position' => $applicant->position?->name ?? '',
                 'employer' => $applicant->employer?->name ?? '',
-                'salary' => $applicant->expected_salary ? number_format($applicant->expected_salary, 2) : '',
+                'salary' => $applicant->expected_salary
+                    ? \App\Support\Currencies::normalise($applicant->expected_salary_currency).' '.number_format($applicant->expected_salary, 2)
+                    : '',
                 'source' => $applicant->source ?? '',
                 'agent' => $applicant->agent?->name ?? '',
                 'created_at' => $applicant->created_at?->format('Y-m-d H:i') ?? '',

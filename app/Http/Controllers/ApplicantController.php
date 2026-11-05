@@ -340,6 +340,7 @@ class ApplicantController extends Controller
             'country_id' => 'nullable|integer|exists:countries,id',
             'position_id' => 'nullable|integer|exists:positions,id',
             'expected_salary' => 'nullable|numeric|min:0',
+            'expected_salary_currency' => ['nullable', 'string', Rule::in(\App\Support\Currencies::codes())],
             'employer_id' => 'nullable|integer|exists:employers,id',
             'agent_id' => ['nullable', 'integer', 'exists:agents,id', function ($attribute, $value, $fail) use ($request) {
                 if (blank($value)) {
@@ -1301,6 +1302,8 @@ class ApplicantController extends Controller
             'applicant_type' => ['nullable', 'string', Rule::in(Applicant::types())],
             'country_id' => 'nullable|integer|exists:countries,id',
             'position_id' => 'nullable|integer|exists:positions,id',
+            'expected_salary' => 'nullable|numeric|min:0',
+            'expected_salary_currency' => ['nullable', 'string', Rule::in(\App\Support\Currencies::codes())],
             'agent_id' => 'nullable|integer|exists:agents,id',
             'branch_id' => 'nullable|integer|exists:branches,id',
             'branch' => 'nullable|string|max:255',

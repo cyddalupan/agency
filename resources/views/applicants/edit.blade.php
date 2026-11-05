@@ -207,7 +207,15 @@
                 </fieldset>
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">💵 Salary</legend>
-                    <input type="number" step="0.01" min="0" name="expected_salary" value="{{ old('expected_salary', $applicant->expected_salary) }}" class="input w-full" placeholder="e.g. 25000">
+                    <div class="join w-full">
+                        <input type="number" step="0.01" min="0" name="expected_salary" value="{{ old('expected_salary', $applicant->expected_salary) }}" class="input join-item w-full" placeholder="e.g. 25000">
+                        <select name="expected_salary_currency" class="select join-item w-28 border-l-0" title="Salary currency">
+                            @foreach (\App\Support\Currencies::OPTIONS as $code => $meta)
+                            <option value="{{ $code }}" @selected(old('expected_salary_currency', $applicant->expected_salary_currency ?? \App\Support\Currencies::DEFAULT) === $code)>{{ $meta[0] }} {{ $code }}</option>
+                        @endforeach
+                        </select>
+                    </div>
+                    <p class="label text-xs opacity-60">Amount and currency (e.g. SAR 1,500.00)</p>
                 </fieldset>
             </div>
 
