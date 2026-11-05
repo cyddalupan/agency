@@ -32,55 +32,70 @@
         <div class="card-body p-0">
             <div class="overflow-x-auto">
                 <style>
-                    /* General Ledger review: 12 columns must fit the content
-                       area instead of scrolling off to the right
-                       (Kchanz Josh "Fix this too", 2026-11-05). */
+                    /* General Ledger review (Kchanz Josh, 2026-11-05):
+                       - headers line up with the data in their column
+                       - no ellipsis truncation: Particular / Description must
+                         show the whole detail, wrapping onto extra lines
+                         instead of being cut off with "…"
+                       - fixed layout keeps all 12 columns inside the content
+                         area (no horizontal scroll), so nothing hides
+                         off-screen to the right. */
                     .gl-review { table-layout: fixed; width: 100%; }
                     .gl-review :is(td, th) {
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
+                        vertical-align: middle;
+                        /* DaisyUI's .table forces white-space: nowrap; that is
+                           exactly what pushed header text into the next column
+                           and cut Particular off. Wrap by default here. */
+                        white-space: normal;
+                        overflow-wrap: anywhere;
+                        word-break: break-word;
+                        line-height: 1.35;
                     }
+                    .gl-review .gl-nowrap { white-space: nowrap; }
                 </style>
                 <table class="table table-xs gl-review">
-                    <colgroup><col style="width:6%"><col style="width:8%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:6%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:12%"></colgroup>
+                    <colgroup>
+                        <col style="width:7%"><col style="width:10%"><col style="width:5%">
+                        <col style="width:10%"><col style="width:6%"><col style="width:8%">
+                        <col style="width:8%"><col style="width:7%"><col style="width:10%">
+                        <col style="width:7%"><col style="width:6%"><col style="width:16%">
+                    </colgroup>
                     <thead>
                         <tr class="bg-base-200/70">
-                            <th class="whitespace-nowrap">Ref#</th>
-                            <th class="whitespace-nowrap">Date</th>
-                            <th class="whitespace-nowrap">User</th>
-                            <th class="whitespace-nowrap">Status</th>
-                            <th class="whitespace-nowrap">Offices</th>
-                            <th class="whitespace-nowrap">Applicant</th>
-                            <th class="whitespace-nowrap">Agent</th>
-                            <th class="whitespace-nowrap">Currency</th>
-                            <th class="text-right whitespace-nowrap">Amount</th>
-                            <th class="whitespace-nowrap">Account</th>
-                            <th class="whitespace-nowrap">Country</th>
-                            <th class="whitespace-nowrap">Particular / Description</th>
+                            <th class="text-left align-middle">Ref#</th>
+                            <th class="text-left align-middle">Date</th>
+                            <th class="text-left align-middle">User</th>
+                            <th class="text-left align-middle">Status</th>
+                            <th class="text-left align-middle">Offices</th>
+                            <th class="text-left align-middle">Applicant</th>
+                            <th class="text-left align-middle">Agent</th>
+                            <th class="text-left align-middle">Currency</th>
+                            <th class="text-right align-middle">Amount</th>
+                            <th class="text-left align-middle">Account</th>
+                            <th class="text-left align-middle">Country</th>
+                            <th class="text-left align-middle">Particular / Description</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($items as $item)
                             <tr class="hover">
-                                <td class="font-mono text-xs truncate" title="{{ $item->expenseRequest->reference_no ?? '' }}">{{ $item->expenseRequest->reference_no ?? '—' }}</td>
-                                <td class="whitespace-nowrap">{{ optional($item->expenseRequest->date)->format('Y-m-d') ?? '—' }}</td>
-                                <td class="truncate" title="{{ $item->expenseRequest->user->name ?? '' }}">{{ $item->expenseRequest->user->name ?? '—' }}</td>
-                                <td>
-                                    <span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
+                                <td class="font-mono text-xs align-middle gl-nowrap">{{ $item->expenseRequest->reference_no ?? '—' }}</td>
+                                <td class="align-middle gl-nowrap">{{ optional($item->expenseRequest->date)->format('Y-m-d') ?? '—' }}</td>
+                                <td class="align-middle">{{ $item->expenseRequest->user->name ?? '—' }}</td>
+                                <td class="align-middle">
+                                    <span class="badge badge-sm whitespace-nowrap {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                                 </td>
-                                <td class="truncate">{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
-                                <td>
+                                <td class="align-middle">{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
+                                <td class="align-middle gl-nowrap">
                                     @php $applicantName = $item->applicant ? trim(implode(' ', array_filter([$item->applicant->first_name, $item->applicant->middle_name, $item->applicant->last_name, $item->applicant->suffix]))) : '—'; @endphp
-                                    <span class="block truncate" title="{{ $applicantName }}">{{ $applicantName }}</span>
+                                    <span class="block">{{ $applicantName }}</span>
                                 </td>
-                                <td class="truncate" title="{{ $item->agent->name ?? '' }}">{{ $item->agent->name ?? '—' }}</td>
-                                <td class="truncate">{{ $item->currency }}</td>
-                                <td class="text-right font-mono truncate">{{ number_format((float) $item->amount, 2) }}</td>
-                                <td class="truncate" title="{{ $item->account->name ?? '' }}">{{ $item->account->name ?? '—' }}</td>
-                                <td class="truncate" title="{{ $item->country->name ?? '' }}">{{ $item->country->name ?? '—' }}</td>
-                                <td class="truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                            </tr>
+                                <td class="align-middle">{{ $item->agent->name ?? '—' }}</td>
+                                <td class="align-middle gl-nowrap">{{ $item->currency }}</td>
+                                <td class="text-right font-mono align-middle gl-nowrap">{{ number_format((float) $item->amount, 2) }}</td>
+                                <td class="align-middle">{{ $item->account->name ?? '—' }}</td>
+                                <td class="align-middle">{{ $item->country->name ?? '—' }}</td>
+                                <td class="align-middle gl-particular">{{ $item->particular ?: '—' }}</td>                            </tr>
                         @empty
                             <tr>
                                 <td colspan="12" class="text-center py-8 opacity-60">No transactions under this sub account.</td>
@@ -90,8 +105,8 @@
                     @if ($items->isNotEmpty())
                         <tfoot>
                             <tr class="bg-base-200/60 font-semibold">
-                                <td colspan="8" class="text-right">Total (page)</td>
-                                <td class="text-right font-mono">{{ number_format((float) $items->sum('amount'), 2) }}</td>
+                                <td colspan="8" class="text-right align-middle">Total (page)</td>
+                                <td class="text-right align-middle font-mono gl-nowrap">{{ number_format((float) $items->sum('amount'), 2) }}</td>
                                 <td colspan="3"></td>
                             </tr>
                         </tfoot>

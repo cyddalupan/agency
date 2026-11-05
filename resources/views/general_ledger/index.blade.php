@@ -28,40 +28,43 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body p-0">
                 <div class="overflow-x-auto">
-                    <table class="table table-sm w-full">
+                    {{-- Format follows the client's reference sheet
+                         (Kchanz Josh, 2026-11-05): Main Account / Type are
+                         repeated on every row and every header is aligned
+                         exactly like its column, so the columns line up
+                         row-to-row and table-to-table. --}}
+                    <table class="table table-sm gl-table w-full">
+                        <colgroup>
+                            <col style="width:24%"><col style="width:12%"><col style="width:38%">
+                            <col style="width:16%"><col style="width:10%">
+                        </colgroup>
                         <thead>
                             <tr class="bg-base-200/70">
-                                <th class="align-bottom">Main Account</th>
-                                <th class="align-bottom">Type</th>
-                                <th class="align-bottom">Sub Accounts</th>
-                                <th class="text-right align-bottom w-40">Amount</th>
-                                <th class="text-center align-bottom w-24">Actions</th>
+                                <th class="text-left align-middle">Main Account</th>
+                                <th class="text-left align-middle">Type</th>
+                                <th class="text-left align-middle">Sub Accounts</th>
+                                <th class="text-right align-middle">Amount</th>
+                                <th class="text-center align-middle">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($group['subs'] as $i => $sub)
+                            @foreach ($group['subs'] as $sub)
                                 <tr class="hover">
-                                    {{-- Main Account / Type span the whole group so the
-                                         columns stay aligned instead of repeating the
-                                         same label on every sub-account row.
-                                         (Kchanz Josh review, 2026-11-05) --}}
-                                    @if ($i === 0)
-                                        <td rowspan="{{ $group['subs']->count() }}" class="font-medium align-top whitespace-normal">{{ $group['main']->name }}</td>
-                                        <td rowspan="{{ $group['subs']->count() }}" class="capitalize align-top whitespace-normal">{{ $group['main']->type }}</td>
-                                    @endif
-                                    <td class="whitespace-normal">{{ $sub['account']->name }}</td>
-                                    <td class="text-right font-mono whitespace-nowrap">{{ number_format($sub['amount'], 2) }}</td>
-                                    <td class="text-center">
+                                    <td class="text-left align-middle font-medium whitespace-normal break-words">{{ $group['main']->name }}</td>
+                                    <td class="text-left align-middle capitalize whitespace-normal break-words">{{ $group['main']->type }}</td>
+                                    <td class="text-left align-middle whitespace-normal break-words">{{ $sub['account']->name }}</td>
+                                    <td class="text-right align-middle font-mono whitespace-nowrap">{{ number_format($sub['amount'], 2) }}</td>
+                                    <td class="text-center align-middle">
                                         <a href="{{ route('general_ledger.review', $sub['account']) }}"
-                                           class="btn btn-xs btn-outline btn-primary">Review</a>
+                                           class="btn btn-xs btn-outline btn-primary whitespace-nowrap">Review</a>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr class="bg-base-200/60 font-semibold">
-                                <td colspan="3" class="text-right">Total</td>
-                                <td class="text-right font-mono whitespace-nowrap">{{ number_format($group['total'], 2) }}</td>
+                                <td colspan="3" class="text-right align-middle">Total</td>
+                                <td class="text-right align-middle font-mono whitespace-nowrap">{{ number_format($group['total'], 2) }}</td>
                                 <td></td>
                             </tr>
                         </tfoot>
