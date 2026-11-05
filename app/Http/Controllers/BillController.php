@@ -15,7 +15,7 @@ class BillController extends Controller
     {
         $bills = Bill::with(['employer', 'applicant'])
             ->latest()
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('bills.index', compact('bills'));
     }

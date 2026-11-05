@@ -14,7 +14,7 @@ class OfficialReceiptController extends Controller
     {
         $officialReceipts = OfficialReceipt::with(['payment', 'payment.bill', 'payment.bill.employer'])
             ->latest()
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('official-receipts.index', compact('officialReceipts'));
     }

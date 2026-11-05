@@ -11,7 +11,7 @@ class SkillController extends Controller
 {
     public function index(): View
     {
-        $skills = Skill::orderBy('name')->paginate(15);
+        $skills = Skill::orderBy('name')->paginate(print_per_page(15));
 
         return view('skills.index', compact('skills'));
     }

@@ -14,7 +14,7 @@ class PaymentController extends Controller
     {
         $payments = Payment::with(['bill', 'bill.employer'])
             ->latest()
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('payments.index', compact('payments'));
     }

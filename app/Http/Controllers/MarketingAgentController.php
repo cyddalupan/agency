@@ -12,7 +12,7 @@ class MarketingAgentController extends Controller
 {
     public function index(MarketingAgency $marketingAgency): View
     {
-        $agents = $marketingAgency->marketingAgents()->latest()->paginate(15);
+        $agents = $marketingAgency->marketingAgents()->latest()->paginate(print_per_page(15));
         return view('marketing-agents.index', compact('marketingAgency', 'agents'));
     }
 

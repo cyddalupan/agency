@@ -11,7 +11,7 @@ class MarketingAgencyController extends Controller
 {
     public function index(): View
     {
-        $agencies = MarketingAgency::latest()->paginate(15);
+        $agencies = MarketingAgency::latest()->paginate(print_per_page(15));
         return view('marketing-agencies.index', compact('agencies'));
     }
 

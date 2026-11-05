@@ -11,7 +11,7 @@ class LanguageController extends Controller
 {
     public function index(): View
     {
-        $languages = Language::orderBy('name')->paginate(15);
+        $languages = Language::orderBy('name')->paginate(print_per_page(15));
 
         return view('languages.index', compact('languages'));
     }

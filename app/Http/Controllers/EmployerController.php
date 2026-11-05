@@ -18,7 +18,7 @@ class EmployerController extends Controller
 {
     public function index(): View
     {
-        $employers = Employer::latest()->paginate(15);
+        $employers = Employer::latest()->paginate(print_per_page(15));
         return view('employers.index', compact('employers'));
     }
 

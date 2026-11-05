@@ -29,11 +29,23 @@
             body { background: white !important; }
             .no-print, .navbar, .drawer-side, footer, .alert { display: none !important; }
             .drawer-content { margin-left: 0 !important; padding: 0 !important; }
-            main { padding: 0 !important; }
-            .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+            main { padding: 0 !important; overflow: visible !important; }
+            .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: auto; }
             .table th { background: #f5f5f5 !important; color: #000 !important; }
             a { color: #000 !important; text-decoration: underline; }
-            @page { margin: 1.5cm; }
+            /* Print every column/entry (Mjolnir "Print Page 'Missing Data'", 2026-11-05):
+               horizontal scroll containers clip wide tables on paper, so let the
+               table flow across the page instead of being cut off. */
+            .overflow-x-auto, .overflow-y-auto, .overflow-hidden, .overflow-auto {
+                overflow: visible !important; max-height: none !important;
+            }
+            table { width: 100% !important; font-size: 10px !important; table-layout: auto !important; }
+            thead { display: table-header-group; }
+            tr { break-inside: avoid; }
+            .table td, .table th { padding: 3px 5px !important; white-space: normal !important; }
+            /* Row action buttons are not data — keep them off paper. */
+            .table td:last-child .btn, .table td:last-child form { display: none !important; }
+            @page { size: landscape; margin: 1cm; }
             .print-only { display: block !important; }
         }
         .print-only { display: none; }
@@ -84,6 +96,11 @@
                     </span>
                 </div>
                 <div class="flex-none flex items-center gap-4">
+                    {{-- Global Print (all filtered entries, see app/helpers.php print_per_page) --}}
+                    <a href="{{ request()->fullUrlWithQuery(['print' => 1]) }}"
+                       class="btn btn-ghost btn-sm gap-1 no-print" title="Print this page (all entries)">
+                        <span>🖨️</span><span class="hidden sm:inline">Print</span>
+                    </a>
                     {{-- Notification bell with dropdown --}}
                     <div class="dropdown dropdown-end">
                         <label tabindex="0" class="btn btn-ghost btn-square relative notification-bell">
@@ -175,6 +192,22 @@
 
             {{-- Page content --}}
             <main class="flex-1 p-4 lg:p-6 overflow-x-auto">
+                @if (print_mode())
+                <div class="print-only mb-3">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #999;padding-bottom:4px;margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:15px;font-weight:700;">{{ app_brand_name() }}</div>
+                            <div style="font-size:12px;">{{ trim(strip_tags(View::yieldContent('title'))) }}</div>
+                        </div>
+                        <div style="font-size:10px;text-align:right;">
+                            <div>Printed {{ now()->format('M d, Y H:i') }}</div>
+                            @if (print_header_filters())
+                                <div>Filters — {{ print_header_filters() }}</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endif
                 @yield('content')
             </main>
 
@@ -504,5 +537,12 @@
     @endguest
 @include('partials.top-scroll')
 @stack('scripts')
+@if (print_mode())
+<script>
+    window.addEventListener('load', function () {
+        window.print();
+    });
+</script>
+@endif
 </body>
 </html>

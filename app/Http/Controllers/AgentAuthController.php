@@ -52,7 +52,7 @@ class AgentAuthController extends Controller
             $query->where('status_code', request()->integer('status'));
         }
 
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(20);
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(print_per_page(20));
 
         // Attach the status filter to pagination links
         if (request()->filled('status')) {

@@ -296,7 +296,7 @@ class ReportController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $agents = $query->paginate(20);
+        $agents = $query->paginate(print_per_page(20));
 
         return view('reports.agents', compact('agents'));
     }

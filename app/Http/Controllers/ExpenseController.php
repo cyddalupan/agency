@@ -30,7 +30,7 @@ class ExpenseController extends Controller
             $query->whereDate('date', '<=', $request->date('date_to'));
         }
 
-        $expenses = $query->orderByDesc('date')->paginate(20)->withQueryString();
+        $expenses = $query->orderByDesc('date')->paginate(print_per_page(20))->withQueryString();
 
         $accounts = Account::mains()
             ->with('children')

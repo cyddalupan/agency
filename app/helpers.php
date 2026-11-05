@@ -662,3 +662,46 @@ if (!function_exists('resume_locale_for_country')) {
         return $map[$code] ?? null;
     }
 }
+
+if (!function_exists('print_mode')) {
+    /**
+     * Print mode (Mjolnir card "LANDAS: Print Page 'Missing Data'", 2026-11-05).
+     *
+     * Module index pages are paginated for the screen. When the global Print
+     * button (or `?print=1`) is used we must render EVERY filtered row so the
+     * browser's print/PDF output contains every data entry, not just page 1.
+     */
+    function print_mode(): bool
+    {
+        return request()->boolean('print');
+    }
+}
+
+if (!function_exists('print_per_page')) {
+    /** Pagination size for the current request — effectively "all rows" in print mode. */
+    function print_per_page(int $default): int
+    {
+        return print_mode() ? 100000 : $default;
+    }
+}
+
+if (!function_exists('print_header_filters')) {
+    /**
+     * Human-readable summary of the query string for the print header
+     * (ignores paging / print flags).
+     */
+    function print_header_filters(): string
+    {
+        $skip = ['page', 'print'];
+        $parts = [];
+
+        foreach (request()->query() as $key => $value) {
+            if (in_array($key, $skip, true) || is_array($value) || $value === '' || $value === null) {
+                continue;
+            }
+            $parts[] = ucfirst(str_replace('_', ' ', (string) $key)) . ': ' . $value;
+        }
+
+        return implode(' · ', $parts);
+    }
+}

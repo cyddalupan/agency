@@ -34,7 +34,7 @@ class AgentController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $agents = $query->orderBy('name')->paginate(20);
+        $agents = $query->orderBy('name')->paginate(print_per_page(20));
 
         return view('agents.index', compact('agents'));
     }

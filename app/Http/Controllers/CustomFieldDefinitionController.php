@@ -20,7 +20,7 @@ class CustomFieldDefinitionController extends Controller
         $definitions = $query->orderBy('model_type')
             ->orderBy('order')
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('custom-fields.index', compact('definitions'));
     }

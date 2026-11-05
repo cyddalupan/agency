@@ -38,7 +38,7 @@ class ReportsIndexController extends Controller
         }
 
         $builder = new ReportBuilder($reportTemplate);
-        $rows = $builder->paginate(25);
+        $rows = $builder->paginate(print_per_page(25));
 
         return view('reports.preview', [
             'template' => $reportTemplate,

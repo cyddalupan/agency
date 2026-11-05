@@ -16,7 +16,7 @@ class AccountController extends Controller
             ->where('agency_id', $this->resolveAgencyId())
             ->orderBy('type')
             ->orderBy('name')
-            ->paginate(20);
+            ->paginate(print_per_page(20));
 
         return view('accounts.index', compact('mains'));
     }

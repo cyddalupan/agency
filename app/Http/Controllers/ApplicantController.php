@@ -124,7 +124,7 @@ class ApplicantController extends Controller
         //
         // 50/page (was 15) per Cyd request on the APPLICANTS MODULE card
         // (2026-10-13) — the pipeline is long, 15 rows forced too much paging.
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(50)->withQueryString();
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(print_per_page(50))->withQueryString();
 
         // Tab counters (ignoring the funnel filters, but never the withdrawn ones).
         $base = Applicant::query()->forBranchUser()->whereNotIn('status_code', $withdrawnStatuses);
@@ -219,7 +219,7 @@ class ApplicantController extends Controller
         // withQueryString(): see index() — keep the active tab/filters when
         // changing page (Toybits report 2026-10-09). 50/page per the
         // APPLICANTS MODULE card (2026-10-13).
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(50)->withQueryString();
+        $applicants = $query->orderBy('created_at', 'desc')->paginate(print_per_page(50))->withQueryString();
 
         $base = Applicant::query()->forBranchUser()->whereIn('status_code', $withdrawnStatuses);
         $typeCounts = [

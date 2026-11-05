@@ -13,7 +13,7 @@ class BranchController extends Controller
     {
         $branches = Branch::where('agency_id', auth()->user()->agency_id)
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('branches.index', compact('branches'));
     }

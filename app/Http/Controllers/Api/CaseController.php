@@ -13,7 +13,7 @@ class CaseController extends Controller
         $cases = Cases::with('applicant')
             ->where('agency_id', auth()->user()->agency_id)
             ->latest()
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return response()->json($cases);
     }
@@ -101,7 +101,7 @@ class CaseController extends Controller
 
         $query->where('agency_id', auth()->user()->agency_id);
 
-        $results = $query->with('applicant')->latest()->paginate(15);
+        $results = $query->with('applicant')->latest()->paginate(print_per_page(15));
 
         return response()->json($results);
     }

@@ -29,7 +29,7 @@ class EmployerDashboardController extends Controller
 
         $applicants = Applicant::where('employer_id', $employer->id)
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('employer.applicants', compact(
             'user', 'employer', 'applicants'

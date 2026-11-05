@@ -36,7 +36,7 @@ class GeneralLedgerController extends Controller
     {
         $this->authorizeAccount($account);
 
-        $items = $this->reviewQuery($account)->paginate(50)->withQueryString();
+        $items = $this->reviewQuery($account)->paginate(print_per_page(50))->withQueryString();
 
         return view('general_ledger.review', [
             'account' => $account,

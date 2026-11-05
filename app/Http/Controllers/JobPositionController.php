@@ -14,7 +14,7 @@ class JobPositionController extends Controller
 {
     public function index(Employer $employer): View
     {
-        $jobPositions = $employer->jobPositions()->latest()->paginate(15);
+        $jobPositions = $employer->jobPositions()->latest()->paginate(print_per_page(15));
         return view('job-positions.index', compact('employer', 'jobPositions'));
     }
 
@@ -94,7 +94,7 @@ class JobPositionController extends Controller
     public function employerIndex(): View
     {
         $employer = Auth::user()->employer;
-        $jobPositions = $employer->jobPositions()->latest()->paginate(15);
+        $jobPositions = $employer->jobPositions()->latest()->paginate(print_per_page(15));
         return view('employer.job-positions.index', compact('employer', 'jobPositions'));
     }
 

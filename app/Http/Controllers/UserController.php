@@ -49,7 +49,7 @@ class UserController extends Controller
             $query->where('status', $request->status);
         }
 
-        $users = $query->paginate(20);
+        $users = $query->paginate(print_per_page(20));
 
         return view('users.index', compact('users'));
     }

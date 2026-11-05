@@ -15,7 +15,7 @@ class CommissionController extends Controller
     {
         $commissions = Commission::with(['employer', 'agent'])
             ->latest()
-            ->paginate(15);
+            ->paginate(print_per_page(15));
 
         return view('commissions.index', compact('commissions'));
     }

@@ -26,7 +26,7 @@ class AgencyController extends Controller
             $query->where('status', $request->status);
         }
 
-        $agencies = $query->paginate(20);
+        $agencies = $query->paginate(print_per_page(20));
 
         return view('agencies.index', compact('agencies'));
     }
