@@ -478,7 +478,6 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="truncate font-medium">{{ auth()->user()->name }}</p>
-                            <p class="text-xs opacity-50 truncate">{{ auth()->user()->email ?? '' }}</p>
                         </div>
                     </div>
                 </div>
