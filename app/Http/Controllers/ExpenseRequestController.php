@@ -1113,14 +1113,19 @@ class ExpenseRequestController extends Controller
                 $rowErrors[] = "Currency '{$currency}' not found. Use 'PHP' or 'USD'.";
             }
 
-            // ---- Amount (required, > 0) ----
+            // ---- Amount (required; zero is allowed) ----
+            // Cyd 2026-11-06: the "Amount must be greater than 0" rule rejected
+            // whole files because some rows legitimately carry a 0 amount, and
+            // thousands separators ("1,000.00") / a peso sign made an otherwise
+            // good number fail to parse.
             $amountRaw = trim((string) ($d['amount'] ?? ''));
+            $amountRaw = str_replace([',', '₱', ' '], '', $amountRaw);
             if ($amountRaw === '') {
                 $rowErrors[] = 'Amount is required.';
             } elseif (! is_numeric($amountRaw)) {
                 $rowErrors[] = "Amount '{$amountRaw}' must be a number.";
-            } elseif ((float) $amountRaw <= 0) {
-                $rowErrors[] = 'Amount must be greater than 0.';
+            } else {
+                $amountRaw = number_format((float) $amountRaw, 2, '.', '');
             }
 
             // ---- Payment (optional, >= 0) ----

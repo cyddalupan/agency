@@ -212,8 +212,11 @@ class AgentDeductionBulkUploadTest extends TestCase
     }
 
     #[Test]
-    public function re_uploading_the_same_sheet_does_not_create_duplicates(): void
+    public function look_alike_rows_are_accepted_without_a_duplicate_gate(): void
     {
+        // Cyd 2026-11-06: the "almost the same" duplicate rule blocked genuine
+        // entries (two cash advances of the same amount on the same day are
+        // normal), so deduction uploads no longer reject look-alike rows.
         $row = now()->toDateString() . ',Juan Dela Cruz,,1500.00,Cash advance balance';
 
         $this->actingAs($this->user)
@@ -222,8 +225,8 @@ class AgentDeductionBulkUploadTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('agent_report.deduction.bulk.import'), ['csv_file' => $this->csv([$row])])
-            ->assertSessionHasErrors('csv_file');
+            ->assertSessionHas('success');
 
-        $this->assertSame(1, AgentDeduction::count());
+        $this->assertSame(2, AgentDeduction::count());
     }
 }

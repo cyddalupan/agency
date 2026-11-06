@@ -376,7 +376,6 @@ class AgentReportController extends Controller
 
         $errors = [];
         $validatedRows = [];
-        $duplicateOf = $this->existingDeductionFingerprints($agencyId);
 
         foreach ($rows as $row) {
             $line = $row['line'];
@@ -439,14 +438,9 @@ class AgentReportController extends Controller
 
             $particular = trim((string) ($d['particular'] ?? '')) ?: null;
 
-            if (empty($rowErrors) && $agent && $amount !== null) {
-                $fingerprint = implode('|', [$agent->id, $date, number_format($amount, 2, '.', ''), $norm($particular ?? ''), $applicant?->id ?? 'null']);
-                if (isset($duplicateOf[$fingerprint])) {
-                    $rowErrors[] = 'This deduction already exists (same agent, date, amount, applicant and description).';
-                } else {
-                    $duplicateOf[$fingerprint] = true;
-                }
-            }
+            // No duplicate gate on deduction uploads (Cyd 2026-11-06): rows that
+            // merely look alike — same agent, date, amount and description — are
+            // legitimate entries and must import.
 
             if ($rowErrors) {
                 $errors[$line] = $rowErrors;
@@ -479,29 +473,6 @@ class AgentReportController extends Controller
 
         return redirect()->route('agent_report.index', ['tab' => 'deductions'])
             ->with('success', 'Imported ' . count($validatedRows) . ' deduction transaction(s).');
-    }
-
-    /**
-     * Fingerprints of the deductions already on file, used by the bulk import
-     * so re-uploading the same sheet does not create duplicates.
-     */
-    private function existingDeductionFingerprints(int $agencyId): array
-    {
-        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
-        $map = [];
-
-        foreach (AgentDeduction::where('agency_id', $agencyId)->where('account', AgentDeduction::ACCOUNT_DEDUCTION)->get() as $d) {
-            $key = implode('|', [
-                (int) $d->agent_id,
-                $d->date?->format('Y-m-d') ?? '',
-                number_format((float) $d->amount, 2, '.', ''),
-                $norm($d->particular ?? ''),
-                $d->applicant_id ?? 'null',
-            ]);
-            $map[$key] = true;
-        }
-
-        return $map;
     }
 
     /**
