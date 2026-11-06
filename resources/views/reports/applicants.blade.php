@@ -100,6 +100,9 @@
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Position</th>
+                            <th>Agent</th>
+                            <th>Branch</th>
                             <th>Status</th>
                             <th>Country</th>
                             <th>Contact</th>
@@ -115,6 +118,9 @@
                                         {{ $applicant->first_name }} {{ $applicant->last_name }}
                                     </a>
                                 </td>
+                                <td>{{ $applicant->position?->name ?? '—' }}</td>
+                                <td>{{ $applicant->agent?->name ?? '—' }}</td>
+                                <td>{{ $applicant->branch?->name ?? '—' }}</td>
                                 <td>
                                     <span class="badge badge-ghost">{{ $applicant->statusCode?->label ?? 'N/A' }}</span>
                                 </td>
@@ -125,7 +131,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-base-content/50 py-8">
+                                <td colspan="9" class="text-center text-base-content/50 py-8">
                                     No applicants found matching your filters.
                                 </td>
                             </tr>

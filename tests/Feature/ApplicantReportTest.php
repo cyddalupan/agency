@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Agency;
+use App\Models\Agent;
 use App\Models\Applicant;
+use App\Models\Branch;
+use App\Models\Position;
 use App\Models\User;
 use App\Models\Country;
 use Database\Seeders\StatusCodesSeeder;
@@ -184,5 +187,38 @@ class ApplicantReportTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Export');
+    }
+
+    #[Test]
+    public function renders_position_agent_and_branch_columns(): void
+    {
+        $position = Position::factory()->create(['name' => 'Staff Nurse']);
+        $agent = Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'ACME Manpower Agent',
+        ]);
+        $branch = Branch::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Davao Branch',
+        ]);
+
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'country_id' => $this->countrySA->id,
+            'position_id' => $position->id,
+            'agent_id' => $agent->id,
+            'branch_id' => $branch->id,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('reports.applicants'));
+
+        $response->assertOk();
+        $response->assertSee('Position');
+        $response->assertSee('Agent');
+        $response->assertSee('Branch');
+        $response->assertSee('Staff Nurse');
+        $response->assertSee('ACME Manpower Agent');
+        $response->assertSee('Davao Branch');
     }
 }

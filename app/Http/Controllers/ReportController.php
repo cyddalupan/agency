@@ -32,7 +32,7 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $query = Applicant::with(['statusCode', 'country', 'employer'])->forBranchUser();
+        $query = Applicant::with(['statusCode', 'country', 'employer', 'position', 'agent', 'branch'])->forBranchUser();
 
         if (!$isSuperAdmin) {
             $query->where('agency_id', $agencyId);
