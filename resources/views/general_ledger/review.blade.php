@@ -43,7 +43,7 @@
                     /* min-width: below ~1000px the 12 columns cannot hold their labels
                        any more — let the card scroll horizontally instead of
                        shredding the header words. */
-                    .gl-review { table-layout: fixed; width: 100%; min-width: 1080px; }
+                    .gl-review { table-layout: fixed; width: 100%; min-width: 1330px; }
                     .gl-review :is(td, th) {
                         vertical-align: middle;
                         /* DaisyUI's .table forces white-space: nowrap; that is
@@ -55,6 +55,10 @@
                         overflow-wrap: normal;
                         word-break: normal;
                         line-height: 1.35;
+                        /* breathing room between neighbouring columns so
+                           amounts / currency / account never touch */
+                        padding-left: 0.6rem;
+                        padding-right: 0.6rem;
                     }
                     /* Headers must never be hyphen-split mid word
                        ("ACCOU / NT", "COUN / TRY"). 11px keeps every label on a
@@ -73,15 +77,25 @@
                        between them rather than overflow the column. */
                     .gl-review thead th:last-child { white-space: normal; }
                     .gl-review .gl-nowrap { white-space: nowrap; }
+                    /* Applicant: whole name on one line (Kchanz Josh) */
+                    .gl-review td.col-applicant,
+                    .gl-review td.col-applicant span { white-space: nowrap; }
+                    /* Particular: always wrap, never a single stretched line */
+                    .gl-review td.gl-particular {
+                        white-space: normal;
+                        overflow-wrap: break-word;
+                        word-break: normal;
+                    }
                 </style>
                 <table class="table table-xs gl-review">
                     <colgroup>
-                        {{-- Pixel widths sized from the widest word each column must hold,
-                             so no value is ever hyphen-split. Particular takes the rest. --}}
-                        <col style="width:44px"><col style="width:96px"><col style="width:84px">
-                        <col style="width:100px"><col style="width:84px"><col style="width:118px">
-                        <col style="width:114px"><col style="width:48px"><col style="width:92px">
-                        <col style="width:82px"><col style="width:48px">
+                        {{-- Pixel widths: each column is wide enough for its widest
+                             word (Applicant for a full name on ONE line). Particular
+                             takes what is left and wraps. --}}
+                        <col style="width:48px"><col style="width:98px"><col style="width:86px">
+                        <col style="width:124px"><col style="width:86px"><col style="width:200px">
+                        <col style="width:110px"><col style="width:46px"><col style="width:98px">
+                        <col style="width:88px"><col style="width:46px">
                     </colgroup>
                     <thead>
                         <tr class="bg-base-200/70">
@@ -109,7 +123,7 @@
                                     <span class="badge badge-sm whitespace-nowrap {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                                 </td>
                                 <td class="align-middle">{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
-                                <td class="align-middle">
+                                <td class="align-middle col-applicant">
                                     @php $applicantName = $item->applicant ? trim(implode(' ', array_filter([$item->applicant->first_name, $item->applicant->middle_name, $item->applicant->last_name, $item->applicant->suffix]))) : '—'; @endphp
                                     <span class="block">{{ $applicantName }}</span>
                                 </td>
