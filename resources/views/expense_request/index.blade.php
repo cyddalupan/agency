@@ -1,3 +1,31 @@
+@push('head')
+<style>
+    /* Cyd 2026-11-06 (card: Expense module "Particular and Status")
+       Status column: wide enough that "For Releasing" stays on one line.
+       Particular column: capped at ~280px (the length marked in red on the card);
+       anything longer wraps instead of stretching the table. */
+    .expense-table th.col-status,
+    .expense-table td.col-status {
+        width: 132px;
+        min-width: 132px;
+        white-space: nowrap;
+    }
+    .expense-table th.col-particular,
+    .expense-table td.col-particular {
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+    }
+    .expense-table .particular-text {
+        display: block;
+        max-width: 280px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+</style>
+@endpush
+
 @extends('layouts.app')
 
 @section('title', 'Expenses & Payments')
@@ -209,7 +237,7 @@
                     </form>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="table table-sm">
+                    <table class="table table-sm expense-table">
                         <thead>
                             <tr class="bg-base-200/70">
                                 @if(auth()->user()->canChangeExpenseStatus())
@@ -218,7 +246,8 @@
                                 <th>Ref#</th>
                                 <th>Date</th>
                                 <th>User</th>
-                                <th>Status</th>
+                                {{-- Cyd 2026-11-06 (card: Particular and Status): widen so "For Releasing" fits on one line --}}
+                                <th class="col-status">Status</th>
                                 <th>Offices</th>
                                 <th>Applicant</th>
                                 <th>Agent</th>
@@ -226,7 +255,8 @@
                                 <th class="text-right">Amount</th>
                                 <th>Account</th>
                                 <th>Country</th>
-                                <th>Particular / Description</th>
+                                {{-- Cyd 2026-11-06 (card: Particular and Status): shorten the column; the rest wraps --}}
+                                <th class="col-particular">Particular / Description</th>
                                 <th>Charge</th>
                                 @if(in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
                                     <th>Review</th>
@@ -288,7 +318,7 @@
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->date?->format('Y-m-d') }}</td>
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->user?->name ?? $request->user?->username ?? '—' }}</td>
                                         @endif
-                                        <td>
+                                        <td class="col-status">
                                             {{-- Per-transaction status (Cyd 2026-10-23) --}}
                                             <span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                                         </td>
@@ -308,7 +338,9 @@
                                         </td>
                                         <td>{{ $item->account?->name ?? '—' }}</td>
                                         <td>{{ $item->country?->name ?? '—' }}</td>
-                                        <td>{{ $item->particular ?? '—' }}</td>
+                                        <td class="col-particular">
+                                            <span class="particular-text">{{ $item->particular ?? '—' }}</span>
+                                        </td>
                                         <td>
                                             <span class="badge badge-sm {{ $item->charge === 'office' ? 'badge-ghost' : 'badge-info' }}">
                                                 {{ $item->charge }}
@@ -384,17 +416,17 @@
                             The highlighted row is the repeat.
                         </p>
                         <div class="overflow-x-auto mt-3">
-                            <table class="table table-sm">
+                            <table class="table table-sm expense-table">
                                 <thead>
                                     <tr class="bg-base-200/70">
                                         <th>Ref#</th>
                                         <th>Date</th>
-                                        <th>Status</th>
+                                        <th class="col-status">Status</th>
                                         <th>Applicant</th>
                                         <th>Agent</th>
                                         <th class="text-right">Amount</th>
                                         <th>Account</th>
-                                        <th>Particular / Description</th>
+                                        <th class="col-particular">Particular / Description</th>
                                         <th>Encoded</th>
                                     </tr>
                                 </thead>
@@ -408,14 +440,14 @@
                                                 </span>
                                             </td>
                                             <td class="whitespace-nowrap">{{ $member['date'] ?? '—' }}</td>
-                                            <td><span class="badge badge-sm {{ $member['status_badge'] }}">{{ $member['status_label'] }}</span></td>
+                                            <td class="col-status"><span class="badge badge-sm {{ $member['status_badge'] }}">{{ $member['status_label'] }}</span></td>
                                             <td>{{ $member['applicant'] ?? '—' }}</td>
                                             <td>{{ $member['agent'] ?? '—' }}</td>
                                             <td class="text-right font-semibold whitespace-nowrap">
                                                 {{ $member['currency'] === 'USD' ? '$' : '₱' }}{{ number_format($member['amount'] - $member['payment'], 2) }}
                                             </td>
                                             <td>{{ $member['account'] ?? '—' }}</td>
-                                            <td>{{ $member['particular'] ?? '—' }}</td>
+                                            <td class="col-particular"><span class="particular-text">{{ $member['particular'] ?? '—' }}</span></td>
                                             <td class="whitespace-nowrap opacity-70">{{ $member['created_at'] ?? '—' }}</td>
                                         </tr>
                                     @endforeach
