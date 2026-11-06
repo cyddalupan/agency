@@ -40,25 +40,48 @@
                        - fixed layout keeps all 12 columns inside the content
                          area (no horizontal scroll), so nothing hides
                          off-screen to the right. */
-                    .gl-review { table-layout: fixed; width: 100%; }
+                    /* min-width: below ~1000px the 12 columns cannot hold their labels
+                       any more — let the card scroll horizontally instead of
+                       shredding the header words. */
+                    .gl-review { table-layout: fixed; width: 100%; min-width: 1080px; }
                     .gl-review :is(td, th) {
                         vertical-align: middle;
                         /* DaisyUI's .table forces white-space: nowrap; that is
                            exactly what pushed header text into the next column
                            and cut Particular off. Wrap by default here. */
                         white-space: normal;
-                        overflow-wrap: anywhere;
-                        word-break: break-word;
+                        /* break only at spaces — no more "BACOL OD" or
+                           "ACCOU NT" inside data cells */
+                        overflow-wrap: normal;
+                        word-break: normal;
                         line-height: 1.35;
                     }
+                    /* Headers must never be hyphen-split mid word
+                       ("ACCOU / NT", "COUN / TRY"). 11px keeps every label on a
+                       single line inside its column from 1280px up. */
+                    .gl-review thead th {
+                        font-size: 11px;
+                        font-weight: 700;
+                        letter-spacing: 0.01em;
+                        padding-left: 0.4rem;
+                        padding-right: 0.4rem;
+                        white-space: nowrap;
+                        overflow-wrap: normal;
+                        word-break: normal;
+                    }
+                    /* "Particular / Description" is two words — let it wrap
+                       between them rather than overflow the column. */
+                    .gl-review thead th:last-child { white-space: normal; }
                     .gl-review .gl-nowrap { white-space: nowrap; }
                 </style>
                 <table class="table table-xs gl-review">
                     <colgroup>
-                        <col style="width:7%"><col style="width:10%"><col style="width:5%">
-                        <col style="width:10%"><col style="width:6%"><col style="width:8%">
-                        <col style="width:8%"><col style="width:7%"><col style="width:10%">
-                        <col style="width:7%"><col style="width:6%"><col style="width:16%">
+                        {{-- Pixel widths sized from the widest word each column must hold,
+                             so no value is ever hyphen-split. Particular takes the rest. --}}
+                        <col style="width:44px"><col style="width:96px"><col style="width:84px">
+                        <col style="width:100px"><col style="width:84px"><col style="width:118px">
+                        <col style="width:114px"><col style="width:48px"><col style="width:92px">
+                        <col style="width:82px"><col style="width:48px">
                     </colgroup>
                     <thead>
                         <tr class="bg-base-200/70">
@@ -86,7 +109,7 @@
                                     <span class="badge badge-sm whitespace-nowrap {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span>
                                 </td>
                                 <td class="align-middle">{{ $item->branch->name ?? $item->expenseRequest->branch->name ?? '—' }}</td>
-                                <td class="align-middle gl-nowrap">
+                                <td class="align-middle">
                                     @php $applicantName = $item->applicant ? trim(implode(' ', array_filter([$item->applicant->first_name, $item->applicant->middle_name, $item->applicant->last_name, $item->applicant->suffix]))) : '—'; @endphp
                                     <span class="block">{{ $applicantName }}</span>
                                 </td>
