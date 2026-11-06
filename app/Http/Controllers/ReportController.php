@@ -296,7 +296,9 @@ class ReportController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $agents = $query->paginate(print_per_page(20));
+        // CYD 2026-11-06: Agent Report must show all rows on a single page
+        // (same as Applicant Report) — no pagination.
+        $agents = $query->get();
 
         return view('reports.agents', compact('agents'));
     }

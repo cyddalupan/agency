@@ -2,6 +2,19 @@
 
 @section('title', 'Agent Report')
 
+@push('styles')
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .container { max-width: 100% !important; padding: 0 !important; }
+    body { font-size: 11pt; }
+    table { font-size: 9pt; width: 100%; }
+    th { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6">Agent Report</h1>
@@ -38,7 +51,7 @@
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="card-title">Results ({{ $agents->total() }})</h2>
+                <h2 class="card-title">Results ({{ $agents->count() }})</h2>
                 <div class="flex gap-2 no-print">
                     <a href="{{ route('reports.agents.export', request()->only(['search', 'status'])) }}"
                        class="btn btn-outline btn-sm gap-1">
@@ -89,9 +102,6 @@
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $agents->links() }}
-            </div>
         </div>
     </div>
 </div>

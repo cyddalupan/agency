@@ -36,7 +36,13 @@ class ReportAgentReportTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // Agent Report is a privileged report: the 'staff' tier is restricted to
+        // Applicant Reports by EnsureModuleAccess (returns 403), so these tests
+        // use an agency admin.
+        $this->user = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
     }
 
     #[Test]
@@ -168,5 +174,28 @@ class ReportAgentReportTest extends TestCase
 
         $this->assertStringContainsString($mine->name, $html);
         $this->assertStringContainsString($theirs->name, $html);
+    }
+
+    #[Test]
+    public function agents_report_shows_all_agents_on_one_page(): void
+    {
+        Agent::factory()->count(30)->create(['agency_id' => $this->agency->id]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('reports.agents'))
+            ->assertOk();
+
+        // CYD 2026-11-06: no pagination — every agency agent renders.
+        $this->assertCount(30, $response->viewData('agents'));
+        $response->assertDontSee('page=2');
+    }
+
+    #[Test]
+    public function reports_index_links_to_agent_report(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee(route('reports.agents'));
     }
 }

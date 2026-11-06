@@ -6,7 +6,7 @@
 <div class="max-w-4xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">📄 Reports</h1>
 
-    @if(isset($templates) && $templates->isNotEmpty())
+    @if(auth()->user()->isPrivileged() && isset($templates) && $templates->isNotEmpty())
     <div class="mb-8">
         <h2 class="text-lg font-semibold mb-4">📋 Report Templates</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -41,6 +41,14 @@
             </div>
         </a>
 
+        <a href="{{ route('reports.agents') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">🧑‍💼 Agent Reports</h2>
+                <p class="text-sm opacity-70">All agents with contact, commission rate, agency, and status.</p>
+            </div>
+        </a>
+
+        @if(auth()->user()->isPrivileged())
         <a href="{{ route('reports.statistics') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body">
                 <h2 class="card-title text-lg">📊 Statistics Dashboard</h2>
@@ -68,8 +76,10 @@
                 <p class="text-sm opacity-70">Per-worker statement of account.</p>
             </div>
         </a>
+        @endif
     </div>
 
+    @if(auth()->user()->isPrivileged())
     <div class="mt-8">
         <h2 class="text-lg font-semibold mb-4">📋 Print Reports</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -95,5 +105,6 @@
             </a>
         </div>
     </div>
+    @endif
 </div>
 @endsection
