@@ -1569,13 +1569,46 @@ class ApplicantController extends Controller
             ->with('success', 'Applicant deleted successfully.');
     }
 
+    /**
+     * Canonical Applicant Module CSV layout (CYD card 2026-11-06):
+     * Name, Contact#, Gender, Age, Branch, Agent, Position, Country, FRA,
+     * Status, Created At, Encoder.
+     */
+    private function applicantCsvHeaders(): array
+    {
+        return [
+            'Name', 'Contact#', 'Gender', 'Age', 'Branch', 'Agent',
+            'Position', 'Country', 'FRA', 'Status', 'Created At', 'Encoder',
+        ];
+    }
+
+    private function applicantCsvRow(Applicant $applicant): array
+    {
+        $fraOptions = app_fra_options();
+
+        return [
+            trim($applicant->first_name . ' ' . $applicant->last_name),
+            $applicant->contact ?? '',
+            $applicant->gender ? ucfirst($applicant->gender) : '',
+            $applicant->age ?? '',
+            $applicant->branch_label,
+            $applicant->agent?->name ?? '',
+            $applicant->position?->name ?? '',
+            $applicant->country?->name ?? '',
+            $applicant->fra ? ($fraOptions[$applicant->fra] ?? ucfirst($applicant->fra)) : '',
+            $applicant->statusCode?->label ?? 'Pending',
+            $applicant->created_at?->format('Y-m-d H:i:s') ?? '',
+            $applicant->encoder ?? $applicant->creator?->name ?? '',
+        ];
+    }
+
     public function export(Request $request)
     {
         // Same rule as index(): withdrawn & repat statuses are excluded from
         // the main applicants export — they have their own Withdrawn & Repat tab.
         $withdrawnStatuses = [35, 38, 50];
 
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator'])
             ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
@@ -1616,12 +1649,7 @@ class ApplicantController extends Controller
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported applicant data.');
 
-        $headers = [
-            'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
-            'Date of Birth', 'Gender', 'Has Passport', 'Nationality',
-            'Street', 'City', 'State', 'Postal Code', 'Country',
-            'Employer', 'Preferred Position', 'Referred By', 'Status', 'Created At',
-        ];
+        $headers = $this->applicantCsvHeaders();
 
         $callback = function () use ($applicants, $headers) {
             $file = fopen('php://output', 'w');
@@ -1631,27 +1659,7 @@ class ApplicantController extends Controller
             fputcsv($file, $headers);
 
             foreach ($applicants as $applicant) {
-                fputcsv($file, [
-                    $applicant->first_name,
-                    $applicant->last_name,
-                    $applicant->middle_name,
-                    $applicant->email,
-                    $applicant->contact,
-                    $applicant->date_of_birth?->format('Y-m-d'),
-                    $applicant->gender,
-                    $applicant->has_passport ?? 'N/A',
-                    $applicant->nationality,
-                    $applicant->street,
-                    $applicant->city,
-                    $applicant->state,
-                    $applicant->postal_code,
-                    $applicant->country?->name ?? 'N/A',
-                    $applicant->employer?->name ?? 'N/A',
-                    $applicant->position?->name ?? 'N/A',
-                    $applicant->agent?->name ?? 'N/A',
-                    $applicant->statusCode?->name ?? 'N/A',
-                    $applicant->created_at->format('Y-m-d H:i:s'),
-                ]);
+                fputcsv($file, $this->applicantCsvRow($applicant));
             }
 
             fclose($file);
@@ -1673,7 +1681,7 @@ class ApplicantController extends Controller
 
         $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
 
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch'])
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator'])
             ->forBranchUser()
             ->whereIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
@@ -1710,12 +1718,7 @@ class ApplicantController extends Controller
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported withdrawn & repat applicant data.');
 
-        $headers = [
-            'First Name', 'Last Name', 'Middle Name', 'Email', 'Contact',
-            'Date of Birth', 'Gender', 'Has Passport', 'Nationality',
-            'Street', 'City', 'State', 'Postal Code', 'Country',
-            'Employer', 'Preferred Position', 'Referred By', 'Status', 'Created At',
-        ];
+        $headers = $this->applicantCsvHeaders();
 
         $callback = function () use ($applicants, $headers) {
             $file = fopen('php://output', 'w');
@@ -1725,27 +1728,7 @@ class ApplicantController extends Controller
             fputcsv($file, $headers);
 
             foreach ($applicants as $applicant) {
-                fputcsv($file, [
-                    $applicant->first_name,
-                    $applicant->last_name,
-                    $applicant->middle_name,
-                    $applicant->email,
-                    $applicant->contact,
-                    $applicant->date_of_birth?->format('Y-m-d'),
-                    $applicant->gender,
-                    $applicant->has_passport ?? 'N/A',
-                    $applicant->nationality,
-                    $applicant->street,
-                    $applicant->city,
-                    $applicant->state,
-                    $applicant->postal_code,
-                    $applicant->country?->name ?? 'N/A',
-                    $applicant->employer?->name ?? 'N/A',
-                    $applicant->position?->name ?? 'N/A',
-                    $applicant->agent?->name ?? 'N/A',
-                    $applicant->statusCode?->name ?? 'N/A',
-                    $applicant->created_at->format('Y-m-d H:i:s'),
-                ]);
+                fputcsv($file, $this->applicantCsvRow($applicant));
             }
 
             fclose($file);

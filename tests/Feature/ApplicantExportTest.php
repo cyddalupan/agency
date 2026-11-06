@@ -65,11 +65,18 @@ class ApplicantExportTest extends TestCase
 
         $response->assertOk();
         $content = $response->streamedContent();
-        $this->assertStringContainsString('First Name', $content);
-        $this->assertStringContainsString('Last Name', $content);
-        $this->assertStringContainsString('Email', $content);
-        $this->assertStringContainsString('Contact', $content);
+        $this->assertStringContainsString('Name', $content);
+        $this->assertStringContainsString('Contact#', $content);
+        $this->assertStringContainsString('Gender', $content);
+        $this->assertStringContainsString('Age', $content);
+        $this->assertStringContainsString('Branch', $content);
+        $this->assertStringContainsString('Agent', $content);
+        $this->assertStringContainsString('Position', $content);
+        $this->assertStringContainsString('Country', $content);
+        $this->assertStringContainsString('FRA', $content);
         $this->assertStringContainsString('Status', $content);
+        $this->assertStringContainsString('Created At', $content);
+        $this->assertStringContainsString('Encoder', $content);
     }
 
     #[Test]
@@ -89,9 +96,7 @@ class ApplicantExportTest extends TestCase
 
         $response->assertOk();
         $content = $response->streamedContent();
-        $this->assertStringContainsString('Maria', $content);
-        $this->assertStringContainsString('Santos', $content);
-        $this->assertStringContainsString('maria@example.com', $content);
+        $this->assertStringContainsString('Maria Santos', $content);
     }
 
     #[Test]
@@ -118,5 +123,46 @@ class ApplicantExportTest extends TestCase
         $this->assertStringContainsString('Tenant', $content);
         $this->assertStringContainsString('User', $content);
         $this->assertStringNotContainsString('Other', $content);
+    }
+
+    #[Test]
+    public function export_follows_cyd_csv_format_with_position_agent_branch(): void
+    {
+        app()->instance('tenant_agency', $this->agency);
+
+        $position = \App\Models\Position::factory()->create(['name' => 'Staff Nurse']);
+        $agent = \App\Models\Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'ACME Manpower Agent',
+        ]);
+        $branch = \App\Models\Branch::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Davao Branch',
+        ]);
+
+        Applicant::factory()->create([
+            'agency_id' => $this->agency->id,
+            'first_name' => 'Maria',
+            'last_name' => 'Santos',
+            'contact' => '09171234567',
+            'gender' => 'female',
+            'birthdate' => '1995-05-10',
+            'position_id' => $position->id,
+            'agent_id' => $agent->id,
+            'branch_id' => $branch->id,
+            'fra' => 'for_fra',
+            'encoder' => 'Liza',
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('applicants.export'));
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Name,Contact#,Gender,Age,Branch,Agent,Position,Country,FRA,Status,"Created At",Encoder', $content);
+        $this->assertStringContainsString('"Maria Santos",09171234567,Female', $content);
+        $this->assertStringContainsString('"Davao Branch","ACME Manpower Agent","Staff Nurse"', $content);
+        $this->assertStringContainsString('"For FRA"', $content);
+        $this->assertStringContainsString(',Liza', $content);
     }
 }
