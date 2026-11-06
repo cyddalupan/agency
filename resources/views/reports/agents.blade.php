@@ -66,6 +66,7 @@
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Branch</th>
                             <th>Email</th>
                             <th>Contact</th>
                             <th>Commission Rate</th>
@@ -78,6 +79,7 @@
                         @forelse($agents as $agent)
                             <tr>
                                 <td class="font-medium">{{ $agent->name }}</td>
+                                <td>{{ $agent->branch?->name ?? '—' }}</td>
                                 <td>{{ $agent->email }}</td>
                                 <td>{{ $agent->contact ?? '—' }}</td>
                                 <td>{{ $agent->commission_rate ? $agent->commission_rate . '%' : '—' }}</td>
@@ -93,7 +95,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-base-content/50 py-8">
+                                <td colspan="8" class="text-center text-base-content/50 py-8">
                                     No agents found.
                                 </td>
                             </tr>

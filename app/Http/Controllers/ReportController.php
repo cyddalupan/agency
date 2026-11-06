@@ -277,7 +277,8 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId     = auth()->user()->agency_id;
 
-        $query = Agent::with('agency')->orderBy('name');
+        // Branch is shown right after Name (CYD 2026-11-06).
+        $query = Agent::with(['agency', 'branch'])->orderBy('name');
 
         // Agency users must ONLY see their own agency's agents.
         if (! $isSuperAdmin) {

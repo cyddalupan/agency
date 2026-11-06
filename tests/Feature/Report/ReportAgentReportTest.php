@@ -136,6 +136,30 @@ class ReportAgentReportTest extends TestCase
     }
 
     #[Test]
+    public function agents_report_table_places_branch_after_name(): void
+    {
+        $branch = Branch::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Cebu Branch',
+        ]);
+        Agent::factory()->create([
+            'agency_id' => $this->agency->id,
+            'name' => 'Branchy Report Agent',
+            'branch_id' => $branch->id,
+        ]);
+
+        $html = $this->actingAs($this->user)
+            ->get(route('reports.agents'))
+            ->assertOk()
+            ->getContent();
+
+        // Headers: Name then Branch, immediately adjacent.
+        $this->assertMatchesRegularExpression('/<th>\s*Name\s*<\/th>\s*<th>\s*Branch\s*<\/th>/', $html);
+        // The agent's branch name renders in the row.
+        $this->assertStringContainsString('Cebu Branch', $html);
+    }
+
+    #[Test]
     public function agents_export_leaves_branch_blank_when_the_agent_has_none(): void
     {
         Agent::factory()->create([
