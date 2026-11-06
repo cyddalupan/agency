@@ -218,6 +218,15 @@ class Applicant extends Model implements AuthenticatableContract
         return $this->hasMany(Cases::class)->latest('date_received');
     }
 
+    /**
+     * FINAS WELFARE tab: welfare / monitoring contacts for this OFW
+     * (newest contact first).
+     */
+    public function welfareRecords()
+    {
+        return $this->hasMany(ApplicantWelfareRecord::class)->latest('date_of_contact');
+    }
+
     public function job()
     {
         return $this->belongsTo(JobPosition::class, 'job_id');

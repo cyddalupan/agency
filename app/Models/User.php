@@ -91,6 +91,15 @@ class User extends Authenticatable
         return in_array($type, ['cases', 'welfare', 'accounting'], true);
     }
 
+    /**
+     * FINAS card (2026-11-06): the applicant's WELFARE tab is only visible to
+     * Admin and Welfare accounts.
+     */
+    public function canAccessWelfareTab(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin', 'welfare'], true);
+    }
+
     /** True for the limited "Rest of Account" tier (everyone below admin/accounting). */
     public function isRestOfAccount(): bool
     {

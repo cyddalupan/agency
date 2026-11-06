@@ -155,6 +155,33 @@ class SubTableController extends Controller
                 'court'        => 'nullable|string|max:255',
                 'status'       => 'nullable|in:open,closed',
             ],
+            'welfare' => [
+                'logged_by'                 => 'nullable|string|max:255',
+                'date_of_contact'           => 'nullable|date',
+                'ofw_full_name'             => 'nullable|string|max:255',
+                'passport_number'           => 'nullable|string|max:100',
+                'dmw_ereg_id'               => 'nullable|string|max:100',
+                'country_of_destination'    => 'nullable|string|max:150',
+                'job_site_city'             => 'nullable|string|max:150',
+                'position_designation'      => 'nullable|string|max:150',
+                'contact_no_abroad'         => 'nullable|string|max:100',
+                'foreign_recruitment_agency' => 'nullable|string|max:255',
+                'direct_employer_name'      => 'nullable|string|max:255',
+                'contact_person_phone'      => 'nullable|string|max:150',
+                'milestones'                => 'nullable|array',
+                'milestones.*'              => 'in:day_3,month_1,month_3,month_6,incident_driven',
+                'wages_paid'                => 'nullable|in:yes,no',
+                'wages_paid_specify'        => 'nullable|string',
+                'food_accommodation'        => 'nullable|in:yes,no',
+                'food_accommodation_specify' => 'nullable|string',
+                'medical_status'            => 'nullable|in:yes,no',
+                'medical_status_specify'    => 'nullable|string',
+                'contract_provisions'       => 'nullable|in:yes,no',
+                'contract_provisions_specify' => 'nullable|string',
+                'working_environment'       => 'nullable|in:yes,no',
+                'working_environment_specify' => 'nullable|string',
+                'remarks'                   => 'nullable|string',
+            ],
             default => [],
         };
     }
@@ -187,6 +214,19 @@ class SubTableController extends Controller
             'oma'              => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date'],
             'owwa'             => ['agency_id', 'applicant_id', 'from_date', 'to_date', 'released_date', 'local_flight_date'],
             'cases'            => ['agency_id', 'applicant_id', 'employer_id', 'case_number', 'title', 'description', 'date_received', 'date_hearing', 'court', 'status'],
+            'welfare'          => [
+                'agency_id', 'applicant_id', 'logged_by', 'date_of_contact',
+                'ofw_full_name', 'passport_number', 'dmw_ereg_id', 'country_of_destination',
+                'job_site_city', 'position_designation', 'contact_no_abroad',
+                'foreign_recruitment_agency', 'direct_employer_name', 'contact_person_phone',
+                'milestones',
+                'wages_paid', 'wages_paid_specify',
+                'food_accommodation', 'food_accommodation_specify',
+                'medical_status', 'medical_status_specify',
+                'contract_provisions', 'contract_provisions_specify',
+                'working_environment', 'working_environment_specify',
+                'remarks',
+            ],
             default            => [],
         };
     }
@@ -216,6 +256,7 @@ class SubTableController extends Controller
             'oma'             => \App\Models\ApplicantOma::class,
             'owwa'            => \App\Models\ApplicantOwWa::class,
             'cases'           => \App\Models\Cases::class,
+            'welfare'         => \App\Models\ApplicantWelfareRecord::class,
             default           => abort(404, "Unknown sub-table: {$type}"),
         };
     }
@@ -225,6 +266,7 @@ class SubTableController extends Controller
         // (Branch feature) A branch account may only maintain sub-table data
         // for applicants of its own branch.
         $this->authorizeApplicantBranch($applicant);
+        $this->authorizeWelfare($type);
 
         $modelClass = $this->modelClass($type);
         $validator = Validator::make($request->all(), $this->rulesFor($type));
@@ -273,6 +315,7 @@ class SubTableController extends Controller
         // (Branch feature) A branch account may only maintain sub-table data
         // for applicants of its own branch.
         $this->authorizeApplicantBranch($applicant);
+        $this->authorizeWelfare($type);
 
         $modelClass = $this->modelClass($type);
         $record = $modelClass::where('applicant_id', $applicant->id)->findOrFail($id);
@@ -308,6 +351,7 @@ class SubTableController extends Controller
         // (Branch feature) A branch account may only maintain sub-table data
         // for applicants of its own branch.
         $this->authorizeApplicantBranch($applicant);
+        $this->authorizeWelfare($type);
 
         $modelClass = $this->modelClass($type);
         $record = $modelClass::where('applicant_id', $applicant->id)->findOrFail($id);
@@ -316,6 +360,22 @@ class SubTableController extends Controller
         return redirect()->route('applicants.show', $applicant)
             ->with('success', __('Sub-table entry deleted.'));
     }
+    /**
+     * FINAS card (2026-11-06): the WELFARE tab is restricted to Admin and
+     * Welfare accounts — enforced server side, not just in the view.
+     */
+    private function authorizeWelfare(string $type): void
+    {
+        if ($type !== 'welfare') {
+            return;
+        }
+
+        $user = auth()->user();
+        if (! $user || ! method_exists($user, 'canAccessWelfareTab') || ! $user->canAccessWelfareTab()) {
+            abort(403, 'Only Admin and Welfare accounts can access the Welfare tab.');
+        }
+    }
+
     /**
      * (Branch feature) Branch-locked users may only touch sub-table data of
      * applicants in their own branch.
