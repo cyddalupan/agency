@@ -23,6 +23,10 @@ use Illuminate\View\View;
 
 class ExpenseRequestController extends Controller
 {
+    /** Agency id + user rows cached for the duration of one bulk import. */
+    private ?int $bulkUserCacheAgency = null;
+    private $bulkUserCache = null;
+
     /**
      * Tab 2 — Expenses & Payments: request list.
      *
@@ -1268,14 +1272,19 @@ class ExpenseRequestController extends Controller
         }
 
         // ---- All valid, non-duplicate rows: insert in one transaction (all-or-nothing) ----
+        // Reference numbers are allocated once, up front, and then incremented
+        // in memory. nextReference() hydrates every expense request of the
+        // agency, so calling it per row (2,000 rows x 7,355 requests) blew the
+        // 120s PHP limit and killed the import. (Cyd 2026-11-06)
         $count = count($rowsToInsert);
+        $nextReference = (int) $this->nextReference($agencyId);
         try {
-            DB::transaction(function () use ($rowsToInsert, $agencyId) {
+            DB::transaction(function () use ($rowsToInsert, $agencyId, &$nextReference) {
             foreach ($rowsToInsert as $data) {
                 $parent = ExpenseRequest::create([
                     'agency_id'    => $agencyId,
                     'user_id'      => $data['user_id'] ?? auth()->id(),
-                    'reference_no' => $this->nextReference($agencyId),
+                    'reference_no' => (string) $nextReference++,
                     'date'         => $data['date'],
                     'status'       => $data['status'],
                     'branch_id'    => $data['branch_id'],
@@ -1517,10 +1526,17 @@ class ExpenseRequestController extends Controller
         }
 
         $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
-        $needle = $norm($raw);
 
-        $users = User::where('agency_id', $agencyId)->get(['id', 'name', 'surname', 'email']);
-        foreach ($users as $user) {
+        // Cache the agency's user list for the whole import. This used to run a
+        // full users query for EVERY csv row — 2,000 rows meant 2,000 identical
+        // queries on top of the per-row reference lookup. (Cyd 2026-11-06)
+        if ($this->bulkUserCacheAgency !== $agencyId || $this->bulkUserCache === null) {
+            $this->bulkUserCache = User::where('agency_id', $agencyId)->get(['id', 'name', 'surname', 'email']);
+            $this->bulkUserCacheAgency = $agencyId;
+        }
+
+        $needle = $norm($raw);
+        foreach ($this->bulkUserCache as $user) {
             if ($norm($user->email) === $needle
                 || $norm($user->name) === $needle
                 || $norm(trim($user->name.' '.$user->surname)) === $needle) {
