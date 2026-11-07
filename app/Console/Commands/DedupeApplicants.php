@@ -116,15 +116,17 @@ class DedupeApplicants extends Command
         $deleted = 0;
         $protected = [];
 
-        DB::transaction(function () use ($auto, $agency, $childTables, $backup, &$deleted, &$protected) {
-            // Full copies of every row we are about to touch, so the merge is
-            // reversible even without the nightly dump.
-            $touchIds = [];
-            foreach ($auto as $g) {
-                $touchIds = array_merge($touchIds, array_map('intval', explode(',', $g->ids)));
-            }
-            DB::statement("CREATE TABLE {$backup} AS SELECT * FROM applicants WHERE id IN (" . implode(',', $touchIds) . ')');
+        // Full copies of every row we are about to touch, so the merge is
+        // reversible even without the nightly dump. Kept OUTSIDE the transaction:
+        // CREATE TABLE ... AS SELECT causes an implicit commit in MySQL, which
+        // would leave Laravel with "no active transaction" at commit time.
+        $touchIds = [];
+        foreach ($auto as $g) {
+            $touchIds = array_merge($touchIds, array_map('intval', explode(',', $g->ids)));
+        }
+        DB::statement("CREATE TABLE {$backup} AS SELECT * FROM applicants WHERE id IN (" . implode(',', $touchIds) . ')');
 
+        DB::transaction(function () use ($auto, $agency, $childTables, &$deleted, &$protected) {
             foreach ($auto as $g) {
                 $ids = array_map('intval', explode(',', $g->ids));
                 $keep = (int) $g->keep_id;
