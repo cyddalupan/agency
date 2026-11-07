@@ -61,7 +61,7 @@
                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $activeStatus === null ? 'bg-[#0f1724] text-white shadow-md ring-2 ring-primary/60' : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                         All
-                        <span class="badge badge-sm {{ $activeStatus === null ? 'badge-primary' : 'badge-ghost' }}">{{ $allRequests->count() }}</span>
+                        <span class="badge badge-sm {{ $activeStatus === null ? 'badge-primary' : 'badge-ghost' }}">{{ $totalRequests }}</span>
                     </a>
 
                     @php
@@ -138,7 +138,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">🧾 Requests</p>
-                <p class="text-2xl font-bold">{{ $allRequests->count() }}</p>
+                <p class="text-2xl font-bold">{{ $totalRequests }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
@@ -173,7 +173,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">✅ Released</p>
-                <p class="text-2xl font-bold text-success">{{ $allRequests->where('status', 'released')->count() }}</p>
+                <p class="text-2xl font-bold text-success">{{ $statusCounts['released'] ?? 0 }}</p>
             </div>
         </div>
     </div>
@@ -396,6 +396,10 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if($requests->hasPages())
+                    <div class="mt-4">{{ $requests->links() }}</div>
+                @endif
             @else
                 @if($activeSearch !== '')
                     <p class="opacity-60">No transactions match “{{ $activeSearch }}”.

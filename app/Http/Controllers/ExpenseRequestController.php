@@ -59,35 +59,45 @@ class ExpenseRequestController extends Controller
             // (Branch feature) Branch-locked users only see their own branch's requests.
             ->when($this->branchLocked(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id));
 
-        $encoderIds = (clone $base)->whereNotNull('user_id')->pluck('user_id')->unique()->values()->all();
+        $encoderIds = (clone $base)->whereNotNull('user_id')->distinct()->pluck('user_id')->all();
         $encoders   = User::whereIn('id', $encoderIds)->orderBy('name')->get(['id', 'name']);
 
-        $allRequests = (clone $base)
-            ->with([
-                'items.applicant', 'items.agent', 'items.account', 'items.country', 'items.branch',
-                'items.expenseRequest',
-                'user', 'branch',
-            ])
+        // (Toybits 2026-11-07) The Gulf ledger passed 15k requests / 15k lines.
+        // Hydrating every request with all relations and rendering them on one
+        // page blew the 256 MB PHP limit (PhpEngine OOM on /expense-request).
+        // Tab counts + money totals are now aggregated in SQL and only one page
+        // of rows is hydrated and rendered.
+        $filtered = (clone $base)
             ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
-            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch))
-            ->orderByDesc('date')
-            ->orderByDesc('id')
-            ->get();
+            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch));
 
         // Status tab filter (Toybits 2026-08-18). Invalid/absent status = show all.
         $status = request()->query('status');
         $activeStatus = in_array($status, ExpenseRequest::STATUSES, true) ? $status : null;
-        $requests = $activeStatus
-            ? $allRequests->where('status', $activeStatus)->values()
-            : $allRequests;
 
         // Per-status request counts for the tab badges (always over the full set).
-        $statusCounts = [];
-        foreach (ExpenseRequest::STATUSES as $statusKey) {
-            $statusCounts[$statusKey] = $allRequests->where('status', $statusKey)->count();
+        $statusCounts = array_fill_keys(ExpenseRequest::STATUSES, 0);
+        $totalRequests = 0;
+        foreach ((clone $filtered)->selectRaw('status, COUNT(*) as aggregate')
+                     ->groupBy('status')->pluck('aggregate', 'status') as $statusKey => $count) {
+            $totalRequests += (int) $count;
+            if (array_key_exists($statusKey, $statusCounts)) {
+                $statusCounts[$statusKey] = (int) $count;
+            }
         }
 
-        $totals = $this->currencyTotals($allRequests);
+        $requests = (clone $filtered)
+            ->with([
+                'items.applicant', 'items.agent', 'items.account', 'items.country', 'items.branch',
+                'user', 'branch',
+            ])
+            ->when($activeStatus, fn ($q) => $q->where('status', $activeStatus))
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->paginate(50)
+            ->withQueryString();
+
+        $totals = $this->currencyTotalsQuery($filtered);
 
         // Consolidated per-status dashboard totals (Toybits 2026-09-23): amount
         // split by currency + request count for every status, so the summary
@@ -108,16 +118,51 @@ class ExpenseRequestController extends Controller
         // account + currency + amount + payment, the first copy stays
         // clean, and the other transactions of a multi-entry request are never
         // dragged into the highlight.
+        // (Toybits 2026-11-07) Same rules, but the fingerprint scan reads flat
+        // rows from the DB instead of hydrating a model per line — the 15k-line
+        // Gulf ledger stays well inside the memory limit.
+        $fingerprintRows = (clone $filtered)
+            ->join('expense_request_items as dup_items', 'dup_items.expense_request_id', '=', 'expense_requests.id')
+            ->where('expense_requests.status', '!=', ExpenseRequest::STATUS_CANCELLED)
+            ->toBase()
+            ->select([
+                'dup_items.id',
+                'dup_items.expense_request_id',
+                'dup_items.charge',
+                'dup_items.agent_id',
+                'dup_items.applicant_id',
+                'dup_items.account_id',
+                'dup_items.currency',
+                'dup_items.amount',
+                'dup_items.payment',
+                'dup_items.created_at',
+                'expense_requests.date',
+                'expense_requests.branch_id',
+            ])
+            ->get();
+
         $itemsByFingerprint = [];
-        foreach ($allRequests as $requestModel) {
-            // A cancelled transaction must not flag a live one as a duplicate.
-            if ($requestModel->status === ExpenseRequest::STATUS_CANCELLED) {
-                continue;
-            }
-            foreach ($requestModel->items as $item) {
-                $itemsByFingerprint[$this->itemFingerprint($requestModel, $item)][] = $item;
+        foreach ($fingerprintRows as $row) {
+            $fingerprint = $this->itemRowFingerprint($row);
+            $itemsByFingerprint[$fingerprint][] = $row;
+        }
+
+        // Only lines that actually repeat need their full display data loaded.
+        $duplicateIds = [];
+        foreach ($itemsByFingerprint as $group) {
+            if (count($group) >= 2) {
+                foreach ($group as $member) {
+                    $duplicateIds[] = (int) $member->id;
+                }
             }
         }
+
+        $duplicateItems = empty($duplicateIds)
+            ? collect()
+            : ExpenseRequestItem::with([
+                'expenseRequest.user', 'expenseRequest.branch',
+                'applicant', 'agent', 'account', 'country', 'branch',
+            ])->whereIn('id', $duplicateIds)->get()->keyBy('id');
 
         $duplicateItemIds = [];
         // Josh 2026-11-02: the badge must say WHICH transaction it repeats, so
@@ -133,11 +178,18 @@ class ExpenseRequestController extends Controller
                 continue;
             }
             usort($group, fn ($a, $b) => [$a->created_at, $a->id] <=> [$b->created_at, $b->id]);
-            $first = $group[0];
+            $first = $duplicateItems->get((int) $group[0]->id);
+            if (! $first) {
+                continue;
+            }
             $groupKey = 'duplicate-group-' . (++$groupNo);
 
             $members = [];
-            foreach ($group as $index => $member) {
+            foreach ($group as $index => $memberRow) {
+                $member = $duplicateItems->get((int) $memberRow->id);
+                if (! $member) {
+                    continue;
+                }
                 $parent = $member->expenseRequest;
                 $members[] = [
                     'id'             => (int) $member->id,
@@ -168,19 +220,19 @@ class ExpenseRequestController extends Controller
                 'items' => $members,
             ];
 
-            foreach (array_slice($group, 1) as $repeat) {
-                $duplicateItemIds[] = (int) $repeat->id;
-                $duplicateOrigins[(int) $repeat->id] = [
+            foreach (array_slice($group, 1) as $repeatRow) {
+                $duplicateItemIds[] = (int) $repeatRow->id;
+                $duplicateOrigins[(int) $repeatRow->id] = [
                     'ref'          => $first->expenseRequest?->reference_no,
-                    'same_request' => (int) $first->expense_request_id === (int) $repeat->expense_request_id,
+                    'same_request' => (int) $first->expense_request_id === (int) $repeatRow->expense_request_id,
                 ];
-                $duplicateGroupByItem[(int) $repeat->id] = $groupKey;
+                $duplicateGroupByItem[(int) $repeatRow->id] = $groupKey;
             }
         }
 
         return view('expense_request.index', [
             'requests'         => $requests,
-            'allRequests'      => $allRequests,
+            'totalRequests'    => $totalRequests,
             'activeStatus'     => $activeStatus,
             'activeSearch'     => $activeSearch,
             'statusCounts'     => $statusCounts,
@@ -278,6 +330,90 @@ class ExpenseRequestController extends Controller
             number_format((float) $item->amount, 2, '.', ''),
             number_format((float) ($item->payment ?? 0), 2, '.', ''),
         ]);
+    }
+
+    /**
+     * Same fingerprint rules as itemFingerprint(), computed from a flat DB row
+     * (no model hydration) so the duplicate scan stays cheap on large ledgers.
+     */
+    private function itemRowFingerprint($row): string
+    {
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        $date = $row->date ? \Illuminate\Support\Carbon::parse($row->date)->format('Y-m-d') : '';
+
+        return implode('|', [
+            $date,
+            $row->charge,
+            $row->branch_id ?? 'null',
+            $row->agent_id ?? 'null',
+            $row->applicant_id ?? 'null',
+            $row->account_id,
+            strtoupper((string) $row->currency),
+            number_format((float) $row->amount, 2, '.', ''),
+            number_format((float) ($row->payment ?? 0), 2, '.', ''),
+        ]);
+    }
+
+    /**
+     * SQL-aggregated version of currencyTotals() (Toybits 2026-11-07) — identical
+     * results, but it never loads the expense lines into PHP.
+     */
+    private function currencyTotalsQuery($query): array
+    {
+        $rows = $query
+            ->join('expense_request_items as agg_items', 'agg_items.expense_request_id', '=', 'expense_requests.id')
+            ->toBase()
+            ->selectRaw('expense_requests.status as st, agg_items.currency as cur, agg_items.charge as ch, SUM(agg_items.amount) as total')
+            ->groupBy('expense_requests.status', 'agg_items.currency', 'agg_items.charge')
+            ->get();
+
+        $php = 0.0;
+        $usd = 0.0;
+        $charge = ['office' => 0.0, 'agent' => 0.0];
+        $status = [
+            'pending'       => ['PHP' => 0.0, 'USD' => 0.0],
+            'approved'      => ['PHP' => 0.0, 'USD' => 0.0],
+            'for_releasing' => ['PHP' => 0.0, 'USD' => 0.0],
+            'released'      => ['PHP' => 0.0, 'USD' => 0.0],
+            'cancelled'     => ['PHP' => 0.0, 'USD' => 0.0],
+        ];
+
+        foreach ($rows as $row) {
+            $isCancelled = $row->st === ExpenseRequest::STATUS_CANCELLED;
+            $statusKey = in_array($row->st, ['approved', 'for_releasing', 'released'], true)
+                ? $row->st
+                : 'pending';
+            $isUsd = $row->cur === 'USD';
+            $amount = (float) $row->total;
+
+            if ($isCancelled) {
+                $status['cancelled'][$isUsd ? 'USD' : 'PHP'] += $amount;
+                continue;
+            }
+
+            if ($isUsd) {
+                $usd += $amount;
+            } else {
+                $php += $amount;
+            }
+
+            $status[$statusKey][$isUsd ? 'USD' : 'PHP'] += $amount;
+            $charge[$row->ch] = ($charge[$row->ch] ?? 0) + $amount;
+        }
+
+        return [
+            'PHP'    => round($php, 2),
+            'USD'    => round($usd, 2),
+            'charge' => $charge,
+            'status' => [
+                'pending'       => ['PHP' => round($status['pending']['PHP'], 2), 'USD' => round($status['pending']['USD'], 2)],
+                'approved'      => ['PHP' => round($status['approved']['PHP'], 2), 'USD' => round($status['approved']['USD'], 2)],
+                'for_releasing' => ['PHP' => round($status['for_releasing']['PHP'], 2), 'USD' => round($status['for_releasing']['USD'], 2)],
+                'released'      => ['PHP' => round($status['released']['PHP'], 2), 'USD' => round($status['released']['USD'], 2)],
+                'cancelled'     => ['PHP' => round($status['cancelled']['PHP'], 2), 'USD' => round($status['cancelled']['USD'], 2)],
+            ],
+        ];
     }
 
     /**
