@@ -587,6 +587,7 @@ class ApplicantController extends Controller
 
         $errors = [];
         $validatedRows = [];
+        $seenInFile = []; // normalised name+birthdate => CSV line number
         $maxRows = 2000;
 
         foreach ($rows as $row) {
@@ -817,6 +818,19 @@ class ApplicantController extends Controller
             // ---- Duplicate detection (Cyd 2026-09-26) ----
             // Flag rows that look like an applicant we already have. Only run
             // once the row is otherwise valid so the message is useful.
+            // (Toybits 2026-11-07) Rows used to be compared only against the
+            // database, never against each other — a Gulf file that listed the
+            // same applicant 9 times imported all 9 copies (671 rows for 286
+            // people, 07-11 07:02). Catch repeats inside the same upload.
+            if (empty($rowErrors)) {
+                $fileKey = $norm($first).'|'.$norm($last).'|'.($birthdate ?: '');
+                if (isset($seenInFile[$fileKey])) {
+                    $rowErrors[] = "Duplicate of line {$seenInFile[$fileKey]} in this same file — this applicant is listed more than once. Delete the extra row(s) and upload again.";
+                } else {
+                    $seenInFile[$fileKey] = $line;
+                }
+            }
+
             if (empty($rowErrors)) {
                 $dupes = ApplicantDuplicateChecker::find($agencyId, [
                     'first_name' => $first,
