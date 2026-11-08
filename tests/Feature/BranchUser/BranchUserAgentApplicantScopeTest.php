@@ -203,41 +203,17 @@ class BranchUserAgentApplicantScopeTest extends TestCase
     // ---------- 3. Receivable list visibility ----------
 
     #[Test]
-    public function staff_only_sees_the_receivable_entries_they_encoded(): void
+    public function staff_cannot_reach_the_receivable_list(): void
     {
-        $own = $this->agent($this->branchA, 'Agent Own');
-
+        // (Cyd 2026-11-08) Receivable & Expenses are Admin + Accounting only;
+        // Rest of Account lost the module, so there is no "own entries" view left.
         $staff = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'operation',
             'branch_id' => $this->branchA->id,
         ]);
-        $colleague = User::factory()->create([
-            'agency_id' => $this->agency->id,
-            'user_type' => 'operation',
-            'branch_id' => $this->branchA->id,
-        ]);
 
-        Receivable::create([
-            'agency_id' => $this->agency->id,
-            'code' => 'AR-OWN',
-            'date' => now()->toDateString(),
-            'agent_id' => $own->id,
-            'amount' => 1000,
-            'user_id' => $staff->id,
-        ]);
-        Receivable::create([
-            'agency_id' => $this->agency->id,
-            'code' => 'AR-OTHER',
-            'date' => now()->toDateString(),
-            'agent_id' => $own->id,
-            'amount' => 2000,
-            'user_id' => $colleague->id,
-        ]);
-
-        $html = $this->actingAs($staff)->get(route('receivable.index'))->assertOk()->getContent();
-        $this->assertStringContainsString('AR-OWN', $html);
-        $this->assertStringNotContainsString('AR-OTHER', $html);
+        $this->actingAs($staff)->get(route('receivable.index'))->assertForbidden();
     }
 
     #[Test]

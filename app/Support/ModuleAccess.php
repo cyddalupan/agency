@@ -116,7 +116,13 @@ class ModuleAccess
         'accounts',
     ];
 
-    /** Modules "Rest of Account" may access (everything else is 403). */
+    /**
+     * Modules "Rest of Account" may access (everything else is 403).
+     *
+     * Receivable and Expense & Payments are NOT here (Cyd, 2026-11-08):
+     * only Admin and Accounting (`billing`) may open those two modules.
+     * They stay in ROUTE_MODULES so the middleware can resolve them to 403.
+     */
     public const STAFF_ALLOWED = [
         'dashboard',
         'notifications',
@@ -127,8 +133,6 @@ class ModuleAccess
         'applicants',
         'employers',
         'reports',
-        'receivable',
-        'expense_request',
         'agent_report',
         'api',
     ];

@@ -95,9 +95,11 @@ class ExpenseRequestLineBranchTest extends TestCase
     #[Test]
     public function branch_locked_user_does_not_see_the_line_branch_field(): void
     {
+        // Accounting keeps the module after the 2026-11-08 tightening; the
+        // branch-lock behaviour under test is type-independent.
         $branchUser = User::factory()->create([
             'agency_id' => $this->agency->id,
-            'user_type' => 'staff',
+            'user_type' => 'billing',
             'branch_id' => $this->davao->id,
         ]);
 
@@ -114,7 +116,7 @@ class ExpenseRequestLineBranchTest extends TestCase
     {
         $headOfficeUser = User::factory()->create([
             'agency_id' => $this->agency->id,
-            'user_type' => 'staff',
+            'user_type' => 'billing',
             'branch_id' => $this->mainOffice->id,
         ]);
 
