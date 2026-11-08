@@ -57,7 +57,9 @@ class ExpenseRequestController extends Controller
             ->when(! auth()->user()->seesAllAccountingData(),
                 fn ($q) => $q->where('user_id', auth()->id()))
             // (Branch feature) Branch-locked users only see their own branch's requests.
-            ->when($this->branchLocked(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id));
+            // (Josh 2026-11-08) Qualify the column: the totals aggregate joins
+            // expense_request_items, which also has a branch_id -> 1052 ambiguous.
+            ->when($this->branchLocked(), fn ($q) => $q->where('expense_requests.branch_id', auth()->user()->branch_id));
 
         $encoderIds = (clone $base)->whereNotNull('user_id')->distinct()->pluck('user_id')->all();
         $encoders   = User::whereIn('id', $encoderIds)->orderBy('name')->get(['id', 'name']);
@@ -97,7 +99,12 @@ class ExpenseRequestController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        $totals = $this->currencyTotalsQuery($filtered);
+        // (Josh 2026-11-08) Users who cannot see the money statistics do not get
+        // the aggregate query at all — no wasted SUM over the ledger and no
+        // chance of a totals-side SQL error taking the list down with it.
+        $totals = auth()->user()->canSeeFinancialTotals()
+            ? $this->currencyTotalsQuery($filtered)
+            : $this->emptyCurrencyTotals();
 
         // Consolidated per-status dashboard totals (Toybits 2026-09-23): amount
         // split by currency + request count for every status, so the summary
@@ -361,7 +368,9 @@ class ExpenseRequestController extends Controller
      */
     private function currencyTotalsQuery($query): array
     {
-        $rows = $query
+        // Clone: joining must not leak into the caller's $filtered query, which
+        // the duplicate-fingerprint scan joins again on the same table.
+        $rows = (clone $query)
             ->join('expense_request_items as agg_items', 'agg_items.expense_request_id', '=', 'expense_requests.id')
             ->toBase()
             ->selectRaw('expense_requests.status as st, agg_items.currency as cur, agg_items.charge as ch, SUM(agg_items.amount) as total')
@@ -412,6 +421,29 @@ class ExpenseRequestController extends Controller
                 'for_releasing' => ['PHP' => round($status['for_releasing']['PHP'], 2), 'USD' => round($status['for_releasing']['USD'], 2)],
                 'released'      => ['PHP' => round($status['released']['PHP'], 2), 'USD' => round($status['released']['USD'], 2)],
                 'cancelled'     => ['PHP' => round($status['cancelled']['PHP'], 2), 'USD' => round($status['cancelled']['USD'], 2)],
+            ],
+        ];
+    }
+
+    /**
+     * Zero-shaped money totals used when the caller may not see the
+     * statistics at all (Josh 2026-11-08). Same keys as currencyTotalsQuery()
+     * so the view/controller contract stays identical.
+     */
+    private function emptyCurrencyTotals(): array
+    {
+        $zero = ['PHP' => 0.0, 'USD' => 0.0];
+
+        return [
+            'PHP'    => 0.0,
+            'USD'    => 0.0,
+            'charge' => ['office' => 0.0, 'agent' => 0.0],
+            'status' => [
+                'pending'       => $zero,
+                'approved'      => $zero,
+                'for_releasing' => $zero,
+                'released'      => $zero,
+                'cancelled'     => $zero,
             ],
         ];
     }

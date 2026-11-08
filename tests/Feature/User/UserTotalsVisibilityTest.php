@@ -3,6 +3,7 @@
 namespace Tests\Feature\User;
 
 use App\Models\Agency;
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -124,6 +125,44 @@ class UserTotalsVisibilityTest extends TestCase
         $response->assertSee(route('receivable.index'), false);
         $response->assertSee('Receivable', false);
         $response->assertSee('Expenses and Payments', false);
+    }
+
+    // ---------- Branch-scoped users: no 500 from the totals aggregate ----------
+
+    #[Test]
+    public function branch_locked_accounting_can_open_expenses_and_sees_totals(): void
+    {
+        // Regression (Josh 2026-11-08): the totals aggregate joins
+        // expense_request_items, so an unqualified branch_id in the base scope
+        // produced SQLSTATE 1052 and a 500 for every branch-scoped user.
+        $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
+        $billing = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'billing',
+            'branch_id' => $branch->id,
+        ]);
+
+        $this->actingAs($billing)
+            ->get(route('expense_request.index'))
+            ->assertOk()
+            ->assertSee('PHP Total');
+    }
+
+    #[Test]
+    public function branch_locked_staff_can_open_expenses_without_totals(): void
+    {
+        $branch = Branch::factory()->create(['agency_id' => $this->agency->id]);
+        $staff = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'operation',
+            'branch_id' => $branch->id,
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('expense_request.index'))
+            ->assertOk()
+            ->assertDontSee('PHP Total')
+            ->assertSee('Requests');
     }
 
     // ---------- Guard: the access map still lets Rest of Account in ----------
