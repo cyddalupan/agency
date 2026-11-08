@@ -7,6 +7,7 @@ use App\Models\Agency;
 use App\Models\Branch;
 use App\Models\User;
 use App\Services\SensitiveActionLogger;
+use App\Support\AgentDuplicateChecker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -78,10 +79,52 @@ class AgentController extends Controller
         // branch: omitted defaults to their branch, a different branch is rejected.
         $this->applyBranchDefaults($validated);
 
+        // Duplicate guard (Cyd 2026-11-08, LANDAS card 6af02dd56cff0b42b7c91ee3):
+        // if this agent looks like one we already have, bounce back with the
+        // matches and let the user confirm. The form resubmits with
+        // confirm_duplicate=1 to proceed.
+        if (! $request->boolean('confirm_duplicate') && $validated['agency_id']) {
+            $duplicates = AgentDuplicateChecker::find($validated['agency_id'], [
+                'name' => $validated['name'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'contact' => $validated['contact'] ?? null,
+            ]);
+
+            if ($duplicates->isNotEmpty()) {
+                return back()
+                    ->withInput()
+                    ->with('duplicate_agents', $this->agentDuplicatePayload($duplicates))
+                    ->withErrors([
+                        'duplicate' => 'Possible duplicate agent found. Review the existing record(s), then click "Create anyway" if this is a different person.',
+                    ]);
+            }
+        }
+
         Agent::create($validated);
 
         return redirect()->route('agents.index')
             ->with('success', 'Agent created successfully.');
+    }
+
+    /** Shape duplicate agent matches for the create view. */
+    private function agentDuplicatePayload($duplicates): array
+    {
+        return $duplicates->map(function ($m) {
+            $a = $m['agent'];
+
+            // What the client asked to see (LANDAS card): Name, Branch, Email,
+            // Contact, Created By.
+            return [
+                'id' => $a->id,
+                'name' => $a->name,
+                'branch' => optional($a->branch)->name ?: '—',
+                'email' => $a->email ?: '—',
+                'contact' => $a->contact ?: '—',
+                'created_by' => optional($a->creator)->name ?: '—',
+                'url' => route('agents.edit', $a),
+                'reasons' => $m['reasons'],
+            ];
+        })->values()->all();
     }
 
     public function edit(Agent $agent)
@@ -353,6 +396,10 @@ class AgentController extends Controller
         $errors = [];
         $validatedRows = [];
         $seenEmails = [];
+        // In-file duplicates are tracked by name+contact (and name+email when
+        // supplied) so the same person listed twice in one CSV is flagged even
+        // when the email column is blank. (Cyd 2026-11-08)
+        $seenPeople = [];
         $lockedBranchId = $user->isBranchLocked() ? (int) $user->branch_id : null;
 
         foreach ($rows as $row) {
@@ -440,6 +487,39 @@ class AgentController extends Controller
                     $statusValue = 'inactive';
                 } else {
                     $rowErrors[] = "Status '{$status}' not found. Use 'Active' or 'Inactive' (or leave blank for Active).";
+                }
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = ['line' => $line, 'errors' => $rowErrors];
+                continue;
+            }
+
+            // ---- Duplicate detection (Cyd 2026-11-08, LANDAS card) ----
+            // Same rule as the applicant bulk upload: repeats inside this file
+            // first, then almost-the-same agents already on record. Only run
+            // once the row is otherwise valid so messages stay useful.
+            $personKey = AgentDuplicateChecker::norm($name).'|'.(AgentDuplicateChecker::digits($contact) ?: '');
+            $emailKeyForRow = $emailKey !== '' ? AgentDuplicateChecker::norm($emailRaw) : '';
+            $fileDupLine = $seenPeople[$personKey] ?? ($emailKeyForRow !== '' ? ($seenPeople['email:'.$emailKeyForRow] ?? null) : null);
+
+            if ($fileDupLine !== null) {
+                $rowErrors[] = "Duplicate of line {$fileDupLine} in this same file — this agent is listed more than once. Delete the extra row(s) and upload again.";
+            } else {
+                $seenPeople[$personKey] = $line;
+                if ($emailKeyForRow !== '') {
+                    $seenPeople['email:'.$emailKeyForRow] = $line;
+                }
+
+                $dupes = AgentDuplicateChecker::find($agencyId, [
+                    'name' => $name,
+                    'email' => $emailRaw,
+                    'contact' => $contact,
+                ]);
+                if ($dupes->isNotEmpty()) {
+                    $names = $dupes->take(3)->map(fn ($m) => $m['agent']->name.($m['agent']->branch ? ' ('.optional($m['agent']->branch)->name.')' : ''))->implode('; ');
+                    $reasons = $dupes->take(3)->pluck('reasons')->flatten()->unique()->take(3)->implode('; ');
+                    $rowErrors[] = "Possible duplicate of existing agent: {$names}".($reasons !== '' ? " ({$reasons})" : '').'. Remove this row, or confirm it is a different person (create it manually instead of uploading).';
                 }
             }
 

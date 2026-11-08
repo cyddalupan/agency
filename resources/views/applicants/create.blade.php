@@ -37,14 +37,35 @@
                     We found {{ count(session('duplicate_applicants')) }} existing record(s) that look like this applicant.
                     Check the match(es) first — open a record below before creating a duplicate.
                 </p>
-                <ul class="mt-3 space-y-2">
+                <ul class="mt-3 space-y-3">
                     @foreach(session('duplicate_applicants') as $dupe)
-                        <li class="text-sm flex flex-wrap items-center gap-2">
-                            <a href="{{ $dupe['url'] }}" target="_blank" class="link link-primary font-semibold">{{ $dupe['name'] }}</a>
-                            @if(!empty($dupe['applicant_no']))
-                                <span class="badge badge-sm badge-ghost">#{{ $dupe['applicant_no'] }}</span>
-                            @endif
-                            <span class="opacity-70">— {{ implode(' · ', $dupe['reasons']) }}</span>
+                        <li class="text-sm">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{{ $dupe['url'] }}" target="_blank" class="link link-primary font-semibold">{{ $dupe['name'] }}</a>
+                                @if(!empty($dupe['applicant_no']))
+                                    <span class="badge badge-sm badge-ghost">#{{ $dupe['applicant_no'] }}</span>
+                                @endif
+                                <span class="opacity-70">— {{ implode(' · ', $dupe['reasons']) }}</span>
+                            </div>
+                            <table class="table table-xs mt-2 mb-1 w-full bg-base-100/60 rounded">
+                                <tbody class="text-xs">
+                                    <tr>
+                                        <th class="w-24 font-semibold">Contact #</th><td>{{ $dupe['contact'] }}</td>
+                                        <th class="w-20 font-semibold">Gender</th><td>{{ $dupe['gender'] }}</td>
+                                        <th class="w-14 font-semibold">Age</th><td>{{ $dupe['age'] }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="font-semibold">Branch</th><td>{{ $dupe['branch'] }}</td>
+                                        <th class="font-semibold">Agent</th><td>{{ $dupe['agent'] }}</td>
+                                        <th class="font-semibold">Status</th><td>{{ $dupe['status'] }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="font-semibold">Position</th><td>{{ $dupe['position'] }}</td>
+                                        <th class="font-semibold">Country</th><td>{{ $dupe['country'] }}</td>
+                                        <th class="font-semibold">FRA Status</th><td>{{ $dupe['fra'] }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </li>
                     @endforeach
                 </ul>
@@ -374,6 +395,13 @@
                 <button type="submit" class="btn btn-primary">
                     <span>💾</span> Save Applicant
                 </button>
+                @if(session('duplicate_applicants') && count(session('duplicate_applicants')))
+                    {{-- The warning above tells the user to click this; it never
+                         existed before (Cyd 2026-11-08 card: duplicate pop-up). --}}
+                    <button type="submit" class="btn btn-warning" onclick="document.getElementById('confirm_duplicate').value = '1';">
+                        <span>⚠️</span> Create anyway
+                    </button>
+                @endif
                 <a href="{{ route('applicants.index') }}" class="link link-neutral text-sm">❌ Cancel</a>
             </div>
         </div>
@@ -464,6 +492,9 @@ document.addEventListener('DOMContentLoaded', function () {
             panel.style.display = 'none';
             return;
         }
+        var label = function (x, keys) {
+            return '<span class="opacity-60">' + x + ':</span> ' + (keys && keys.length ? String(keys).replace(/&/g, '&amp;').replace(/</g, '&lt;') : '—');
+        };
         d.duplicates.forEach(function (x) {
             const li = document.createElement('li');
             const a = document.createElement('a');
@@ -476,6 +507,19 @@ document.addEventListener('DOMContentLoaded', function () {
             meta.className = 'opacity-70';
             meta.textContent = ' — ' + (x.reasons || []).join(' · ');
             li.appendChild(meta);
+
+            const details = document.createElement('div');
+            details.className = 'grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-0.5 text-xs mt-1 pl-1';
+            [
+                ['Contact #', x.contact], ['Gender', x.gender], ['Age', x.age],
+                ['Branch', x.branch], ['Agent', x.agent], ['Position', x.position],
+                ['Country', x.country], ['FRA Status', x.fra], ['Status', x.status]
+            ].forEach(function (pair) {
+                const span = document.createElement('span');
+                span.innerHTML = label(pair[0], pair[1]);
+                details.appendChild(span);
+            });
+            li.appendChild(details);
             list.appendChild(li);
         });
         panel.style.display = '';

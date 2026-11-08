@@ -17,9 +17,48 @@
         <p class="opacity-60 text-sm mt-1">Register a new referral agent.</p>
     </div>
 
+    {{-- Duplicate guard (Cyd 2026-11-08, LANDAS card): shown after a blocked submit --}}
+    @if(session('duplicate_agents') && count(session('duplicate_agents')))
+        <div id="duplicate-warning" role="alert" class="alert alert-warning mb-6 shadow-md items-start">
+            <div class="w-full">
+                <p class="font-bold text-base">⚠️ Possible duplicate agent</p>
+                <p class="text-sm opacity-80 mt-1">
+                    We found {{ count(session('duplicate_agents')) }} existing agent record(s) that look like this one.
+                    Check the match(es) first — open a record below before creating a duplicate.
+                </p>
+                <ul class="mt-3 space-y-3">
+                    @foreach(session('duplicate_agents') as $dupe)
+                        <li class="text-sm">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{{ $dupe['url'] }}" target="_blank" class="link link-primary font-semibold">{{ $dupe['name'] }}</a>
+                                <span class="opacity-70">— {{ implode(' · ', $dupe['reasons']) }}</span>
+                            </div>
+                            <table class="table table-xs mt-2 mb-1 w-full bg-base-100/60 rounded">
+                                <tbody class="text-xs">
+                                    <tr>
+                                        <th class="w-24 font-semibold">Branch</th><td>{{ $dupe['branch'] }}</td>
+                                        <th class="w-24 font-semibold">Email</th><td>{{ $dupe['email'] }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="font-semibold">Contact</th><td>{{ $dupe['contact'] }}</td>
+                                        <th class="font-semibold">Created By</th><td>{{ $dupe['created_by'] }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="text-xs opacity-70 mt-3">
+                    If this is a different person, click <b>Create anyway</b> to proceed.
+                </p>
+            </div>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('agents.store') }}" class="card bg-base-100 shadow-sm card-lift">
         <div class="card-body space-y-4">
             @csrf
+            <input type="hidden" name="confirm_duplicate" id="confirm_duplicate" value="{{ old('confirm_duplicate') }}">
 
             {{-- Form fills the screen instead of sitting in a narrow column
                  (client request 2026-11-05). Fields are grouped three-up on
@@ -76,6 +115,11 @@
                 <button type="submit" class="btn btn-primary">
                     <span>💾</span> Create Agent
                 </button>
+                @if(session('duplicate_agents') && count(session('duplicate_agents')))
+                    <button type="submit" class="btn btn-warning" onclick="document.getElementById('confirm_duplicate').value = '1';">
+                        <span>⚠️</span> Create anyway
+                    </button>
+                @endif
                 <a href="{{ route('agents.index') }}" class="link link-neutral text-sm">❌ Cancel</a>
             </div>
         </div>

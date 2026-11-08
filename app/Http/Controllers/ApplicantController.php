@@ -257,15 +257,34 @@ class ApplicantController extends Controller
     /** Shape duplicate matches for views / JSON. */
     private function duplicatePayload($duplicates): array
     {
-        return $duplicates->map(fn ($m) => [
-            'id' => $m['applicant']->id,
-            'applicant_no' => $m['applicant']->applicant_no,
-            'name' => trim($m['applicant']->first_name.' '.$m['applicant']->last_name),
-            'status' => $m['applicant']->status,
-            'created_at' => optional($m['applicant']->created_at)->format('M d, Y'),
-            'url' => route('applicants.show', $m['applicant']),
-            'reasons' => $m['reasons'],
-        ])->values()->all();
+        $fraOptions = app_fra_options();
+
+        return $duplicates->map(function ($m) use ($fraOptions) {
+            $a = $m['applicant'];
+            $fra = $a->fra;
+            $fraLabel = $fra ? ($fraOptions[$fra] ?? ucfirst((string) $fra)) : '—';
+
+            // What the client asked to see in the warning (LANDAS card
+            // 6af02dd56cff0b42b7c91ee3): Name, Contact#, Gender, Age, Branch,
+            // Agent, Position, Country, FRA Status.
+            return [
+                'id' => $a->id,
+                'applicant_no' => $a->applicant_no,
+                'name' => $a->full_name ?: trim($a->first_name.' '.$a->last_name),
+                'contact' => $a->contact ?: '—',
+                'gender' => $a->gender ?: '—',
+                'age' => $a->age !== null ? (string) $a->age : '—',
+                'branch' => optional($a->branch)->name ?: '—',
+                'agent' => optional($a->agent)->name ?: '—',
+                'position' => optional($a->position)->name ?: '—',
+                'country' => optional($a->country)->name ?: '—',
+                'fra' => $fraLabel,
+                'status' => optional($a->statusCode)->label ?? ($a->status ?: '—'),
+                'created_at' => optional($a->created_at)->format('M d, Y'),
+                'url' => route('applicants.show', $a),
+                'reasons' => $m['reasons'],
+            ];
+        })->values()->all();
     }
 
     public function create()
@@ -823,7 +842,10 @@ class ApplicantController extends Controller
             // same applicant 9 times imported all 9 copies (671 rows for 286
             // people, 07-11 07:02). Catch repeats inside the same upload.
             if (empty($rowErrors)) {
-                $fileKey = $norm($first).'|'.$norm($last).'|'.($birthdate ?: '');
+                // Key on the full identity so repeat listings of the same person
+                // are caught (middle name and suffix were previously ignored,
+                // so the same name with/without a middle name slipped through).
+                $fileKey = $norm($first).'|'.$norm($middle).'|'.$norm($last).'|'.$norm($suffix).'|'.($birthdate ?: '');
                 if (isset($seenInFile[$fileKey])) {
                     $rowErrors[] = "Duplicate of line {$seenInFile[$fileKey]} in this same file — this applicant is listed more than once. Delete the extra row(s) and upload again.";
                 } else {
@@ -834,6 +856,7 @@ class ApplicantController extends Controller
             if (empty($rowErrors)) {
                 $dupes = ApplicantDuplicateChecker::find($agencyId, [
                     'first_name' => $first,
+                    'middle_name' => $middle,
                     'last_name' => $last,
                     'email' => $email,
                     'contact' => $contact,
@@ -841,7 +864,8 @@ class ApplicantController extends Controller
                 ]);
                 if ($dupes->isNotEmpty()) {
                     $names = $dupes->take(3)->map(fn ($m) => trim($m['applicant']->first_name.' '.$m['applicant']->last_name).' (#'.$m['applicant']->applicant_no.')')->implode('; ');
-                    $rowErrors[] = "Possible duplicate of existing applicant: {$names}. Remove this row or confirm it is a different person.";
+                    $reasons = $dupes->take(3)->pluck('reasons')->flatten()->unique()->take(3)->implode('; ');
+                    $rowErrors[] = "Possible duplicate of existing applicant: {$names}".($reasons !== '' ? " ({$reasons})" : '').'. Remove this row, or confirm it is a different person (create it manually instead of uploading).';
                 }
             }
 
