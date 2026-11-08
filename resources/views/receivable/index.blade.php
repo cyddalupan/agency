@@ -18,13 +18,19 @@
     </div>
 
     {{-- Summary --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    {{-- (Josh, 2026-11-08) Only Admin + Accounting see the money totals;
+         everyone else keeps the module but gets the two count cards only. --}}
+    @php
+        $showFinancialTotals = auth()->user()->canSeeFinancialTotals();
+    @endphp
+    <div class="grid grid-cols-1 {{ $showFinancialTotals ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }} gap-4 mb-6">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">📄 Transactions</p>
                 <p class="text-2xl font-bold">{{ $receivables->count() }}</p>
             </div>
         </div>
+        @if($showFinancialTotals)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">💰 Total Amount</p>
@@ -35,6 +41,7 @@
                 </div>
             </div>
         </div>
+        @endif
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">✅ Received</p>

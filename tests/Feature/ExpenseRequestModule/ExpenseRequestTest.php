@@ -42,16 +42,17 @@ class ExpenseRequestTest extends TestCase
     }
 
     #[Test]
-    public function rest_of_account_staff_cannot_access_expense_request_module(): void
+    public function rest_of_account_staff_can_access_expense_request_module(): void
     {
-        // (Cyd 2026-11-08) Expense & Payments is Admin + Accounting only.
+        // (Cyd 2026-09-28 #6) Rest-of-Account staff keep Expense & Payments so
+        // they can file requests; the 2026-09-24 access tiers allowlisted it.
         $staff = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'staff',
         ]);
         $this->actingAs($staff)
             ->get(route('expense_request.index'))
-            ->assertForbidden();
+            ->assertOk();
     }
 
     #[Test]

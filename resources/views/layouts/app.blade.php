@@ -328,11 +328,9 @@
                         // enforced server-side by the module.access middleware), so
                         // the sidebar now matches the actual access.
                         $showStats       = $navUser->canAccessModule('accounting');
-                        // (Cyd 2026-11-08) Receivable + Expense & Payments are now
-                        // Admin + Accounting only. `receivable`/`expense_request`
-                        // were removed from ModuleAccess::STAFF_ALLOWED, so the
-                        // links below disappear for every other user type and the
-                        // middleware 403s the routes.
+                        // (Cyd 2026-09-28 #6) Rest-of-Account staff must ALWAYS keep
+                        // Receivable + Expense & Payments (to file requests) — even
+                        // branch accounts — so no longer gated on Main Office.
                         $showReceivable  = $navUser->canAccessModule('receivable');
                         $showExpenses    = $navUser->canAccessModule('expense_request');
                         // (Cyd 2026-10-23) Agents Report is visible to Branch + Main accounts.

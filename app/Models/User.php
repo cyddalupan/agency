@@ -155,6 +155,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user may see the money-total summary cards on the
+     * Receivable and Expenses & Payments dashboards (Josh, 2026-11-08):
+     * only Admin (super_admin / admin) + Accounting (billing). Everyone else
+     * keeps the modules but sees only the count cards.
+     */
+    public function canSeeFinancialTotals(): bool
+    {
+        return in_array((string) $this->user_type, ['super_admin', 'admin', 'billing'], true);
+    }
+
+    /**
      * Whether this user may see accounting data belonging to other users.
      * Admins/Accounting keep full visibility; everyone else is limited to
      * their own records unless they are a privileged account.

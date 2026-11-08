@@ -33,6 +33,12 @@
 @section('content')
 <div class="w-full">
 
+    {{-- (Josh, 2026-11-08) Only Admin + Accounting see the money totals;
+         everyone else keeps the module but gets the two count cards only. --}}
+    @php
+        $showFinancialTotals = auth()->user()->canSeeFinancialTotals();
+    @endphp
+
     {{-- Header --}}
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6 flex flex-row items-center justify-between">
@@ -97,7 +103,9 @@
                 {{-- Statistics / encoder filters (Cyd 2026-11-01, card 125): the tabs are the
                      priority, so these move to their own row underneath them. --}}
                 <div class="mt-2.5 pt-2.5 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above. --}}
+                    {{-- Dashboard status selector (Toybits 2026-09-23): tick which statuses show in the summary card above.
+                         (Josh, 2026-11-08) Only shown to users who can see the money totals card. --}}
+                    @if($showFinancialTotals)
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <span class="text-xs font-semibold opacity-60 whitespace-nowrap">📊 Dashboard totals:</span>
                         @foreach(\App\Models\ExpenseRequest::STATUSES as $statusKey)
@@ -107,6 +115,7 @@
                             </label>
                         @endforeach
                     </div>
+                    @endif
 
                     {{-- Encoder filter (Toybits 2026-10-07): narrow to one encoder, keeps the active status tab. --}}
                     @if($encoders->count())
@@ -134,13 +143,14 @@
     </div>
 
     {{-- Summary --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 {{ $showFinancialTotals ? 'md:grid-cols-3' : 'md:grid-cols-2' }} gap-4 mb-6">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">🧾 Requests</p>
                 <p class="text-2xl font-bold">{{ $totalRequests }}</p>
             </div>
         </div>
+        @if($showFinancialTotals)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">💰 PHP Total</p>
@@ -170,6 +180,7 @@
                 </div>
             </div>
         </div>
+        @endif
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">✅ Released</p>
