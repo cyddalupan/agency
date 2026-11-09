@@ -515,6 +515,15 @@ class AgentReportController extends Controller
             'particular/description' => 'particular',
             'description'  => 'particular',
             'particulars'  => 'particular',
+            'remarks'      => 'particular',
+            'remark'       => 'particular',
+            'notes'        => 'particular',
+            'note'         => 'particular',
+            'reason'       => 'particular',
+            'narration'    => 'particular',
+            'details'      => 'particular',
+            'detail'       => 'particular',
+            'purpose'      => 'particular',
         ];
 
         $parse = function (string $delimiter) use ($raw, $aliases) {
@@ -534,6 +543,7 @@ class AgentReportController extends Controller
 
             $headerIndex = null;
             $fieldByIndex = [];
+            $unmapped = [];
             foreach (array_slice($parsed, 0, 30, true) as $i => $cells) {
                 if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
                     continue;
@@ -549,8 +559,32 @@ class AgentReportController extends Controller
                 if (in_array('agent', $candidate, true) && in_array('amount', $candidate, true)) {
                     $headerIndex = $i;
                     $fieldByIndex = $candidate;
+                    // Columns that look like the description but are not mapped:
+                    // importing them would silently store every row with a blank
+                    // particular (the 2026-11-07 data loss).
+                    foreach ($cells as $idx => $header) {
+                        if (isset($candidate[$idx])) {
+                            continue;
+                        }
+                        $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                        if ($key !== '' && preg_match('/particular|descri|remark|note|reason|narrat|deta?il|purpose|comment|memo|explanation|justificat|salary/', $key)) {
+                            $unmapped[] = trim((string) $header);
+                            continue;
+                        }
+                        // A free-text column sitting where the description usually
+                        // lives (4th/5th) is almost certainly meant to be one.
+                        if ($idx >= 3 && ! preg_match('/^(branch|country|position|currency|status|ref|reference|date|agent|applicant|amount|#)/', $key)) {
+                            $unmapped[] = trim((string) $header);
+                        }
+                    }
                     break;
                 }
+            }
+
+            if (! empty($unmapped)) {
+                return 'The file has a column this uploader does not recognise: '
+                    . implode(', ', array_unique($unmapped))
+                    . '. Rename it to Particular/Description so the text is not lost.';
             }
 
             if ($headerIndex === null) {
@@ -586,6 +620,12 @@ class AgentReportController extends Controller
         foreach ([',', ';', "\t"] as $delimiter) {
             $result = $parse($delimiter);
             if (is_array($result)) {
+                return $result;
+            }
+            // A recognised header with an unrecognised description column is a
+            // real, actionable error — do not let a later delimiter pass
+            // overwrite it with a vaguer message.
+            if (str_contains((string) $result, 'does not recognise')) {
                 return $result;
             }
             $lastError = $result;
