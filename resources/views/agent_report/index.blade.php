@@ -27,6 +27,11 @@
                         ➕ New Deduction
                     </a>
                 @endif
+                @if($tab === 'starting-balances' && $canManageDeductions)
+                    <a href="{{ route('agent_report.starting_balance.bulk') }}" class="btn btn-sm btn-secondary shadow-md">
+                        📥 Bulk CSV
+                    </a>
+                @endif
                 @if($tab === 'starting-balances')
                     <a href="{{ route('agent_report.starting_balance.create') }}" class="btn btn-sm btn-secondary shadow-md">
                         ➕ New Starting Balance

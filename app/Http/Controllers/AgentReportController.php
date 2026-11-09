@@ -1244,6 +1244,315 @@ class AgentReportController extends Controller
             ->with('success', 'Starting balance saved.');
     }
 
+    // ------------------------------------------------------------------
+    // Tab 4: Starting Balance — bulk upload (card 6af174a1, Cyd 2026-11-09)
+    // Header per the card: Date, Account, Agent, Amount, Particular
+    // ------------------------------------------------------------------
+
+    public function startingBalanceBulkUpload(): View
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create starting balances.');
+
+        return view('agent_report.starting_balance_bulk');
+    }
+
+    /**
+     * CSV template for the starting-balance bulk upload. The card fixes the
+     * header as: Date, Account, Agent, Amount, Particular.
+     */
+    public function startingBalanceBulkTemplate()
+    {
+        $headers = ['Date', 'Account', 'Agent', 'Amount', 'Particular'];
+        $today = now()->toDateString();
+        $sample = [
+            [$today, StartingBalance::ACCOUNT, 'Juan Dela Cruz', '5000.00', 'Opening balance carried forward'],
+            [$today, StartingBalance::ACCOUNT, 'Maria Santos', '2500.00', ''],
+        ];
+
+        return response()->streamDownload(function () use ($headers, $sample) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            foreach ($sample as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'starting-balances-template.csv', ['Content-Type' => 'text/csv; charset=utf-8']);
+    }
+
+    public function startingBalanceBulkImport(Request $request): RedirectResponse
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can create starting balances.');
+
+        $agencyId = auth()->user()->agency_id;
+
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $rows = $this->parseStartingBalanceCsv($request->file('csv_file')->getRealPath());
+        if (is_string($rows)) {
+            return back()->withErrors(['csv_file' => $rows]);
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        $agentByName = [];
+        foreach ($this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->get(['id', 'branch_id', 'name']) as $agent) {
+            $agentByName[$norm($agent->name)][] = $agent;
+        }
+
+        // One starting balance per agent (same rule as the single-entry form).
+        $already = StartingBalance::where('agency_id', $agencyId)->pluck('agent_id')->flip();
+
+        $errors = [];
+        $validatedRows = [];
+        $seenAgentIds = [];
+
+        foreach ($rows as $row) {
+            $d = $row['data'];
+            $line = $row['line'];
+            $rowErrors = [];
+
+            // ---- Date (blank = today) ----
+            $dateRaw = trim((string) ($d['date'] ?? ''));
+            $date = null;
+            if ($dateRaw === '') {
+                $date = now()->toDateString();
+            } elseif (($ts = strtotime($dateRaw)) !== false) {
+                $date = date('Y-m-d', $ts);
+            } else {
+                $rowErrors[] = "Date '{$dateRaw}' is not a valid date.";
+            }
+
+            // ---- Account (optional; fixed to Starting Balance) ----
+            $accountRaw = trim((string) ($d['account'] ?? ''));
+            if ($accountRaw !== '' && $norm($accountRaw) !== $norm(StartingBalance::ACCOUNT)) {
+                $rowErrors[] = "Account '{$accountRaw}' is not allowed here — this upload only creates "
+                    . StartingBalance::ACCOUNT . ' entries. Leave the column blank or type "'
+                    . StartingBalance::ACCOUNT . '".';
+            }
+
+            // ---- Agent (required, must exist in this agency/branch) ----
+            $agentRaw = trim((string) ($d['agent'] ?? ''));
+            $agent = null;
+            if ($agentRaw === '') {
+                $rowErrors[] = 'Agent is required.';
+            } else {
+                $matches = $agentByName[$norm($agentRaw)] ?? [];
+                if (count($matches) === 0) {
+                    $rowErrors[] = "Agent '{$agentRaw}' was not found in your agency.";
+                } elseif (count($matches) > 1) {
+                    $rowErrors[] = "Agent '{$agentRaw}' matches more than one agent — make the name unique first.";
+                } else {
+                    $agent = $matches[0];
+                }
+            }
+
+            // ---- Amount (required, > 0) ----
+            $amountRaw = trim((string) ($d['amount'] ?? ''));
+            $amountRaw = str_replace([',', '₱', ' '], '', $amountRaw);
+            $amount = null;
+            if ($amountRaw === '') {
+                $rowErrors[] = 'Amount is required.';
+            } elseif (! is_numeric($amountRaw)) {
+                $rowErrors[] = "Amount '{$amountRaw}' must be a number.";
+            } elseif ((float) $amountRaw <= 0) {
+                $rowErrors[] = 'Amount must be greater than zero.';
+            } else {
+                $amount = round((float) $amountRaw, 2);
+            }
+
+            $particular = trim((string) ($d['particular'] ?? '')) ?: null;
+
+            if ($agent) {
+                // Duplicate against the database and within the file — a second
+                // starting balance for the same agent is never valid.
+                if ($already->has($agent->id)) {
+                    $rowErrors[] = "'{$agent->name}' already has a starting balance. Delete the existing one first, or edit it.";
+                } elseif (isset($seenAgentIds[$agent->id])) {
+                    $rowErrors[] = "'{$agent->name}' appears more than once in this file (also on line {$seenAgentIds[$agent->id]}).";
+                }
+                $seenAgentIds[$agent->id] ??= $line;
+            }
+
+            if ($rowErrors) {
+                $errors[$line] = $rowErrors;
+                continue;
+            }
+
+            $validatedRows[] = [
+                'agency_id'    => $agencyId,
+                'user_id'      => auth()->id(),
+                'agent_id'     => $agent->id,
+                'applicant_id' => null,
+                'date'         => $date,
+                'account'      => StartingBalance::ACCOUNT,
+                'amount'       => $amount,
+                'particular'   => $particular,
+            ];
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors(['csv_file' => 'No rows were imported — ' . count($errors) . ' row(s) need fixing.'])
+                ->with('bulk_errors', $errors)
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($validatedRows) {
+            foreach ($validatedRows as $row) {
+                StartingBalance::create($row);
+            }
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'starting-balances'])
+            ->with('success', 'Imported ' . count($validatedRows) . ' starting balance(s).');
+    }
+
+    /**
+     * Parse the starting-balance CSV into [{line, data}]. Accepts comma /
+     * semicolon / tab, BOM and UTF-16 (Excel), and any column order — columns
+     * are matched by name, with the card's header as the canonical set:
+     * Date, Account, Agent, Amount, Particular.
+     */
+    private function parseStartingBalanceCsv(string $path)
+    {
+        $raw = @file_get_contents($path);
+        if ($raw === false) {
+            return 'Could not read the uploaded file.';
+        }
+
+        if (str_starts_with($raw, "\xFF\xFE")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16LE');
+        } elseif (str_starts_with($raw, "\xFE\xFF")) {
+            $raw = mb_convert_encoding(substr($raw, 2), 'UTF-8', 'UTF-16BE');
+        } elseif (str_starts_with($raw, "\xEF\xBB\xBF")) {
+            $raw = substr($raw, 3);
+        }
+        if ($raw !== '' && ! mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+        if (trim($raw) === '') {
+            return 'The file is empty.';
+        }
+
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        $aliases = [
+            'date'            => 'date',
+            'transaction date' => 'date',
+            'account'         => 'account',
+            'agent'           => 'agent',
+            'agent name'      => 'agent',
+            'amount'          => 'amount',
+            'particular'      => 'particular',
+            'particular/description' => 'particular',
+            'particulars'     => 'particular',
+            'description'     => 'particular',
+            'remarks'         => 'particular',
+            'remarks/description' => 'particular',
+            'note'            => 'particular',
+            'notes'           => 'particular',
+        ];
+
+        $parse = function (string $delimiter) use ($raw, $aliases) {
+            $handle = fopen('php://temp', 'r+');
+            fwrite($handle, $raw);
+            rewind($handle);
+
+            $parsed = [];
+            while (($cells = fgetcsv($handle, 0, $delimiter)) !== false) {
+                $parsed[] = $cells;
+            }
+            fclose($handle);
+
+            if (empty($parsed)) {
+                return 'The file has no readable rows.';
+            }
+
+            $headerIndex = null;
+            $fieldByIndex = [];
+            $unmapped = [];
+
+            foreach (array_slice($parsed, 0, 30, true) as $i => $cells) {
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $candidate = [];
+                foreach ($cells as $idx => $header) {
+                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $field = $aliases[$key] ?? null;
+                    if ($field && ! in_array($field, $candidate, true)) {
+                        $candidate[$idx] = $field;
+                    }
+                }
+                if (in_array('agent', $candidate, true) && in_array('amount', $candidate, true)) {
+                    $headerIndex = $i;
+                    $fieldByIndex = $candidate;
+                    // A description-looking column we do not map would silently
+                    // drop the text — refuse instead (same lesson as the
+                    // deductions upload, card 6af170f5).
+                    foreach ($cells as $idx => $header) {
+                        if (isset($candidate[$idx])) {
+                            continue;
+                        }
+                        $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                        if ($key !== '' && preg_match('/particular|descri|remark|note|reason|narrat|deta?il|purpose|comment|memo/', $key)) {
+                            $unmapped[] = trim((string) $header);
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if (! empty($unmapped)) {
+                return 'The file has a column this uploader does not recognise: '
+                    . implode(', ', array_unique($unmapped))
+                    . '. Rename it to Particular so the text is not lost.';
+            }
+
+            if ($headerIndex === null) {
+                return 'No header row found. The first row must name the columns: Date, Account, Agent, Amount, Particular.';
+            }
+
+            $rows = [];
+            foreach (array_slice($parsed, $headerIndex + 1, null, true) as $i => $cells) {
+                $lineNo = $i + 1;
+                if (empty(array_filter(array_map('trim', $cells), fn ($c) => $c !== ''))) {
+                    continue;
+                }
+                $data = [];
+                foreach ($fieldByIndex as $idx => $field) {
+                    $data[$field] = $cells[$idx] ?? '';
+                }
+                $rows[] = ['line' => $lineNo, 'data' => $data];
+            }
+
+            if (empty($rows)) {
+                return 'The file has no data rows — add at least one starting balance below the header.';
+            }
+
+            if (count($rows) > 2000) {
+                return 'The file has too many rows (' . count($rows) . '). Split it into batches of 2000 or fewer.';
+            }
+
+            return $rows;
+        };
+
+        $lastError = null;
+        foreach ([',', ';', "\t"] as $delimiter) {
+            $result = $parse($delimiter);
+            if (is_array($result)) {
+                return $result;
+            }
+            if (str_contains((string) $result, 'does not recognise')) {
+                return $result;
+            }
+            $lastError = $result;
+        }
+
+        return $lastError ?? 'Could not read the file.';
+    }
+
     public function startingBalanceShow(StartingBalance $startingBalance): View
     {
         $this->authorizeAgency($startingBalance->agency_id);

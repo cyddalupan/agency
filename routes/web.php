@@ -535,7 +535,13 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::delete('/payments/{expense_request_item}', [AgentReportController::class, 'paymentDestroy'])->name('payment.destroy')
             ;
 
-        // Tab 4: Starting Balance
+        // Tab 4: Starting Balance (bulk routes must precede the {starting_balance} wildcard)
+        Route::get('/starting-balances/bulk', [AgentReportController::class, 'startingBalanceBulkUpload'])->name('starting_balance.bulk')
+            ;
+        Route::get('/starting-balances/bulk/template', [AgentReportController::class, 'startingBalanceBulkTemplate'])->name('starting_balance.bulk.template')
+            ;
+        Route::post('/starting-balances/bulk/import', [AgentReportController::class, 'startingBalanceBulkImport'])->name('starting_balance.bulk.import')
+            ;
         Route::get('/starting-balances/create', [AgentReportController::class, 'startingBalanceCreate'])->name('starting_balance.create')
             ;
         Route::post('/starting-balances', [AgentReportController::class, 'startingBalanceStore'])->name('starting_balance.store')
