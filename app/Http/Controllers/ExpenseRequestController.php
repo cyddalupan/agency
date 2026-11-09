@@ -1433,14 +1433,24 @@ class ExpenseRequestController extends Controller
             ->get(['expense_request_id', 'charge', 'agent_id', 'applicant_id', 'country_id', 'account_id', 'currency', 'amount', 'payment', 'particular']);
 
         if ($existingItems->isNotEmpty()) {
-            $itemDates = ExpenseRequest::whereIn('id', $existingItems->pluck('expense_request_id'))
+            $existingRequests = ExpenseRequest::whereIn('id', $existingItems->pluck('expense_request_id'))
+                ->get(['id', 'date', 'branch_id']);
+
+            $itemDates = $existingRequests
                 ->pluck('date', 'id')
                 ->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : mb_substr((string) $d, 0, 10));
+
+            // The branch is part of the fingerprint, so it must be read back from
+            // the request. Bulk import writes the branch on the REQUEST only
+            // (expense_request_items.branch_id stays NULL), so passing null here
+            // made every existing row unmatchable: re-uploading the same sheet
+            // duplicated it instead of being skipped. (Cyd 2026-11-09)
+            $itemBranches = $existingRequests->pluck('branch_id', 'id');
 
             foreach ($existingItems as $item) {
                 $key = $fingerprint([
                     'charge'       => $item->charge,
-                    'branch_id'    => null,
+                    'branch_id'    => $itemBranches[$item->expense_request_id] ?? null,
                     'agent_id'     => $item->agent_id,
                     'applicant_id' => $item->applicant_id,
                     'country_id'   => $item->country_id,
