@@ -12,9 +12,13 @@ use Tests\TestCase;
 
 /**
  * Cyd 2026-10-23 ("Agents Report Module"):
- *  - the module is displayed to all users (Branch as well as Main);
  *  - Branch accounts see only the agents registered under their branch;
  *  - Main Office accounts see all agents.
+ *
+ * Cyd 2026-11-09 ("GULF: Agent Reports module"): the module is Gulf-only and
+ * is limited to Admin, Accounting and Branch users. The fixture agency is
+ * therefore the Gulf tenant (subdomain "gulf"); the Gulf-only and staff-denied
+ * cases are covered in AgentReportAccessScopeTest.
  */
 class AgentReportModuleVisibilityTest extends TestCase
 {
@@ -30,7 +34,7 @@ class AgentReportModuleVisibilityTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->create(['subdomain' => 'gulf']);
         $this->mainOffice = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Main Office']);
         $this->iloilo = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'ILOILO']);
 

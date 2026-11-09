@@ -31,7 +31,7 @@ class AgentReportTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->create(['subdomain' => 'gulf']);
         $this->branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Manila']);
         $this->user = User::factory()->create([
             'agency_id' => $this->agency->id,

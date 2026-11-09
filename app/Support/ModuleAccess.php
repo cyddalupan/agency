@@ -129,9 +129,16 @@ class ModuleAccess
         'reports',
         'receivable',
         'expense_request',
-        'agent_report',
         'api',
     ];
+
+    /**
+     * Agents Report is a Gulf-only module (Mjolnir card "GULF: Agent Reports
+     * module", 2026-11-09): "Show Agents Report Module to Admin, Accounting,
+     * and other branch user access only". Gulf is the only tenant with agent
+     * data, so the module is not offered elsewhere.
+     */
+    public const AGENT_REPORT_AGENCY = 'gulf';
 
     /**
      * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
@@ -209,6 +216,13 @@ class ModuleAccess
     {
         $userType = (string) $userType;
 
+        // Gulf-only modules (Cyd 2026-11-09): Agents Report exists for the Gulf
+        // tenant alone. Checked BEFORE the full-access shortcut so an admin of
+        // another agency cannot reach it either.
+        if ($module === 'agent_report' && ! self::isAgency($agencyId, self::AGENT_REPORT_AGENCY)) {
+            return false;
+        }
+
         if (in_array($userType, ['super_admin', 'admin'], true)) {
             return true;
         }
@@ -251,11 +265,17 @@ class ModuleAccess
     /** True when the given agency is the FINAS tenant (subdomain = finas). */
     public static function isFinasAgency(?int $agencyId): bool
     {
+        return self::isAgency($agencyId, 'finas');
+    }
+
+    /** True when the given agency has the supplied subdomain. */
+    public static function isAgency(?int $agencyId, string $subdomain): bool
+    {
         if (! $agencyId) {
             return false;
         }
 
-        return strtolower((string) \App\Models\Agency::whereKey($agencyId)->value('subdomain')) === 'finas';
+        return strtolower((string) \App\Models\Agency::whereKey($agencyId)->value('subdomain')) === strtolower($subdomain);
     }
 
     /** True for the limited "Rest of Account" tier (everyone below admin/accounting, except Encoder). */

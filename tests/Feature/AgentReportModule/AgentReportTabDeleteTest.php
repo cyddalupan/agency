@@ -38,7 +38,7 @@ class AgentReportTabDeleteTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->create(['subdomain' => 'gulf']);
         $this->branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Manila']);
         $this->admin = User::factory()->create([
             'agency_id' => $this->agency->id,
@@ -268,10 +268,12 @@ class AgentReportTabDeleteTest extends TestCase
             ->assertOk()
             ->assertSee('txDeleteModal');
 
+        // (Cyd 2026-11-09 "GULF: Agent Reports module") Staff no longer has the
+        // module at all, so the page is forbidden rather than rendered without
+        // the delete controls.
         $this->actingAs($this->staff)
             ->get(route('agent_report.index', ['tab' => 'deductions']))
-            ->assertOk()
-            ->assertDontSee('txDeleteModal');
+            ->assertForbidden();
 
         $this->actingAs($this->admin)
             ->get(route('agent_report.index', ['tab' => 'payments']))
@@ -280,7 +282,6 @@ class AgentReportTabDeleteTest extends TestCase
 
         $this->actingAs($this->staff)
             ->get(route('agent_report.index', ['tab' => 'payments']))
-            ->assertOk()
-            ->assertDontSee('txDeleteModal');
+            ->assertForbidden();
     }
 }

@@ -26,14 +26,20 @@ class EnsureModuleAccess
 
         $type = (string) $user->user_type;
 
+        $route  = $request->route();
+        $name   = $route ? (string) $route->getName() : '';
+        $module = ModuleAccess::moduleFor($name, $request->path());
+
+        // Gulf-only module (Cyd 2026-11-09): Agents Report is not available to
+        // other tenants at all, so the admin shortcut below must not bypass it.
+        if ($module === 'agent_report' && ! ModuleAccess::allows($type, $module, $user->agency_id)) {
+            abort(403, 'Your account does not have access to this module.');
+        }
+
         // Full-access roles.
         if (in_array($type, ['super_admin', 'admin'], true)) {
             return $next($request);
         }
-
-        $route  = $request->route();
-        $name   = $route ? (string) $route->getName() : '';
-        $module = ModuleAccess::moduleFor($name, $request->path());
 
         if (! ModuleAccess::allows($type, $module, $user->agency_id)) {
             abort(403, 'Your account does not have access to this module.');

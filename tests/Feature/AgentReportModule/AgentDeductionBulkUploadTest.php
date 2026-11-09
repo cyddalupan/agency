@@ -31,7 +31,7 @@ class AgentDeductionBulkUploadTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->create(['subdomain' => 'gulf']);
         $this->branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Manila']);
         // Only privileged accounts (MAE/EVELYN/ANGEL) may manage deductions.
         $this->user = User::factory()->create([
