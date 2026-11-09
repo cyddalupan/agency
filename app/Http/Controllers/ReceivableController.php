@@ -945,6 +945,18 @@ class ReceivableController extends Controller
                 }
             }
             $fields = array_values($candidate);
+
+            // Toybits 2026-11-08 (card VrkCQ97s): an *expense* sheet also has
+            // Agent + Amount, so it used to import here silently and turn
+            // expense transactions into receivables. Recognise the expense
+            // template by its own columns and send it to the right page.
+            $expenseSheet = $this->looksLikeExpenseSheet($cells);
+            if ($expenseSheet && in_array('agent', $fields, true) && in_array('amount', $fields, true)) {
+                return 'These transactions should be Expenses, not Receivable. This file is an '
+                    . 'Expense sheet (it has the ' . $expenseSheet . ' column). Upload it on the '
+                    . 'Expenses page instead: /expense-requests/bulk — nothing was imported here.';
+            }
+
             // A row only counts as the header when it names the required columns.
             if (in_array('agent', $fields, true) && in_array('amount', $fields, true)) {
                 $headerIndex = $i;
@@ -1039,6 +1051,35 @@ class ReceivableController extends Controller
             'notes' => 'particular',
             'remarks' => 'particular',
         ];
+    }
+
+    /**
+     * Returns the first expense-only column the header row carries, or null.
+     * The expense template has Charge / Payment / Request Status / Ref # /
+     * Currency / Office; the receivable template has none of those. Used to
+     * refuse an expense sheet on the receivable bulk page (card VrkCQ97s).
+     */
+    private function looksLikeExpenseSheet(array $cells): ?string
+    {
+        // Ordered by how unmistakable they are, so the message quotes
+        // "Charge" rather than the ambiguous "Ref #".
+        $expenseOnly = ['charge', 'payment', 'requeststatus', 'currency', 'office', 'ref'];
+        $found = [];
+        foreach ($cells as $header) {
+            $key = $this->normKey($header);
+            $pos = $key === '' ? false : array_search($key, $expenseOnly, true);
+            if ($pos !== false) {
+                $found[$pos] = trim((string) $header);
+            }
+        }
+        if (! $found) {
+            return null;
+        }
+        ksort($found);
+
+        return reset($found);
+
+        return null;
     }
 
     private function normKey($value): string
