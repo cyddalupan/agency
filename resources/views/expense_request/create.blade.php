@@ -102,6 +102,40 @@
         <textarea name="notes" class="textarea textarea-bordered" rows="2" placeholder="Optional">{{ old('notes', $record->notes ?? '') }}</textarea>
     </div>
 
+    {{-- Multi-file attachments (Cyd 2026-11-09, "Upload and Edit"):
+         up to 5 per request; on edit more can be added while Pending. --}}
+    @php
+        $existingAttachments = isset($record) && ($isEdit ?? false) ? $record->attachments : collect();
+        $remainingSlots = 5 - $existingAttachments->count();
+    @endphp
+    <div class="form-control mt-4">
+        <label class="label">
+            <span class="label-text">Attachments <span class="opacity-60">(up to 5, PDF/JPG/PNG/DOC/XLS, 5MB each)</span></span>
+        </label>
+
+        @if($existingAttachments->isNotEmpty())
+            <ul class="mb-2 space-y-1 text-sm">
+                @foreach($existingAttachments as $attachment)
+                    <li>
+                        📎 <a href="{{ \App\Support\RequestAttachments::url($attachment->path) }}" target="_blank" class="link link-primary">{{ $attachment->original_name ?? basename($attachment->path) }}</a>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+        @if($remainingSlots > 0)
+            <input type="file" name="attachments[]" multiple class="file-input file-input-bordered file-input-sm w-full">
+            <p class="text-xs opacity-60 mt-1">
+                {{ ($isEdit ?? false) ? 'Uploading here ADDS files to the request' : 'Optional' }} — {{ $remainingSlots }} slot(s) left.
+            </p>
+        @else
+            <p class="text-xs opacity-70">This request already has the maximum of 5 files.</p>
+        @endif
+
+        @error('attachments') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
+        @error('attachments.*') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
+    </div>
+
     <div class="card-actions justify-end mt-4">
         <a href="{{ ($isEdit ?? false) ? route('expense_request.show', $record) : route('expense_request.index') }}" class="btn btn-ghost btn-sm">Cancel</a>
         <span id="dupChecking" class="hidden items-center gap-2 text-sm opacity-70 mr-2">

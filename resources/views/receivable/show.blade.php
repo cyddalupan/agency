@@ -12,7 +12,7 @@
                 <p class="opacity-80 mt-1">Receivable Review — {{ $receivable->date->format('M d, Y') }}</p>
             </div>
             <div class="flex items-center gap-3">
-                @if(auth()->user()->canEditTransactions())
+                @if(auth()->user()->canEditTransaction($receivable))
                     <a href="{{ route('receivable.edit', $receivable->id) }}" class="btn btn-sm btn-secondary shadow-md">✏️ Edit Transaction</a>
                 @endif
                 <span class="badge {{ $receivable->status === 'received' ? 'badge-success' : 'badge-warning' }} badge-lg">
@@ -66,6 +66,23 @@
             </form>
         </div>
     </div>
+    @endif
+
+    {{-- Attachments (Cyd 2026-11-09, "Upload and Edit") --}}
+    @if($receivable->attachments->isNotEmpty())
+        <div class="card bg-base-100 shadow-md mb-6">
+            <div class="card-body py-4">
+                <h3 class="font-bold mb-3">📎 Attachments <span class="opacity-60 text-sm font-normal">({{ $receivable->attachments->count() }} of 5)</span></h3>
+                <ul class="space-y-1 text-sm">
+                    @foreach($receivable->attachments as $attachment)
+                        <li>
+                            <a href="{{ \App\Support\RequestAttachments::url($attachment->path) }}" target="_blank" class="link link-primary">{{ $attachment->original_name ?? basename($attachment->path) }}</a>
+                            <span class="opacity-50 text-xs">· added {{ $attachment->created_at?->format('M d, Y H:i') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
     @endif
 
     {{-- History --}}

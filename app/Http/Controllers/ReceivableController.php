@@ -137,7 +137,7 @@ class ReceivableController extends Controller
             'type'          => ['nullable', 'string', 'max:40'],
             'mode'          => ['nullable', 'string', 'max:40'],
             'particular'    => ['nullable', 'string'],
-        ]);
+        ] + \App\Support\RequestAttachments::rules());
 
         // Security: agent + applicant must belong to the same agency
         $agent = Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
@@ -168,6 +168,8 @@ class ReceivableController extends Controller
         $validated['code']      = Receivable::nextCode($agencyId);
 
         $receivable = Receivable::create($validated);
+
+        $this->saveAttachments($request, $receivable);
 
         return redirect()->route('receivable.show', $receivable)
             ->with('success', "Receivable {$receivable->code} saved.");
@@ -200,7 +202,7 @@ class ReceivableController extends Controller
     {
         $this->authorizeAgency($receivable);
         $this->authorizeBranch($receivable);
-        $this->authorizeTransactionEdit();
+        $this->authorizeTransactionEdit($receivable);
 
         $agencyId = auth()->user()->agency_id;
         $user = auth()->user();
@@ -239,7 +241,7 @@ class ReceivableController extends Controller
     {
         $this->authorizeAgency($receivable);
         $this->authorizeBranch($receivable);
-        $this->authorizeTransactionEdit();
+        $this->authorizeTransactionEdit($receivable);
 
         $agencyId = auth()->user()->agency_id;
 
@@ -256,7 +258,7 @@ class ReceivableController extends Controller
             'type'          => ['nullable', 'string', 'max:40'],
             'mode'          => ['nullable', 'string', 'max:40'],
             'particular'    => ['nullable', 'string'],
-        ]);
+        ] + \App\Support\RequestAttachments::rules());
 
         $agent = ! empty($validated['agent_id'])
             ? Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id'])
@@ -290,19 +292,50 @@ class ReceivableController extends Controller
             'note'          => 'Transaction details edited by ' . ($user->name ?? 'user'),
         ]);
 
+        $this->saveAttachments($request, $receivable);
+
         return redirect()->route('receivable.show', $receivable)
             ->with('success', "Receivable {$receivable->code} updated.");
     }
 
     /**
-     * Admin + Accounting (billing) may edit transactions.
+     * Store optional multi-file attachments (Cyd 2026-11-09, "Upload and Edit").
      */
-    private function authorizeTransactionEdit(): void
+    private function saveAttachments(Request $request, Receivable $receivable): void
+    {
+        $files = $request->file('attachments', []);
+        if (! is_array($files) || $files === []) {
+            return;
+        }
+
+        $files = array_values(array_filter($files));
+        $existing = $receivable->attachments()->count();
+
+        if ($message = \App\Support\RequestAttachments::overflowMessage($existing, count($files))) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['attachments' => $message]);
+        }
+
+        foreach (\App\Support\RequestAttachments::store($files, 'receivable-attachments', auth()->id()) as $payload) {
+            $receivable->attachments()->create($payload);
+        }
+    }
+
+    /**
+     * Admin + Accounting may always edit; a Requestor may edit their own
+     * request while it is still Pending (Cyd 2026-11-09, "Upload and Edit").
+     */
+    private function authorizeTransactionEdit(?Receivable $receivable = null): void
     {
         $user = auth()->user();
-        if (! $user || ! $user->canEditTransactions()) {
-            abort(403, 'Only Admin and Accounting can edit transactions.');
+        if (! $user) {
+            abort(403, 'You must be signed in to edit transactions.');
         }
+
+        if ($user->canEditTransaction($receivable)) {
+            return;
+        }
+
+        abort(403, $user->transactionEditRefusal($receivable));
     }
 
     /**

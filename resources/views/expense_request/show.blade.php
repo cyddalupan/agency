@@ -16,7 +16,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                @if(auth()->user()->canEditTransactions())
+                @if(auth()->user()->canEditTransaction($request))
                     <a href="{{ route('expense_request.edit', $request) }}" class="btn btn-sm btn-secondary shadow-md">✏️ Edit Transaction</a>
                 @endif
                 <a href="{{ route('expense_request.index') }}" class="btn btn-ghost btn-sm text-primary-content">← Back</a>
@@ -33,6 +33,25 @@
 
     @if(session('success'))
         <div class="alert alert-success shadow-md mb-4"><span>✅ {{ session('success') }}</span></div>
+    @endif
+
+    {{-- Attachments (Cyd 2026-11-09, "Upload and Edit") --}}
+    @if($request->attachments->isNotEmpty())
+        <div class="card bg-base-100 shadow-md mb-6">
+            <div class="card-body py-4">
+                <h2 class="card-title text-base">📎 Attachments <span class="opacity-60 text-sm font-normal">({{ $request->attachments->count() }} of 5)</span></h2>
+                <ul class="space-y-1 text-sm mt-2">
+                    @foreach($request->attachments as $attachment)
+                        <li>
+                            <a href="{{ \App\Support\RequestAttachments::url($attachment->path) }}" target="_blank" class="link link-primary">
+                                {{ $attachment->original_name ?? basename($attachment->path) }}
+                            </a>
+                            <span class="opacity-50 text-xs">· added {{ $attachment->created_at?->format('M d, Y H:i') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
     @endif
 
     {{-- Line items --}}

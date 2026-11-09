@@ -515,9 +515,14 @@ class ExpenseRequestController extends Controller
     {
         $this->authorizeAgency($expenseRequest);
 
+        // Admin + Accounting edit anything; a Requestor may edit their own
+        // request while it is Pending (Cyd 2026-11-09, "Upload and Edit").
         $user = auth()->user();
-        if (! $user->canEditTransactions()) {
-            abort(403, 'Only Admin and Accounting can edit transactions.');
+        if (! $user) {
+            abort(403, 'You must be signed in to edit transactions.');
+        }
+        if (! $user->canEditTransaction($expenseRequest)) {
+            abort(403, $user->transactionEditRefusal($expenseRequest));
         }
         if ($this->branchLocked($user) && $expenseRequest->branch_id !== null
             && (int) $expenseRequest->branch_id !== (int) $user->branch_id) {
@@ -603,9 +608,14 @@ class ExpenseRequestController extends Controller
     {
         $this->authorizeAgency($expenseRequest);
 
+        // Admin + Accounting edit anything; a Requestor may edit their own
+        // request while it is Pending (Cyd 2026-11-09, "Upload and Edit").
         $user = auth()->user();
-        if (! $user->canEditTransactions()) {
-            abort(403, 'Only Admin and Accounting can edit transactions.');
+        if (! $user) {
+            abort(403, 'You must be signed in to edit transactions.');
+        }
+        if (! $user->canEditTransaction($expenseRequest)) {
+            abort(403, $user->transactionEditRefusal($expenseRequest));
         }
         if ($this->branchLocked($user) && $expenseRequest->branch_id !== null
             && (int) $expenseRequest->branch_id !== (int) $user->branch_id) {
@@ -632,7 +642,7 @@ class ExpenseRequestController extends Controller
             'lines.*.payment'         => ['nullable', 'numeric', 'min:0'],
             'lines.*.particular'      => ['nullable', 'string'],
             'lines.*.file'            => ['nullable', 'file', 'max:5120'],
-        ]);
+        ] + \App\Support\RequestAttachments::rules());
 
         $branchId = $validated['branch_id'] ?? null;
 
@@ -785,6 +795,10 @@ class ExpenseRequestController extends Controller
             return back()->withErrors($e->errors())->withInput();
         }
 
+        // Additional files while Pending are APPENDED (never replace);
+        // saveAttachments enforces the 5-file cap with a clear message.
+        $this->saveAttachments($request, $expenseRequest);
+
         return redirect()->route('expense_request.show', $expenseRequest)
             ->with('success', "Expense request {$expenseRequest->reference_no} updated.");
     }
@@ -813,7 +827,7 @@ class ExpenseRequestController extends Controller
             'lines.*.payment'      => ['nullable', 'numeric', 'min:0'],
             'lines.*.particular'   => ['nullable', 'string'],
             'lines.*.file'         => ['nullable', 'file', 'max:5120'],
-        ]);
+        ] + \App\Support\RequestAttachments::rules());
 
         $branchId = $validated['branch_id'] ?? null;
 
@@ -965,8 +979,33 @@ class ExpenseRequestController extends Controller
             return back()->withErrors($e->errors())->withInput();
         }
 
+        $this->saveAttachments($request, $requestModel);
+
         return redirect()->route('expense_request.index')
             ->with('success', "Expense request {$requestModel->reference_no} saved.");
+    }
+
+    /**
+     * Store the optional multi-file attachments for a request
+     * (Cyd 2026-11-09, "Upload and Edit" — 2-5 files, additive while Pending).
+     */
+    private function saveAttachments(Request $request, ExpenseRequest $expenseRequest): void
+    {
+        $files = $request->file('attachments', []);
+        if (! is_array($files) || $files === []) {
+            return;
+        }
+
+        $files = array_values(array_filter($files));
+        $existing = $expenseRequest->attachments()->count();
+
+        if ($message = \App\Support\RequestAttachments::overflowMessage($existing, count($files))) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['attachments' => $message]);
+        }
+
+        foreach (\App\Support\RequestAttachments::store($files, 'expense-request-attachments', auth()->id()) as $payload) {
+            $expenseRequest->attachments()->create($payload);
+        }
     }
 
     // -------------------------------------------------------------------

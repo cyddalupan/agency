@@ -30,7 +30,7 @@
         </ul>
     </div>
 
-    <form method="POST" action="{{ ($isEdit ?? false) ? route('receivable.update', $record) : route('receivable.store') }}" class="card bg-base-100 shadow-md">
+    <form method="POST" action="{{ ($isEdit ?? false) ? route('receivable.update', $record) : route('receivable.store') }}" class="card bg-base-100 shadow-md" enctype="multipart/form-data">
         @csrf
         @if($isEdit ?? false)
             @method('PUT')
@@ -149,6 +149,34 @@
             <div class="form-control">
                 <label class="label"><span class="label-text">Particular</span></label>
                 <textarea name="particular" class="textarea textarea-bordered w-full" rows="2" placeholder="Details…">{{ old('particular', $record->particular ?? '') }}</textarea>
+            </div>
+
+            {{-- Multi-file attachments (Cyd 2026-11-09, "Upload and Edit") --}}
+            @php
+                $existingAttachments = isset($record) && ($isEdit ?? false) ? $record->attachments : collect();
+                $remainingSlots = 5 - $existingAttachments->count();
+            @endphp
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Attachments <span class="opacity-60">(up to 5, PDF/JPG/PNG/DOC/XLS, 5MB each)</span></span>
+                </label>
+
+                @if($existingAttachments->isNotEmpty())
+                    <ul class="mb-2 space-y-1 text-sm">
+                        @foreach($existingAttachments as $attachment)
+                            <li>📎 <a href="{{ \App\Support\RequestAttachments::url($attachment->path) }}" target="_blank" class="link link-primary">{{ $attachment->original_name ?? basename($attachment->path) }}</a></li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if($remainingSlots > 0)
+                    <input type="file" name="attachments[]" multiple class="file-input file-input-bordered file-input-sm w-full">
+                    <p class="text-xs opacity-60 mt-1">{{ ($isEdit ?? false) ? 'Uploading here ADDS files to the transaction' : 'Optional' }} — {{ $remainingSlots }} slot(s) left.</p>
+                @else
+                    <p class="text-xs opacity-70">This transaction already has the maximum of 5 files.</p>
+                @endif
+                @error('attachments') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
+                @error('attachments.*') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex gap-3 pt-4 border-t border-base-200">

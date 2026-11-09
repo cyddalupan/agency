@@ -93,4 +93,12 @@ class Receivable extends Model
 
         return str_pad((string) $next, 6, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Multi-file attachments (Cyd 2026-11-09, "Upload and Edit").
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ReceivableAttachment::class);
+    }
 }

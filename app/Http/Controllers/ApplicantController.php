@@ -63,6 +63,11 @@ class ApplicantController extends Controller
             $query->where('status_code', $request->integer('status'));
         }
 
+        // Filter by employer
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
         // Filter by gender
         if ($request->filled('gender')) {
             $query->where('gender', $request->input('gender'));

@@ -77,6 +77,15 @@ class ExpenseRequest extends Model
         return $this->hasMany(ExpenseRequestItem::class)->orderBy('id');
     }
 
+    /**
+     * Multi-file attachments (Cyd 2026-11-09, "Upload and Edit") — up to 5 per
+     * request, additive on each edit while Pending.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(ExpenseRequestAttachment::class);
+    }
+
     public function histories(): HasMany
     {
         return $this->hasMany(ExpenseRequestStatusHistory::class)->latest();

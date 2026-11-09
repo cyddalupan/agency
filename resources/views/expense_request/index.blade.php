@@ -362,7 +362,7 @@
                                                 <div class="flex items-center gap-2">
                                                     <a href="{{ route('expense_request.show', $request) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                                     {{-- Admin + Accounting may edit (Cyd 2026-11-01) --}}
-                                                    @if(auth()->user()->canEditTransactions())
+                                                    @if(auth()->user()->canEditTransaction($request))
                                                         <a href="{{ route('expense_request.edit', $request) }}" class="btn btn-xs btn-outline whitespace-nowrap">✏️ Edit</a>
                                                     @endif
                                                     {{-- Admin-only delete (Cyd 2026-10-24) --}}

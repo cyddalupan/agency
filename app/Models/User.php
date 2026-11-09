@@ -155,6 +155,50 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user may edit THIS record (Mjolnir card "Upload and Edit",
+     * Cyd 2026-11-09): "All Requestor should be able to edit their request as
+     * long as the status is Pending. Only the user can edit their request and
+     * admin and accounting."
+     *
+     * Admin / Accounting keep editing anything at any status. Everyone else may
+     * edit ONLY records they raised, and ONLY while those are pending.
+     */
+    public function canEditTransaction($record): bool
+    {
+        if ($this->canEditTransactions()) {
+            return true;
+        }
+
+        if (! $record) {
+            return false;
+        }
+
+        // Owner check: both modules carry the requestor in user_id.
+        if ((int) ($record->user_id ?? 0) !== (int) $this->id) {
+            return false;
+        }
+
+        return (string) ($record->status ?? '') === 'pending';
+    }
+
+    /**
+     * Human-readable reason an edit was refused, so the controllers can return
+     * a useful 403 instead of one generic message.
+     */
+    public function transactionEditRefusal($record): string
+    {
+        if (! $record) {
+            return 'This transaction could not be found.';
+        }
+
+        if ((int) ($record->user_id ?? 0) !== (int) $this->id) {
+            return 'You can only edit your own request.';
+        }
+
+        return 'Only Pending requests can be edited.';
+    }
+
+    /**
      * Whether this user may see the money-total summary cards on the
      * Receivable and Expenses & Payments dashboards (Josh, 2026-11-08):
      * only Admin (super_admin / admin) + Accounting (billing). Everyone else
