@@ -1,3 +1,9 @@
+    @php
+        // The status param to carry through filter forms: on the special
+        // "Released · Unpaid" tab there is no real status, so carry its key.
+        $statusParam = $activeUnpaidRelease ? 'unpaid_release' : $activeStatus;
+    @endphp
+
 @push('head')
 <style>
     /* Cyd 2026-11-06 (card: Expense module "Particular and Status")
@@ -98,6 +104,17 @@
                             <span class="badge badge-sm {{ $isActive ? 'bg-white/20 text-white border border-white/30' : $tabStyles[$statusKey]['badge'] }}">{{ $statusCounts[$statusKey] }}</span>
                         </a>
                     @endforeach
+
+                    {{-- (Josh 2026-11-09, card 6af1719c) Released but still owed:
+                         released requests whose agent commission lines are not
+                         fully paid. Purely a view — no status is changed. --}}
+                    <a href="{{ route('expense_request.index', array_filter(['status' => 'unpaid_release', 'encoder' => $activeEncoder])) }}"
+                       title="Released requests that still owe the agent money (not yet fully paid)"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 {{ $activeUnpaidRelease ? 'bg-[#0f1724] text-white shadow-md ring-2 ring-primary/60' : 'bg-base-200/70 text-base-content/70 hover:bg-base-200 hover:text-base-content' }}">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Released · Unpaid
+                        <span class="badge badge-sm {{ $activeUnpaidRelease ? 'bg-white/20 text-white border border-white/30' : 'badge-warning' }}">{{ $unpaidReleaseCount }}</span>
+                    </a>
                 </div>
 
                 {{-- Statistics / encoder filters (Cyd 2026-11-01, card 125): the tabs are the
@@ -121,8 +138,8 @@
                     @if($encoders->count())
                         <div class="flex flex-wrap items-center gap-2">
                             <form method="GET" action="{{ route('expense_request.index') }}" class="flex items-center gap-2">
-                                @if($activeStatus)
-                                    <input type="hidden" name="status" value="{{ $activeStatus }}">
+                                @if($statusParam)
+                                    <input type="hidden" name="status" value="{{ $statusParam }}">
                                 @endif
                                 <label for="encoder-filter" class="text-xs font-semibold opacity-60 whitespace-nowrap">🔎 Encoder:</label>
                                 <select name="encoder" id="encoder-filter" class="select select-xs select-bordered" onchange="this.form.submit()">
@@ -132,7 +149,7 @@
                                     @endforeach
                                 </select>
                                 @if($activeEncoder)
-                                    <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus])) }}" class="btn btn-ghost btn-xs" title="Clear encoder filter">✕</a>
+                                    <a href="{{ route('expense_request.index', array_filter(['status' => $statusParam])) }}" class="btn btn-ghost btn-xs" title="Clear encoder filter">✕</a>
                                 @endif
                             </form>
                         </div>
@@ -230,8 +247,8 @@
 
                     {{-- Search (Cyd 2026-11-04): inline with the Bulk Update toolbar. --}}
                     <form method="GET" action="{{ route('expense_request.index') }}" class="flex flex-wrap items-center gap-2">
-                        @if($activeStatus)
-                            <input type="hidden" name="status" value="{{ $activeStatus }}">
+                        @if($statusParam)
+                            <input type="hidden" name="status" value="{{ $statusParam }}">
                         @endif
                         @if($activeEncoder)
                             <input type="hidden" name="encoder" value="{{ $activeEncoder }}">
@@ -242,7 +259,7 @@
                             <button type="submit" class="btn btn-sm btn-primary join-item">Search</button>
                         </div>
                         @if($activeSearch !== '')
-                            <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
+                            <a href="{{ route('expense_request.index', array_filter(['status' => $statusParam, 'encoder' => $activeEncoder])) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
                             <span class="text-xs opacity-60">{{ $requests->count() }} request(s) match “{{ $activeSearch }}”</span>
                         @endif
                     </form>
@@ -414,7 +431,9 @@
             @else
                 @if($activeSearch !== '')
                     <p class="opacity-60">No transactions match “{{ $activeSearch }}”.
-                        <a href="{{ route('expense_request.index', array_filter(['status' => $activeStatus, 'encoder' => $activeEncoder])) }}" class="link link-primary">Clear search</a>.</p>
+                        <a href="{{ route('expense_request.index', array_filter(['status' => $statusParam, 'encoder' => $activeEncoder])) }}" class="link link-primary">Clear search</a>.</p>
+                @elseif($activeUnpaidRelease)
+                    <p class="opacity-60">Nothing outstanding — every released commission line has been paid.</p>
                 @else
                     <p class="opacity-60">No expense requests yet. <a href="{{ route('expense_request.create') }}" class="link link-primary">Create one</a>.</p>
                 @endif
