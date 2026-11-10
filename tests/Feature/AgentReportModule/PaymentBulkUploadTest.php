@@ -368,4 +368,83 @@ class PaymentBulkUploadTest extends TestCase
         $this->assertStringContainsString('30023', $message);
         $this->assertStringContainsString('PD FR. DEP COMM', $message);
     }
+
+    // ---------- Card 6ae75260 "for fix": diagnosable no-match errors ----------
+
+    /**
+     * Josh 2026-11-08 ("for fix"): a row that matches nothing only produced a
+     * wall of the date's 20 lines, so there was no way to see WHICH criterion
+     * was wrong. The message must now name the failed criterion.
+     */
+    #[Test]
+    public function a_no_match_row_says_which_criteria_failed(): void
+    {
+        // Two lines on the date: with only one, the row is accepted regardless
+        // (a lone line is unambiguous), and the no-match path is never reached.
+        $this->makeRequest('31001', [
+            ['particular' => 'Deployed comm'],
+            ['particular' => 'Office rental'],
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    [now()->toDateString(), 'JJOVELYN SISO', 'MARY JANE MORANTE', 'PHP', '500.00', 'PD FR. FTW COMM'],
+                ]),
+            ]);
+
+        $response->assertSessionHasErrors('csv_file');
+
+        $message = json_encode($response->getSession()->get('bulk_errors'));
+        $this->assertStringContainsString('Likely cause', $message);
+        $this->assertStringContainsString('JJOVELYN SISO', $message);
+        $this->assertStringContainsString('MARY JANE MORANTE', $message);
+    }
+
+    #[Test]
+    public function the_diagnosis_only_names_the_criteria_that_actually_failed(): void
+    {
+        // 'Deployed comm' exists on this date, 'Office rental' also exists —
+        // so the particular criterion DOES hit, while the applicant does not.
+        $this->makeRequest('31002', [
+            ['particular' => 'Deployed comm'],
+            ['particular' => 'Deployed comm'],
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    [now()->toDateString(), 'NOBODY HERE', '', 'PHP', '999.00', 'something else entirely'],
+                ]),
+            ]);
+
+        $response->assertSessionHasErrors('csv_file');
+
+        $message = json_encode($response->getSession()->get('bulk_errors'));
+        $this->assertStringContainsString('NOBODY HERE', $message);
+        // Only the applicant failed — the particular must not be named as a cause.
+        $this->assertStringNotContainsString("has particular 'Deployed comm'", $message);
+        $this->assertStringContainsString("has particular 'something else entirely'", $message);
+    }
+
+    #[Test]
+    public function the_no_match_error_still_lists_the_dates_lines(): void
+    {
+        $this->makeRequest('31003', [
+            ['particular' => 'Office rental'],
+            ['particular' => 'Deployed comm'],
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    [now()->toDateString(), 'NOBODY HERE', '', 'PHP', '999.00', 'nothing like this'],
+                ]),
+            ]);
+
+        $response->assertSessionHasErrors('csv_file');
+
+        $message = json_encode($response->getSession()->get('bulk_errors'));
+        $this->assertStringContainsString('31003', $message, 'The date\'s lines are still listed so the sheet can be fixed in one pass.');
+    }
 }

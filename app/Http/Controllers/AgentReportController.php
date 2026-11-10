@@ -856,8 +856,39 @@ class AgentReportController extends Controller
                         : Carbon::parse($expenseRequest->date ?? now())->format('M d, Y');
 
                     if ($bestScore <= 10) {
-                        $rowErrors[] = 'No line on the ' . $dateText . ' transaction matches' . $givenText
-                            . '. That date has ' . $candidates->count() . ' line(s): ' . $preview . $more;
+                        // Tell the user *which* criteria failed instead of only
+                        // dumping the date's lines (Josh 2026-11-08, "for fix").
+                        // A wall of 20 rows does not show why the row missed.
+                        $near = [];
+                        if ($applicantRaw !== '') {
+                            $hit = $candidates->first(fn ($it) => $it->applicant
+                                && $norm(trim(($it->applicant->last_name ?? '') . ', ' . ($it->applicant->first_name ?? ''), ', ')) === $norm($applicantRaw));
+                            if (! $hit) {
+                                $near[] = "no line on {$dateText} has applicant '{$applicantRaw}'";
+                            }
+                        }
+                        if ($agentRaw !== '') {
+                            $hit = $candidates->first(fn ($it) => $it->agent && $norm($it->agent->name ?? '') === $norm($agentRaw));
+                            if (! $hit) {
+                                $near[] = "no line on {$dateText} has agent '{$agentRaw}'";
+                            }
+                        }
+                        if ($particularRaw !== '') {
+                            $hit = $candidates->first(fn ($it) => $norm($it->particular ?? '') === $norm($particularRaw));
+                            if (! $hit) {
+                                $near[] = "no line on {$dateText} has particular '{$particularRaw}'";
+                            }
+                        }
+                        if ($payment !== null && ! $candidates->first(fn ($it) => abs($payment - (float) $it->amount) < 0.01)) {
+                            $near[] = 'no line on ' . $dateText . ' is exactly ' . number_format($payment, 2);
+                        }
+
+                        $diagnosis = $near
+                            ? ' Likely cause' . (count($near) === 1 ? '' : 's') . ': ' . implode('; ', $near) . '.'
+                            : '';
+
+                        $rowErrors[] = 'No line on the ' . $dateText . ' transaction matches' . $givenText . '.' . $diagnosis
+                            . ' That date has ' . $candidates->count() . ' line(s): ' . $preview . $more;
                     } else {
                         $rowErrors[] = $best->count() . ' line(s) match' . $givenText
                             . ' equally — add the Applicant or Particular to pick one. Lines: ' . $preview . $more;
