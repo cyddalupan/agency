@@ -115,16 +115,31 @@ class AgentReportController extends Controller
         $releasedCommissionTotal = $releasedCommissionItems
             ->sum(fn ($item) => $converter->toPhp((float) $item->amount, $item->currency));
 
-        // ---- Tab 1c: Cash Advance (pending agent-charged items on Cash Advance accounts) ----
+        // ---- Tab 1c: Cash Advance (agent-charged items on Cash Advance accounts) ----
+        // (Josh 2026-11-09) "All RELEASED status with CASH ADVANCE Account should
+        // also be posted on the AGENTS REPORT > CASH ADVANCE Tab."
+        // This tab used to list PENDING rows only, which contradicted the Agent
+        // Ledger: `agentLedgerData()` has always summed RELEASED cash advances
+        // into the balance, so an agent's balance counted rows this tab never
+        // showed. Released is included here; cancelled stays out.
         $cashAdvanceItems = ExpenseRequestItem::query()
             ->where('charge', 'agent')
             ->whereNotNull('agent_id')
-            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
+            ->whereHas('expenseRequest', fn ($er) => $er
+                ->where('agency_id', $agencyId)
+                ->whereIn('status', [ExpenseRequest::STATUS_PENDING, ExpenseRequest::STATUS_RELEASED]))
             ->when($cashAdvanceAccountIds->isNotEmpty(), fn ($q) => $q->whereIn('account_id', $cashAdvanceAccountIds))
             ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
             ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
-            ->orderByDesc('created_at')
+            // Pending first: those are the rows still needing action. Released
+            // cash advances follow, newest first, so the tab does not bury the
+            // open items under 700+ historical rows.
+            ->join('expense_requests as ca_er', 'ca_er.id', '=', 'expense_request_items.expense_request_id')
+            ->orderByRaw("CASE WHEN ca_er.status = 'pending' THEN 0 ELSE 1 END")
+            ->orderByDesc('ca_er.date')
+            ->orderByDesc('expense_request_items.id')
+            ->select('expense_request_items.*')
             ->get();
 
         // ---- Tab 1c: Receivables (pending agent-charged items on the six receivable accounts) ----
