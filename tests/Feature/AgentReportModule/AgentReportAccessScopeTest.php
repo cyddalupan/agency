@@ -34,7 +34,11 @@ class AgentReportAccessScopeTest extends TestCase
         parent::setUp();
 
         $this->gulf = Agency::factory()->create(['subdomain' => 'gulf']);
-        $this->other = Agency::factory()->create(['subdomain' => 'csdi']);
+        // (Card 6af3ddf8, 2026-11-11) CSDI and FINAS were added to the
+        // Agents Report allow-list, so this fixture must use a tenant that is
+        // genuinely NOT named there — otherwise "other agency" would test an
+        // agency that is in fact allowed.
+        $this->other = Agency::factory()->create(['subdomain' => 'omnis']);
         $this->gulfBranch = Branch::factory()->create([
             'agency_id' => $this->gulf->id,
             'name'      => 'BACOLOD',
@@ -111,7 +115,7 @@ class AgentReportAccessScopeTest extends TestCase
         foreach (['admin', 'billing', 'branch', 'staff'] as $type) {
             $this->assertFalse(
                 ModuleAccess::allows($type, 'agent_report', $this->other->id),
-                "{$type} on a non-Gulf tenant must not reach Agents Report"
+                "{$type} on a tenant outside the allow-list must not reach Agents Report"
             );
         }
 

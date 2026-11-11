@@ -174,11 +174,14 @@ class UserFinasAccessRolesTest extends TestCase
             'user_type' => 'billing',
         ]);
 
-        foreach (['applicants', 'accounting', 'accounts'] as $module) {
+        foreach (['applicants', 'accounting', 'accounts', 'agent_report', 'receivable', 'expense_request'] as $module) {
             $this->assertTrue($accounting->canAccessModule($module), "FINAS Accounting MUST access '{$module}'.");
         }
 
-        foreach (['employers', 'reports', 'receivable', 'expense_request', 'agent_report', 'settings', 'users'] as $module) {
+        // (Card 6af3ddf8, 2026-11-11) The three finance modules were carved out
+        // of this deny-list: the client asked for Agent Report, Receivable and
+        // Expenses & Payments on FINAS. Everything else stays denied.
+        foreach (['employers', 'reports', 'settings', 'users'] as $module) {
             $this->assertFalse($accounting->canAccessModule($module), "FINAS Accounting must NOT access '{$module}'.");
         }
 

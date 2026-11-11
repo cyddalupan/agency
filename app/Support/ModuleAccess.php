@@ -101,8 +101,12 @@ class ModuleAccess
 
     /**
      * FINAS Accounting (user_type = billing on the finas tenant). The FINAS
-     * card is narrower than the default Accounting preset: only Applicants,
+     * card was narrower than the default Accounting preset: only Applicants,
      * the Accounting (Statistics) dashboard and the Accounts module.
+     *
+     * (Card 6af3ddf8, 2026-11-11) "Show the AGENT REPORT, RECEIVABLE and
+     * EXPENSE AND PAYMENT MODULEs to Admin, Accounting and Branch User
+     * Access" on FINAS & CSDI — so those three are added here.
      */
     public const FINAS_ACCOUNTING_ALLOWED = [
         'dashboard',
@@ -114,6 +118,9 @@ class ModuleAccess
         'applicants',
         'accounting',
         'accounts',
+        'agent_report',
+        'receivable',
+        'expense_request',
     ];
 
     /** Modules "Rest of Account" may access (everything else is 403). */
@@ -133,12 +140,28 @@ class ModuleAccess
     ];
 
     /**
-     * Agents Report is a Gulf-only module (Mjolnir card "GULF: Agent Reports
-     * module", 2026-11-09): "Show Agents Report Module to Admin, Accounting,
-     * and other branch user access only". Gulf is the only tenant with agent
-     * data, so the module is not offered elsewhere.
+     * Agencies where the Agents Report module is offered.
+     *
+     * Originally Gulf-only (Mjolnir card "GULF: Agent Reports module",
+     * 2026-11-09). Widened 2026-11-11 by card 6af3ddf8 — "FINAS & CSDI: AGENT
+     * REPORT, RECEIVABLE and EXPENSE AND PAYMENT MODULE" — which asks for the
+     * module on FINAS and CSDI as well, for Admin, Accounting and Branch.
+     *
+     * This list is intentionally explicit: an agency that is not named here
+     * still gets nothing, so opening the module elsewhere stays a deliberate
+     * decision rather than a side effect of a role change.
      */
-    public const AGENT_REPORT_AGENCY = 'gulf';
+    public const AGENT_REPORT_AGENCIES = ['gulf', 'finas', 'csdi'];
+
+    /**
+     * Agencies where Receivable + Expenses & Payments are offered to Branch
+     * users (card 6af3ddf8, 2026-11-11).
+     *
+     * Branch users are otherwise branch-scoped and see neither module; the
+     * card asks for both on FINAS and CSDI. Gulf is deliberately NOT included:
+     * its Branch users keep the narrower access they have today.
+     */
+    public const BRANCH_FINANCE_AGENCIES = ['finas', 'csdi'];
 
     /**
      * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
@@ -217,9 +240,11 @@ class ModuleAccess
         $userType = (string) $userType;
 
         // Gulf-only modules (Cyd 2026-11-09): Agents Report exists for the Gulf
-        // tenant alone. Checked BEFORE the full-access shortcut so an admin of
-        // another agency cannot reach it either.
-        if ($module === 'agent_report' && ! self::isAgency($agencyId, self::AGENT_REPORT_AGENCY)) {
+        // Gulf-only modules (Cyd 2026-09): Agents Report used to exist for the
+        // Gulf tenant alone. Checked BEFORE the full-access shortcut so an
+        // admin of another agency cannot reach it either. Now offered on the
+        // agencies named in AGENT_REPORT_AGENCIES (card 6af3ddf8).
+        if ($module === 'agent_report' && ! self::isAnyAgency($agencyId, self::AGENT_REPORT_AGENCIES)) {
             return false;
         }
 
@@ -245,6 +270,15 @@ class ModuleAccess
         }
 
         if ($userType === 'branch') {
+            // (Card 6af3ddf8, 2026-11-11) FINAS and CSDI Branch users get the
+            // Receivable and Expenses & Payments modules. Branch data stays
+            // branch-scoped by the existing branchLocked() rules, so a branch
+            // user still only sees their own branch's rows.
+            if (in_array($module, ['receivable', 'expense_request'], true)
+                && self::isAnyAgency($agencyId, self::BRANCH_FINANCE_AGENCIES)) {
+                return true;
+            }
+
             return in_array($module, self::BRANCH_ALLOWED, true);
         }
 
@@ -276,6 +310,18 @@ class ModuleAccess
         }
 
         return strtolower((string) \App\Models\Agency::whereKey($agencyId)->value('subdomain')) === strtolower($subdomain);
+    }
+
+    /** True when the given agency's subdomain is one of the supplied list. */
+    public static function isAnyAgency(?int $agencyId, array $subdomains): bool
+    {
+        if (! $agencyId) {
+            return false;
+        }
+
+        $sub = strtolower((string) \App\Models\Agency::whereKey($agencyId)->value('subdomain'));
+
+        return $sub !== '' && in_array($sub, array_map('strtolower', $subdomains), true);
     }
 
     /** True for the limited "Rest of Account" tier (everyone below admin/accounting, except Encoder). */
