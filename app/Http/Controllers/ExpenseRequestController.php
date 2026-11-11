@@ -23,16 +23,6 @@ use Illuminate\View\View;
 
 class ExpenseRequestController extends Controller
 {
-    /**
-     * Pseudo-status for the "Released · Unpaid" tab (card 6af1719c).
-     * Deliberately not part of ExpenseRequest::STATUSES — it is a view over
-     * released rows that still owe the agent money, not a real status.
-     */
-    private const UNPAID_RELEASE_TAB = 'unpaid_release';
-
-    /** Commission accounts whose unpaid released lines are still owed. */
-    private const UNPAID_RELEASE_ACCOUNT_NAMES = ['Fit to work', 'Deployed'];
-
     /** Agency id + user rows cached for the duration of one bulk import. */
     private ?int $bulkUserCacheAgency = null;
     private $bulkUserCache = null;
@@ -87,24 +77,6 @@ class ExpenseRequestController extends Controller
         $status = request()->query('status');
         $activeStatus = in_array($status, ExpenseRequest::STATUSES, true) ? $status : null;
 
-        // (Josh 2026-11-09, card 6af1719c) "These should be posted on the Expense
-        // and Payments module Pending tab."
-        //
-        // The rows he pointed at are RELEASED requests whose agent-charged
-        // commission / Fit-to-work / Deployed lines have not been paid out yet
-        // (payment = 0). `released` there means "approved for release", not
-        // "settled" — so they never surfaced as work still to do, and the
-        // Agents Report was the only place they showed at all.
-        //
-        // The client data is the source of truth and cannot be asked to change,
-        // so this is a *reported view*: no row is re-written and no status is
-        // mutated. The tab matches its own requests instead of the status
-        // filter, so the per-status badges keep counting real statuses.
-        $activeUnpaidRelease = $status === self::UNPAID_RELEASE_TAB;
-        if ($activeUnpaidRelease) {
-            $activeStatus = null;
-        }
-
         // Per-status request counts for the tab badges (always over the full set).
         $statusCounts = array_fill_keys(ExpenseRequest::STATUSES, 0);
         $totalRequests = 0;
@@ -116,17 +88,10 @@ class ExpenseRequestController extends Controller
             }
         }
 
-        // Count the "released but still owed" requests for the extra tab badge.
-        $unpaidReleaseCount = $this->unpaidReleaseQuery($agencyId)->count();
-
-        $requestsQuery = (clone $filtered);
-        if ($activeUnpaidRelease) {
-            $requestsQuery = $this->unpaidReleaseQuery($agencyId)
-                ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
-                ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch));
-        }
-
-        $requests = $requestsQuery
+        // (Josh 2026-11-11, card 6af431cc) The separate "Released · Unpaid" tab is
+        // gone: every Released request belongs on the Released tab, so there is
+        // no second view to keep in sync.
+        $requests = (clone $filtered)
             ->with([
                 'items.applicant', 'items.agent', 'items.account', 'items.country', 'items.branch',
                 'user', 'branch',
@@ -281,8 +246,6 @@ class ExpenseRequestController extends Controller
             'activeStatus'     => $activeStatus,
             'activeSearch'     => $activeSearch,
             'statusCounts'     => $statusCounts,
-            'activeUnpaidRelease'  => $activeUnpaidRelease,
-            'unpaidReleaseCount'   => $unpaidReleaseCount,
             'phpTotal'         => $totals['PHP'],
             'usdTotal'         => $totals['USD'],
             'totalAmount'      => round($totals['PHP'] + $totals['USD'] * config('expense.usd_to_php', 56), 2),
@@ -2301,47 +2264,6 @@ class ExpenseRequestController extends Controller
                     : 'Expense #' . $expenseRequest->reference_no,
             ]
         );
-    }
-
-    /**
-     * Requests that are RELEASED but still owe the agent money.
-     *
-     * (Josh 2026-11-09, card 6af1719c) "These should be posted on the Expense
-     * and Payments module Pending tab." He pointed at Ref# 23248 / 11845 /
-     * 8857 / 8858 — all `released`, all agent-charged Fit-to-work or Deployed
-     * commission, and all with payment = 0.00.
-     *
-     * `released` in this system means the amount was approved for release; it
-     * does not mean the agent has been paid. A line with payment below its
-     * amount is therefore still open work, which is why Josh expected it on a
-     * pending list.
-     *
-     * This only SELECTs. The client's data is the source of truth and is never
-     * re-written or re-statused to make a screen look right.
-     */
-    private function unpaidReleaseQuery(int $agencyId)
-    {
-        $commissionAccountIds = Account::where('agency_id', $agencyId)
-            ->whereIn('name', self::UNPAID_RELEASE_ACCOUNT_NAMES)
-            ->pluck('id');
-
-        return ExpenseRequest::query()
-            ->where('agency_id', $agencyId)
-            ->where('status', ExpenseRequest::STATUS_RELEASED)
-            ->when(! auth()->user()->seesAllAccountingData(),
-                fn ($q) => $q->where('user_id', auth()->id()))
-            ->when($this->branchLocked(), fn ($q) => $q->where('expense_requests.branch_id', auth()->user()->branch_id))
-            ->whereExists(function ($sub) use ($commissionAccountIds) {
-                $sub->select(DB::raw(1))
-                    ->from('expense_request_items')
-                    ->whereColumn('expense_request_items.expense_request_id', 'expense_requests.id')
-                    ->where('expense_request_items.charge', 'agent')
-                    ->whereNotNull('expense_request_items.agent_id')
-                    ->when($commissionAccountIds->isNotEmpty(),
-                        fn ($q) => $q->whereIn('expense_request_items.account_id', $commissionAccountIds))
-                    // Still owed: nothing paid, or partially paid.
-                    ->whereRaw('COALESCE(expense_request_items.payment, 0) < expense_request_items.amount');
-            });
     }
 
     /**
