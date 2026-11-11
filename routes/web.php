@@ -520,6 +520,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
             ;
         Route::get('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionShow'])->name('deduction.show')
             ;
+        // Edit a deduction transaction — Admin and Accounting only (card 6af170f5)
+        Route::get('/deductions/{agent_deduction}/edit', [AgentReportController::class, 'deductionEdit'])->name('deduction.edit')
+            ;
+        Route::put('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionUpdate'])->name('deduction.update')
+            ;
         // Admin-only delete from the Deductions tab (Cyd 2026-11-01)
         Route::delete('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionDestroy'])->name('deduction.destroy')
             ;

@@ -324,6 +324,64 @@ class AgentReportController extends Controller
     }
 
     /**
+     * Edit an existing deduction transaction (card 6af170f5, Josh 2026-11-11:
+     * "place review on the transaction for Admin and Accounting Access only so
+     * they can edit").
+     *
+     * Reuses canManageDeductions() — the same Admin / Accounting / privileged
+     * gate that already governs creating a deduction, so the person fixing a
+     * bad particular is the same class of user who could have encoded it.
+     * Branch users still cannot cross their branch boundary.
+     */
+    public function deductionEdit(AgentDeduction $agentDeduction): View
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can edit deduction transactions.');
+
+        $this->authorizeAgency((int) $agentDeduction->agency_id);
+        $this->authorizeAgentBranch($agentDeduction->agent);
+
+        [$agents, $applicants] = $this->agentApplicantLists();
+
+        return view('agent_report.deduction_edit', [
+            'deduction'  => $agentDeduction->load(['agent', 'applicant', 'encoder']),
+            'agents'     => $agents,
+            'applicants' => $applicants,
+        ]);
+    }
+
+    /**
+     * Persist an edit to a deduction transaction (card 6af170f5).
+     */
+    public function deductionUpdate(Request $request, AgentDeduction $agentDeduction): RedirectResponse
+    {
+        abort_unless($this->canManageDeductions(), 403, 'Only Admin and Accounting can edit deduction transactions.');
+
+        $this->authorizeAgency((int) $agentDeduction->agency_id);
+        $this->authorizeAgentBranch($agentDeduction->agent);
+
+        $agencyId = auth()->user()->agency_id;
+
+        $validated = $request->validate([
+            'date'       => ['required', 'date'],
+            'amount'     => ['required', 'numeric', 'min:0.01'],
+            'particular' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        // Only the fields Accounting/Admin are expected to correct. The agent,
+        // applicant and account stay as encoded — changing ownership of a
+        // posted transaction is a different, riskier operation.
+        $agentDeduction->fill([
+            'date'       => $validated['date'],
+            'amount'     => $validated['amount'],
+            'particular' => $validated['particular'] ?? null,
+        ]);
+        $agentDeduction->save();
+
+        return redirect()->route('agent_report.index', ['tab' => 'deductions'])
+            ->with('success', 'Deduction transaction updated.');
+    }
+
+    /**
      * Bulk upload page for Deductions (Cyd 2026-10-23): one CSV row = one
      * deduction transaction (Date, Agent, Applicant, Amount, Particular).
      */
@@ -1249,6 +1307,7 @@ class AgentReportController extends Controller
 
         return view('agent_report.deduction_show', [
             'deduction' => $agentDeduction->load(['agent', 'applicant', 'encoder']),
+            'canEdit'   => $this->canManageDeductions(),
         ]);
     }
 

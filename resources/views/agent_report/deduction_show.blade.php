@@ -54,6 +54,12 @@
 
             <div class="flex gap-3 pt-4 border-t border-base-200 mt-4">
                 <a href="{{ route('agent_report.index', ['tab' => 'deductions']) }}" class="btn btn-ghost btn-sm">← Back</a>
+                {{-- (card 6af170f5, Josh 2026-11-11) Admin and Accounting can review
+                     and correct a posted deduction, e.g. a particular that a bulk
+                     upload left blank. --}}
+                @if($canEdit ?? false)
+                    <a href="{{ route('agent_report.deduction.edit', $deduction) }}" class="btn btn-primary btn-sm">✏️ Edit</a>
+                @endif
             </div>
         </div>
     </div>
