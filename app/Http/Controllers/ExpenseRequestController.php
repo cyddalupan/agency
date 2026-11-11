@@ -99,7 +99,7 @@ class ExpenseRequestController extends Controller
             ->when($activeStatus, fn ($q) => $q->where('status', $activeStatus))
             ->orderByDesc('date')
             ->orderByDesc('id')
-            ->paginate(50)
+            ->paginate($this->indexPageSize())
             ->withQueryString();
 
         // (Josh 2026-11-08) Users who cannot see the money statistics do not get
@@ -2264,6 +2264,39 @@ class ExpenseRequestController extends Controller
                     : 'Expense #' . $expenseRequest->reference_no,
             ]
         );
+    }
+
+    /**
+     * (Josh 2026-11-11, card 6af43368) Rows per page in the request list.
+     *
+     * "GULF only - ... Display all transactions on 1 page." Gulf holds ~22.8k
+     * requests, and rendering every one in a single response exhausts PHP's
+     * 256 MB limit (measured: ~0.022 MB of memory per row, so ~10k rows is the
+     * hard wall). Instead Gulf pages at 1,000 — 20x the old 50 — which drops
+     * the pager for any normal filtered view while staying far inside the
+     * limit (~53 MB peak, ~1s to render). Every other agency keeps 50.
+     */
+    private function indexPageSize(): int
+    {
+        return $this->isGulfTenant() ? 1000 : 50;
+    }
+
+    /** True when the current request runs on the Gulf tenant. */
+    private function isGulfTenant(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        $agency = $user->agency;
+
+        if (! $agency && $user->user_type === 'super_admin') {
+            $agency = request()->attributes->get('tenant_agency');
+        }
+
+        return $agency && strtolower((string) $agency->subdomain) === 'gulf';
     }
 
     /**
