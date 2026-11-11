@@ -495,6 +495,25 @@ class AgentReportController extends Controller
      * Accepts comma/semicolon/tab separators, BOM/UTF-16 (Excel), and any column
      * order — the header row is matched by name.
      */
+    /**
+     * Normalises a CSV header cell for alias lookup.
+     *
+     * Lowercases, collapses whitespace, and — the reason this exists (card
+     * 6af170f5) — strips the spaces people put around separators, so
+     * "PARTICULAR / DESCRIPTION" (the client's own template header) reduces to
+     * "particular/description" and matches the alias instead of being read as
+     * an unknown column and losing every row's text.
+     */
+    private function normaliseHeaderKey(string $header): string
+    {
+        $key = mb_strtolower(preg_replace('/\s+/', ' ', trim($header)));
+
+        // "particular / description" -> "particular/description"
+        $key = preg_replace('/\s*([\/\\|])\s*/', '$1', $key);
+
+        return (string) $key;
+    }
+
     private function parseDeductionCsv(string $path)
     {
         $raw = @file_get_contents($path);
@@ -565,7 +584,7 @@ class AgentReportController extends Controller
                 }
                 $candidate = [];
                 foreach ($cells as $idx => $header) {
-                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $key = $this->normaliseHeaderKey((string) $header);
                     $field = $aliases[$key] ?? null;
                     if ($field && ! in_array($field, $candidate, true)) {
                         $candidate[$idx] = $field;
@@ -581,7 +600,7 @@ class AgentReportController extends Controller
                         if (isset($candidate[$idx])) {
                             continue;
                         }
-                        $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                        $key = $this->normaliseHeaderKey((string) $header);
                         if ($key !== '' && preg_match('/particular|descri|remark|note|reason|narrat|deta?il|purpose|comment|memo|explanation|justificat|salary/', $key)) {
                             $unmapped[] = trim((string) $header);
                             continue;
@@ -1081,7 +1100,7 @@ class AgentReportController extends Controller
                 }
                 $candidate = [];
                 foreach ($cells as $idx => $header) {
-                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $key = $this->normaliseHeaderKey((string) $header);
                     $field = $aliases[$key] ?? null;
                     if ($field && ! in_array($field, $candidate, true)) {
                         $candidate[$idx] = $field;
@@ -1525,7 +1544,7 @@ class AgentReportController extends Controller
                 }
                 $candidate = [];
                 foreach ($cells as $idx => $header) {
-                    $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                    $key = $this->normaliseHeaderKey((string) $header);
                     $field = $aliases[$key] ?? null;
                     if ($field && ! in_array($field, $candidate, true)) {
                         $candidate[$idx] = $field;
@@ -1541,7 +1560,7 @@ class AgentReportController extends Controller
                         if (isset($candidate[$idx])) {
                             continue;
                         }
-                        $key = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $header)));
+                        $key = $this->normaliseHeaderKey((string) $header);
                         if ($key !== '' && preg_match('/particular|descri|remark|note|reason|narrat|deta?il|purpose|comment|memo/', $key)) {
                             $unmapped[] = trim((string) $header);
                         }

@@ -100,6 +100,78 @@ class AgentDeductionParticularHeaderTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('spacedHeaderVariants')]
+    public function a_header_with_spaces_around_the_separator_stores_the_particular(string $header): void
+    {
+        // (Josh 2026-11-11) His own template header is "PARTICULAR / DESCRIPTION"
+        // — spaces around the slash. It used to be read as an unknown column, so
+        // the file was refused; before that it imported with a NULL particular.
+        $this->upload(
+            "Date,Agent,Applicant,Amount,{$header}\n"
+            . "2026-11-09,{$this->agent->name},,1500.00,Spaced header text\n"
+        )->assertRedirect();
+
+        $this->assertSame('Spaced header text', AgentDeduction::latest('id')->first()->particular);
+    }
+
+    public static function spacedHeaderVariants(): array
+    {
+        return [
+            'spaced slash'        => ['PARTICULAR / DESCRIPTION'],
+            'spaced slash mixed'  => ['Particular / Description'],
+            'double spaces'       => ['PARTICULAR  /  DESCRIPTION'],
+            'tab-ish padding'     => ['  Particular / Description  '],
+        ];
+    }
+
+    #[Test]
+    public function the_clients_own_template_file_parses_with_its_particulars(): void
+    {
+        // Josh uploaded this exact file on 2026-11-11 ("update the particular").
+        // Its header is "PARTICULAR / DESCRIPTION", which used to be rejected.
+        $path = base_path('tests/fixtures/deductions-template.csv');
+        $this->assertFileExists($path);
+
+        $ref  = new \ReflectionClass(\App\Http\Controllers\AgentReportController::class);
+        $meth = $ref->getMethod('parseDeductionCsv');
+        $meth->setAccessible(true);
+
+        $rows = $meth->invoke($ref->newInstanceWithoutConstructor(), $path);
+
+        $this->assertIsArray($rows, 'The client template must parse, not be refused.');
+        $this->assertCount(1000, $rows, 'Every data row in the template must survive.');
+        $this->assertSame('LOVELY SOMODIO NOT BACKOUT', $rows[0]['data']['particular']);
+
+        $blank = array_filter($rows, fn ($r) => trim((string) ($r['data']['particular'] ?? '')) === '');
+        // The client's own file has one row (line 970, MARCELLA ORILLE) whose
+        // description is a single space — that is their data, not a parse loss.
+        // What must never happen is the column itself being dropped.
+        $this->assertLessThanOrEqual(
+            1,
+            count($blank),
+            'At most the client\'s own blank row may lack a particular.'
+        );
+        $this->assertArrayHasKey('particular', $rows[0]['data'], 'The description column must be mapped.');
+    }
+
+    #[Test]
+    public function a_pipe_separated_header_is_refused_rather_than_silently_dropped(): void
+    {
+        // Only the slash form is an alias. Any other separator must fail loudly
+        // with a fix-it instruction instead of importing a blank particular.
+        $response = $this->upload(
+            "Date,Agent,Applicant,Amount,PARTICULAR | DESCRIPTION\n"
+            . "2026-11-09,{$this->agent->name},,1500.00,Uniform deduction\n"
+        );
+
+        $this->assertSame(0, AgentDeduction::count());
+        $response->assertSessionHasErrors('csv_file');
+        $bag = $response->getSession()->get('errors');
+        $message = is_array($bag) ? implode(' ', (array) ($bag['csv_file'] ?? [])) : (string) $bag->first('csv_file');
+        $this->assertStringContainsString('PARTICULAR | DESCRIPTION', $message);
+    }
+
+    #[Test]
     public function an_unrecognised_description_column_blocks_the_upload_instead_of_blanking_it(): void
     {
         $response = $this->upload(
