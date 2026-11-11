@@ -69,7 +69,12 @@ class ReceivableController extends Controller
             'encoders'      => $encoders,
             'activeEncoder' => $activeEncoder,
             'activeSearch'  => $activeSearch,
-            'totalAmount'   => round((float) $receivables->sum('amount'), 2),
+            // (Josh 2026-11-11, card 6af3ea66) The headline "Total Amount" must
+            // show the RECEIVED amount only, not the sum of every status.
+            // `allAmount` keeps the old full-set figure for anything that still
+            // needs it; the per-status lines below still show Pending.
+            'totalAmount'   => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
+            'allAmount'     => round((float) $receivables->sum('amount'), 2),
             'pendingTotal'  => round((float) $receivables->where('status', Receivable::STATUS_PENDING)->sum('amount'), 2),
             'receivedTotal' => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
         ]);

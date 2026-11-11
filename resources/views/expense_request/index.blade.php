@@ -170,9 +170,11 @@
         @if($showFinancialTotals)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
-                <p class="text-sm opacity-60">💰 PHP Total</p>
-                <p class="text-2xl font-bold">₱{{ number_format($phpTotal, 2) }}</p>
-                <p class="text-xs opacity-60">USD: ${{ number_format($usdTotal, 2) }} ≈ ₱{{ number_format($totalAmount, 2) }}</p>
+                {{-- (Josh 2026-11-11, card 6af3ea66) Headline shows RELEASED only.
+                     The per-status lines below still break down the full set. --}}
+                <p class="text-sm opacity-60">💰 PHP Total <span class="opacity-60">(Released)</span></p>
+                <p class="text-2xl font-bold">₱{{ number_format($releasedPhpTotal, 2) }}</p>
+                <p class="text-xs opacity-60">USD: ${{ number_format($releasedUsdTotal, 2) }} ≈ ₱{{ number_format($releasedTotalAmount, 2) }}</p>
                 @php
                     $statusIcons = [
                         'pending'       => '⏳',

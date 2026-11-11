@@ -286,6 +286,17 @@ class ExpenseRequestController extends Controller
             'phpTotal'         => $totals['PHP'],
             'usdTotal'         => $totals['USD'],
             'totalAmount'      => round($totals['PHP'] + $totals['USD'] * config('expense.usd_to_php', 56), 2),
+            // (Josh 2026-11-11, card 6af3ea66) The headline "PHP Total" on the
+            // Expenses & Payments dashboard must show the RELEASED amount only,
+            // not the sum of every status. Kept separate from $phpTotal so the
+            // per-status breakdown below keeps its full-set numbers.
+            'releasedPhpTotal' => $totals['status']['released']['PHP'],
+            'releasedUsdTotal' => $totals['status']['released']['USD'],
+            'releasedTotalAmount' => round(
+                $totals['status']['released']['PHP']
+                + $totals['status']['released']['USD'] * config('expense.usd_to_php', 56),
+                2
+            ),
             'chargeTotals'     => $totals['charge'],
             'pendingPhpTotal'       => $totals['status']['pending']['PHP'],
             'pendingUsdTotal'       => $totals['status']['pending']['USD'],

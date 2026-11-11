@@ -33,7 +33,8 @@
         @if($showFinancialTotals)
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
-                <p class="text-sm opacity-60">💰 Total Amount</p>
+                {{-- (Josh 2026-11-11, card 6af3ea66) Headline shows RECEIVED only. --}}
+                <p class="text-sm opacity-60">💰 Total Amount <span class="opacity-60">(Received)</span></p>
                 <p class="text-2xl font-bold">₱{{ number_format($totalAmount, 2) }}</p>
                 <div class="mt-2 pt-2 border-t border-base-200 text-xs opacity-70 space-y-0.5">
                     <p>⏳ Pending: ₱{{ number_format($pendingTotal, 2) }}</p>
