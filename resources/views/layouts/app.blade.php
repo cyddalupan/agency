@@ -259,6 +259,15 @@
                     </a>
                     @endif
 
+                    @if (auth()->user()->employeeModuleEnabled() && auth()->user()->canAccessModule('employees'))
+                    <a href="{{ route('employees.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('employees.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                        <span class="text-lg">👔</span>
+                        Employees
+                    </a>
+                    @endif
+
                     @if (auth()->user()->canAccessModule('applicants'))
                     @if (auth()->user()->user_type === 'encoder')
                     <a href="{{ route('applicants.create') }}"

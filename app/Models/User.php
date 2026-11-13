@@ -72,6 +72,12 @@ class User extends Authenticatable
      * super_admin/admin => everything; Accounting (billing) => admin minus the
      * denied modules; everyone else => the allowlisted modules only.
      */
+    /** Whether this user's agency offers the EMPLOYEE module (CSDI / FINAS). */
+    public function employeeModuleEnabled(): bool
+    {
+        return \App\Support\ModuleAccess::employeeEnabled($this->agency_id);
+    }
+
     public function canAccessModule(string $module): bool
     {
         return \App\Support\ModuleAccess::allows($this->user_type, $module, $this->agency_id);

@@ -36,6 +36,12 @@ class EnsureModuleAccess
             abort(403, 'Your account does not have access to this module.');
         }
 
+        // EMPLOYEE module is CSDI/FINAS only (card 6af6fe94): admins of the
+        // other tenants are refused too, so this cannot ride the shortcut below.
+        if ($module === 'employees' && ! ModuleAccess::allows($type, $module, $user->agency_id)) {
+            abort(403, 'The Employee module is not available for this agency.');
+        }
+
         // Full-access roles.
         if (in_array($type, ['super_admin', 'admin'], true)) {
             return $next($request);

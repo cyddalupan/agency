@@ -567,6 +567,19 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
             ;
     });
 
+    // EMPLOYEE module — CSDI and FINAS only (card 6af6fe94, 2026-11-13).
+    // Fixed paths come first so 'settings'/'create' are not read as {employee}.
+    Route::prefix('employee-settings')->name('employees.settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EmployeeController::class, 'settings'])->name('index');
+        Route::post('/', [\App\Http\Controllers\EmployeeController::class, 'storeSetting'])->name('store');
+        Route::put('/{setting}', [\App\Http\Controllers\EmployeeController::class, 'updateSetting'])->name('update');
+        Route::delete('/{setting}', [\App\Http\Controllers\EmployeeController::class, 'destroySetting'])->name('destroy');
+    });
+
+    Route::get('employees/export', [\App\Http\Controllers\EmployeeController::class, 'export'])->name('employees.export');
+    Route::get('employees/{employee}/document/{field}', [\App\Http\Controllers\EmployeeController::class, 'download'])->name('employees.document');
+    Route::resource('employees', \App\Http\Controllers\EmployeeController::class)->except(['show']);
+
     // Report Template CRUD
     Route::resource('report-templates', ReportTemplateController::class)->except(['show']);
 

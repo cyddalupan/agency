@@ -164,6 +164,15 @@ class ModuleAccess
     public const BRANCH_FINANCE_AGENCIES = ['finas', 'csdi'];
 
     /**
+     * Agencies that offer the EMPLOYEE module (card 6af6fe94, 2026-11-13).
+     *
+     * "This is only for CSDI and FINAS" — the card is explicit, so the module
+     * is closed everywhere else, admins included, the same way agent_report is
+     * gated by AGENT_REPORT_AGENCIES.
+     */
+    public const EMPLOYEE_AGENCIES = ['csdi', 'finas'];
+
+    /**
      * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
      * 2026-11-05): "Only Admin and Accounting users has this module".
      * It is therefore NOT in STAFF_ALLOWED — super_admin/admin keep it via
@@ -200,6 +209,9 @@ class ModuleAccess
         'notifications'            => 'notifications',
         'ai'                       => 'ai',
         'company-profile'          => 'company-profile',
+        // Employee Settings shares the Employee module's gate.
+        'employee-settings'        => 'employees',
+        'employees'                => 'employees',
         'agencies'                 => 'agencies',
         'agents'                   => 'agents',
         'branches'                 => 'branches',
@@ -244,6 +256,11 @@ class ModuleAccess
         // Gulf tenant alone. Checked BEFORE the full-access shortcut so an
         // admin of another agency cannot reach it either. Now offered on the
         // agencies named in AGENT_REPORT_AGENCIES (card 6af3ddf8).
+        // EMPLOYEE module is offered on CSDI and FINAS only (card 6af6fe94).
+        if ($module === 'employees' && ! self::isAnyAgency($agencyId, self::EMPLOYEE_AGENCIES)) {
+            return false;
+        }
+
         if ($module === 'agent_report' && ! self::isAnyAgency($agencyId, self::AGENT_REPORT_AGENCIES)) {
             return false;
         }
@@ -294,6 +311,12 @@ class ModuleAccess
         }
 
         return in_array($module, self::STAFF_ALLOWED, true);
+    }
+
+    /** True when the agency offers the EMPLOYEE module (CSDI / FINAS only). */
+    public static function employeeEnabled(?int $agencyId): bool
+    {
+        return self::isAnyAgency($agencyId, self::EMPLOYEE_AGENCIES);
     }
 
     /** True when the given agency is the FINAS tenant (subdomain = finas). */
