@@ -35,7 +35,7 @@
             <h3 class="font-bold mb-3">Transaction Details</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span class="opacity-60">Agent:</span> <strong>{{ $receivable->agent->name ?? '—' }}</strong></div>
-                <div><span class="opacity-60">Applicant:</span> {{ $receivable->applicant ? $receivable->applicant->first_name . ' ' . $receivable->applicant->last_name : '—' }}</div>
+                <div><span class="opacity-60">Applicant:</span> {{-- Card 6af82fef: full name (First Middle Last Suffix). --}}{{ $receivable->applicant ? $receivable->applicant->full_name : '—' }}</div>
                 <div><span class="opacity-60">Encoded by:</span> {{ $receivable->encoder->name ?? '—' }}</div>
                 <div><span class="opacity-60">Ref# / AR#:</span> {{ $receivable->ref_ar ?? '—' }}</div>
                 <div><span class="opacity-60">Amount:</span> <strong class="text-primary text-lg">₱{{ number_format($receivable->amount, 2) }}</strong></div>

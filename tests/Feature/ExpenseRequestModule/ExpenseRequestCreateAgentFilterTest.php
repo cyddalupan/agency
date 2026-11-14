@@ -63,7 +63,9 @@ class ExpenseRequestCreateAgentFilterTest extends TestCase
         $html = $this->createPageHtml();
 
         $this->assertStringContainsString('data-agent="' . $agent->id . '"', $html);
-        $this->assertStringContainsString(
+        // Card 6af82fef: selects show the full name (First Middle Last), not "LAST, FIRST".
+        $this->assertStringContainsString($applicant->full_name, $html);
+        $this->assertStringNotContainsString(
             $applicant->last_name . ', ' . $applicant->first_name,
             $html
         );

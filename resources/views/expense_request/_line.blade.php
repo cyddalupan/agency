@@ -121,7 +121,8 @@
                     <option value="">N/A</option>
                     @foreach($applicants as $ap)
                         <option value="{{ $ap->id }}" data-agent="{{ $ap->agent_id }}" {{ ($line['applicant_id'] ?? '') == $ap->id ? 'selected' : '' }}>
-                            {{ $ap->last_name }}, {{ $ap->first_name }}
+                            {{-- Card 6af82fef: full name (First Middle Last Suffix). --}}
+                            {{ $ap->full_name }}
                         </option>
                     @endforeach
                 </select>

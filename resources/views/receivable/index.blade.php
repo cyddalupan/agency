@@ -169,7 +169,8 @@
                                 <td>{{ $r->ref_ar ?? '—' }}</td>
                                 <td>
                                     @if($r->applicant)
-                                        {{ $r->applicant->first_name }} {{ $r->applicant->last_name }}
+                                        {{-- Card 6af82fef: full name (First Middle Last Suffix). --}}
+                                        {{ $r->applicant->full_name }}
                                     @else —
                                     @endif
                                 </td>

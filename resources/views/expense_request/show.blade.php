@@ -79,7 +79,7 @@
                             <tr>
                                 <td><span class="badge badge-sm {{ $item->statusBadge() }}">{{ $item->statusLabel() }}</span></td>
                                 <td><span class="badge badge-sm {{ $item->charge === 'office' ? 'badge-ghost' : 'badge-info' }}">{{ $item->charge }}</span></td>
-                                <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
+                                <td>{{-- Card 6af82fef: full name (First Middle Last Suffix). --}}{{ $item->applicant ? $item->applicant->full_name : '—' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
                                 <td class="text-right font-semibold">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}</td>

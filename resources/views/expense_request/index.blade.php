@@ -343,7 +343,7 @@
                                         @if($loop->first)
                                             <td rowspan="{{ $request->items->count() }}">{{ $request->branch?->name ?? '—' }}</td>
                                         @endif
-                                        <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
+                                        <td>{{-- Card 6af82fef: full name (First Middle Last Suffix). --}}{{ $item->applicant ? $item->applicant->full_name : '—' }}</td>
                                         <td>{{ $item->agent?->name ?? '—' }}</td>
                                         <td>{{ $item->currency }}</td>
                                         <td class="text-right font-semibold">
