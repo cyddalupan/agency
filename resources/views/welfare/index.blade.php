@@ -14,9 +14,6 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('applicants.withdrawn') }}" class="btn btn-outline btn-sm">
-                <span>🗂️</span> Backout, Cancelled &amp; Repat
-            </a>
             <a href="{{ route('welfare.export', request()->query()) }}" class="btn btn-ghost btn-sm">
                 <span>⬇️</span> Extract to CSV
             </a>

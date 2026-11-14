@@ -123,6 +123,38 @@ class ModuleAccess
         'expense_request',
     ];
 
+    /**
+     * DMW User access level (card 6af81c30, 2026-11-14).
+     *
+     * "These should be the only modules on their access": Dashboard, Company
+     * Profile, Employee, Applicant, Backout/Cancelled/Repat, Welfare, FRA,
+     * Report. Everything else — accounting, receipts, users, settings, agent
+     * (marketing) report, general ledger — is 403 and hidden from the sidebar.
+     *
+     * Backout/Cancelled/Repat and Welfare live under the applicants module in
+     * ModuleAccess, so `applicants` covers them; the explicit entries below
+     * keep the list readable against the card.
+     * FINAS and CSDI only.
+     */
+    public const DMW_USER_ALLOWED = [
+        'dashboard',
+        'notifications',
+        'ai',
+        'logout',
+        'storage',
+        'api',
+        'company-profile',
+        'employees',
+        'applicants',
+        'applicants.withdrawn',
+        'welfare',
+        'employers',   // FRA (Foreign Recruitment Agency) module
+        'reports',
+    ];
+
+    /** Agencies where the DMW User access level is offered (card 6af81c30). */
+    public const DMW_USER_AGENCIES = ['finas', 'csdi'];
+
     /** Modules "Rest of Account" may access (everything else is 403). */
     public const STAFF_ALLOWED = [
         'dashboard',
@@ -294,6 +326,16 @@ class ModuleAccess
             return in_array($module, self::ENCODER_ALLOWED, true);
         }
 
+        if ($userType === 'dmw_user') {
+            // Card 6af81c30: DMW User exists on FINAS and CSDI only, and gets
+            // exactly the modules the card lists.
+            if (! self::isAnyAgency($agencyId, self::DMW_USER_AGENCIES)) {
+                return false;
+            }
+
+            return in_array($module, self::DMW_USER_ALLOWED, true);
+        }
+
         if ($userType === 'recruitment') {
             return in_array($module, self::RECRUITMENT_ALLOWED, true);
         }
@@ -371,7 +413,7 @@ class ModuleAccess
         // read-only carve-outs must not override them.
         return ! in_array($userType, [
             'super_admin', 'admin', 'billing', 'encoder',
-            'recruitment', 'branch', 'welfare', 'employer',
+            'recruitment', 'branch', 'welfare', 'employer', 'dmw_user',
         ], true);
     }
 }

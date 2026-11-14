@@ -49,7 +49,7 @@
                 <label class="label" for="user_type"><span class="label-text">Access Level</span></label>
                 <select name="user_type" id="user_type" required class="select select-bordered w-full">
                     <option value="">Select access level...</option>
-                    @foreach(\App\Models\User::ACCESS_PRESETS as $val => $label)
+                    @foreach($roles as $val => $label)
                         <option value="{{ $val }}" @selected(old('user_type') === $val)>{{ $label }}</option>
                     @endforeach
                 </select>

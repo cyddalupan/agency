@@ -29,7 +29,10 @@ class AgencyUserController extends Controller
     {
         $this->authorize('update', $agency);
 
-        return view('agencies.users.create', compact('agency'));
+        return view('agencies.users.create', [
+            'agency' => $agency,
+            'roles'  => self::rolesFor($agency),
+        ]);
     }
 
     /**
@@ -68,7 +71,11 @@ class AgencyUserController extends Controller
         $this->authorize('update', $agency);
         abort_unless($user->agency_id === $agency->id, 404);
 
-        return view('agencies.users.edit', compact('agency', 'user'));
+        return view('agencies.users.edit', [
+            'agency' => $agency,
+            'user'   => $user,
+            'roles'  => self::rolesFor($agency),
+        ]);
     }
 
     /**
@@ -116,5 +123,22 @@ class AgencyUserController extends Controller
 
         return redirect()->route('agencies.show', $agency)
             ->with('success', 'User deleted.');
+    }
+
+    /**
+     * Access levels offered when editing users of this agency.
+     *
+     * DMW User is a FINAS/CSDI access level (card 6af81c30) and is not offered
+     * on the other tenants, where it would grant nothing.
+     */
+    public static function rolesFor(Agency $agency): array
+    {
+        $roles = \App\Models\User::ACCESS_PRESETS;
+
+        if (! \App\Support\ModuleAccess::isAnyAgency($agency->id, \App\Support\ModuleAccess::DMW_USER_AGENCIES)) {
+            unset($roles['dmw_user']);
+        }
+
+        return $roles;
     }
 }

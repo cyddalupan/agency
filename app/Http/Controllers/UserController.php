@@ -373,6 +373,15 @@ class UserController extends Controller
             unset($roles['super_admin']);
         }
 
+        // DMW User is a FINAS/CSDI access level (card 6af81c30); do not offer it
+        // on the other tenants where it would grant nothing.
+        if (! \App\Support\ModuleAccess::isAnyAgency(
+            (int) (request()->route('agency')->id ?? auth()->user()->agency_id),
+            \App\Support\ModuleAccess::DMW_USER_AGENCIES
+        )) {
+            unset($roles['dmw_user']);
+        }
+
         return $roles;
     }
 

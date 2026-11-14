@@ -370,4 +370,23 @@ class WelfareModuleTest extends TestCase
             $this->assertStringContainsString($needle, $html, "Form is missing: {$needle}");
         }
     }
+
+    #[Test]
+    public function the_page_header_has_no_backout_shortcut(): void
+    {
+        // Josh, 2026-11-14: "Remove" the Backout, Cancelled & Repat button that
+        // sat in the Welfare page header. The module itself stays.
+        $agency = $this->agency('finas');
+
+        $html = $this->actingAs($this->admin($agency))->get(route('welfare.index'))->assertOk()->getContent();
+
+        // The sidebar legitimately keeps its own Backout entry, so check the
+        // page header only: split the HTML at the end of the sidebar.
+        $body = substr($html, strpos($html, '<!-- PAGE-HEADER -->') ?: 0);
+        $header = substr($html, 0, strpos($html, '<table') ?: strlen($html));
+        $this->assertStringNotContainsString('🗂️</span> Backout', $header);
+        // The module is still there: its own actions remain.
+        $this->assertStringContainsString('Create Welfare', $html);
+        $this->assertStringContainsString(route('welfare.export'), $html);
+    }
 }

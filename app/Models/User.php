@@ -49,6 +49,10 @@ class User extends Authenticatable
         // (Mjolnir card "User Access Level 'Encoder'", 2026-10-08) Narrowest
         // tier: can ONLY reach the Dashboard + Applicant module.
         'encoder'     => 'Encoder',
+        // (Card 6af81c30, 2026-11-14) FINAS/CSDI access level limited to
+        // Dashboard, Company Profile, Employee, Applicant, Backout/Cancelled/
+        // Repat, Welfare, FRA and Report. Offered on those two tenants only.
+        'dmw_user'    => 'DMW User',
         // FRA portal account (Mjolnir card "FINAS: FRA Feature", 2026-10-20).
         // Logs into /fra only, tied to one employer (FRA) record, and sees
         // that employer's applicants exclusively.
