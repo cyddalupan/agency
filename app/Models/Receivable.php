@@ -13,8 +13,43 @@ class Receivable extends Model
 {
     use HasFactory, HasTenant, SoftDeletes;
 
-    public const STATUS_PENDING  = 'pending';
-    public const STATUS_RECEIVED = 'received';
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_RECEIVED  = 'received';
+    // Card 6af8296b (2026-11-14): Cancel is a terminal state; a cancelled
+    // receivable keeps its row for the audit trail but no longer counts as money.
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** Every status a receivable may hold, in tab order. */
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_RECEIVED,
+        self::STATUS_CANCELLED,
+    ];
+
+    public static function statusLabels(): array
+    {
+        return [
+            self::STATUS_PENDING   => 'Pending',
+            self::STATUS_RECEIVED  => 'Received',
+            self::STATUS_CANCELLED => 'Cancelled',
+        ];
+    }
+
+    /**
+     * Accounts that may be filed without an Agent or an Applicant
+     * (card 6af8296b): office returns, monthly collection, other collection.
+     * These are internal money movements, not tied to a specific worker.
+     */
+    public const STANDALONE_ACCOUNTS = [
+        'Office Returns',
+        'Monthly Collection',
+        'Other Collection',
+    ];
+
+    public static function allowsStandalone(?string $account): bool
+    {
+        return $account !== null && in_array($account, self::STANDALONE_ACCOUNTS, true);
+    }
 
     public const ACCOUNTS = [
         'Agents & Applicant Payment',

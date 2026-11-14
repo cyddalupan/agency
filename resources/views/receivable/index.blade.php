@@ -51,6 +51,30 @@
         </div>
     </div>
 
+    {{-- (Card 6af8296b, 2026-11-14) Status tabs: Pending / Received / Cancelled.
+         "Create a tab for Pending, Received, Cancelled and separate the
+         transaction with these status." ALL keeps the previous combined list.
+         Admin + Accounting only, per the card. --}}
+    @if(auth()->user()->canSeeFinancialTotals())
+    @php
+        $statusTabs = [
+            'all' => ['label' => '📄 All', 'count' => $statusCounts['all'] ?? 0, 'class' => 'bg-neutral text-neutral-content'],
+            \App\Models\Receivable::STATUS_PENDING => ['label' => '⏳ Pending', 'count' => $statusCounts['pending'] ?? 0, 'class' => 'bg-warning text-warning-content'],
+            \App\Models\Receivable::STATUS_RECEIVED => ['label' => '✅ Received', 'count' => $statusCounts['received'] ?? 0, 'class' => 'bg-success text-success-content'],
+            \App\Models\Receivable::STATUS_CANCELLED => ['label' => '🚫 Cancelled', 'count' => $statusCounts['cancelled'] ?? 0, 'class' => 'bg-error text-error-content'],
+        ];
+    @endphp
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
+        @foreach($statusTabs as $key => $tab)
+        <a href="{{ route('receivable.index', array_filter(array_merge(request()->except(['status']), $key === 'all' ? [] : ['status' => $key]))) }}"
+           class="flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm sm:text-base font-extrabold tracking-wide transition-all {{ $activeStatus === $key ? $tab['class'].' shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span>{{ $tab['label'] }}</span>
+            <span class="badge badge-md shrink-0 {{ $activeStatus === $key ? 'badge-neutral' : 'badge-ghost' }}">{{ $tab['count'] }}</span>
+        </a>
+        @endforeach
+    </div>
+    @endif
+
     {{-- Receivables table --}}
     <div class="card bg-base-100 shadow-md">
         <div class="card-body">
@@ -92,6 +116,7 @@
                                 <option value="" disabled selected>Change status to…</option>
                                 <option value="{{ \App\Models\Receivable::STATUS_PENDING }}">Pending</option>
                                 <option value="{{ \App\Models\Receivable::STATUS_RECEIVED }}">Received</option>
+                                <option value="{{ \App\Models\Receivable::STATUS_CANCELLED }}">Cancelled</option>
                             </select>
                             <button type="submit" class="btn btn-sm btn-primary" id="bulk-apply-btn" disabled>Apply to selected</button>
                             <span id="bulk-selected-count" class="text-sm opacity-60 ml-auto">0 selected</span>
@@ -135,6 +160,8 @@
                                 <td>
                                     @if($r->status === 'received')
                                         <span class="badge badge-success badge-sm">RECEIVED</span>
+                                    @elseif($r->status === 'cancelled')
+                                        <span class="badge badge-error badge-sm">CANCELLED</span>
                                     @else
                                         <span class="badge badge-warning badge-sm">PENDING</span>
                                     @endif

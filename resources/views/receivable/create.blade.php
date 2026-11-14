@@ -61,7 +61,9 @@
                 <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">👤 Agent & Applicant</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-control">
-                        <label class="label"><span class="label-text">Agent *{{ auth()->user()->isBranchLocked() ? ' (your branch)' : ' (all branches)' }}</span></label>
+                        <label class="label">
+                            <span class="label-text" id="agent-label">Agent *{{ auth()->user()->isBranchLocked() ? ' (your branch)' : ' (all branches)' }}</span>
+                        </label>
                         <select name="agent_id" id="agent_id" class="select select-bordered w-full"
                                 @if(! ($isEdit ?? false) || ($record->agent_id ?? null)) required @endif>
                             <option value="">Select agent…</option>
@@ -84,6 +86,9 @@
                         </select>
                         <p id="applicant_empty_note" class="hidden mt-1 text-xs text-warning font-medium">
                             No applicants are assigned to this selected Agent yet.
+                        </p>
+                        <p id="standalone_note" class="hidden mt-1 text-xs text-info font-medium">
+                            💼 Office Returns / Monthly Collection / Other Collection — no agent or applicant needed.
                         </p>
                     </div>
                 </div>
@@ -220,6 +225,33 @@
                     emptyNote.classList.add('hidden');
                 }
             }
+            // (Card 6af8296b) Office Returns / Monthly Collection / Other
+            // Collection are filed without a worker, so Agent stops being
+            // required for exactly those accounts.
+            var accountSel = document.querySelector('select[name=account]');
+            var standaloneNote = document.getElementById('standalone_note');
+            var accountLabel = document.getElementById('agent-label');
+            var STANDALONE = ['Office Returns', 'Monthly Collection', 'Other Collection'];
+
+            function syncAgentRequirement() {
+                var standalone = accountSel && STANDALONE.indexOf(accountSel.value) !== -1;
+                agentSel.required = !standalone;
+                if (standalone) {
+                    agentSel.value = '';
+                    appSel.value = '';
+                }
+                standaloneNote.classList.toggle('hidden', !standalone);
+                if (accountLabel) {
+                    accountLabel.textContent = standalone ? 'Agent (optional for this account)' : 'Agent *';
+                }
+                filterApplicants();
+            }
+
+            if (accountSel) {
+                accountSel.addEventListener('change', syncAgentRequirement);
+                syncAgentRequirement();
+            }
+
             agentSel.addEventListener('change', filterApplicants);
             filterApplicants();
         });

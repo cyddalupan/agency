@@ -15,7 +15,14 @@
                 @if(auth()->user()->canEditTransaction($receivable))
                     <a href="{{ route('receivable.edit', $receivable->id) }}" class="btn btn-sm btn-secondary shadow-md">✏️ Edit Transaction</a>
                 @endif
-                <span class="badge {{ $receivable->status === 'received' ? 'badge-success' : 'badge-warning' }} badge-lg">
+                @php
+                    $statusBadge = match ($receivable->status) {
+                        'received' => 'badge-success',
+                        'cancelled' => 'badge-error',
+                        default => 'badge-warning',
+                    };
+                @endphp
+                <span class="badge {{ $statusBadge }} badge-lg">
                     {{ strtoupper($receivable->status) }}
                 </span>
             </div>
@@ -46,7 +53,7 @@
     <div class="card bg-base-100 shadow-md mb-6">
         <div class="card-body">
             <h3 class="font-bold mb-1">Change Status</h3>
-            <p class="text-xs opacity-60 mb-3">Only admin can change the status (pending ⇄ received). Recorded to history.</p>
+            <p class="text-xs opacity-60 mb-3">Only admin can change the status (Pending / Received / Cancelled). Recorded to history.</p>
             <form method="POST" action="{{ route('receivable.status', $receivable->id) }}" class="flex flex-wrap gap-3 items-end">
                 @csrf
                 @method('PATCH')

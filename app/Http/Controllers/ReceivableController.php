@@ -34,6 +34,15 @@ class ReceivableController extends Controller
         // derived so the encoder dropdown always offers every encoder.
         $activeSearch = trim((string) request()->query('q'));
 
+        // (Card 6af8296b) Status tabs: Pending / Received / Cancelled.
+        // 'all' keeps the old combined view; the tab also actually filters the
+        // list, which is the point of the card ("separate the transaction with
+        // these status").
+        $activeStatus = (string) request()->query('status', 'all');
+        if (! in_array($activeStatus, [...Receivable::STATUSES, 'all'], true)) {
+            $activeStatus = 'all';
+        }
+
         // Base scope = agency + row-visibility + branch rules. Both the table
         // and the encoder dropdown derive from it, so the dropdown only ever
         // offers encoders the current user is allowed to see.
@@ -56,10 +65,25 @@ class ReceivableController extends Controller
         $encoderIds = (clone $base)->whereNotNull('user_id')->pluck('user_id')->unique()->values()->all();
         $encoders   = User::whereIn('id', $encoderIds)->orderBy('name')->get(['id', 'name']);
 
-        $receivables = (clone $base)
-            ->with(['agent', 'applicant', 'encoder'])
+        // Tab counters come off the base scope (encoder + search applied) so a
+        // tab always shows how many rows it will actually contain.
+        $scoped  = (clone $base)
             ->when($activeEncoder, fn ($q) => $q->where('user_id', $activeEncoder))
-            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch))
+            ->when($activeSearch !== '', fn ($q) => $this->applySearch($q, $activeSearch));
+        $counts  = (clone $scoped)->toBase()
+            ->select('status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as c'))
+            ->groupBy('status')->pluck('c', 'status')->all();
+
+        $statusCounts = [
+            'all' => array_sum($counts),
+            Receivable::STATUS_PENDING   => (int) ($counts[Receivable::STATUS_PENDING] ?? 0),
+            Receivable::STATUS_RECEIVED  => (int) ($counts[Receivable::STATUS_RECEIVED] ?? 0),
+            Receivable::STATUS_CANCELLED => (int) ($counts[Receivable::STATUS_CANCELLED] ?? 0),
+        ];
+
+        $receivables = (clone $scoped)
+            ->with(['agent', 'applicant', 'encoder'])
+            ->when($activeStatus !== 'all', fn ($q) => $q->where('status', $activeStatus))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
@@ -74,9 +98,12 @@ class ReceivableController extends Controller
             // `allAmount` keeps the old full-set figure for anything that still
             // needs it; the per-status lines below still show Pending.
             'totalAmount'   => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
-            'allAmount'     => round((float) $receivables->sum('amount'), 2),
+            'allAmount'     => round((float) $receivables->where('status', '!=', Receivable::STATUS_CANCELLED)->sum('amount'), 2),
             'pendingTotal'  => round((float) $receivables->where('status', Receivable::STATUS_PENDING)->sum('amount'), 2),
             'receivedTotal' => round((float) $receivables->where('status', Receivable::STATUS_RECEIVED)->sum('amount'), 2),
+            'cancelledTotal' => round((float) $receivables->where('status', Receivable::STATUS_CANCELLED)->sum('amount'), 2),
+            'activeStatus'  => $activeStatus,
+            'statusCounts'  => $statusCounts,
         ]);
     }
 
@@ -134,7 +161,23 @@ class ReceivableController extends Controller
         $validated = $request->validate([
             'date'          => ['required', 'date'],
             'ref_ar'        => ['nullable', 'string', 'max:100'],
-            'agent_id'      => ['required', 'integer', 'exists:agents,id'],
+            // (Card 6af8296b) Office Returns / Monthly Collection / Other
+            // Collection are internal money movements with no worker attached,
+            // so Agent and Applicant are optional for exactly those accounts.
+            // Expressed as a rule (not a post-validation check) so the error is
+            // reported alongside any other validation failure.
+            // Note: neither 'nullable' nor 'sometimes' — both skip the rule when
+            // the field is absent, which is exactly the case we must catch.
+            // requiredUnless keeps it a real field-level error that surfaces
+            // together with any other validation failure.
+            'agent_id'      => [
+                \Illuminate\Validation\Rule::requiredUnless(
+                    fn () => Receivable::allowsStandalone($request->input('account'))
+                ),
+                'nullable',
+                'integer',
+                'exists:agents,id',
+            ],
             'applicant_id'  => ['nullable', 'integer', 'exists:applicants,id'],
             'amount'        => ['required', 'numeric', 'min:0.01'],
             'account'       => ['nullable', 'string', 'max:80'],
@@ -145,13 +188,21 @@ class ReceivableController extends Controller
         ] + \App\Support\RequestAttachments::rules());
 
         // Security: agent + applicant must belong to the same agency
-        $agent = Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
+        $agent = empty($validated['agent_id'])
+            ? null
+            : Agent::where('agency_id', $agencyId)->findOrFail($validated['agent_id']);
+
+        if (! $agent) {
+            // Standalone account: no agent, so no applicant may be attached either.
+            $validated['agent_id'] = null;
+            $validated['applicant_id'] = null;
+        }
 
         // (Branch feature) Branch accounts (non-admin with a branch) may only
         // file receivables against agents of their OWN branch or main-office
         // agents (no branch); another branch's agent is rejected.
         $user = auth()->user();
-        if ($user && $user->isBranchLocked()) {
+        if ($user && $user->isBranchLocked() && $agent) {
             $agentBranchId = $agent->branch_id;
             if ($agentBranchId !== null && (int) $agentBranchId !== (int) $user->branch_id) {
                 return back()->withErrors([
@@ -162,7 +213,7 @@ class ReceivableController extends Controller
 
         if (! empty($validated['applicant_id'])) {
             $applicant = Applicant::where('agency_id', $agencyId)->find($validated['applicant_id']);
-            if (! $applicant || $applicant->agent_id !== $agent->id) {
+            if (! $applicant || ! $agent || $applicant->agent_id !== $agent->id) {
                 return back()->withErrors(['applicant_id' => 'Applicant must belong to the selected agent.'])->withInput();
             }
         }
@@ -195,7 +246,7 @@ class ReceivableController extends Controller
             'receivable'       => $receivable->load(['agent', 'applicant', 'encoder']),
             'history'          => $history,
             'canChangeStatus'  => $canChangeStatus,
-            'statuses'         => [Receivable::STATUS_PENDING, Receivable::STATUS_RECEIVED],
+            'statuses'         => Receivable::STATUSES,
         ]);
     }
 
@@ -254,8 +305,12 @@ class ReceivableController extends Controller
             'date'          => ['required', 'date'],
             'ref_ar'        => ['nullable', 'string', 'max:100'],
             // Legacy rows may carry no agent at all; keep them editable instead
-            // of forcing the user to attach one just to fix a typo.
-            'agent_id'      => [$receivable->agent_id ? 'required' : 'nullable', 'integer', 'exists:agents,id'],
+            // of forcing the user to attach one just to fix a typo. A standalone
+            // account (card 6af8296b) may also drop an agent it once had.
+            'agent_id'      => [
+                ($receivable->agent_id && ! Receivable::allowsStandalone($request->input('account'))) ? 'required' : 'nullable',
+                'integer', 'exists:agents,id',
+            ],
             'applicant_id'  => ['nullable', 'integer', 'exists:applicants,id'],
             'amount'        => ['required', 'numeric', 'min:0.01'],
             'account'       => ['nullable', 'string', 'max:80'],
@@ -353,7 +408,7 @@ class ReceivableController extends Controller
         $this->authorizeStatusChange();
 
         $validated = $request->validate([
-            'status' => ['required', 'in:' . Receivable::STATUS_PENDING . ',' . Receivable::STATUS_RECEIVED],
+            'status' => ['required', 'in:' . implode(',', Receivable::STATUSES)],
             'note'   => ['nullable', 'string'],
         ]);
 
@@ -382,7 +437,7 @@ class ReceivableController extends Controller
         $validated = $request->validate([
             'ids'    => ['required', 'array', 'min:1'],
             'ids.*'  => ['integer'],
-            'status' => ['required', 'in:' . Receivable::STATUS_PENDING . ',' . Receivable::STATUS_RECEIVED],
+            'status' => ['required', 'in:' . implode(',', Receivable::STATUSES)],
             'note'   => ['nullable', 'string'],
         ]);
 
@@ -805,13 +860,16 @@ class ReceivableController extends Controller
             'received'  => Receivable::STATUS_RECEIVED,
             'paid'      => Receivable::STATUS_RECEIVED,
             'collected' => Receivable::STATUS_RECEIVED,
+            'cancelled' => Receivable::STATUS_CANCELLED,
+            'canceled'  => Receivable::STATUS_CANCELLED,
+            'void'      => Receivable::STATUS_CANCELLED,
         ];
 
         if (isset($map[$key])) {
             return $map[$key];
         }
 
-        $rowErrors[] = "Status '{$raw}' not found. Use 'Pending' or 'Received' (or leave blank for Pending).";
+        $rowErrors[] = "Status '{$raw}' not found. Use 'Pending', 'Received' or 'Cancelled' (or leave blank for Pending).";
 
         return Receivable::STATUS_PENDING;
     }
