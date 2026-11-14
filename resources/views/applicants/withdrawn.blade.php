@@ -49,8 +49,11 @@
     {{-- (Mjolnir "Applicant module Tabs" 2026-11-05) Client-specified order:
          ALL TYPES -> HOUSEHOLD -> SKILLED. Gulf hides the HOUSEHOLD/SKILLED
          counters, FINAS keeps them; ALL TYPES always shows its count. --}}
-    @php $activeType = $type ?? 'skilled'; @endphp
-    <div class="grid grid-cols-3 gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
+    @php
+        $activeType = $type ?? 'skilled';
+        $showProfessional = \App\Models\Applicant::hasProfessionalTab(auth()->user()->agency_id ?? null);
+    @endphp
+    <div class="grid {{ $showProfessional ? 'grid-cols-4' : 'grid-cols-3' }} gap-3 mb-6 rounded-2xl bg-base-200/70 p-2 border border-base-300">
         <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'all'])) }}"
            class="flex items-center justify-center gap-2 sm:gap-3 rounded-xl px-2 sm:px-5 py-4 text-base sm:text-lg font-extrabold tracking-wide whitespace-nowrap transition-all {{ $activeType === 'all' ? 'bg-neutral text-neutral-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
             <span class="text-2xl shrink-0">👥</span><span>ALL TYPES</span>
@@ -70,6 +73,13 @@
             <span class="badge badge-lg shrink-0 {{ $activeType === 'skilled' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['skilled'] ?? 0 }}</span>
             @endunless
         </a>
+        @if($showProfessional)
+        <a href="{{ route('applicants.withdrawn', array_merge(request()->except(['type', 'page']), ['type' => 'professional'])) }}"
+           class="flex items-center justify-center gap-2 sm:gap-3 rounded-xl px-2 sm:px-5 py-4 text-base sm:text-lg font-extrabold tracking-wide whitespace-nowrap transition-all {{ $activeType === 'professional' ? 'bg-accent text-accent-content shadow-lg' : 'bg-base-100 text-base-content/70 hover:bg-base-300' }}">
+            <span class="text-2xl shrink-0">🎓</span><span>PROFESSIONAL</span>
+            <span class="badge badge-lg shrink-0 {{ $activeType === 'professional' ? 'badge-neutral' : 'badge-ghost' }}">{{ $typeCounts['professional'] ?? 0 }}</span>
+        </a>
+        @endif
     </div>
 
     {{-- Filters remain visible on zero results (see index()). --}}

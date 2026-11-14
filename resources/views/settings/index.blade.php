@@ -58,6 +58,16 @@
             </div>
         </a>
 
+        {{-- Card 6af82438: QR intake, FINAS and CSDI only. --}}
+        @if(\App\Http\Controllers\ApplicantQrController::enabled(resolve_agency()))
+        <a href="{{ route('settings.qr-code') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">📱 QR Code</h2>
+                <p class="text-sm opacity-70">Print a code that opens the Add Applicant form for applicants to fill in.</p>
+            </div>
+        </a>
+        @endif
+
         @if (in_array(auth()->user()->user_type, ['super_admin', 'admin']))
         <a href="{{ route('settings.color-theme') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body">

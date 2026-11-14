@@ -54,6 +54,8 @@
                             <td>
                                 @if(($position->category ?? 'skilled') === 'household')
                                     <span class="badge badge-sm badge-warning">🏠 Household</span>
+                                @elseif(($position->category ?? 'skilled') === 'professional')
+                                    <span class="badge badge-sm badge-accent">🎓 Professional</span>
                                 @else
                                     <span class="badge badge-sm badge-info">💼 Skilled</span>
                                 @endif

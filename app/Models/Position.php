@@ -11,12 +11,24 @@ class Position extends Model
 
     public const CATEGORY_HOUSEHOLD = 'household';
     public const CATEGORY_SKILLED = 'skilled';
+    // Card 6af82438: new Position category for the PROFESSIONAL applicant tab.
+    public const CATEGORY_PROFESSIONAL = 'professional';
 
     protected $fillable = ['name', 'description', 'category'];
+
+    public static function categories(): array
+    {
+        return [self::CATEGORY_SKILLED, self::CATEGORY_HOUSEHOLD, self::CATEGORY_PROFESSIONAL];
+    }
 
     public function scopeHousehold($query)
     {
         return $query->where('category', self::CATEGORY_HOUSEHOLD);
+    }
+
+    public function scopeProfessional($query)
+    {
+        return $query->where('category', self::CATEGORY_PROFESSIONAL);
     }
 
     public function scopeSkilled($query)

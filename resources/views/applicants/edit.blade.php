@@ -194,6 +194,9 @@
                     <select name="applicant_type" id="applicant_type" class="select w-full" onchange="filterPositionsByType()">
                         <option value="skilled" @selected(old('applicant_type', $applicant->applicant_type ?? 'skilled') === 'skilled')>💼 Skilled</option>
                         <option value="household" @selected(old('applicant_type', $applicant->applicant_type) === 'household')>🏠 Household (Domestic Helper)</option>
+                        @if(\App\Models\Applicant::hasProfessionalTab(auth()->user()->agency_id ?? null))
+                        <option value="professional" @selected(old('applicant_type', $applicant->applicant_type) === 'professional')>🎓 Professional</option>
+                        @endif
                     </select>
                 </fieldset>
                 <fieldset class="fieldset">
@@ -416,7 +419,9 @@ function filterPositionsByType() {
     Array.prototype.forEach.call(posEl.options, function (o) {
         if (!o.value) return;
         var cat = o.getAttribute('data-category') || 'skilled';
-        var show = (type === 'household') ? (cat === 'household') : (cat !== 'household');
+        // Card 6af82438: match the type exactly now that there are three
+        // categories; "not household" would leak Professional into Skilled.
+        var show = (cat === type);
         o.hidden = !show;
         o.disabled = !show;
         if (!show && o.selected) posEl.value = '';

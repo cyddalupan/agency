@@ -17,10 +17,23 @@ class Applicant extends Model implements AuthenticatableContract
     /** Applicant types (Mjolnir "Skilled Applicants", 2026-10-06). */
     public const TYPE_SKILLED = 'skilled';
     public const TYPE_HOUSEHOLD = 'household';
+    // Card 6af82438: PROFESSIONAL tab on the Applicant module (CSDI/FINAS).
+    public const TYPE_PROFESSIONAL = 'professional';
 
     public static function types(): array
     {
-        return [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED];
+        return [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED, self::TYPE_PROFESSIONAL];
+    }
+
+    /** Agencies that show the PROFESSIONAL tab (card 6af82438). */
+    public const PROFESSIONAL_AGENCIES = ['finas', 'csdi'];
+
+    /**
+     * Whether the PROFESSIONAL applicant tab is available to this agency.
+     */
+    public static function hasProfessionalTab(?int $agencyId): bool
+    {
+        return \App\Support\ModuleAccess::isAnyAgency($agencyId, self::PROFESSIONAL_AGENCIES);
     }
 
     protected $fillable = [
@@ -43,16 +56,17 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
-     * Scope to a single applicant type (household|skilled).
+     * Scope to a single applicant type (household|skilled|professional).
      *
      * Legacy rows with a NULL applicant_type are derived from their position's
-     * category (household positions -> Household; everything else -> Skilled),
-     * so imported domestic helpers stay on the HOUSEHOLD tab.
-     * (Mjolnir "Skilled Applicants" follow-up, 2026-10-08.)
+     * category (household -> Household, professional -> Professional,
+     * everything else -> Skilled), so imported domestic helpers stay on the
+     * HOUSEHOLD tab. (Mjolnir "Skilled Applicants" follow-up, 2026-10-08;
+     * professional added by card 6af82438, 2026-11-14.)
      */
     public function scopeOfType($query, ?string $type)
     {
-        if (! in_array($type, [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED], true)) {
+        if (! in_array($type, [self::TYPE_HOUSEHOLD, self::TYPE_SKILLED, self::TYPE_PROFESSIONAL], true)) {
             return $query;
         }
 
@@ -68,15 +82,33 @@ class Applicant extends Model implements AuthenticatableContract
             });
         }
 
+        if ($type === self::TYPE_PROFESSIONAL) {
+            $professionalPositionIds = \App\Models\Position::professional()->pluck('id')->all();
+
+            return $query->where(function ($q) use ($professionalPositionIds) {
+                $q->where('applicant_type', self::TYPE_PROFESSIONAL)
+                    ->orWhere(function ($q2) use ($professionalPositionIds) {
+                        $q2->whereNull('applicant_type')
+                            ->whereIn('position_id', $professionalPositionIds);
+                    });
+            });
+        }
+
         // Skilled: explicit skilled, or NULL-type whose position is not a
-        // household position (including applicants with no position at all).
+        // household AND not a professional position (including applicants with
+        // no position at all). Professional positions must not leak into
+        // Skilled now that they have their own tab.
         return $query->where(function ($q) use ($householdPositionIds) {
-            $q->where('applicant_type', self::TYPE_SKILLED)
-                ->orWhere(function ($q2) use ($householdPositionIds) {
+            $professionalPositionIds = \App\Models\Position::professional()->pluck('id')->all();
+
+            $q->where('applicant_type', self::TYPE_SKILLED)                ->orWhere(function ($q2) use ($householdPositionIds, $professionalPositionIds) {
                     $q2->whereNull('applicant_type')
-                        ->where(function ($q3) use ($householdPositionIds) {
+                        ->where(function ($q3) use ($householdPositionIds, $professionalPositionIds) {
                             $q3->whereNull('position_id')
-                                ->orWhereNotIn('position_id', $householdPositionIds);
+                                ->orWhere(function ($q4) use ($householdPositionIds, $professionalPositionIds) {
+                                    $q4->whereNotIn('position_id', $householdPositionIds)
+                                        ->whereNotIn('position_id', $professionalPositionIds);
+                                });
                         });
                 });
         });

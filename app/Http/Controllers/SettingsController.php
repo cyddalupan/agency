@@ -277,6 +277,55 @@ class SettingsController extends Controller
     }
 
     /**
+     * Settings -> QR Code (card 6af82438, FINAS/CSDI).
+     *
+     * "Generate a unique QR Code that if the applicant scans it, it will
+     * automatically bring it to an Add Applicant page only. This will help
+     * employees lessen their workload in encoding the applicant data."
+     *
+     * Each agency gets one stable token in its settings JSON. The QR encodes a
+     * public URL carrying that token; scanning it opens the Add Applicant form
+     * already bound to the right agency, with nothing else reachable.
+     */
+    public function qrCode()
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+        abort_unless(\App\Http\Controllers\ApplicantQrController::enabled($agency), 403,
+            'The QR feature is not available for this agency.');
+
+        $token = \App\Http\Controllers\ApplicantQrController::tokenFor($agency);
+        $url   = \App\Http\Controllers\ApplicantQrController::scanUrl($agency, $token);
+
+        $svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(320)
+            ->margin(1)
+            ->errorCorrection('H')
+            ->generate($url);
+
+        return view('settings.qr-code', [
+            'agency' => $agency,
+            'token'  => $token,
+            'url'    => $url,
+            'svg'    => $svg,
+        ]);
+    }
+
+    /** Rotate the scan token (old printed QRs stop working). */
+    public function regenerateQrCode()
+    {
+        $agency = resolve_agency();
+        abort_if(! $agency, 403, 'No agency context.');
+        abort_unless(\App\Http\Controllers\ApplicantQrController::enabled($agency), 403,
+            'The QR feature is not available for this agency.');
+
+        \App\Http\Controllers\ApplicantQrController::rotateToken($agency);
+
+        return redirect()->route('settings.qr-code')
+            ->with('success', 'A new QR code was generated. Previously printed codes no longer work.');
+    }
+
+    /**
      * Show the per-agency Color Theme picker.
      */
     public function colorTheme()

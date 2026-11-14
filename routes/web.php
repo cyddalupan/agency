@@ -56,6 +56,12 @@ Route::get('/health', function () {
 });
 
 // === Applicant Portal ===
+// QR intake (card 6af82438): a scanned code opens the Add Applicant form for
+// one agency. Public by design — the applicant has no login — and scoped hard
+// to a single token-bound form.
+Route::get('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'entry'])->name('applicant-qr.entry');
+Route::post('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'store'])->name('applicant-qr.store');
+
 Route::prefix('portal')->name('portal.')->group(function () {
     // Guest (not logged in as applicant)
     Route::get('/register', [ApplicantAuthController::class, 'showRegistrationForm'])->name('register');
@@ -624,6 +630,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Per-agency Agency Settings (sidebar visibility toggles)
     Route::get('/settings/agency', [SettingsController::class, 'agencySettings'])->name('settings.agency');
     Route::post('/settings/agency', [SettingsController::class, 'updateAgencySettings'])->name('settings.agency.update');
+
+    // Settings -> QR Code (card 6af82438, FINAS/CSDI): a scannable code that
+    // opens the Add Applicant form only.
+    Route::get('/settings/qr-code', [SettingsController::class, 'qrCode'])->name('settings.qr-code');
+    Route::post('/settings/qr-code/regenerate', [SettingsController::class, 'regenerateQrCode'])->name('settings.qr-code.regenerate');
 
     // Reports index
     Route::get('/reports', [ReportsIndexController::class, 'index'])->name('reports.index');

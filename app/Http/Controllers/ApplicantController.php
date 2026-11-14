@@ -46,7 +46,7 @@ class ApplicantController extends Controller
         // land on a list whose size equals the count they displayed.
         // (Toybits filtering fix, 2026-10-22.)
         $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
             $type = Applicant::TYPE_SKILLED;
         }
         if ($type !== 'all') {
@@ -140,6 +140,11 @@ class ApplicantController extends Controller
             'all' => (clone $base)->count(),
         ];
 
+        // Card 6af82438: PROFESSIONAL tab, FINAS and CSDI only.
+        if (Applicant::hasProfessionalTab(auth()->user()->agency_id ?? null)) {
+            $typeCounts[Applicant::TYPE_PROFESSIONAL] = (clone $base)->ofType(Applicant::TYPE_PROFESSIONAL)->count();
+        }
+
         return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'tableColumns', 'type', 'typeCounts'));
     }
 
@@ -163,7 +168,7 @@ class ApplicantController extends Controller
         // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first tab,
         // SKILLED remains the default landing tab. "all" = combined view.
         $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
             $type = Applicant::TYPE_SKILLED;
         }
         if ($type !== 'all') {
@@ -233,6 +238,11 @@ class ApplicantController extends Controller
             Applicant::TYPE_HOUSEHOLD => (clone $base)->ofType(Applicant::TYPE_HOUSEHOLD)->count(),
             'all' => (clone $base)->count(),
         ];
+
+        // Card 6af82438: PROFESSIONAL tab, FINAS and CSDI only.
+        if (Applicant::hasProfessionalTab(auth()->user()->agency_id ?? null)) {
+            $typeCounts[Applicant::TYPE_PROFESSIONAL] = (clone $base)->ofType(Applicant::TYPE_PROFESSIONAL)->count();
+        }
 
         return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'type', 'typeCounts'));
     }
@@ -602,6 +612,7 @@ class ApplicantController extends Controller
         // between tabs when a position is re-categorised.
         // (Toybits filtering fix, 2026-10-22.)
         $householdPositionIds = Position::household()->pluck('id')->all();
+        $professionalPositionIds = Position::professional()->pluck('id')->all();
 
         $statusByLabel = [];
         $statusByCode = [];
@@ -900,7 +911,9 @@ class ApplicantController extends Controller
                 'position_id' => $positionId,
                 'applicant_type' => ($positionId && in_array((int) $positionId, $householdPositionIds, true))
                     ? Applicant::TYPE_HOUSEHOLD
-                    : Applicant::TYPE_SKILLED,
+                    : (($positionId && in_array((int) $positionId, $professionalPositionIds, true))
+                        ? Applicant::TYPE_PROFESSIONAL
+                        : Applicant::TYPE_SKILLED),
                 'employer_id' => $employerId,
                 'agent_id' => $agentId,
                 'branch_id' => $branchId,
@@ -1662,7 +1675,7 @@ class ApplicantController extends Controller
         // ignored, and the branch scope, which kept branch users from
         // exporting other branches. (Toybits filtering fix, 2026-10-22.)
         $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
             $type = Applicant::TYPE_SKILLED;
         }
         if ($type !== 'all') {
@@ -1732,7 +1745,7 @@ class ApplicantController extends Controller
 
         // Apply the same filters as withdrawn() — type + country included.
         $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, 'all'], true)) {
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
             $type = Applicant::TYPE_SKILLED;
         }
         if ($type !== 'all') {

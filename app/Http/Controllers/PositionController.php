@@ -30,7 +30,7 @@ class PositionController extends Controller
         $validated = $request->validate([
             'name'        => 'required|string|max:255|unique:positions,name',
             'description' => 'nullable|string|max:255',
-            'category'    => 'nullable|string|in:household,skilled',
+            'category'    => 'nullable|string|in:household,skilled,professional',
         ]);
 
         $validated['category'] = $validated['category'] ?? Position::CATEGORY_SKILLED;
@@ -51,7 +51,7 @@ class PositionController extends Controller
         $validated = $request->validate([
             'name'        => 'required|string|max:255|unique:positions,name,' . $position->id,
             'description' => 'nullable|string|max:255',
-            'category'    => 'nullable|string|in:household,skilled',
+            'category'    => 'nullable|string|in:household,skilled,professional',
         ]);
 
         if (array_key_exists('category', $validated) && $validated['category'] === null) {
@@ -208,10 +208,12 @@ class PositionController extends Controller
                 $categoryKey = $norm($categoryRaw);
                 if ($categoryKey === Position::CATEGORY_HOUSEHOLD) {
                     $category = Position::CATEGORY_HOUSEHOLD;
+                } elseif ($categoryKey === Position::CATEGORY_PROFESSIONAL) {
+                    $category = Position::CATEGORY_PROFESSIONAL;
                 } elseif ($categoryKey === Position::CATEGORY_SKILLED) {
                     $category = Position::CATEGORY_SKILLED;
                 } else {
-                    $rowErrors[] = "Category '{$categoryRaw}' not found. Use 'household' or 'skilled' (or leave blank for skilled).";
+                    $rowErrors[] = "Category '{$categoryRaw}' not found. Use 'household', 'skilled' or 'professional' (or leave blank for skilled).";
                 }
             }
 
