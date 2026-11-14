@@ -75,7 +75,7 @@
                     <option value="">Select...</option>
                     <option value="employer" @selected(old('issued_to') === 'employer')>Employer</option>
                     <option value="applicant" @selected(old('issued_to') === 'applicant')>Applicant</option>
-                    <option value="agent" @selected(old('issued_to') === 'agent')>Agent</option>
+                    <option value="agent" @selected(old('issued_to') === 'agent')>{{ agent_term() }}</option>
                 </select>
                 @error('issued_to') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
             </fieldset>

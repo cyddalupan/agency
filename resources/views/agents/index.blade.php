@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Agents')
+@section('title', agent_terms())
 
 @section('content')
 <div class="w-full">
     <div class="flex items-center justify-between mb-6">
         <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 p-4 flex-1">
             <h2 class="text-2xl font-bold flex items-center gap-2">
-                <span>🎯</span> Agents
+                <span>🎯</span> {{ agent_terms() }}
             </h2>
-            <p class="opacity-60 text-sm mt-1">Manage referral agents and commission tracking.</p>
+            <p class="opacity-60 text-sm mt-1">Manage referral {{ strtolower(agent_terms()) }} and commission tracking.</p>
         </div>
         <a href="{{ route('agents.bulk') }}" class="btn btn-outline ml-4" title="Bulk upload agents from CSV">
             <span>📥</span> Bulk Upload
@@ -27,11 +27,11 @@
         @if($canDeleteAll)
             <button type="button" class="btn btn-error btn-outline ml-2"
                     onclick="document.getElementById('delete-all-agents').showModal()">
-                <span>🗑️</span> Delete all agents
+                <span>🗑️</span> Delete all {{ strtolower(agent_terms()) }}
             </button>
         @endif
         <a href="{{ route('agents.create') }}" class="btn btn-primary ml-2">
-            <span>➕</span> New Agent
+            <span>➕</span> New {{ agent_term() }}
         </a>
     </div>
 

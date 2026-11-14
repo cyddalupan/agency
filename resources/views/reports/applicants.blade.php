@@ -101,7 +101,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Position</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Branch</th>
                             <th>Status</th>
                             <th>Country</th>

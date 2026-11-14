@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Create Agent')
+@section('title', 'Create ' . agent_term())
 
 @section('content')
 <div class="w-full">
     <div class="mb-6">
         <a href="{{ route('agents.index') }}" class="link link-secondary text-sm flex items-center gap-1">
-            <span>←</span> Back to Agents
+            <span>←</span> Back to {{ agent_terms() }}
         </a>
     </div>
 
     <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 p-4">
         <h2 class="text-2xl font-bold flex items-center gap-2">
-            <span>➕</span> New Agent
+            <span>➕</span> New {{ agent_term() }}
         </h2>
         <p class="opacity-60 text-sm mt-1">Register a new referral agent.</p>
     </div>
@@ -113,7 +113,7 @@
 
             <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <button type="submit" class="btn btn-primary">
-                    <span>💾</span> Create Agent
+                    <span>💾</span> Create {{ agent_term() }}
                 </button>
                 @if(session('duplicate_agents') && count(session('duplicate_agents')))
                     <button type="submit" class="btn btn-warning" onclick="document.getElementById('confirm_duplicate').value = '1';">

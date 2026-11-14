@@ -7,7 +7,7 @@
                 <table class="table table-sm">
                     <thead>
                         <tr class="bg-base-200/70">
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Branch</th>
                             <th class="text-right">Total Commission</th>
                             <th class="text-right">Total Cash Advance</th>

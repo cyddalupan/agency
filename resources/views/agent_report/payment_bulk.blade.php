@@ -58,7 +58,7 @@
         <div class="card-body">
             <h3 class="font-bold mb-2">1 · Get the template</h3>
             <p class="text-sm opacity-70 mb-3">
-                Columns: <strong>Date</strong>, <strong>Applicant</strong>, <strong>Agent</strong>, <strong>Currency</strong>,
+                Columns: <strong>Date</strong>, <strong>Applicant</strong>, <strong>{{ agent_term() }}</strong>, <strong>Currency</strong>,
                 <strong>Payment</strong>, <strong>Particular</strong>. Column order does not matter.
                 Date and Payment are required — the rest are only used to pick the right line when a date has several transactions.
             </p>

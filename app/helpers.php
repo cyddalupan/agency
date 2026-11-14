@@ -736,3 +736,23 @@ if (!function_exists('hide_type_tab_count')) {
         return str_contains(strtoupper((string) $agency->name), 'GULF');
     }
 }
+
+if (!function_exists('agent_term')) {
+    /**
+     * Card 6af81c30: FINAS and CSDI print "Marketing Staff" where the rest of
+     * the platform says "Agent". Returns the singular noun, e.g. in
+     * "Select {{ agent_term() }}…".
+     */
+    function agent_term(?int $agencyId = null): string
+    {
+        return \App\Support\AgentTerm::noun($agencyId);
+    }
+}
+
+if (!function_exists('agent_terms')) {
+    /** Plural form of agent_term(). */
+    function agent_terms(?int $agencyId = null): string
+    {
+        return \App\Support\AgentTerm::plural($agencyId);
+    }
+}

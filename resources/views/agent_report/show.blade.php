@@ -187,7 +187,7 @@
                         <tr>
                             <th class="py-3">Date</th>
                             <th>Account</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Applicant</th>
                             <th class="text-right">Amount</th>
                             <th>Particular / Description</th>
@@ -289,7 +289,7 @@
                             <th class="py-3">Date</th>
                             <th>Voucher # (From Reference #)</th>
                             <th>Account</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Applicant</th>
                             <th>Particular / Description</th>
                             <th class="text-right">Amount</th>
@@ -339,7 +339,7 @@
                         <tr>
                             <th class="py-3">Date</th>
                             <th>Account</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Applicant</th>
                             <th class="text-right">Amount</th>
                             <th>Particular / Description</th>

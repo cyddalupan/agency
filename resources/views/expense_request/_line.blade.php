@@ -49,7 +49,7 @@
                 <label class="label"><span class="label-text">Charge *</span></label>
                 <select name="lines[{{ $index }}][charge]" class="select select-bordered select-sm" required>
                     <option value="office" {{ ($line['charge'] ?? '') === 'office' ? 'selected' : '' }}>Office</option>
-                    <option value="agent" {{ ($line['charge'] ?? '') === 'agent' ? 'selected' : '' }}>Agent</option>
+                    <option value="agent" {{ ($line['charge'] ?? '') === 'agent' ? 'selected' : '' }}>{{ agent_term() }}</option>
                 </select>
             </div>
 
@@ -103,7 +103,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {{-- Agent Name (shown for both Charge types) --}}
             <div class="form-control">
-                <label class="label"><span class="label-text">Agent Name</span></label>
+                <label class="label"><span class="label-text">{{ agent_term() }} Name</span></label>
                 <select name="lines[{{ $index }}][agent_id]" class="select select-bordered select-sm">
                     <option value="">N/A</option>
                     @foreach($agents as $a)

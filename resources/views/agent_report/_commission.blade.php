@@ -13,7 +13,7 @@
                             <th>Status</th>
                             <th>Offices</th>
                             <th>Applicant</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Currency</th>
                             <th class="text-right">Amount</th>
                             <th class="text-right">Convert</th>
@@ -95,7 +95,7 @@
                             <th>Status</th>
                             <th>Offices</th>
                             <th>Applicant</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Currency</th>
                             <th class="text-right">Amount</th>
                             <th class="text-right">Convert</th>

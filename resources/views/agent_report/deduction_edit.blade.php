@@ -27,7 +27,7 @@
         <p class="font-semibold">ℹ️ What you can change</p>
         <ul class="list-disc list-inside mt-2 opacity-90">
             <li><strong>Date</strong>, <strong>Amount</strong> and <strong>Particular / Description</strong> are editable.</li>
-            <li><strong>Agent</strong>, <strong>Applicant</strong> and <strong>Account</strong> are fixed — they record who was charged. Delete and re-encode if one of those is wrong.</li>
+            <li><strong>{{ agent_term() }}</strong>, <strong>Applicant</strong> and <strong>Account</strong> are fixed — they record who was charged. Delete and re-encode if one of those is wrong.</li>
         </ul>
     </div>
 

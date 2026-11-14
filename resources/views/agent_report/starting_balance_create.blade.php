@@ -24,7 +24,7 @@
     <div class="bg-info/10 border border-info/40 text-info-content rounded-lg p-4 mb-5 text-sm">
         <p class="font-semibold">ℹ️ Applicant belongs to the selected Agent</p>
         <ul class="list-disc list-inside mt-2 opacity-90">
-            <li>Choose an <strong>Agent</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that Agent.</li>
+            <li>Choose an <strong>{{ agent_term() }}</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that {{ agent_term() }}.</li>
             <li>If no applicant appears for the chosen Agent, that Agent has no applicants linked yet.</li>
             <li><strong>One starting balance per agent</strong> — a second entry for the same agent is rejected.</li>
         </ul>
@@ -60,9 +60,9 @@
                 <h3 class="font-bold text-sm opacity-70 uppercase tracking-wider mb-3 pb-2 border-b border-base-200">👤 Agent & Applicant</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-control">
-                        <label class="label"><span class="label-text">Agent *</span></label>
+                        <label class="label"><span class="label-text">{{ agent_term() }} *</span></label>
                         <select name="agent_id" id="agent_id" class="select select-bordered w-full" required>
-                            <option value="">Select agent…</option>
+                            <option value="">Select {{ strtolower(agent_term()) }}…</option>
                             @foreach($agents as $a)
                                 <option value="{{ $a->id }}" {{ old('agent_id') == $a->id ? 'selected' : '' }}>
                                     {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif

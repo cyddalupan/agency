@@ -272,7 +272,7 @@
                 <fieldset class="fieldset agent-dropdown" id="agent-field" style="display:none;">
                     <legend class="fieldset-legend">🎯 Select Agent</legend>
                     <select name="agent_id" class="select w-full" id="agent-select">
-                        <option value="">-- Select Agent --</option>
+                        <option value="">-- Select {{ agent_term() }} --</option>
                         @foreach ($agents as $agt)
                             <option value="{{ $agt->id }}" data-branch="{{ $agt->branch_id }}" @selected(old('agent_id', $applicant->agent_id) == $agt->id)>{{ $agt->name }}</option>
                         @endforeach

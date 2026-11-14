@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Agents Report')
+@section('title', agent_terms() . ' Report')
 
 @section('content')
 <div class="p-4 sm:p-6 space-y-6">

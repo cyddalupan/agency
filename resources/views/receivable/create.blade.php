@@ -24,9 +24,9 @@
     <div class="bg-info/10 border border-info/40 text-info-content rounded-lg p-4 mb-5 text-sm">
         <p class="font-semibold">ℹ️ Applicant belongs to the selected Agent</p>
         <ul class="list-disc list-inside mt-2 opacity-90">
-            <li>Choose an <strong>Agent</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that Agent.</li>
-            <li>If no applicant appears for the chosen Agent, that Agent has no applicants linked yet. An applicant can only be attached once it is assigned to the Agent.</li>
-            <li>Change the Agent to reload the matching applicant list.</li>
+            <li>Choose a <strong>{{ agent_term() }}</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that {{ agent_term() }}.</li>
+            <li>If no applicant appears for the chosen {{ agent_term() }}, that {{ agent_term() }} has no applicants linked yet. An applicant can only be attached once it is assigned to the {{ agent_term() }}.</li>
+            <li>Change the {{ agent_term() }} to reload the matching applicant list.</li>
         </ul>
     </div>
 
@@ -66,7 +66,7 @@
                         </label>
                         <select name="agent_id" id="agent_id" class="select select-bordered w-full"
                                 @if(! ($isEdit ?? false) || ($record->agent_id ?? null)) required @endif>
-                            <option value="">Select agent…</option>
+                            <option value="">Select {{ strtolower(agent_term()) }}…</option>
                             @foreach($agents as $a)
                                 <option value="{{ $a->id }}" data-branch="{{ $a->branch->name ?? '' }}" {{ old('agent_id', $record->agent_id ?? '') == $a->id ? 'selected' : '' }}>
                                     {{ $a->name }}@if($a->branch) ({{ $a->branch->name }})@endif
@@ -86,7 +86,7 @@
                             @endforeach
                         </select>
                         <p id="applicant_empty_note" class="hidden mt-1 text-xs text-warning font-medium">
-                            No applicants are assigned to this selected Agent yet.
+                            No applicants are assigned to this selected {{ agent_term() }} yet.
                         </p>
                         <p id="standalone_note" class="hidden mt-1 text-xs text-info font-medium">
                             💼 Office Returns / Monthly Collection / Other Collection — no agent or applicant needed.
@@ -243,7 +243,7 @@
                 }
                 standaloneNote.classList.toggle('hidden', !standalone);
                 if (accountLabel) {
-                    accountLabel.textContent = standalone ? 'Agent (optional for this account)' : 'Agent *';
+                    accountLabel.textContent = standalone ? '{{ agent_term() }} (optional for this account)' : '{{ agent_term() }} *';
                 }
                 filterApplicants();
             }

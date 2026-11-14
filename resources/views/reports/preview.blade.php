@@ -48,7 +48,7 @@
                             <th class="text-xs uppercase tracking-wider opacity-60">#</th>
                             @foreach($columns as $col)
                                 <th class="text-xs uppercase tracking-wider opacity-60">
-                                    {{ ['name'=>'Name','email'=>'Email','phone'=>'Phone','gender'=>'Gender','country'=>'Country','status'=>'Status','position'=>'Position','employer'=>'Employer','salary'=>'Salary','source'=>'Source','agent'=>'Agent','created_at'=>'Date Created','updated_at'=>'Last Updated'][$col] ?? ucfirst($col) }}
+                                    {{ ['name'=>'Name','email'=>'Email','phone'=>'Phone','gender'=>'Gender','country'=>'Country','status'=>'Status','position'=>'Position','employer'=>'Employer','salary'=>'Salary','source'=>'Source','agent'=>agent_term(),'created_at'=>'Date Created','updated_at'=>'Last Updated'][$col] ?? ucfirst($col) }}
                                 </th>
                             @endforeach
                         </tr>

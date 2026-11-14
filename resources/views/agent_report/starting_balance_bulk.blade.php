@@ -58,7 +58,7 @@
         <div class="card-body">
             <h3 class="font-bold mb-2">1 · Get the template</h3>
             <p class="text-sm opacity-70 mb-3">
-                Columns: <strong>Date</strong>, <strong>Account</strong>, <strong>Agent</strong>, <strong>Amount</strong>, <strong>Particular</strong>.
+                Columns: <strong>Date</strong>, <strong>Account</strong>, <strong>{{ agent_term() }}</strong>, <strong>Amount</strong>, <strong>Particular</strong>.
                 Date blank = today. Account is fixed to <strong>Starting Balance</strong> (leave it blank or type that).
                 Column order does not matter.
             </p>

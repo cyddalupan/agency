@@ -58,7 +58,7 @@
         <div class="card-body">
             <h3 class="font-bold mb-2">1 · Get the template</h3>
             <p class="text-sm opacity-70 mb-3">
-                Columns: <strong>Date</strong>, <strong>Agent</strong>, <strong>Applicant</strong>, <strong>Amount</strong>, <strong>Particular/Description</strong>.
+                Columns: <strong>Date</strong>, <strong>{{ agent_term() }}</strong>, <strong>Applicant</strong>, <strong>Amount</strong>, <strong>Particular/Description</strong>.
                 Date blank = today. Applicant may be blank. Column order does not matter.
             </p>
             <a href="{{ route('agent_report.deduction.bulk.template') }}" class="btn btn-outline btn-sm">⬇️ Download CSV template</a>

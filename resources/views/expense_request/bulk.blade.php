@@ -141,7 +141,7 @@
     </details>
 
     <div class="text-xs opacity-50">
-        Matching is case/space-insensitive. Applicant/Agent are matched by exact full name (rows with an ambiguous
+        Matching is case/space-insensitive. Applicant/{{ agent_term() }} are matched by exact full name (rows with an ambiguous
         name are rejected, not silently picked). If any row has a problem, <strong>nothing</strong> is imported until
         every row is valid (all-or-nothing). Requests created here follow the same rules as the New Expense Request form.
     </div>

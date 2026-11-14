@@ -122,7 +122,7 @@
             <tr>
                 <th>Date</th>
                 <th>Account</th>
-                <th>Agent</th>
+                <th>{{ agent_term() }}</th>
                 <th>Applicant</th>
                 <th>Particular</th>
                 <th class="num">Amount</th>
@@ -191,7 +191,7 @@
                 <th>Date</th>
                 <th>Ref #</th>
                 <th>Account</th>
-                <th>Agent</th>
+                <th>{{ agent_term() }}</th>
                 <th>Applicant</th>
                 <th>Particular</th>
                 <th class="num">Amount</th>
@@ -225,7 +225,7 @@
             <tr>
                 <th>Date</th>
                 <th>Account</th>
-                <th>Agent</th>
+                <th>{{ agent_term() }}</th>
                 <th>Applicant</th>
                 <th>Particular</th>
                 <th class="num">Amount</th>

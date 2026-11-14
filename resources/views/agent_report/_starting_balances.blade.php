@@ -9,7 +9,7 @@
                         <tr class="bg-base-200/70">
                             <th>Date</th>
                             <th>Account</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Applicant</th>
                             <th class="text-right">Amount</th>
                             <th>Particular / Description</th>

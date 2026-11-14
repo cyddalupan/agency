@@ -18,7 +18,7 @@
                             <th>User</th>
                             <th>Status</th>
                             <th>Applicant</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th class="text-right">Payment</th>
                             <th class="text-right">Gross</th>
                             <th>Account</th>

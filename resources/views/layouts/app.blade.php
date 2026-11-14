@@ -390,7 +390,8 @@
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('agent_report.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">📈</span>
-                            Agents Report
+                            {{-- Card 6af81c30: "Marketing Staff Report" on FINAS/CSDI. --}}
+                            {{ agent_terms() }} Report
                         </a>
                         @endif
                         @if ($showGeneralLedger)
@@ -448,7 +449,7 @@
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('agents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
                             <span class="text-lg">🔌</span>
-                            Agents
+                            {{ agent_terms() }}
                         </a>
                         @endif
 

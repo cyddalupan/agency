@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Agent Report')
+@section('title', agent_term() . ' Report')
 
 @push('styles')
 <style>

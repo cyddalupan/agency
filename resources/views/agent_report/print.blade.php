@@ -28,7 +28,7 @@
     <table>
         <thead>
             <tr>
-                <th>Agent</th>
+                <th>{{ agent_term() }}</th>
                 <th>Branch</th>
                 <th>Total Commission</th>
                 <th>Total Cash Advance</th>
