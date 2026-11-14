@@ -8,6 +8,7 @@ use App\Models\ApplicantCertificate;
 use App\Models\ApplicantEducation;
 use App\Models\ApplicantReference;
 use App\Models\ApplicantWorkExperience;
+use App\Models\ApplicantWelfareRecord;
 use App\Models\Bill;
 use App\Models\Commission;
 use App\Models\Country;
@@ -360,6 +361,94 @@ class ReportController extends Controller
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename=agents-report.csv',
         ]);
+    }
+
+    /**
+     * Welfare Report (card 6af81c30 part 3, 2026-11-14).
+     *
+     * "Remove the Agent (Marketing) Report on Report Module, Instead Add
+     * Welfare Report." Replaces the reports.agents card on FINAS and CSDI.
+     *
+     * Columns mirror the Welfare module so the two read the same way.
+     */
+    public function welfare(Request $request): View
+    {
+        abort_unless(
+            \App\Http\Controllers\WelfareController::enabled(auth()->user()->agency_id ?? 0),
+            403,
+            'The Welfare Report is not available for this agency.'
+        );
+
+        $query = $this->welfareQuery($request);
+
+        return view('reports.welfare', [
+            'records'   => $query->orderByDesc('date_of_contact')->orderByDesc('id')->get(),
+            'countries' => Country::orderBy('name')->get(),
+        ]);
+    }
+
+    public function welfareExport(Request $request): StreamedResponse
+    {
+        abort_unless(
+            \App\Http\Controllers\WelfareController::enabled(auth()->user()->agency_id ?? 0),
+            403,
+            'The Welfare Report is not available for this agency.'
+        );
+
+        $rows = $this->welfareQuery($request)
+            ->orderByDesc('date_of_contact')->orderByDesc('id')->get();
+
+        $headers = [
+            'Name', 'Passport No.', 'DMW E-Reg ID', 'Country', 'Job Site City',
+            'Position', 'FRA', 'Remarks / Issues / Actions Taken',
+            'Encoder', 'Date of Contact', 'Direct Employer', 'Contact Abroad',
+        ];
+
+        return response()->streamDownload(function () use ($rows, $headers) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            foreach ($rows as $w) {
+                fputcsv($out, [
+                    $w->ofw_full_name,
+                    $w->passport_number,
+                    $w->dmw_ereg_id,
+                    $w->country_of_destination,
+                    $w->job_site_city,
+                    $w->position_designation,
+                    $w->foreign_recruitment_agency,
+                    $w->remarks,
+                    $w->encoder ?: $w->logged_by,
+                    optional($w->date_of_contact)->format('Y-m-d'),
+                    $w->direct_employer_name,
+                    $w->contact_no_abroad,
+                ]);
+            }
+            fclose($out);
+        }, 'welfare-report-' . now()->format('Ymd-His') . '.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /** Shared filters for the Welfare Report and its CSV. */
+    private function welfareQuery(Request $request)
+    {
+        $query = ApplicantWelfareRecord::where('agency_id', auth()->user()->agency_id);
+
+        if ($v = trim((string) $request->query('name'))) {
+            $query->where('ofw_full_name', 'like', "%{$v}%");
+        }
+        if ($v = trim((string) $request->query('country'))) {
+            $query->where('country_of_destination', 'like', "%{$v}%");
+        }
+        if ($v = trim((string) $request->query('fra'))) {
+            $query->where('foreign_recruitment_agency', 'like', "%{$v}%");
+        }
+        if ($request->filled('from')) {
+            $query->whereDate('date_of_contact', '>=', $request->query('from'));
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('date_of_contact', '<=', $request->query('to'));
+        }
+
+        return $query;
     }
 
     public function statistics(): View

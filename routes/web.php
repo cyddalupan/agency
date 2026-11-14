@@ -640,6 +640,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('/applicants/export', [ReportController::class, 'applicantsExport'])->name('applicants.export');
         Route::get('/agents', [ReportController::class, 'agents'])->name('agents');
         Route::get('/agents/export', [ReportController::class, 'agentsExport'])->name('agents.export');
+        // Card 6af81c30 part 3: Welfare Report replaces Agent Report on FINAS/CSDI.
+        Route::get('/welfare', [ReportController::class, 'welfare'])->name('welfare');
+        Route::get('/welfare/export', [ReportController::class, 'welfareExport'])->name('welfare.export');
         Route::get('/bill/{bill}', [ReportController::class, 'bill'])->name('bill');
         Route::get('/or/{or}', [ReportController::class, 'or'])->name('or');
         Route::get('/commission/{commission}', [ReportController::class, 'commission'])->name('commission');

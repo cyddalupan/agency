@@ -41,12 +41,23 @@
             </div>
         </a>
 
+        {{-- Card 6af81c30 part 3: the Agent (Marketing) Report is replaced by the
+             Welfare Report on FINAS and CSDI, and the two only. --}}
+        @if(auth()->user()->canAccessModule('welfare'))
+        <a href="{{ route('reports.welfare') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h2 class="card-title text-lg">🤝 Welfare Report</h2>
+                <p class="text-sm opacity-70">Welfare contacts with country, position, FRA and remarks.</p>
+            </div>
+        </a>
+        @else
         <a href="{{ route('reports.agents') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body">
                 <h2 class="card-title text-lg">🧑‍💼 Agent Reports</h2>
                 <p class="text-sm opacity-70">All agents with contact, commission rate, agency, and status.</p>
             </div>
         </a>
+        @endif
 
         @if(auth()->user()->isPrivileged())
         <a href="{{ route('reports.statistics') }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
