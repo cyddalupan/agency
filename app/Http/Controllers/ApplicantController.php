@@ -16,6 +16,7 @@ use App\Models\Position;
 use App\Models\Religion;
 use App\Models\Skill;
 use App\Models\StatusCode;
+use App\Services\JobSlotService;
 use App\Services\SensitiveActionLogger;
 use App\Support\ApplicantDuplicateChecker;
 use Illuminate\Http\JsonResponse;
@@ -1801,6 +1802,7 @@ class ApplicantController extends Controller
 
         $fromCode = $applicant->status_code;
         $toCode = (int) $validated['status_code'];
+        $previousJobId = $applicant->job_id;
 
         // NOTE: pipeline transition rules deliberately do NOT block the Status tab.
         // The dropdown lists every Settings status and users must be able to move
@@ -1815,6 +1817,10 @@ class ApplicantController extends Controller
             'status_date' => $validated['status_date'] ?? null,
             'remarks' => isset($validated['remarks']) && $validated['remarks'] !== '' ? $validated['remarks'] : null,
         ]);
+
+        // Total Slot: a slot is consumed/released by the DEPLOYED status, so the
+        // job order's occupied count has to follow every status change.
+        JobSlotService::syncForApplicant($applicant->id, $previousJobId);
 
         SensitiveActionLogger::log(
             'status_changed',

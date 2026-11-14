@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Applicant;
+use App\Services\JobSlotService;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -170,6 +171,11 @@ class FraDashboardController extends Controller
         $count = $this->applicants($user)->whereIn('id', $request->applicant_ids)
             ->whereIn('status_code', [4, 5, 6])
             ->update(['status_code' => 0]);
+
+        // Bulk update bypasses model events; resync affected job orders.
+        foreach ($this->applicants($user)->whereIn('id', $request->applicant_ids)->pluck('job_id') as $jobId) {
+            JobSlotService::syncJobPosition($jobId);
+        }
 
         return redirect()->route('fra.selected')
             ->with('success', "$count applicant(s) removed from Selected.");
