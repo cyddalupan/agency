@@ -295,6 +295,16 @@
                     </a>
                     @endif
 
+                    {{-- WELFARE module — under BACKOUT, CANCELLED & REPAT (card 6af81f6a), CSDI/FINAS only. --}}
+                    @if (auth()->user()->canAccessModule('welfare'))
+                    <a href="{{ route('welfare.index') }}"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                              {{ request()->routeIs('welfare.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                        <span class="text-lg">🤝</span>
+                        Welfare
+                    </a>
+                    @endif
+
                     @if (auth()->user()->canAccessModule('employers'))
                     <a href="{{ route('employers.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

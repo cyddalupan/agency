@@ -173,6 +173,12 @@ class ModuleAccess
     public const EMPLOYEE_AGENCIES = ['csdi', 'finas'];
 
     /**
+     * Agencies that offer the WELFARE module (card 6af81f6a, 2026-11-14).
+     * "FINAS and CSDI only" — closed everywhere else, admins included.
+     */
+    public const WELFARE_MODULE_AGENCIES = ['csdi', 'finas'];
+
+    /**
      * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
      * 2026-11-05): "Only Admin and Accounting users has this module".
      * It is therefore NOT in STAFF_ALLOWED — super_admin/admin keep it via
@@ -210,6 +216,7 @@ class ModuleAccess
         'ai'                       => 'ai',
         'company-profile'          => 'company-profile',
         // Employee Settings shares the Employee module's gate.
+        'welfare'                  => 'welfare',
         'employee-settings'        => 'employees',
         'employees'                => 'employees',
         'agencies'                 => 'agencies',
@@ -256,6 +263,11 @@ class ModuleAccess
         // Gulf tenant alone. Checked BEFORE the full-access shortcut so an
         // admin of another agency cannot reach it either. Now offered on the
         // agencies named in AGENT_REPORT_AGENCIES (card 6af3ddf8).
+        // WELFARE module is offered on CSDI and FINAS only (card 6af81f6a).
+        if ($module === 'welfare' && ! self::isAnyAgency($agencyId, self::WELFARE_MODULE_AGENCIES)) {
+            return false;
+        }
+
         // EMPLOYEE module is offered on CSDI and FINAS only (card 6af6fe94).
         if ($module === 'employees' && ! self::isAnyAgency($agencyId, self::EMPLOYEE_AGENCIES)) {
             return false;

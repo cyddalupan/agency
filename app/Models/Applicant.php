@@ -219,7 +219,7 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
-     * FINAS WELFARE tab: welfare / monitoring contacts for this OFW
+     * FINAS WELFARE tab: welfare / monitoring contacts for this Applicant
      * (newest contact first).
      */
     public function welfareRecords()

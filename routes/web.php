@@ -309,7 +309,20 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Applicant routes - recruiter and other agency roles
     Route::group([], function () {
         Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
-        Route::get('applicants/withdrawn-repat/export', [ApplicantController::class, 'withdrawnExport'])->name('applicants.withdrawn.export');
+        // WELFARE module — lives under BACKOUT, CANCELLED & REPAT (card 6af81f6a).
+    // CSDI and FINAS only, enforced in WelfareController::agencyId().
+    Route::prefix('welfare')->name('welfare.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\WelfareController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\WelfareController::class, 'export'])->name('export');
+        Route::get('/create', [\App\Http\Controllers\WelfareController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\WelfareController::class, 'store'])->name('store');
+        Route::get('/{welfare}/edit', [\App\Http\Controllers\WelfareController::class, 'edit'])->name('edit');
+        Route::put('/{welfare}', [\App\Http\Controllers\WelfareController::class, 'update'])->name('update');
+        Route::delete('/{welfare}', [\App\Http\Controllers\WelfareController::class, 'destroy'])->name('destroy');
+        Route::get('/{welfare}/document', [\App\Http\Controllers\WelfareController::class, 'document'])->name('document');
+    });
+
+    Route::get('applicants/withdrawn-repat/export', [ApplicantController::class, 'withdrawnExport'])->name('applicants.withdrawn.export');
         Route::get('applicants/withdrawn-repat', [ApplicantController::class, 'withdrawn'])->name('applicants.withdrawn');
         // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an applicant id)
         Route::get('applicants/bulk', [ApplicantController::class, 'bulkUpload'])->name('applicants.bulk');

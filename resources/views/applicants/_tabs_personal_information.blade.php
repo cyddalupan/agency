@@ -521,7 +521,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Logged By</legend>
+                                <legend class="fieldset-legend">Encoder</legend>
                                 <input type="text" name="logged_by" value="{{ old('logged_by', auth()->user()->name) }}" class="input w-full" placeholder="User complete name">
                             </fieldset>
                             <fieldset class="fieldset">
@@ -533,7 +533,7 @@
                         <h5 class="font-semibold mt-6 mb-2">🧳 Migrant Worker Profile</h5>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Full Name of OFW</legend>
+                                <legend class="fieldset-legend">Full Name of Applicant</legend>
                                 <input type="text" name="ofw_full_name" value="{{ old('ofw_full_name', $applicant->full_name) }}" class="input w-full">
                             </fieldset>
                             <fieldset class="fieldset">
@@ -545,7 +545,7 @@
                                 <input type="text" name="dmw_ereg_id" value="{{ old('dmw_ereg_id') }}" class="input w-full">
                             </fieldset>
                             <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Country of Destination</legend>
+                                <legend class="fieldset-legend">Country</legend>
                                 <input type="text" name="country_of_destination" value="{{ old('country_of_destination', $applicant->country?->name) }}" class="input w-full">
                             </fieldset>
                             <fieldset class="fieldset">
@@ -629,7 +629,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                             <div>
                                 <span class="font-semibold">📅 {{ $w->date_of_contact?->format('M d, Y') ?? 'No date' }}</span>
-                                <span class="text-sm opacity-70 ml-2">Logged by {{ $w->logged_by ?: '—' }}</span>
+                                <span class="text-sm opacity-70 ml-2">Encoded by {{ $w->encoder ?: $w->logged_by ?: '—' }}</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 @if (is_array($w->milestones))
@@ -645,10 +645,10 @@
                         </div>
 
                         <dl class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            <div><dt class="text-xs opacity-60 uppercase">OFW</dt><dd>{{ $w->ofw_full_name ?: '—' }}</dd></div>
+                            <div><dt class="text-xs opacity-60 uppercase">Applicant</dt><dd>{{ $w->ofw_full_name ?: '—' }}</dd></div>
                             <div><dt class="text-xs opacity-60 uppercase">Passport No.</dt><dd>{{ $w->passport_number ?: '—' }}</dd></div>
                             <div><dt class="text-xs opacity-60 uppercase">DMW E-Reg ID</dt><dd>{{ $w->dmw_ereg_id ?: '—' }}</dd></div>
-                            <div><dt class="text-xs opacity-60 uppercase">Destination</dt><dd>{{ $w->country_of_destination ?: '—' }}</dd></div>
+                            <div><dt class="text-xs opacity-60 uppercase">Country</dt><dd>{{ $w->country_of_destination ?: '—' }}</dd></div>
                             <div><dt class="text-xs opacity-60 uppercase">Job Site City</dt><dd>{{ $w->job_site_city ?: '—' }}</dd></div>
                             <div><dt class="text-xs opacity-60 uppercase">Position</dt><dd>{{ $w->position_designation ?: '—' }}</dd></div>
                             <div><dt class="text-xs opacity-60 uppercase">Contact Abroad</dt><dd>{{ $w->contact_no_abroad ?: '—' }}</dd></div>

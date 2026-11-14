@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Welfare / monitoring record for an OFW applicant
- * (FINAS card: PERSONAL INFORMATION "WELFARE Tab", 2026-11-06).
+ * Welfare / monitoring record for an Applicant (formerly "OFW").
+ * (FINAS card: PERSONAL INFORMATION "WELFARE Tab", 2026-11-06.)
+ *
+ * Since the WELFARE module card (6af81f6a, 2026-11-14) a record can also stand
+ * on its own without an applicant — see the standalone Welfare module.
  */
 class ApplicantWelfareRecord extends Model
 {
@@ -37,6 +40,7 @@ class ApplicantWelfareRecord extends Model
         'agency_id',
         'applicant_id',
         'logged_by',
+        'encoder',
         'date_of_contact',
         'ofw_full_name',
         'passport_number',
@@ -60,6 +64,8 @@ class ApplicantWelfareRecord extends Model
         'working_environment',
         'working_environment_specify',
         'remarks',
+        'document_path',
+        'document_name',
     ];
 
     protected function casts(): array

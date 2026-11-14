@@ -36,6 +36,11 @@ class EnsureModuleAccess
             abort(403, 'Your account does not have access to this module.');
         }
 
+        // WELFARE module is CSDI/FINAS only (card 6af81f6a) — same rule.
+        if ($module === 'welfare' && ! ModuleAccess::allows($type, $module, $user->agency_id)) {
+            abort(403, 'The Welfare module is not available for this agency.');
+        }
+
         // EMPLOYEE module is CSDI/FINAS only (card 6af6fe94): admins of the
         // other tenants are refused too, so this cannot ride the shortcut below.
         if ($module === 'employees' && ! ModuleAccess::allows($type, $module, $user->agency_id)) {
