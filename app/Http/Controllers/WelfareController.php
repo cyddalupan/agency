@@ -85,6 +85,47 @@ class WelfareController extends Controller
         }, 'welfare-' . now()->format('Ymd-His') . '.csv', ['Content-Type' => 'text/csv']);
     }
 
+    /**
+     * Type-ahead for the Welfare form (Josh, 2026-11-14): "Name: Display all
+     * applicants. Encoder can type the name and display the related name.
+     * Fill-up all the fields related to the Applicant's data."
+     *
+     * Returns the applicant plus everything the form can pre-fill, so picking a
+     * name fills the whole Migrant Worker Profile in one step.
+     */
+    public function lookupApplicant(Request $request)
+    {
+        $agencyId = (int) (auth()->user()->agency_id ?? 0);
+        abort_if($agencyId === 0, 403);
+        abort_unless(self::enabled($agencyId), 403, 'The Welfare module is not available for this agency.');
+
+        $term = trim((string) $request->query('q'));
+        if ($term === '') {
+            return response()->json(['applicants' => []]);
+        }
+
+        $applicants = Applicant::with(['passport', 'country', 'position', 'agent'])
+            ->where('agency_id', $agencyId)
+            ->searchName($term)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->limit(15)
+            ->get()
+            ->map(fn (Applicant $a) => [
+                'id'            => $a->id,
+                'name'          => $a->full_name,
+                'passport'      => $a->passport->passport_no ?? '',
+                'country'       => $a->country->name ?? '',
+                'position'      => $a->position->name ?? '',
+                // The card renames Agent -> Marketing, so the FRA box carries
+                // the marketing agency's name.
+                'fra'           => $a->agent->name ?? $a->agent->full_name ?? '',
+                'label'         => trim($a->full_name . ' · ' . ($a->passport->passport_no ?? 'no passport')),
+            ]);
+
+        return response()->json(['applicants' => $applicants]);
+    }
+
     public function create(Request $request): View
     {
         $agencyId = $this->agencyId();
@@ -231,6 +272,18 @@ class WelfareController extends Controller
         abort_unless((int) $record->agency_id === $this->agencyId(), 403);
     }
 
+    /** Validation for the five yes/no indicators and their "specify" boxes. */
+    private function indicatorRules(): array
+    {
+        $rules = [];
+        foreach (array_keys(ApplicantWelfareRecord::INDICATORS) as $key) {
+            $rules[$key]            = 'nullable|in:yes,no';
+            $rules[$key.'_specify'] = 'nullable|string|max:1000';
+        }
+
+        return $rules;
+    }
+
     private function validateRecord(Request $request): array
     {
         $validated = $request->validate([
@@ -248,9 +301,22 @@ class WelfareController extends Controller
             'logged_by'                 => 'nullable|string|max:255',
             'remarks'                   => 'nullable|string|max:5000',
             'document'                  => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
-        ]);
+            'milestones'                => 'nullable|array',
+            'milestones.*'              => 'in:' . implode(',', array_keys(ApplicantWelfareRecord::MILESTONES)),
+        ] + $this->indicatorRules());
 
-        // The card's column set only; milestones/indicators keep their defaults.
+        // Josh's form (2026-11-14) carries the milestones and the five working
+        // condition indicators, so they are persisted here too.
+        $validated['milestones'] = array_values(array_intersect(
+            (array) $request->input('milestones', []),
+            array_keys(ApplicantWelfareRecord::MILESTONES)
+        ));
+
+        foreach (array_keys(ApplicantWelfareRecord::INDICATORS) as $key) {
+            $validated[$key]           = $request->input($key) === 'yes' ? 'yes' : ($request->input($key) === 'no' ? 'no' : null);
+            $validated[$key.'_specify'] = $request->input($key.'_specify') ?: null;
+        }
+
         unset($validated['document']);
         $validated['date_of_contact'] = $validated['date_of_contact'] ?? now()->toDateString();
 

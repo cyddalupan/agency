@@ -314,6 +314,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::prefix('welfare')->name('welfare.')->group(function () {
         Route::get('/', [\App\Http\Controllers\WelfareController::class, 'index'])->name('index');
         Route::get('/export', [\App\Http\Controllers\WelfareController::class, 'export'])->name('export');
+        Route::get('/lookup-applicant', [\App\Http\Controllers\WelfareController::class, 'lookupApplicant'])->name('lookup');
         Route::get('/create', [\App\Http\Controllers\WelfareController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\WelfareController::class, 'store'])->name('store');
         Route::get('/{welfare}/edit', [\App\Http\Controllers\WelfareController::class, 'edit'])->name('edit');

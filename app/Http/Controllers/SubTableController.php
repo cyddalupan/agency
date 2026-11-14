@@ -370,10 +370,10 @@ class SubTableController extends Controller
             return;
         }
 
-        $user = auth()->user();
-        if (! $user || ! method_exists($user, 'canAccessWelfareTab') || ! $user->canAccessWelfareTab()) {
-            abort(403, 'Only Admin and Welfare accounts can access the Welfare tab.');
-        }
+        // (Josh, 2026-11-14) The Welfare tab was removed from Personal
+        // Information; welfare is its own module now (WelfareController).
+        // The sub-table write is closed so nothing can bypass the module.
+        abort(403, 'Welfare is recorded in the Welfare module, not on the applicant.');
     }
 
     /**

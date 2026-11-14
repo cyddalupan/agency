@@ -399,7 +399,13 @@ class Applicant extends Model implements AuthenticatableContract
 
     public function getFullNameAttribute(): string
     {
-        return trim("{$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
+        // Collapse the gap left by an empty middle name / suffix, which used to
+        // produce "Juan  Dela Cruz" (double space) everywhere the name is shown.
+        $parts = array_filter([
+            $this->first_name, $this->middle_name, $this->last_name, $this->suffix,
+        ], fn ($p) => trim((string) $p) !== '');
+
+        return implode(' ', array_map('trim', $parts));
     }
 
     public function getAgeAttribute(): ?int

@@ -251,4 +251,123 @@ class WelfareModuleTest extends TestCase
         Storage::disk('public')->assertMissing('welfare/8/x.pdf');
         $this->assertNull(ApplicantWelfareRecord::find($rec->id));
     }
+
+    // ------------------------------------- Josh review, 2026-11-14 (reopened)
+
+    #[Test]
+    public function the_welfare_tab_is_gone_from_personal_information(): void
+    {
+        $agency    = $this->agency('finas');
+        $applicant = Applicant::factory()->create(['agency_id' => $agency->id, 'first_name' => 'Juan', 'last_name' => 'Cruz']);
+
+        $html = $this->actingAs($this->admin($agency))
+            ->get(route('applicants.show', $applicant))->assertOk()->getContent();
+
+        // The tab button is gone…
+        $this->assertStringNotContainsString('data-pi-tab="welfare"', $html);
+        // …and the panel with it.
+        $this->assertStringNotContainsString('data-pi-panel="welfare"', $html);
+    }
+
+    #[Test]
+    public function writing_welfare_through_the_applicant_sub_table_is_refused(): void
+    {
+        $agency    = $this->agency('finas');
+        $applicant = Applicant::factory()->create(['agency_id' => $agency->id, 'first_name' => 'Juan', 'last_name' => 'Cruz']);
+
+        $this->actingAs($this->admin($agency))->post(route('applicants.sub.store', [$applicant, 'welfare']), [
+            'ofw_full_name' => 'Sneaky Write',
+        ])->assertForbidden();
+
+        $this->assertSame(0, ApplicantWelfareRecord::count());
+    }
+
+    #[Test]
+    public function the_name_field_returns_matching_applicants_to_fill_the_form(): void
+    {
+        $agency = $this->agency('finas');
+        $juan   = Applicant::factory()->create(['agency_id' => $agency->id, 'first_name' => 'Juan', 'last_name' => 'Dela Cruz']);
+        $other  = Applicant::factory()->create(['agency_id' => $agency->id, 'first_name' => 'Maria', 'last_name' => 'Santos']);
+
+        $response = $this->actingAs($this->admin($agency))
+            ->getJson(route('welfare.lookup', ['q' => 'Juan']))
+            ->assertOk()->json();
+
+        $names = array_column($response['applicants'], 'name');
+        $this->assertContains('Juan Dela Cruz', $names);
+        $this->assertNotContains('Maria Santos', $names);
+
+        // Each suggestion carries the fields the form pre-fills.
+        $first = $response['applicants'][0];
+        foreach (['id', 'name', 'passport', 'country', 'position', 'fra'] as $key) {
+            $this->assertArrayHasKey($key, $first);
+        }
+    }
+
+    #[Test]
+    public function the_lookup_is_agency_scoped_and_offers_nothing_elsewhere(): void
+    {
+        $finas = $this->agency('finas');
+        $csdi  = $this->agency('csdi');
+        Applicant::factory()->create(['agency_id' => $csdi->id, 'first_name' => 'Hidden', 'last_name' => 'Person']);
+
+        $res = $this->actingAs($this->admin($finas))->getJson(route('welfare.lookup', ['q' => 'Hidden']))->assertOk()->json();
+        $this->assertSame([], $res['applicants']);
+
+        // Gulf has no module at all.
+        $gulf = $this->admin($this->agency('gulf'));
+        $this->actingAs($gulf)->getJson(route('welfare.lookup', ['q' => 'Hidden']))->assertForbidden();
+    }
+
+    #[Test]
+    public function milestones_and_assessment_indicators_are_saved(): void
+    {
+        $agency = $this->agency('finas');
+
+        $this->actingAs($this->admin($agency))->post(route('welfare.store'), [
+            'ofw_full_name'       => 'Juan Dela Cruz',
+            'date_of_contact'     => '2026-11-14',
+            'milestones'          => ['day_3', 'month_1'],
+            'wages_paid'          => 'yes',
+            'food_accommodation'  => 'no',
+            'food_accommodation_specify' => 'Food allowance not given for 2 weeks.',
+            'medical_status'      => 'yes',
+            'contract_provisions' => 'yes',
+            'working_environment' => 'no',
+        ])->assertRedirect(route('welfare.index'));
+
+        $rec = ApplicantWelfareRecord::where('ofw_full_name', 'Juan Dela Cruz')->firstOrFail();
+
+        $this->assertSame(['day_3', 'month_1'], $rec->milestones);
+        $this->assertSame('yes', $rec->wages_paid);
+        $this->assertSame('no', $rec->food_accommodation);
+        $this->assertSame('Food allowance not given for 2 weeks.', $rec->food_accommodation_specify);
+        $this->assertSame('no', $rec->working_environment);
+        $this->assertNull($rec->contract_provisions_specify);
+    }
+
+    #[Test]
+    public function the_create_form_carries_every_section_from_the_mockup(): void
+    {
+        $agency = $this->agency('finas');
+
+        $html = $this->actingAs($this->admin($agency))->get(route('welfare.create'))->assertOk()->getContent();
+
+        foreach ([
+            'Encoder', 'Date of Contact',
+            'Migrant Worker Profile', 'Full Name of Applicant', 'Passport Number',
+            'DMW E-Reg ID', 'Country', 'Job Site City', 'Position / Designation',
+            'Contact No. Abroad',
+            'Foreign Principal &amp; Employer Details', 'Foreign Recruitment Agency (FRA)',
+            'Direct Employer Name', 'Contact Person &amp; Phone Number',
+            'Mandatory Monitoring Milestones',
+            'Day 3 (Arrival Check)', 'Incident-Driven Call (Emergency/Dispute)',
+            'Welfare &amp; Working Conditions Assessment Indicators',
+            'Wages paid on time and in full?', 'Working environment safe?',
+            'Remarks / Issues Identified / Actions Taken',
+            'Upload document', 'Save Welfare Record',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $html, "Form is missing: {$needle}");
+        }
+    }
 }
