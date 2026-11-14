@@ -812,6 +812,7 @@ class AgentReportController extends Controller
             $line = $row['line'];
             $d = $row['data'];
             $rowErrors = [];
+            $dateMatchesNothing = false;
 
             $refRaw = trim((string) ($d['ref'] ?? ''));
             $dateRaw = trim((string) ($d['date'] ?? ''));
@@ -825,8 +826,12 @@ class AgentReportController extends Controller
                     $rowErrors[] = "Date '{$dateRaw}' is not a valid date (use YYYY-MM-DD or MM/DD/YYYY).";
                 } else {
                     $candidateRequests = $requestsByDate[$dateKey] ?? [];
+                    // Cyd 2026-11-14: the payment date on the sheet does not have
+                    // to exist as a transaction date. Instead of rejecting the row,
+                    // fall back to matching on Applicant / Agent / Particular /
+                    // Currency alone when exactly one line in the agency fits.
                     if (count($candidateRequests) === 0) {
-                        $rowErrors[] = 'No transaction dated ' . Carbon::parse($dateKey)->format('M d, Y') . ' was found.';
+                        $dateMatchesNothing = true;
                     }
                 }
             } elseif ($refRaw !== '') {
@@ -862,7 +867,63 @@ class AgentReportController extends Controller
             $particularRaw = trim((string) ($d['particular'] ?? ''));
 
             $item = null;
-            if ($candidateRequests) {
+            if (! $candidateRequests && $dateMatchesNothing) {
+                // The sheet's date has no transaction. Match on the named columns
+                // across the agency instead — the encoder is recording a payment
+                // that landed on a different day than the transaction.
+                //
+                // This is filtered in SQL, not in PHP: Gulf has 23k+ lines, and
+                // hydrating all of them per row blew the request up with a 500.
+                $q = ExpenseRequestItem::query()
+                    ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId))
+                    ->with(['expenseRequest', 'applicant', 'agent', 'account']);
+
+                if ($agentRaw !== '') {
+                    $q->whereHas('agent', fn ($a) => $a->whereRaw('LOWER(TRIM(name)) = ?', [$norm($agentRaw)]));
+                }
+                if ($particularRaw !== '') {
+                    $q->whereRaw('LOWER(TRIM(COALESCE(particular, \'\'))) = ?', [$norm($particularRaw)]);
+                }
+                if ($currency !== '') {
+                    $q->whereRaw('UPPER(TRIM(COALESCE(currency, \'\'))) = ?', [$currency]);
+                }
+                if ($applicantRaw !== '') {
+                    $q->whereHas('applicant', function ($ap) use ($norm, $applicantRaw) {
+                        $ap->whereRaw("LOWER(TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(middle_name,''), ' ', COALESCE(last_name,''), ' ', COALESCE(suffix,'')))) = ?", [$norm($applicantRaw)])
+                           ->orWhereRaw("LOWER(TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')))) = ?", [$norm($applicantRaw)])
+                           ->orWhereRaw("LOWER(TRIM(CONCAT(COALESCE(last_name,''), ', ', COALESCE(first_name,'')))) = ?", [$norm($applicantRaw)]);
+                    });
+                }
+
+                // Cap the work: enough to prove ambiguity, never the whole agency.
+                $hits = $q->limit(50)->get();
+
+                if ($hits->count() === 1) {
+                    $item = $hits->first();
+                    $expenseRequest = $item->expenseRequest;
+                    $candidateRequests = [$expenseRequest];
+                } elseif ($hits->count() === 0) {
+                    $rowErrors[] = 'No transaction dated ' . Carbon::parse($dateKey)->format('M d, Y')
+                        . ' was found, and no line anywhere in the agency matches the given Applicant / Agent / Particular / Currency.';
+                } else {
+                    $label = function ($it) {
+                        $who = $it->applicant ? ($it->applicant->full_name ?? '') : 'no applicant';
+
+                        return ($it->expenseRequest->reference_no ?? '#' . $it->id)
+                            . ' · ' . ($it->expenseRequest->date ? Carbon::parse($it->expenseRequest->date)->format('M d, Y') : 'no date')
+                            . ' · ' . $who
+                            . ' · ' . ($it->agent->name ?? 'no agent')
+                            . ' · ' . ($it->currency ?: 'PHP') . ' ' . number_format((float) $it->amount, 2);
+                    };
+                    $rowErrors[] = $hits->count() . ' line(s) elsewhere in the agency match the given columns, but the payment date is on none of them — add the Particular to pick one. Lines: '
+                        . $hits->take(5)->map($label)->implode(' | ');
+                }
+            }
+
+            // $item is already resolved when the date fallback above matched an
+            // exact line; re-scoring that transaction's other lines could reject a
+            // row we already proved correct.
+            if ($candidateRequests && ! $item) {
                 $candidates = collect($candidateRequests)
                     ->flatMap(fn ($er) => $er->items)
                     ->values();
@@ -996,10 +1057,10 @@ class AgentReportController extends Controller
             }
 
             if ($item && $payment !== null) {
-                if ($payment > (float) $item->amount) {
-                    $rowErrors[] = 'Payment ' . number_format($payment, 2)
-                        . ' is bigger than the line amount ' . number_format((float) $item->amount, 2) . '.';
-                }
+                // Cyd 2026-11-14: a payment larger than the line amount is allowed.
+                // Encoders overpay lines (advances, corrected amounts) and the old
+                // hard block forced them to fix the system instead of recording the
+                // payment. The overpayment is surfaced as a warning, not an error.
                 if (isset($touched[$item->id])) {
                     $rowErrors[] = 'Line ' . $touched[$item->id] . ' already sets a payment for this same line.';
                 }

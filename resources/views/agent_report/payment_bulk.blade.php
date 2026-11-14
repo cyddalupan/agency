@@ -72,8 +72,9 @@
             <h3 class="font-bold mb-2">2 · Upload your filled-in CSV</h3>
             <input type="file" name="csv_file" accept=".csv,text/csv" class="file-input file-input-bordered w-full" required>
             <p class="text-xs opacity-60 mt-2">
-                The Date must already exist in Expenses &amp; Payments — this uploads payment amounts, it does not create
-                transactions. A payment cannot be bigger than the line amount.
+                This uploads payment amounts — it does not create transactions. The Date, Applicant, Agent and Particular
+                are used to find the line being paid; if the Date has no transaction, the line is found from the other
+                columns alone. A payment may be larger than the line amount.
             </p>
             <div class="card-actions justify-end mt-3">
                 <button type="submit" class="btn btn-primary">Upload payments</button>

@@ -277,17 +277,53 @@ class PaymentBulkUploadTest extends TestCase
     }
 
     #[Test]
-    public function a_payment_bigger_than_the_line_amount_is_rejected(): void
+    public function a_payment_bigger_than_the_line_amount_is_allowed(): void
     {
+        // Cyd 2026-11-14: "Bypass the date and amounts (greater) error."
+        // An encoder overpaying a line is real money received, not a typo to block.
         $req = $this->makeRequest('30006', [['particular' => 'FTW Commission', 'amount' => 500.00]]);
 
         $this->actingAs($this->admin)
             ->post(route('agent_report.payment.bulk.import'), [
                 'csv_file' => $this->csv([['30006', '', '', 'PHP', '900.00', 'FTW Commission']]),
             ])
-            ->assertSessionHasErrors('csv_file');
+            ->assertSessionHasNoErrors();
 
-        $this->assertSame('0.00', (string) $req->items()->first()->fresh()->payment);
+        $this->assertSame('900.00', (string) $req->items()->first()->fresh()->payment);
+    }
+
+    #[Test]
+    public function a_payment_date_with_no_transaction_still_imports_by_matching_the_other_columns(): void
+    {
+        // Cyd 2026-11-14: the sheet's date need not exist as a transaction date.
+        $req = $this->makeRequest('30007', [['particular' => 'PD FTW Commission']]);
+        $agent = Agent::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Mary Jane Morante']);
+        $req->items()->first()->update(['agent_id' => $agent->id]);
+
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    // A date deliberately far from the transaction date.
+                    ['2026-11-05', '', 'Mary Jane Morante', 'PHP', '250.00', 'PD FTW Commission'],
+                ]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('250.00', (string) $req->items()->first()->fresh()->payment);
+    }
+
+    #[Test]
+    public function a_payment_date_with_no_transaction_and_no_matching_line_is_still_rejected(): void
+    {
+        $this->makeRequest('30008', [['particular' => 'Something Else']]);
+
+        $this->actingAs($this->admin)
+            ->post(route('agent_report.payment.bulk.import'), [
+                'csv_file' => $this->csvByDate([
+                    ['2026-11-05', 'Nobody At All', '', 'PHP', '250.00', 'Not A Real Particular'],
+                ]),
+            ])
+            ->assertSessionHasErrors('csv_file');
     }
 
     #[Test]
