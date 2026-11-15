@@ -24,13 +24,6 @@
         </div>
     </div>
 
-    @if(in_array(auth()->user()->user_type ?? '', ['super_admin', 'admin', 'billing']))
-        <div class="tabs tabs-boxed bg-base-200/60 mb-6 w-fit">
-            <a href="{{ route('receivable.index') }}" class="tab text-sm">Tab 1 · Receivable</a>
-            <a href="{{ route('expense_request.index') }}" class="tab text-sm">Tab 2 · Expenses &amp; Payments</a>
-        </div>
-    @endif
-
     @if(session('success'))
         <div class="alert alert-success shadow-md mb-4"><span>✅ {{ session('success') }}</span></div>
     @endif

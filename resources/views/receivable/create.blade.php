@@ -20,16 +20,6 @@
         </div>
     @endif
 
-    {{-- Note: agent -> applicant relationship (Cyd request) --}}
-    <div class="bg-info/10 border border-info/40 text-info-content rounded-lg p-4 mb-5 text-sm">
-        <p class="font-semibold">ℹ️ Applicant belongs to the selected Agent</p>
-        <ul class="list-disc list-inside mt-2 opacity-90">
-            <li>Choose a <strong>{{ agent_term() }}</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that {{ agent_term() }}.</li>
-            <li>If no applicant appears for the chosen {{ agent_term() }}, that {{ agent_term() }} has no applicants linked yet. An applicant can only be attached once it is assigned to the {{ agent_term() }}.</li>
-            <li>Change the {{ agent_term() }} to reload the matching applicant list.</li>
-        </ul>
-    </div>
-
     <form method="POST" action="{{ ($isEdit ?? false) ? route('receivable.update', $record) : route('receivable.store') }}" class="card bg-base-100 shadow-md" enctype="multipart/form-data">
         @csrf
         @if($isEdit ?? false)

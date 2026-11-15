@@ -8,16 +8,9 @@
     <div class="card bg-gradient-to-br from-primary via-primary/80 to-secondary text-primary-content shadow-lg mb-6 card-lift">
         <div class="card-body p-6">
             <h1 class="text-2xl font-bold">{{ ($isEdit ?? false) ? '✏️ Edit Expense Request ' . $record->reference_no : '➕ New Expense Request' }}</h1>
-            <p class="opacity-80 mt-1">{{ ($isEdit ?? false) ? 'Tab 2 — Edit Transaction (multi-line)' : 'Tab 2 — Save Request (multi-line)' }}</p>
+            <p class="opacity-80 mt-1">{{ ($isEdit ?? false) ? 'Edit Transaction (multi-line)' : 'Save Request (multi-line)' }}</p>
         </div>
     </div>
-
-    @if(in_array(auth()->user()->user_type ?? '', ['super_admin', 'admin', 'billing']))
-        <div class="tabs tabs-boxed bg-base-200/60 mb-6 w-fit">
-            <a href="{{ route('receivable.index') }}" class="tab text-sm">Tab 1 · Receivable</a>
-            <a href="{{ route('expense_request.index') }}" class="tab text-sm">Tab 2 · Expenses &amp; Payments</a>
-        </div>
-    @endif
 
     @if($errors->any())
         <div class="alert alert-error shadow-md mb-6">
