@@ -177,10 +177,21 @@ class AuditTrailScreenTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get(route('audit_trail.index'));
 
-        $response->assertOk()
-            ->assertSee('status')      // the changed field name
-            ->assertSee('pending')     // before value
-            ->assertSee('received');   // after value
+        $response->assertOk();
+
+        // Read the "Fields changed" cell itself. Asserting assertSee('status') on
+        // the whole page passed even when the column rendered empty, because the
+        // word occurs elsewhere in the markup — so assert the cell's own text.
+        $html = $response->getContent();
+        $this->assertMatchesRegularExpression(
+            '/Fields changed.*?<span class="font-mono">([^<]*)<\/span>/s',
+            $html
+        );
+        preg_match('/Fields changed.*?<span class="font-mono">([^<]*)<\/span>/s', $html, $m);
+        $this->assertSame('status', trim($m[1]), 'The changed-fields column must name the field that moved.');
+
+        // The expanded detail table carries the before and after values.
+        $response->assertSee('pending')->assertSee('received');
     }
 
     #[Test]

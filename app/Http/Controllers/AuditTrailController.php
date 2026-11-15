@@ -39,16 +39,8 @@ class AuditTrailController extends Controller
             'q'            => ['nullable', 'string', 'max:120'],
         ]);
 
-        $events = AuditEvent::query()
+        $events = $this->filteredQuery($filters)
             ->with('actor')
-            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
-            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
-            ->when($filters['actor'] ?? null, fn ($q, $actor) => $q->where('actor_user_id', $actor))
-            ->when($filters['action'] ?? null, fn ($q, $action) => $q->where('action', $action))
-            ->when($filters['subject_type'] ?? null, fn ($q, $type) => $q->where('subject_type', $type))
-            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('subject_label', 'like', '%' . $term . '%'))
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
             ->paginate(50)
             ->withQueryString();
 
@@ -62,6 +54,100 @@ class AuditTrailController extends Controller
             'filteredCount'   => $events->total(),
             'activeFilterCnt' => count(array_filter($filters, fn ($v) => $v !== null && $v !== '')),
         ]);
+    }
+
+    /**
+     * QMS-04 (card 6afa0da181cbe9341f046f60): CSV export of the trail.
+     *
+     * Honours exactly the filters the screen applies, so the row count of the
+     * file equals the on-screen count. Same role gate as the screen.
+     */
+    public function export(Request $request)
+    {
+        $this->authorise($request);
+
+        $filters = $request->validate([
+            'from'         => ['nullable', 'date'],
+            'to'           => ['nullable', 'date'],
+            'actor'        => ['nullable', 'integer'],
+            'action'       => ['nullable', 'string', 'max:32'],
+            'subject_type' => ['nullable', 'string', 'max:191'],
+            'q'            => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $query = $this->filteredQuery($filters);
+
+        $headers = [
+            'Timestamp', 'Actor', 'Action', 'Record type', 'Record ID',
+            'Reference', 'Changed fields', 'Before', 'After', 'IP address',
+        ];
+
+        $filename = 'audit_trail_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($query, $headers) {
+            $out = fopen('php://output', 'w');
+
+            // UTF-8 BOM so Excel reads the file as UTF-8.
+            fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($out, $headers);
+
+            // Stream in chunks: the trail can be large, and a single get()
+            // would hydrate the whole range into memory.
+            $query->with('actor')->chunk(500, function ($events) use ($out) {
+                foreach ($events as $event) {
+                    $before = $event->before ?? [];
+                    $after  = $event->after ?? [];
+
+                    // A field "changed" when it is present on either side with a
+                    // different value — array_diff_key alone misses a key that
+                    // exists in both, which is the common case (status).
+                    $keys = array_unique(array_merge(array_keys($before), array_keys($after)));
+                    $changed = array_values(array_filter($keys, function ($key) use ($before, $after) {
+                        return ($before[$key] ?? null) !== ($after[$key] ?? null);
+                    }));
+                    sort($changed);
+
+                    fputcsv($out, [
+                        $event->created_at?->format('Y-m-d H:i:s') ?? '',
+                        $event->actor
+                            ? trim(implode(', ', array_filter([$event->actor->surname, $event->actor->name])))
+                            : 'system',
+                        $event->action_label,
+                        class_basename($event->subject_type),
+                        $event->subject_id,
+                        $event->subject_label ?? '',
+                        implode(', ', $changed),
+                        $this->csvJson($before),
+                        $this->csvJson($after),
+                        $event->ip_address ?? '',
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+        ]);
+    }
+
+    /** Compact JSON for a diff payload, safe to sit in one CSV cell. */
+    private function csvJson(array $payload): string
+    {
+        return $payload === [] ? '' : json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /** The one filter definition shared by the screen and the export. */
+    private function filteredQuery(array $filters)
+    {
+        return AuditEvent::query()
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
+            ->when($filters['actor'] ?? null, fn ($q, $actor) => $q->where('actor_user_id', $actor))
+            ->when($filters['action'] ?? null, fn ($q, $action) => $q->where('action', $action))
+            ->when($filters['subject_type'] ?? null, fn ($q, $type) => $q->where('subject_type', $type))
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('subject_label', 'like', '%' . $term . '%'))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     /** Distinct subject types present in this agency's trail, as short names. */

@@ -25,6 +25,11 @@
                 @if ($activeFilterCnt > 0)
                     <span class="badge badge-ghost py-4">of {{ number_format($totalCount) }}</span>
                 @endif
+                {{-- QMS-04: export carries the active filters through as query string --}}
+                <a href="{{ route('audit_trail.export', array_filter($filters)) }}"
+                   class="btn btn-sm btn-secondary shadow-md" id="audit-export">
+                    ⬇️ Export CSV
+                </a>
             </div>
         </div>
     </div>
@@ -110,10 +115,16 @@
                         <tbody>
                             @foreach ($events as $event)
                                 @php
-                                    $changed = array_keys(array_merge(
-                                        array_diff_key($event->after ?? [], $event->before ?? []),
-                                        array_diff_key($event->before ?? [], $event->after ?? [])
+                                    // A field changed when it is present on either side
+                                    // with a different value. array_diff_key alone misses a
+                                    // key present in both, which is the common case (status).
+                                    $keys = array_unique(array_merge(
+                                        array_keys($event->before ?? []),
+                                        array_keys($event->after ?? [])
                                     ));
+                                    $changed = array_values(array_filter($keys, fn ($k)
+                                        => ($event->before[$k] ?? null) !== ($event->after[$k] ?? null)));
+                                    sort($changed);
                                 @endphp
                                 <tr>
                                     <td>

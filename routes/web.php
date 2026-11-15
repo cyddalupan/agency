@@ -295,6 +295,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
 
     // Audit Trail (QMS-03, card 6afa0da0) — read-only; super_admin and admin only.
     Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit_trail.index');
+    Route::get('/audit-trail/export', [AuditTrailController::class, 'export'])->name('audit_trail.export');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {
