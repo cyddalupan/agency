@@ -7,6 +7,7 @@ use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -105,6 +106,19 @@ class ControlledDocument extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Every version of this document, newest first. */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ControlledDocumentVersion::class, 'controlled_document_id')
+            ->orderByDesc('id');
+    }
+
+    /** The approved version this document currently points at. */
+    public function currentVersion(): BelongsTo
+    {
+        return $this->belongsTo(ControlledDocumentVersion::class, 'current_version_id');
     }
 
     /** Human label for the status, falling back to the raw value. */
