@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Agents - ' . $marketingAgency->name)
+@section('title', agent_terms() . ' - ' . $marketingAgency->name)
 
 @section('content')
 <div class="max-w-7xl mx-auto">

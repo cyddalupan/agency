@@ -25,7 +25,7 @@
         <p class="font-semibold">ℹ️ Applicant belongs to the selected Agent</p>
         <ul class="list-disc list-inside mt-2 opacity-90">
             <li>Choose an <strong>{{ agent_term() }}</strong> first — the <strong>Applicant</strong> dropdown below then lists only the applicants assigned to that {{ agent_term() }}.</li>
-            <li>If no applicant appears for the chosen Agent, that Agent has no applicants linked yet.</li>
+            <li>If no applicant appears for the chosen {{ agent_term() }}, that {{ agent_term() }} has no applicants linked yet.</li>
             <li><strong>One starting balance per agent</strong> — a second entry for the same agent is rejected.</li>
         </ul>
     </div>

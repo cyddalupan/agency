@@ -101,7 +101,7 @@
             <tr>
                 <th>#</th>
                 @foreach($columns as $col)
-                    <th>{{ ['name'=>'Name','email'=>'Email','phone'=>'Phone','gender'=>'Gender','country'=>'Country','status'=>'Status','position'=>'Position','employer'=>'Employer','salary'=>'Salary','source'=>'Source','agent'=>'Agent','created_at'=>'Date Created','updated_at'=>'Last Updated'][$col] ?? ucfirst($col) }}</th>
+                    <th>{{ ['name'=>'Name','email'=>'Email','phone'=>'Phone','gender'=>'Gender','country'=>'Country','status'=>'Status','position'=>'Position','employer'=>'Employer','salary'=>'Salary','source'=>'Source','agent'=>agent_term(),'created_at'=>'Date Created','updated_at'=>'Last Updated'][$col] ?? ucfirst($col) }}</th>
                 @endforeach
             </tr>
         </thead>

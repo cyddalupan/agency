@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Add Agent - ' . $marketingAgency->name)
+@section('title', 'Add ' . agent_term() . ' - ' . $marketingAgency->name)
 
 @section('content')
 <div class="max-w-xl mx-auto">
@@ -33,7 +33,7 @@
             @csrf
 
             <fieldset class="fieldset">
-                <legend class="fieldset-legend">👤 Agent Name <span class="text-error">*</span></legend>
+                <legend class="fieldset-legend">👤 {{ agent_term() }} Name <span class="text-error">*</span></legend>
                 <input type="text" name="name" value="{{ old('name') }}" required
                     class="input w-full" placeholder="Full name">
                 @error('name') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror

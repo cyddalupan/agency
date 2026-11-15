@@ -198,7 +198,7 @@
                             <th>Contact#</th>
                             <th>Position</th>
                             <th>Branch</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Contract</th>
                             <th>Contract Received</th>
 

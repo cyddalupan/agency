@@ -52,7 +52,7 @@
                 </table>
             </div>
             <div class="mt-3 text-xs opacity-60">
-                <p>Agent's Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payments</p>
+                <p>{{ agent_term() }}'s Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payments</p>
             </div>
         @else
             <p class="opacity-50 text-sm py-6 text-center">No agents to report.</p>

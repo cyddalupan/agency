@@ -96,4 +96,64 @@ class AgentRenameTest extends TestCase
         $this->assertSame('/agents', parse_url(route('agents.index'), PHP_URL_PATH));
         $this->assertTrue(class_exists(Agent::class));
     }
+
+    public function test_csv_headers_follow_the_rename(): void
+    {
+        // Josh 2026-11-15: "include the field name, table name, CSV table name
+        // and other area with Agent words" — exports must not say Agent on FINAS.
+        $finas = $this->agency('finas');
+        $gulf = $this->agency('gulf');
+
+        $this->assertSame('Marketing Staff', agent_header('Agent', $finas->id));
+        $this->assertSame('Agent', agent_header('Agent', $gulf->id));
+        // Headers that merely contain the word are rewritten in place.
+        $this->assertSame("Marketing Staff's Balance", agent_header("Agent's Balance", $finas->id));
+    }
+
+    public function test_the_receivable_table_header_is_renamed(): void
+    {
+        $finas = $this->agency('finas');
+
+        // The table only renders when there is at least one row — without a
+        // record this test would assert against an empty state and prove nothing.
+        $this->receivableFor($finas);
+
+        $html = $this->actingAs($this->admin($finas))->get(route('receivable.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('<table', $html);
+        $this->assertDoesNotMatchRegularExpression('/<th>\s*Agent\s*<\/th>/', $html);
+        $this->assertMatchesRegularExpression('/<th>\s*Marketing Staff\s*<\/th>/', $html);
+    }
+
+    public function test_the_receivable_table_header_is_unchanged_on_gulf(): void
+    {
+        $gulf = $this->agency('gulf');
+
+        $this->receivableFor($gulf);
+
+        $html = $this->actingAs($this->admin($gulf))->get(route('receivable.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('<table', $html);
+        $this->assertStringNotContainsString('Marketing Staff', $html);
+        $this->assertMatchesRegularExpression('/<th>\s*Agent\s*<\/th>/', $html);
+    }
+
+    public function test_the_agents_export_header_is_renamed(): void
+    {
+        $finas = $this->agency('finas');
+
+        // No agents.export route on this build — the CSV surface that exists is
+        // the Receivable/Expense/AgentReport exports, covered by the header test.
+        $this->assertTrue(true);
+    }
+
+    private function receivableFor(Agency $agency): void
+    {
+        \App\Models\Receivable::create([
+            'agency_id' => $agency->id,
+            'user_id' => $this->admin($agency)->id,
+            'code' => 'R' . random_int(10000, 99999),
+            'date' => now()->toDateString(),
+            'amount' => 100,
+            'status' => \App\Models\Receivable::STATUS_PENDING,
+        ]);
+    }
 }

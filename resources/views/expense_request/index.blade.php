@@ -268,7 +268,7 @@
                                 <th class="col-status">Status</th>
                                 <th>Offices</th>
                                 <th>Applicant</th>
-                                <th>Agent</th>
+                                <th>{{ agent_term() }}</th>
                                 <th>Currency</th>
                                 <th class="text-right">Amount</th>
                                 <th>Account</th>
@@ -445,7 +445,7 @@
                                         <th>Date</th>
                                         <th class="col-status">Status</th>
                                         <th>Applicant</th>
-                                        <th>Agent</th>
+                                        <th>{{ agent_term() }}</th>
                                         <th class="text-right">Amount</th>
                                         <th>Account</th>
                                         <th class="col-particular">Particular / Description</th>

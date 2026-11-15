@@ -73,7 +73,7 @@
                 <legend class="fieldset-legend">🏢 Charge Type <span class="text-error">*</span></legend>
                 <select name="charge_type" class="select w-full">
                     <option value="office" @selected(old('charge_type', $account->charge_type ?? 'office') === 'office')>🏢 Office</option>
-                    <option value="agent" @selected(old('charge_type', $account->charge_type ?? 'office') === 'agent')>🤝 Agent</option>
+                    <option value="agent" @selected(old('charge_type', $account->charge_type ?? 'office') === 'agent')>🤝 {{ agent_term() }}</option>
                     <option value="applicant" @selected(old('charge_type', $account->charge_type ?? 'office') === 'applicant')>👤 Applicant</option>
                 </select>
                 <p class="text-xs opacity-50 mt-1">Which expense lines this account can be used for.</p>

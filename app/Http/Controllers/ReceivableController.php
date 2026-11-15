@@ -138,7 +138,7 @@ class ReceivableController extends Controller
             }))
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->get(['id', 'agent_id', 'first_name', 'last_name']);
+            ->get(['id', 'agent_id', 'first_name', 'middle_name', 'last_name', 'suffix']);
 
         return view('receivable.create', [
             'agents'            => $agents,
@@ -281,7 +281,7 @@ class ReceivableController extends Controller
             'record'         => $receivable,
             'isEdit'         => true,
             'agents'         => $agents->orderBy('name')->get(),
-            'applicants'     => $applicants->orderBy('last_name')->orderBy('first_name')->get(['id', 'agent_id', 'first_name', 'last_name']),
+            'applicants'     => $applicants->orderBy('last_name')->orderBy('first_name')->get(['id', 'agent_id', 'first_name', 'middle_name', 'last_name', 'suffix']),
             'code'           => $receivable->code,
             'accounts'       => Receivable::ACCOUNTS,
             'debitAccounts'  => Receivable::DEBIT_ACCOUNTS,
@@ -600,7 +600,7 @@ class ReceivableController extends Controller
         //  - Status   : Pending | Received (blank = Pending).
         //  - Deposit Bank: receivable's deposit (debit) account.
         $headers = [
-            'Code #', 'Date', 'User', 'Status', 'Ref#/AR#', 'Applicant', 'Agent',
+            'Code #', 'Date', 'User', 'Status', 'Ref#/AR#', 'Applicant', agent_header('Agent'),
             'Amount', 'Account', 'Particular', 'Mode', 'Type', 'Deposit Bank',
         ];
 

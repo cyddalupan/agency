@@ -110,7 +110,7 @@
                     <td>{{ $item->expenseRequest?->date?->format('Y-m-d') ?? '—' }}</td>
                     <td>{{ $item->account?->name ?? '—' }}</td>
                     <td>{{ $item->particular ?? '—' }}</td>
-                    <td>{{ $item->charge === 'office' ? 'Office' : 'Agent' }}</td>
+                    <td>{{ $item->charge === 'office' ? 'Office' : agent_term() }}</td>
                     <td>{{ $item->currency }}</td>
                     <td class="num">{{ number_format((float) $item->amount, 2) }}</td>
                     <td class="num">{{ number_format($converter->toPhp((float) $item->amount, (string) $item->currency), 2) }}</td>

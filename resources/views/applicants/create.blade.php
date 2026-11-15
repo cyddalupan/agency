@@ -362,7 +362,7 @@
                     @endif
                 </fieldset>
                 <fieldset class="fieldset" id="agent-field" style="display:none;">
-                    <legend class="fieldset-legend">🎯 Select Agent</legend>
+                    <legend class="fieldset-legend">🎯 Select {{ agent_term() }}</legend>
                     <select name="agent_id" class="select w-full" id="agent-select">
                         <option value="">-- Select {{ agent_term() }} --</option>
                         @foreach ($agents as $agt)
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
             details.className = 'grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-0.5 text-xs mt-1 pl-1';
             [
                 ['Contact #', x.contact], ['Gender', x.gender], ['Age', x.age],
-                ['Branch', x.branch], ['Agent', x.agent], ['Position', x.position],
+                ['Branch', x.branch], ['{{ agent_term() }}', x.agent], ['Position', x.position],
                 ['Country', x.country], ['FRA Status', x.fra], ['Status', x.status]
             ].forEach(function (pair) {
                 const span = document.createElement('span');

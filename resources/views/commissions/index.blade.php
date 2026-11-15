@@ -33,7 +33,7 @@
                         <tr class="bg-base-200/80">
                             <th>ID</th>
                             <th>🏢 Employer</th>
-                            <th>🧑‍💼 Agent</th>
+                            <th>🧑‍💼 {{ agent_term() }}</th>
                             <th>🏷️ Type</th>
                             <th>💰 Amount</th>
                             <th>💵 Paid</th>

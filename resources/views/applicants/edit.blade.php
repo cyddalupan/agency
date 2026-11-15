@@ -270,7 +270,7 @@
                     @endif
                 </fieldset>
                 <fieldset class="fieldset agent-dropdown" id="agent-field" style="display:none;">
-                    <legend class="fieldset-legend">🎯 Select Agent</legend>
+                    <legend class="fieldset-legend">🎯 Select {{ agent_term() }}</legend>
                     <select name="agent_id" class="select w-full" id="agent-select">
                         <option value="">-- Select {{ agent_term() }} --</option>
                         @foreach ($agents as $agt)

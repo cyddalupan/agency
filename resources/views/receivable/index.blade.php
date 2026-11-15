@@ -136,7 +136,7 @@
                                 <th>Status</th>
                                 <th>Ref#/AR#</th>
                                 <th>Applicant</th>
-                                <th>Agent</th>
+                                <th>{{ agent_term() }}</th>
                                 <th class="text-right">Amount</th>
                                 <th>Account</th>
                                 <th>Particular</th>

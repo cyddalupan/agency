@@ -756,3 +756,15 @@ if (!function_exists('agent_terms')) {
         return \App\Support\AgentTerm::plural($agencyId);
     }
 }
+
+if (!function_exists('agent_header')) {
+    /**
+     * Card 6af81c30 (Josh 2026-11-15): CSV/PDF column headers must follow the
+     * same rename as the screens, so a FINAS export does not come back saying
+     * "Agent" when the app says "Marketing Staff".
+     */
+    function agent_header(string $header, ?int $agencyId = null): string
+    {
+        return \App\Support\AgentTerm::text($header, $agencyId);
+    }
+}

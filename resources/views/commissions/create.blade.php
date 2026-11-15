@@ -45,7 +45,7 @@
             </fieldset>
 
             <fieldset class="fieldset">
-                <legend class="fieldset-legend">🧑‍💼 Agent</legend>
+                <legend class="fieldset-legend">🧑‍💼 {{ agent_term() }}</legend>
                 <select name="agent_id" class="select w-full">
                     <option value="">Select agent (optional)...</option>
                     @foreach($agents as $agent)

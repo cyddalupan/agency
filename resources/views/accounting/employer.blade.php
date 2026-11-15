@@ -113,7 +113,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Agent</th>
+                                <th>{{ agent_term() }}</th>
                                 <th>Amount</th>
                                 <th>Status</th>
                             </tr>

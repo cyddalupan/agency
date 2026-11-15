@@ -85,7 +85,7 @@
             <h3 class="text-lg font-bold mb-1">2️⃣ Fill it in &amp; upload</h3>
             <p class="opacity-60 text-sm mb-4">
                 One expense request per row, using the same columns as your Expense sheet.
-                <strong>Charge</strong> (<em>Office</em> or <em>Agent</em>), <strong>Account</strong>
+                <strong>Charge</strong> (<em>Office</em> or <em>{{ agent_term() }}</em>), <strong>Account</strong>
                 (sub-account name), <strong>Currency</strong> (<em>PHP</em> or <em>USD</em>) and
                 <strong>Amount</strong> are required. Date blank = today. Payment optional (already paid,
                 default 0). <strong>Office</strong> is the branch, <strong>Request Status</strong> is honoured

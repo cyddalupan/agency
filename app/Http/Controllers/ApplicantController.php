@@ -506,7 +506,7 @@ class ApplicantController extends Controller
             'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Gender', 'Birthdate', 'Age',
             'Contact', 'Email', 'Address', 'Nationality', 'Religion', 'Civil Status',
             'Experience (Firstimer / Ex-Abroad)',
-            'Country', 'Position', 'Employer', 'Agent', 'Branch', 'Source', 'Status', 'Remarks',
+            'Country', 'Position', 'Employer', agent_header('Agent'), 'Branch', 'Source', 'Status', 'Remarks',
             'Date Applied', 'Passport #', 'Date Issued', 'Place Issued', 'Expiration',
         ];
 
@@ -1634,7 +1634,7 @@ class ApplicantController extends Controller
     private function applicantCsvHeaders(): array
     {
         return [
-            'Name', 'Contact#', 'Gender', 'Age', 'Branch', 'Agent',
+            'Name', 'Contact#', 'Gender', 'Age', 'Branch', agent_header('Agent'),
             'Position', 'Country', 'FRA', 'Status', 'Created At', 'Encoder',
         ];
     }

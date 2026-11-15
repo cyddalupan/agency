@@ -482,7 +482,7 @@ class ExpenseRequestController extends Controller
         }
         $branches = $branches->orderBy('name')->get();
         $agents = $agents->orderBy('name')->get();
-        $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
+        $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'middle_name', 'last_name', 'suffix']);
         $countries = Country::orderBy('name')->get();
 
         // Main accounts (with children) + flat selectable account list for the two-level picker.
@@ -555,7 +555,7 @@ class ExpenseRequestController extends Controller
         }
         $branches = $branches->orderBy('name')->get();
         $agents = $agents->orderBy('name')->get();
-        $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'last_name']);
+        $applicants = Applicant::where('agency_id', $agencyId)->orderBy('last_name')->get(['id', 'agent_id', 'first_name', 'middle_name', 'last_name', 'suffix']);
         $countries = Country::orderBy('name')->get();
 
         $mains = Account::mains()->with('children')
@@ -1060,7 +1060,7 @@ class ExpenseRequestController extends Controller
         //  - Request Status : pending | approved | for_releasing | released | cancelled
         //                     (blank = Pending).
         $headers = [
-            'Ref #', 'User', 'Date', 'Charge', 'Account', 'Applicant', 'Agent',
+            'Ref #', 'User', 'Date', 'Charge', 'Account', 'Applicant', agent_header('Agent'),
             'Country', 'Currency', 'Amount', 'Payment', 'Particular/Description',
             'Office', 'Request Status',
         ];

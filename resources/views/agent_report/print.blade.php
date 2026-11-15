@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Agent Ledger — {{ $printedAt->format('Y-m-d') }}</title>
+    <title>{{ agent_term() }} Ledger — {{ $printedAt->format('Y-m-d') }}</title>
     <style>
         body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #111; padding: 24px; }
         h1 { font-size: 20px; margin: 0 0 2px; }
@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <h1>📊 Agent Ledger</h1>
+    <h1>📊 {{ agent_term() }} Ledger</h1>
     <div class="sub">
         Generated {{ $printedAt->format('M d, Y H:i') }}
         @if($agentId) · Agent filter applied @endif
@@ -36,7 +36,7 @@
                 <th>Total Receivable (AR)</th>
                 <th>Total Return Payment</th>
                 <th>Total Payments</th>
-                <th>Agent's Balance</th>
+                <th>{{ agent_term() }}'s Balance</th>
             </tr>
         </thead>
         <tbody>

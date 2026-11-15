@@ -58,7 +58,7 @@
                             <th>Status</th>
                             <th>Charge</th>
                             <th>Applicant</th>
-                            <th>Agent</th>
+                            <th>{{ agent_term() }}</th>
                             <th>Currency</th>
                             <th class="text-right">Amount</th>
                             <th>Account</th>

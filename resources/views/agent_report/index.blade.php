@@ -12,7 +12,7 @@
                 <div class="flex items-center gap-3">
                     <span class="text-3xl">📊</span>
                     <div>
-                        <h1 class="text-2xl font-extrabold">Agents Report</h1>
+                        <h1 class="text-2xl font-extrabold">{{ agent_terms() }} Report</h1>
                         <p class="opacity-70 text-sm mt-0.5">Commission · Cash Advance · Receivables · Payments · Deductions · Starting Balance · Report</p>
                     </div>
                 </div>
@@ -38,7 +38,7 @@
                     </a>
                 @endif
                 <span class="badge badge-lg badge-primary gap-2 py-4 border-0">
-                    <span class="font-bold">{{ $agents->count() }}</span> agents
+                    <span class="font-bold">{{ $agents->count() }}</span> {{ strtolower(agent_terms()) }}
                 </span>
             </div>
         </div>
@@ -61,7 +61,7 @@
                 'payments'          => ['label' => '💳 Payments',          'url' => null],
                 'deductions'        => ['label' => '🧾 Deductions',          'url' => null],
                 'starting-balances' => ['label' => '⚖️ Starting Balance',  'url' => null],
-                'report'            => ['label' => '📑 Agent Ledger',      'url' => null],
+                'report'            => ['label' => '📑 ' . agent_term() . ' Ledger',      'url' => null],
             ];
         @endphp
         @foreach($tabDefs as $key => $def)

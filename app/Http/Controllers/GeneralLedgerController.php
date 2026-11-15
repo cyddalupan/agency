@@ -96,7 +96,7 @@ class GeneralLedgerController extends Controller
             $out = fopen('php://output', 'w');
 
             fputcsv($out, [
-                'Ref#', 'Date', 'User', 'Status', 'Offices', 'Applicant', 'Agent',
+                'Ref#', 'Date', 'User', 'Status', 'Offices', 'Applicant', agent_header('Agent'),
                 'Currency', 'Amount', 'Account', 'Country', 'Particular / Description',
             ]);
 

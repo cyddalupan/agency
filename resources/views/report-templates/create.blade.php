@@ -76,7 +76,7 @@
                             'employer' => 'Employer',
                             'salary' => 'Expected Salary',
                             'source' => 'Source',
-                            'agent' => 'Agent',
+                            'agent' => agent_term(),
                             'created_at' => 'Date Created',
                             'updated_at' => 'Last Updated',
                         ];

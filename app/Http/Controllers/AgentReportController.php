@@ -397,7 +397,7 @@ class AgentReportController extends Controller
      */
     public function deductionBulkTemplate()
     {
-        $headers = ['Date', 'Agent', 'Applicant', 'Amount', 'Particular/Description'];
+        $headers = ['Date', agent_header('Agent'), 'Applicant', 'Amount', 'Particular/Description'];
         $today = now()->toDateString();
         $sample = [
             [$today, 'Juan Dela Cruz', 'Dela Cruz, Maria', '1500.00', 'Cash advance balance deduction'],
@@ -750,7 +750,7 @@ class AgentReportController extends Controller
     {
         // Josh 2026-11-02 (card 124): the Ref# column is gone — a row is
         // identified by the transaction *Date* instead.
-        $headers = ['Date', 'Applicant', 'Agent', 'Currency', 'Payment', 'Particular'];
+        $headers = ['Date', 'Applicant', agent_header('Agent'), 'Currency', 'Payment', 'Particular'];
         $sample = [
             [now()->toDateString(), 'Dela Cruz, Maria', 'Juan Dela Cruz', 'PHP', '1500.00', 'FTW Commission'],
             [now()->toDateString(), '', '', 'PHP', '250.00', ''],
@@ -1447,7 +1447,7 @@ class AgentReportController extends Controller
      */
     public function startingBalanceBulkTemplate()
     {
-        $headers = ['Date', 'Account', 'Agent', 'Amount', 'Particular'];
+        $headers = ['Date', 'Account', agent_header('Agent'), 'Amount', 'Particular'];
         $today = now()->toDateString();
         $sample = [
             [$today, StartingBalance::ACCOUNT, 'Juan Dela Cruz', '5000.00', 'Opening balance carried forward'],
@@ -1790,7 +1790,7 @@ class AgentReportController extends Controller
 
         $csv = fopen('php://temp', 'r+');
         fputcsv($csv, [
-            'Agent', 'Branch', 'Total Commission', 'Total Cash Advance',
+            agent_header('Agent'), 'Branch', 'Total Commission', 'Total Cash Advance',
             'Total Backout and Repat', 'Total Receivable (AR)',
             'Total Payments', "Agent's Balance",
         ]);
