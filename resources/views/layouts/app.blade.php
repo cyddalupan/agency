@@ -453,6 +453,15 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true))
+                        <a href="{{ route('audit_trail.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('audit_trail.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🧾</span>
+                            Audit Trail
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

@@ -24,6 +24,7 @@ use App\Http\Controllers\JobPositionController;
 use App\Http\Controllers\MarketingAgencyController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\MarketingAgentController;
+use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
@@ -291,6 +292,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::put('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::put('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
     });
+
+    // Audit Trail (QMS-03, card 6afa0da0) — read-only; super_admin and admin only.
+    Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit_trail.index');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {
