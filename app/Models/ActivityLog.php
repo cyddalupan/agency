@@ -2,12 +2,22 @@
 
 namespace App\Models;
 
+use App\Models\Traits\ImmutableAuditRecord;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Application activity log (login, role changes, exports, applicant status
+ * history).
+ *
+ * QMS-05: append-only. Rows are created freely but can no longer be updated or
+ * deleted through the model; see ImmutableAuditRecord for why and for the
+ * deliberate DB-level escape hatch.
+ */
 class ActivityLog extends Model
 {
     use HasFactory;
+    use ImmutableAuditRecord;
 
     protected $fillable = [
         'agency_id',

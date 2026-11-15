@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\HasTenant;
+use App\Models\Traits\ImmutableAuditRecord;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -16,13 +17,16 @@ use Illuminate\Database\Eloquent\Model;
  * so the call sites have somewhere to write to.
  *
  * Deliberately not using the `updated_at` column: the table has no such column
- * and events are immutable. QMS-05 adds the hard guard that throws on update
- * and delete; until then the convention is enforced by this docblock and the
- * absence of any update/delete path in the code.
+ * and events are immutable.
+ *
+ * QMS-05: the immutability is now enforced in code, not just by convention —
+ * `ImmutableAuditRecord` makes save()-on-existing, delete() and forceDelete()
+ * throw RuntimeException. Creating is still allowed; only amending is not.
  */
 class AuditEvent extends Model
 {
     use HasTenant;
+    use ImmutableAuditRecord;
 
     /** The material actions an event can record (spec §26). */
     public const ACTION_CREATED  = 'created';
