@@ -132,15 +132,19 @@ class AgentReportTest extends TestCase
     // ---------- Tabs render ----------
 
     #[Test]
-    public function index_renders_the_seven_tabs(): void
+    public function index_renders_the_tabs(): void
     {
+        // The bar grew to 8 tabs when Return Payment was split out of
+        // "Deductions & Paid" (Cyd 2026-11-04). This test still expected the
+        // old combined label, so it had been failing ever since.
         $this->actingAs($this->user)->get(route('agent_report.index'))
             ->assertOk()
             ->assertSee('Commission')
             ->assertSee('Cash Advance')
             ->assertSee('Receivables')
+            ->assertSee('Return Payment')
             ->assertSee('Payments')
-            ->assertSee('Deductions &amp; Paid', false)
+            ->assertSee('Deductions')
             ->assertSee('Starting Balance')
             ->assertSee('Agent Ledger');
     }
