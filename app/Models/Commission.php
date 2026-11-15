@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AuditsChanges;
 use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Commission extends Model
 {
-    use HasFactory, HasTenant;
+    use HasFactory, HasTenant, AuditsChanges;
 
     protected $appends = ['balance'];
 

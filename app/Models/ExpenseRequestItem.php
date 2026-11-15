@@ -2,13 +2,31 @@
 
 namespace App\Models;
 
+use App\Models\Traits\AuditsChanges;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExpenseRequestItem extends Model
 {
-    use HasFactory;
+    use HasFactory, AuditsChanges;
+
+    /**
+     * QMS-02: expense_request_items carries no agency_id of its own — it
+     * inherits the tenant from its parent request.
+     */
+    protected function resolveAuditAgencyId(): ?int
+    {
+        $own = parent::resolveAuditAgencyId();
+
+        if ($own !== null) {
+            return $own;
+        }
+
+        return $this->expenseRequest?->agency_id !== null
+            ? (int) $this->expenseRequest->agency_id
+            : null;
+    }
 
     protected $fillable = [
         'expense_request_id',
