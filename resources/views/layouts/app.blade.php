@@ -462,6 +462,15 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && in_array((string) auth()->user()->user_type, ['super_admin', 'admin', 'qms_manager'], true))
+                        <a href="{{ route('controlled_documents.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('controlled_documents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📄</span>
+                            Controlled Documents
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

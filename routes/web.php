@@ -25,6 +25,7 @@ use App\Http\Controllers\MarketingAgencyController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AuditTrailController;
+use App\Http\Controllers\ControlledDocumentController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
@@ -296,6 +297,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Audit Trail (QMS-03, card 6afa0da0) — read-only; super_admin and admin only.
     Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit_trail.index');
     Route::get('/audit-trail/export', [AuditTrailController::class, 'export'])->name('audit_trail.export');
+
+    // Document control (QMS-08, card 6afa0da5) — super_admin, admin, qms_manager.
+    Route::get('/controlled-documents', [ControlledDocumentController::class, 'index'])->name('controlled_documents.index');
+    Route::get('/controlled-documents/create', [ControlledDocumentController::class, 'create'])->name('controlled_documents.create');
+    Route::post('/controlled-documents', [ControlledDocumentController::class, 'store'])->name('controlled_documents.store');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {

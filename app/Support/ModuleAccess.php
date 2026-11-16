@@ -227,6 +227,8 @@ class ModuleAccess
         'custom-fields'            => 'custom-fields',
         'custom-field-definitions' => 'custom-fields',
         'settings'                 => 'settings',
+        // QMS-08: controlled documents is its own module.
+        'controlled_documents'     => 'controlled_documents',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',
@@ -355,6 +357,13 @@ class ModuleAccess
 
         if ($userType === 'welfare') {
             return in_array($module, self::WELFARE_ALLOWED, true);
+        }
+
+        // QMS-08/QMS-09: the QMS roles exist for document control and the audit
+        // trail only. QMS-09 formalises the role; this keeps the module gate from
+        // refusing a role the document-control controller deliberately allows.
+        if ($userType === 'qms_manager') {
+            return in_array($module, ['controlled_documents', 'audit_trail'], true);
         }
 
         if ($userType === 'employer') {
