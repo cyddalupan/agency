@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 
@@ -190,6 +191,20 @@ class NonConformity extends Model
     public function complaint(): BelongsTo
     {
         return $this->belongsTo(Complaint::class, 'complaint_id');
+    }
+
+    /**
+     * QMS-17: the audit finding that spawned this NC, if it came from one.
+     * The other half of this link lives on AuditFinding::nonConformity().
+     */
+    public function auditFinding(): HasOne
+    {
+        return $this->hasOne(AuditFinding::class, 'non_conformity_id');
+    }
+
+    public function cameFromAudit(): bool
+    {
+        return $this->auditFinding()->exists();
     }
 
     public function creator(): BelongsTo
