@@ -142,22 +142,28 @@ class ApprovalBecomesPaidTest extends TestCase
             ->assertSee('6,000.00')
             ->assertSee('Placement fee');
 
+        // The Commission tab was removed (card 6afae127), so "not in commission"
+        // can no longer be asserted by visiting it. What still matters is that
+        // the item moved here and is NOT double-counted elsewhere: assert the
+        // agent's ledger shows the net once, on this tab.
         $this->actingAs($this->admin)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->get(route('agent_report.index', ['tab' => 'payments']))
             ->assertOk()
-            ->assertDontSee('Placement fee');
+            ->assertDontSee('10,000.00');
     }
 
     #[Test]
-    public function pending_item_still_appears_in_commission_tab(): void
+    public function pending_item_is_not_yet_a_paid_deduction(): void
     {
+        // Replaces pending_item_still_appears_in_commission_tab(). The tab that
+        // used to show it is gone; the fact it encoded — a pending item is not
+        // yet Paid — is still worth pinning.
         $this->storeRequest(10000.00, 0.00);
 
         $this->actingAs($this->admin)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->get(route('agent_report.index', ['tab' => 'deductions']))
             ->assertOk()
-            ->assertSee('Placement fee')
-            ->assertSee('10,000.00');
+            ->assertDontSee('Placement fee');
     }
 
     #[Test]

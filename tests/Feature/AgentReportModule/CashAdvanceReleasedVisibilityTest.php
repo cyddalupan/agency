@@ -144,13 +144,16 @@ class CashAdvanceReleasedVisibilityTest extends TestCase
     }
 
     #[Test]
-    public function released_cash_advance_does_not_leak_into_commission_tab(): void
+    public function released_cash_advance_does_not_leak_into_the_cash_advance_tabs_other_figures(): void
     {
+        // Was released_cash_advance_does_not_leak_into_commission_tab(). That tab
+        // is gone (card 6afae127); the surviving claim is that a released cash
+        // advance does not leak into an unrelated tab's listing.
         $agent = $this->makeAgent();
         $this->makeCashAdvance($agent, 5500.00, ExpenseRequest::STATUS_RELEASED, 'Cash advance', 'CA-REL-3');
 
         $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->get(route('agent_report.index', ['tab' => 'deductions']))
             ->assertOk()
             ->assertDontSee('CA-REL-3');
     }

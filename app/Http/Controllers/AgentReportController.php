@@ -24,7 +24,16 @@ class AgentReportController extends Controller
     private const BACKOUT_STATUSES = [35, 38, 50];
 
     /** Agent Report tabs (Return Payment tab added per Cyd 2026-11-04, card 129). */
-    private const TABS = ['commission', 'cash-advance', 'receivables', 'return-payment', 'payments', 'deductions', 'starting-balances', 'report'];
+    private const TABS = ['cash-advance', 'receivables', 'return-payment', 'payments', 'deductions', 'starting-balances', 'report'];
+
+    /**
+     * The tab this screen opens on.
+     *
+     * Was 'commission' until card 6afae127 removed that tab. It is now the Agent
+     * Ledger, because that is what this screen actually is — the previous default
+     * was incidental, not a decision.
+     */
+    private const DEFAULT_TAB = 'report';
 
     /** Account names that route to the Receivables tab (moved out of Commission). */
     private const RECEIVABLE_ACCOUNT_NAMES = ['Partial', 'Full', 'Fit to work', 'Contract', 'Deployed', 'Return'];
@@ -55,9 +64,11 @@ class AgentReportController extends Controller
     {
         $agencyId = auth()->user()->agency_id;
 
-        $tab = $request->input('tab', 'commission');
+        // A stale ?tab=commission bookmark falls back to DEFAULT_TAB, not to
+        // TABS[0] — landing on 'cash-advance' would look like a different bug.
+        $tab = $request->input('tab', self::DEFAULT_TAB);
         if (! in_array($tab, self::TABS, true)) {
-            $tab = 'commission';
+            $tab = self::DEFAULT_TAB;
         }
         $agentId = $request->input('agent_id');
 
@@ -78,42 +89,6 @@ class AgentReportController extends Controller
             ->pluck('id');
 
         $excludedAccountIds = $receivableAccountIds->merge($cashAdvanceAccountIds)->unique();
-
-        // ---- Tab 1: Commission (pending agent-charged items, excluding Receivables & Cash Advance) ----
-        // Only PENDING requests show here; approved items become Paid entries
-        // in the Deductions & Paid tab (Toybits 2026-08-29).
-        $commissionItems = ExpenseRequestItem::query()
-            ->where('charge', 'agent')
-            ->whereNotNull('agent_id')
-            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
-            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
-            ->when($excludedAccountIds->isNotEmpty(), fn ($q) => $q->whereNotIn('account_id', $excludedAccountIds))
-            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
-            ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
-            ->orderByDesc('created_at')
-            ->get();
-
-        // ---- Tab 1b: Released commission expenses (Cyd 2026-11-01) ----
-        // "Display all released Expenses with Account: Fit to work, Deployed".
-        // Released rows never showed anywhere: the Receivables tab only lists
-        // PENDING items and the Report tab only aggregates them.
-        $releasedCommissionAccountIds = Account::where('agency_id', $agencyId)
-            ->whereIn('name', self::RELEASED_COMMISSION_ACCOUNT_NAMES)
-            ->pluck('id');
-
-        $releasedCommissionItems = ExpenseRequestItem::query()
-            ->where('charge', 'agent')
-            ->whereNotNull('agent_id')
-            ->whereIn('account_id', $releasedCommissionAccountIds)
-            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_RELEASED))
-            ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
-            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
-            ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
-            ->orderByDesc('created_at')
-            ->get();
-
-        $releasedCommissionTotal = $releasedCommissionItems
-            ->sum(fn ($item) => $converter->toPhp((float) $item->amount, $item->currency));
 
         // ---- Tab 1c: Cash Advance (agent-charged items on Cash Advance accounts) ----
         // (Josh 2026-11-09) "All RELEASED status with CASH ADVANCE Account should
@@ -230,9 +205,6 @@ class AgentReportController extends Controller
             'tab',
             'agents',
             'agentId',
-            'commissionItems',
-            'releasedCommissionItems',
-            'releasedCommissionTotal',
             'cashAdvanceItems',
             'receivableItems',
             'returnPaymentItems',

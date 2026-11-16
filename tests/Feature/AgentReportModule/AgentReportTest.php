@@ -152,7 +152,7 @@ class AgentReportTest extends TestCase
     #[Test]
     public function each_tab_renders_with_an_agent_filter(): void
     {
-        foreach (['commission', 'cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'] as $tab) {
+        foreach (['cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'] as $tab) {
             $this->actingAs($this->user)
                 ->get(route('agent_report.index', ['tab' => $tab]))
                 ->assertOk();
@@ -160,17 +160,39 @@ class AgentReportTest extends TestCase
     }
 
     #[Test]
-    public function unknown_tab_falls_back_to_commission(): void
+    public function unknown_tab_falls_back_to_the_agent_ledger(): void
     {
+        // The Commission tab was removed (card 6afae127), so the invalid-tab
+        // fallback must land on DEFAULT_TAB rather than on TABS[0].
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'bogus']))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee(agent_term().' Ledger');
+    }
+
+    #[Test]
+    public function a_stale_commission_bookmark_lands_on_the_agent_ledger(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->assertOk()
+            ->assertSee(agent_term().' Ledger')
+            ->assertDontSee('No commission transactions yet.');
+    }
+
+    #[Test]
+    public function the_commission_tab_is_no_longer_offered(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index'))
+            ->assertOk()
+            ->assertDontSee('💼 Commission');
     }
 
     // ---------- Receivables + Cash Advance tab routing ----------
 
     #[Test]
-    public function receivable_accounts_appear_in_receivables_tab_and_not_commission(): void
+    public function receivable_accounts_appear_in_receivables_tab(): void
     {
         $agent = $this->makeAgent();
         $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Partial');
@@ -186,21 +208,18 @@ class AgentReportTest extends TestCase
             ->assertSee('Deployed')
             ->assertDontSee('Other Commission');
 
-        // (Cyd 2026-11-01) The Commission tab now also carries a RELEASED
-        // "Fit to work / Deployed" block, so the account names themselves do
-        // appear there. What must stay out is the pending rows seeded above —
-        // assert on their amounts instead of on the account labels.
+        // The Commission tab this used to assert against was removed (card
+        // 6afae127). The routing claim that matters is unchanged and is now
+        // checked against a tab that still exists: an account that is not a
+        // receivable must not appear on the Receivables tab's totals either.
         $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->get(route('agent_report.index', ['tab' => 'receivables']))
             ->assertOk()
-            ->assertSee('Other Commission')
-            ->assertDontSee('10,000.00')
-            ->assertDontSee('20,000.00')
-            ->assertDontSee('30,000.00');
+            ->assertDontSee('40,000.00');
     }
 
     #[Test]
-    public function cash_advance_accounts_appear_in_cash_advance_tab_and_not_commission(): void
+    public function cash_advance_accounts_appear_in_cash_advance_tab(): void
     {
         $agent = $this->makeAgent();
         $this->makeAgentExpense($agent, 15000, 'PHP', null, 'Cash advance');
@@ -212,11 +231,13 @@ class AgentReportTest extends TestCase
             ->assertSee('Cash advance')
             ->assertDontSee('Other Commission');
 
+        // Was asserted against the removed Commission tab. Keep the half that
+        // still means something: the non-cash-advance row must not leak into
+        // the Cash Advance tab's figures.
         $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->get(route('agent_report.index', ['tab' => 'cash-advance']))
             ->assertOk()
-            ->assertSee('Other Commission')
-            ->assertDontSee('Cash advance');
+            ->assertDontSee('25,000.00');
     }
 
     #[Test]
