@@ -509,6 +509,16 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('qms'))
+                        <a href="{{ route('qms.dashboard') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('qms.*') || request()->routeIs('metrics.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}"
+                           id="sidebar-qms-dashboard">
+                            <span class="text-lg">📊</span>
+                            QMS Dashboard
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('compliance_calendar'))
                         <a href="{{ route('compliance_calendar.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

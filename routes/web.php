@@ -28,6 +28,7 @@ use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\ControlledDocumentController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\ComplianceCalendarController;
+use App\Http\Controllers\QmsDashboardController;
 use App\Http\Controllers\InternalAuditController;
 use App\Http\Controllers\NonConformityController;
 use App\Http\Controllers\RiskController;
@@ -357,6 +358,13 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
 
     // QMS-19 (card 6afa0db0a24da820db1980db): unified compliance deadline feed.
     Route::get('/compliance-calendar', [ComplianceCalendarController::class, 'index'])->name('compliance_calendar.index');
+
+    // QMS-20 (card 6afa0db1de9f235c9653f26f): QMS dashboard and the filtered
+    // lists its tiles link to. Each list must exist, or the tile links nowhere.
+    Route::get('/qms', [QmsDashboardController::class, 'index'])->name('qms.dashboard');
+    Route::get('/qms/metrics/overdue-actions', [QmsDashboardController::class, 'overdueActions'])->name('metrics.overdue_actions');
+    Route::get('/qms/metrics/documents-due', [QmsDashboardController::class, 'documentsDue'])->name('metrics.documents_due');
+    Route::get('/qms/metrics/upcoming-audits', [QmsDashboardController::class, 'upcomingAudits'])->name('metrics.upcoming_audits');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {
