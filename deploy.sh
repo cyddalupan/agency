@@ -39,6 +39,12 @@ echo "--- Fixing cache permissions ---"
 if [ -d storage/framework/cache/data ]; then
     find storage/framework/cache/data -mindepth 1 -maxdepth 1 -type d -exec chmod 2775 {} +
 fi
+# Deliberately unguarded, unlike the chmod above. `php artisan` on the lines
+# above already requires storage/framework to exist — a deploy that reaches
+# here without it has failed for a reason this line cannot fix, and set -e
+# should surface that rather than skip past it. The chmod is guarded because
+# cache/data is created lazily by the first cache write and may legitimately
+# be absent; storage/framework is not.
 chown -R www-data:www-data storage/framework
 
 echo "--- Building frontend assets ---"
