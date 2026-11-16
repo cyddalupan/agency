@@ -491,6 +491,24 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('non_conformities'))
+                        <a href="{{ route('non_conformities.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('non_conformities.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">🛠️</span>
+                            Non-conformities
+                        </a>
+                        @endif
+
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('internal_audits'))
+                        <a href="{{ route('internal_audits.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('internal_audits.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📋</span>
+                            Internal Audits
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors

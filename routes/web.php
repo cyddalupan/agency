@@ -27,6 +27,7 @@ use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\ControlledDocumentController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\InternalAuditController;
 use App\Http\Controllers\NonConformityController;
 use App\Http\Controllers\RiskController;
 use App\Http\Controllers\AgencyController;
@@ -342,6 +343,16 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::post('/non-conformities/{nonConformity}/actions', [NonConformityController::class, 'storeAction'])->name('non_conformities.actions.store');
     Route::put('/non-conformities/{nonConformity}/actions/{action}', [NonConformityController::class, 'updateAction'])->name('non_conformities.actions.update');
     Route::delete('/non-conformities/{nonConformity}/actions/{action}', [NonConformityController::class, 'destroyAction'])->name('non_conformities.actions.destroy');
+
+    // QMS-18 (card 6afa0dafe7637ea026605c1c): internal audit screens.
+    Route::get('/internal-audits', [InternalAuditController::class, 'index'])->name('internal_audits.index');
+    Route::get('/internal-audits/create', [InternalAuditController::class, 'create'])->name('internal_audits.create');
+    Route::post('/internal-audits', [InternalAuditController::class, 'store'])->name('internal_audits.store');
+    Route::get('/internal-audits/{internalAudit}', [InternalAuditController::class, 'show'])->name('internal_audits.show');
+    Route::put('/internal-audits/{internalAudit}', [InternalAuditController::class, 'update'])->name('internal_audits.update');
+    Route::post('/internal-audits/{internalAudit}/findings', [InternalAuditController::class, 'storeFinding'])->name('internal_audits.findings.store');
+    Route::delete('/internal-audits/{internalAudit}/findings/{finding}', [InternalAuditController::class, 'destroyFinding'])->name('internal_audits.findings.destroy');
+    Route::post('/internal-audits/{internalAudit}/findings/{finding}/non-conformity', [InternalAuditController::class, 'raiseNonConformity'])->name('internal_audits.findings.raise_nc');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {

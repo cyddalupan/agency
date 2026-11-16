@@ -234,6 +234,16 @@
                 <div class="card-body space-y-2 text-sm">
                     <h2 class="font-bold mb-1">Details</h2>
                     <div class="flex items-center justify-between"><span class="opacity-70">Found by</span><span>{{ $nc->source_label }}</span></div>
+                    {{-- QMS-18: the other half of the finding link. A non-conformity
+                         raised from an audit says so here, and says which one. --}}
+                    @if ($auditFinding = $nc->auditFinding)
+                        <div class="flex items-center justify-between"><span class="opacity-70">Raised from</span>
+                            <a href="{{ route('internal_audits.show', $auditFinding->internal_audit_id) }}"
+                               class="link link-hover font-mono text-xs" id="nc-from-audit">
+                                {{ $auditFinding->internalAudit?->ref_no }} · {{ $auditFinding->finding_no }}
+                            </a>
+                        </div>
+                    @endif
                     <div class="flex items-center justify-between"><span class="opacity-70">Detected</span><span class="font-mono text-xs">{{ $nc->detected_date?->format('d M Y') }}</span></div>
                     <div class="flex items-center justify-between"><span class="opacity-70">Due</span><span class="font-mono text-xs">{{ $nc->due_date?->format('d M Y') ?? '—' }}</span></div>
                     <div class="flex items-center justify-between"><span class="opacity-70">Process</span><span>{{ $nc->process_area ?? '—' }}</span></div>
