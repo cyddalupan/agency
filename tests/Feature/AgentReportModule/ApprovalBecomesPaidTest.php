@@ -129,27 +129,60 @@ class ApprovalBecomesPaidTest extends TestCase
         ]);
     }
 
+    /**
+     * An approved expense reaches the Agent Ledger, and reaches it as the NET
+     * amount — not the gross, and not twice.
+     *
+     * Renamed from approved_item_appears_in_deductions_tab_and_not_in_commission.
+     * That name described UI that no longer exists. The Deductions tab is
+     * deductions-only: AgentReportController::index() builds it with
+     * where('account', AgentDeduction::ACCOUNT_DEDUCTION), and the comment there
+     * records Cyd's 2026-10-23 decision to keep approval-generated 'Paid' rows
+     * off it. The Commission tab was removed outright in 3e83726c. So the old
+     * test asserted `Paid` on a tab that can never show it, and searched for
+     * '10,000.00' on the Payments tab — which renders that number as the item
+     * AMOUNT column, one column reorder away from flipping for no good reason.
+     *
+     * What survives is the claim worth keeping, and the one nothing else makes:
+     * the DB-level tests above prove the Paid row is WRITTEN, none prove it
+     * reaches a SCREEN. That write-vs-display gap is how the CSV Status column
+     * sat at 'N/A' for months.
+     *
+     * The ledger shows 6,000 in Payments (the net Paid entry) plus 4,000 in the
+     * same column from the payment recorded on the transaction, totalling the
+     * full 10,000 gross. That is deliberate — AgentReportController::
+     * agentLedgerData() carries the "No double count: an approval row already
+     * nets out the payment" note — and it is pinned from the other end by
+     * AgentLedgerPaymentReflectsExpensePaymentsTest::
+     * approval_paid_row_and_expense_payment_do_not_double_count. Read both
+     * before changing either.
+     *
+     * (Deliberately citing method names, not line numbers: the numbers in this
+     * docblock's first draft were stale within the hour, which is the same decay
+     * that killed the old test name.)
+     */
     #[Test]
-    public function approved_item_appears_in_deductions_tab_and_not_in_commission(): void
+    public function approved_item_reaches_the_ledger_as_net_once(): void
     {
         $request = $this->storeRequest(10000.00, 4000.00);
         $this->approve($request);
 
-        $this->actingAs($this->admin)
-            ->get(route('agent_report.index', ['tab' => 'deductions']))
-            ->assertOk()
-            ->assertSee('Paid')
-            ->assertSee('6,000.00')
-            ->assertSee('Placement fee');
+        $response = $this->actingAs($this->admin)
+            ->get(route('agent_report.index', ['tab' => 'report', 'agent_id' => $this->agent->id]))
+            ->assertOk();
 
-        // The Commission tab was removed (card 6afae127), so "not in commission"
-        // can no longer be asserted by visiting it. What still matters is that
-        // the item moved here and is NOT double-counted elsewhere: assert the
-        // agent's ledger shows the net once, on this tab.
-        $this->actingAs($this->admin)
-            ->get(route('agent_report.index', ['tab' => 'payments']))
-            ->assertOk()
-            ->assertDontSee('10,000.00');
+        // The ledger's Payments column is a TOTAL, not a per-row breakdown: it
+        // sums the net Paid entry (6,000) and the payment already recorded on
+        // the transaction (4,000) to the full gross. Assert the total exactly.
+        $row = $this->ledgerRow($response->getContent(), $this->agent->first_name . ' ' . $this->agent->last_name);
+        $this->assertSame('₱10,000.00', $row[5], 'net Paid entry + transaction payment = the gross');
+
+        // The net-vs-gross guard. If the Paid entry were ever stored gross, the
+        // column would read 14,000 (10,000 + 4,000), not 10,000.
+        $this->assertNotSame('₱14,000.00', $row[5], 'the Paid entry must be stored net, not gross');
+
+        // Balance = -payments = -10,000 (nothing else on this ledger).
+        $this->assertSame('₱-10,000.00', $row[6]);
     }
 
     #[Test]
