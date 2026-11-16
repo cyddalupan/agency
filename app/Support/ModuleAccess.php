@@ -43,6 +43,8 @@ class ModuleAccess
         'non_conformities',
         // QMS-18: internal audits are the same governance family.
         'internal_audits',
+        // QMS-19: the compliance calendar is the same governance family.
+        'compliance_calendar',
     ];
 
     /**
@@ -115,6 +117,9 @@ class ModuleAccess
         'non_conformities',
         // QMS-18: the audit programme screens.
         'internal_audits',
+        // QMS-19: the deadline feed pulls from every QMS module, so whoever
+        // sees those modules may see the calendar they feed.
+        'compliance_calendar',
         'notifications',
         'logout',
         'storage',
@@ -144,6 +149,8 @@ class ModuleAccess
         // where the read-only role still writes — the controller splits plan
         // from conduct accordingly.
         'internal_audits',
+        // QMS-19: read-only by nature, which suits the auditor exactly.
+        'compliance_calendar',
         'notifications',
         'logout',
         'storage',
@@ -309,6 +316,9 @@ class ModuleAccess
         // QMS-18: internal audits. Key is the route-name prefix
         // ("internal_audits.*"), same rule as above.
         'internal_audits'          => 'internal_audits',
+        // QMS-19: the compliance calendar. The URL segment is hyphenated, so
+        // the route-name prefix mapping is required for the gate to match.
+        'compliance_calendar'      => 'compliance_calendar',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',

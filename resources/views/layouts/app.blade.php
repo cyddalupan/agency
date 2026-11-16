@@ -509,6 +509,15 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('compliance_calendar'))
+                        <a href="{{ route('compliance_calendar.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('compliance_calendar.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">⏰</span>
+                            Compliance Calendar
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
