@@ -33,7 +33,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function a_document_can_be_created_with_the_expected_defaults(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
 
         $doc = $this->make($agency, 'QMS-001');
 
@@ -46,7 +46,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function two_agencies_may_each_have_the_same_code(): void
     {
-        $agencyA = Agency::factory()->create();
+        $agencyA = Agency::factory()->withQms()->create();
         $agencyB = Agency::factory()->create();
 
         $docA = $this->make($agencyA, 'QMS-001');
@@ -60,7 +60,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function one_agency_may_not_register_the_same_code_twice(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $this->make($agency, 'QMS-001');
 
         $this->expectException(QueryException::class);
@@ -71,7 +71,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function the_tenant_scope_hides_another_agencys_documents(): void
     {
-        $agencyA = Agency::factory()->create();
+        $agencyA = Agency::factory()->withQms()->create();
         $agencyB = Agency::factory()->create();
 
         $this->make($agencyA, 'QMS-001');
@@ -89,7 +89,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function documents_are_soft_deleted(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->make($agency, 'QMS-001');
 
         $doc->delete();
@@ -114,7 +114,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function status_label_and_badge_accessors_fall_back_gracefully(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
 
         $doc = $this->make($agency, 'QMS-001', ['status' => ControlledDocument::STATUS_IN_REVIEW]);
         $this->assertSame('In Review', $doc->status_label);
@@ -128,7 +128,7 @@ class ControlledDocumentTest extends TestCase
     #[Test]
     public function an_approved_document_past_its_review_date_is_flagged_overdue(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
 
         $overdue = $this->make($agency, 'QMS-001', [
             'status'           => ControlledDocument::STATUS_APPROVED,

@@ -20,6 +20,21 @@ class AgencyFactory extends Factory
         ];
     }
 
+    /**
+     * An agency with the QMS feature switched on (card 6afb2e83).
+     *
+     * QMS is off by default everywhere except the agencies in
+     * ModuleAccess::QMS_DEFAULT_ENABLED_AGENCIES, so a test that exercises a
+     * QMS screen has to ask for it explicitly rather than inheriting it from
+     * whichever agency happened to be created.
+     */
+    public function withQms(): static
+    {
+        return $this->state(fn(array $attrs) => [
+            'settings' => [\App\Support\ModuleAccess::QMS_SETTINGS_KEY => true],
+        ]);
+    }
+
     public function inactive(): static
     {
         return $this->state(fn(array $attrs) => ['status' => 'inactive']);

@@ -25,7 +25,7 @@ class ComplaintTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         app()->instance('tenant_agency', $this->agency);
     }
 
@@ -284,7 +284,7 @@ class ComplaintTest extends TestCase
     {
         $this->makeComplaint();
 
-        app()->instance('tenant_agency', Agency::factory()->create());
+        app()->instance('tenant_agency', Agency::factory()->withQms()->create());
 
         $this->assertSame(0, Complaint::query()->count());
     }

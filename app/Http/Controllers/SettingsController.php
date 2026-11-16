@@ -254,8 +254,9 @@ class SettingsController extends Controller
         abort_if(! $agency, 403, 'No agency context.');
 
         $showCompanyProfile = app_show_company_profile($agency);
+        $qmsEnabled = \App\Support\ModuleAccess::qmsEnabled($agency->id);
 
-        return view('settings.agency', compact('agency', 'showCompanyProfile'));
+        return view('settings.agency', compact('agency', 'showCompanyProfile', 'qmsEnabled'));
     }
 
     /**
@@ -268,12 +269,24 @@ class SettingsController extends Controller
 
         $settings = is_object($agency->settings) ? $agency->settings->toArray() : (array) ($agency->settings ?? []);
         $settings['hide_company_profile'] = ! $request->boolean('show_company_profile');
+
+        // Card 6afb2e83: the QMS feature switch. Always written, so the
+        // agency's own choice is recorded from the first save onwards rather
+        // than quietly falling back to the default list later.
+        $settings[\App\Support\ModuleAccess::QMS_SETTINGS_KEY] = $request->boolean('qms_enabled');
+
         $agency->update(['settings' => $settings]);
 
+        $messages = [$settings['hide_company_profile']
+            ? 'Company Profile hidden from the sidebar for this agency.'
+            : 'Company Profile shown in the sidebar for this agency.'];
+
+        $messages[] = $settings[\App\Support\ModuleAccess::QMS_SETTINGS_KEY]
+            ? 'QMS is on for this agency.'
+            : 'QMS is off for this agency.';
+
         return redirect()->route('settings.agency')
-            ->with('success', $settings['hide_company_profile']
-                ? 'Company Profile hidden from the sidebar for this agency.'
-                : 'Company Profile shown in the sidebar for this agency.');
+            ->with('success', implode(' ', $messages));
     }
 
     /**

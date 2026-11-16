@@ -32,7 +32,7 @@ class InternalAuditTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
 
         $this->auditor = User::factory()->create([
             'agency_id' => $this->agency->id,

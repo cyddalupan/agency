@@ -30,7 +30,7 @@ class ControlledDocumentScreenTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         app()->instance('tenant_agency', $this->agency);
 
         $this->admin = User::factory()->create([
@@ -145,7 +145,9 @@ class ControlledDocumentScreenTest extends TestCase
             'confidentiality' => 'internal',
         ]);
 
-        $otherAgency = Agency::factory()->create();
+        // The second tenant acts as a real user here, so it needs QMS on as
+        // well; this test is about the unique-code rule, not the gate.
+        $otherAgency = Agency::factory()->withQms()->create();
         $otherAdmin = User::factory()->create([
             'agency_id' => $otherAgency->id,
             'user_type' => 'admin',

@@ -36,7 +36,7 @@ class DocumentWorkflowTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         app()->instance('tenant_agency', $this->agency);
 
         $this->admin      = User::factory()->create(['agency_id' => $this->agency->id, 'user_type' => 'admin']);

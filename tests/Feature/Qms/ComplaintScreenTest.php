@@ -28,7 +28,7 @@ class ComplaintScreenTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         app()->instance('tenant_agency', $this->agency);
 
         $this->manager = $this->userWithType('qms_manager');

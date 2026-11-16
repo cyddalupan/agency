@@ -288,6 +288,38 @@ class ModuleAccess
     public const WELFARE_MODULE_AGENCIES = ['csdi', 'finas'];
 
     /**
+     * The QMS family (card 6afb2e83, 2026-11-16).
+     *
+     * The whole quality-management suite — audit trail, controlled documents,
+     * risks, complaints, non-conformities, internal audits, the compliance
+     * calendar and the QMS dashboard — is one switchable feature rather than
+     * eight independent modules. Turning QMS off closes every one of them,
+     * admins included, and hides their sidebar links.
+     */
+    public const QMS_MODULES = [
+        'audit_trail',
+        'controlled_documents',
+        'risks',
+        'complaints',
+        'non_conformities',
+        'internal_audits',
+        'compliance_calendar',
+        'qms',
+    ];
+
+    /**
+     * Agencies that have QMS switched on unless their settings say otherwise.
+     *
+     * The card: "turned on on Finas and off in gulf for now". A switch in
+     * Agency Settings overrides this default either way, so a new tenant does
+     * not need a code change to get QMS.
+     */
+    public const QMS_DEFAULT_ENABLED_AGENCIES = ['finas'];
+
+    /** Key in agencies.settings that records the per-agency QMS switch. */
+    public const QMS_SETTINGS_KEY = 'qms_enabled';
+
+    /**
      * General Ledger is Accounting-only (Mjolnir card review, Kchanz Josh
      * 2026-11-05): "Only Admin and Accounting users has this module".
      * It is therefore NOT in STAFF_ALLOWED — super_admin/admin keep it via
@@ -391,7 +423,6 @@ class ModuleAccess
     {
         $userType = (string) $userType;
 
-        // Gulf-only modules (Cyd 2026-11-09): Agents Report exists for the Gulf
         // Gulf-only modules (Cyd 2026-09): Agents Report used to exist for the
         // Gulf tenant alone. Checked BEFORE the full-access shortcut so an
         // admin of another agency cannot reach it either. Now offered on the
@@ -407,6 +438,13 @@ class ModuleAccess
         }
 
         if ($module === 'agent_report' && ! self::isAnyAgency($agencyId, self::AGENT_REPORT_AGENCIES)) {
+            return false;
+        }
+
+        // QMS is one feature switch, not eight modules (card 6afb2e83,
+        // 2026-11-16). Checked before the full-access shortcut so an admin of
+        // an agency with QMS off cannot reach any of its screens either.
+        if (self::isQmsModule($module) && ! self::qmsEnabled($agencyId)) {
             return false;
         }
 
@@ -484,6 +522,41 @@ class ModuleAccess
     public static function employeeEnabled(?int $agencyId): bool
     {
         return self::isAnyAgency($agencyId, self::EMPLOYEE_AGENCIES);
+    }
+
+    /**
+     * Whether this agency has the QMS feature switched on.
+     *
+     * The agency's own switch in Agency Settings wins; when it has never been
+     * set, the default list decides. Reading only the column value keeps this
+     * cheap enough for the sidebar, which asks once per QMS link.
+     */
+    public static function qmsEnabled(?int $agencyId): bool
+    {
+        if (! $agencyId) {
+            return false;
+        }
+
+        $record = \App\Models\Agency::whereKey($agencyId)->first(['id', 'settings']);
+
+        if (! $record) {
+            return false;
+        }
+
+        $settings = $record->settings;
+        $settings = is_object($settings) ? (array) $settings : (array) ($settings ?? []);
+
+        if (array_key_exists(self::QMS_SETTINGS_KEY, $settings)) {
+            return (bool) $settings[self::QMS_SETTINGS_KEY];
+        }
+
+        return self::isAnyAgency($agencyId, self::QMS_DEFAULT_ENABLED_AGENCIES);
+    }
+
+    /** Whether the module belongs to the switchable QMS feature. */
+    public static function isQmsModule(string $module): bool
+    {
+        return in_array($module, self::QMS_MODULES, true);
     }
 
     /** True when the given agency is the FINAS tenant (subdomain = finas). */

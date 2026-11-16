@@ -29,7 +29,7 @@ class QmsRolesTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         app()->instance('tenant_agency', $this->agency);
     }
 
@@ -168,17 +168,21 @@ class QmsRolesTest extends TestCase
     #[Test]
     public function the_module_allowlists_match_the_spec(): void
     {
+        // The allowlists are about roles, not tenants, so ask the question on
+        // an agency that actually has QMS switched on (card 6afb2e83).
+        $agencyId = $this->agency->id;
+
         // Both roles may audit.
         foreach (['qms_manager', 'internal_auditor'] as $role) {
-            $this->assertTrue(ModuleAccess::allows($role, 'audit_trail'), "{$role} should read the audit trail.");
-            $this->assertTrue(ModuleAccess::allows($role, 'controlled_documents'), "{$role} should reach documents.");
-            $this->assertTrue(ModuleAccess::allows($role, 'dashboard'), "{$role} should reach the dashboard.");
+            $this->assertTrue(ModuleAccess::allows($role, 'audit_trail', $agencyId), "{$role} should read the audit trail.");
+            $this->assertTrue(ModuleAccess::allows($role, 'controlled_documents', $agencyId), "{$role} should reach documents.");
+            $this->assertTrue(ModuleAccess::allows($role, 'dashboard', $agencyId), "{$role} should reach the dashboard.");
         }
 
         // Neither reaches the core operational modules.
         foreach (['qms_manager', 'internal_auditor'] as $role) {
             foreach (['applicants', 'receivable', 'expense_request', 'settings', 'users'] as $module) {
-                $this->assertFalse(ModuleAccess::allows($role, $module), "{$role} must not reach {$module}.");
+                $this->assertFalse(ModuleAccess::allows($role, $module, $agencyId), "{$role} must not reach {$module}.");
             }
         }
     }

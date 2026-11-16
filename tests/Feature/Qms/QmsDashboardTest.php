@@ -40,7 +40,7 @@ class QmsDashboardTest extends TestCase
     {
         parent::setUp();
 
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
         $this->manager = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'qms_manager',

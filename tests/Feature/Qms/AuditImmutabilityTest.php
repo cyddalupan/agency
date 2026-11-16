@@ -25,7 +25,7 @@ class AuditImmutabilityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->agency = Agency::factory()->create();
+        $this->agency = Agency::factory()->withQms()->create();
     }
 
     private function makeEvent(): AuditEvent

@@ -68,7 +68,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function the_full_sequence_persists_and_chains(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency);
 
         $v1 = $this->version($doc, '1.0');
@@ -94,7 +94,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function the_helper_reads_the_highest_existing_version_for_a_document(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency);
 
         $this->assertSame('1.0', ControlledDocumentVersion::nextVersionNoFor($doc));
@@ -109,7 +109,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function two_versions_of_one_document_may_not_share_a_label(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency);
 
         $this->version($doc, '1.0');
@@ -122,7 +122,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function two_documents_may_each_have_a_version_1_0(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
 
         $docA = $this->document($agency, 'QMS-001');
         $docB = $this->document($agency, 'QMS-002');
@@ -138,7 +138,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function relations_both_ways_resolve(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency);
 
         $this->version($doc, '1.0');
@@ -153,7 +153,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function full_name_combines_code_title_and_version(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency, 'QMS-001');
 
         $v = $this->version($doc, '1.1');
@@ -164,7 +164,7 @@ class ControlledDocumentVersionTest extends TestCase
     #[Test]
     public function current_version_relation_points_at_the_chosen_version(): void
     {
-        $agency = Agency::factory()->create();
+        $agency = Agency::factory()->withQms()->create();
         $doc = $this->document($agency);
 
         $v1 = $this->version($doc, '1.0');

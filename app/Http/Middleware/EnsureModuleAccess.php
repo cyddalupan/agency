@@ -47,6 +47,12 @@ class EnsureModuleAccess
             abort(403, 'The Employee module is not available for this agency.');
         }
 
+        // QMS is a single feature switch per agency (card 6afb2e83): with it
+        // off, every QMS screen is closed to everyone, admins included.
+        if (ModuleAccess::isQmsModule($module) && ! ModuleAccess::qmsEnabled($user->agency_id)) {
+            abort(403, 'The QMS module is not available for this agency.');
+        }
+
         // Full-access roles.
         if (in_array($type, ['super_admin', 'admin'], true)) {
             return $next($request);
