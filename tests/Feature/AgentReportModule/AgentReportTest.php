@@ -58,7 +58,13 @@ class AgentReportTest extends TestCase
         ]);
     }
 
-    private function makeReceivable(Agent $agent, float $amount, string $status = 'pending', ?Applicant $applicant = null): Receivable
+    /**
+     * @param  string  $account  The ledger reads Payments from Receivables whose
+     *                           account is 'Agents & Applicant Payment'. Other
+     *                           suites use the historical 'Placement Fee', so the
+     *                           default is unchanged and the ledger tests opt in.
+     */
+    private function makeReceivable(Agent $agent, float $amount, string $status = 'pending', ?Applicant $applicant = null, string $account = 'Placement Fee'): Receivable
     {
         return Receivable::create([
             'agency_id'      => $this->agency->id,
@@ -69,10 +75,30 @@ class AgentReportTest extends TestCase
             'date'           => now()->toDateString(),
             'status'         => $status,
             'amount'         => $amount,
-            'account'        => 'Placement Fee',
+            'account'        => $account,
             'debit_account'  => 'Receivable',
             'type'           => 'Full Payment',
             'mode'           => 'GCash',
+        ]);
+    }
+
+    /**
+     * Backout & Repat and Payments on the Agent Ledger come from AgentDeduction
+     * rows, NOT from expense items — see AgentReportController::buildReportRows().
+     * A deduction line with account 'Deduction' sums into Backout & Repat; one
+     * with account 'Paid' sums into Payments.
+     */
+    private function makeDeduction(Agent $agent, float $amount, string $account, string $particular = 'test'): AgentDeduction
+    {
+        return AgentDeduction::create([
+            'agency_id'    => $this->agency->id,
+            'user_id'      => $this->user->id,
+            'date'         => now()->toDateString(),
+            'account'      => $account,
+            'agent_id'     => $agent->id,
+            'applicant_id' => null,
+            'amount'       => $amount,
+            'particular'   => $particular,
         ]);
     }
 
@@ -263,12 +289,19 @@ class AgentReportTest extends TestCase
     {
         $agent = $this->makeAgent();
 
-        $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Other Commission'); // Total Commission
-        $this->makeAgentExpense($agent, 2000, 'PHP', null, 'Agent Advances');    // Total Cash Advance
-        $backout = $this->makeApplicant($agent, 50);
-        $this->makeAgentExpense($agent, 3000, 'PHP', $backout, 'Other Commission'); // Total Backout and Repat
-        $this->makeAgentExpense($agent, 4000, 'PHP', null, 'Partial');           // Total Receivable (AR)
-        $this->makeReceivable($agent, 5000, 'received');                         // Total Payments
+        // Ledger semantics (AgentReportController::buildReportRows + agentLedgerData):
+        //  commission   = RELEASED expense items on a commission account
+        //  cash advance = RELEASED expense items on a cash-advance account
+        //  backout/repat= AgentDeduction rows with account 'Deduction'
+        //  receivable   = RECEIVED Receivables on 'Agents & Applicant Payment'
+        //  payments     = AgentDeduction rows with account 'Paid'
+        // The ledger ignores PENDING requests — do not relax that filter to make
+        // a test pass; a pending row is not real money yet.
+        $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Fit to work', 'released');    // Total Commission
+        $this->makeAgentExpense($agent, 2000, 'PHP', null, 'Agent Advances', 'released');  // Total Cash Advance
+        $this->makeDeduction($agent, 3000, AgentDeduction::ACCOUNT_DEDUCTION);            // Total Backout and Repat
+        $this->makeReceivable($agent, 4000, 'received', null, 'Agents & Applicant Payment'); // Total Receivable (AR)
+        $this->makeDeduction($agent, 5000, AgentDeduction::ACCOUNT_PAID);                 // Total Payments
 
         // Balance = 2000 (CA) + 3000 (backout & repat) - 4000 (receivable AR) - 5000 (payments) = -4000
         $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
@@ -286,8 +319,10 @@ class AgentReportTest extends TestCase
     {
         $agent = $this->makeAgent();
 
-        $this->makeReceivable($agent, 6000, 'received');
-        $this->makeReceivable($agent, 9000, 'pending'); // not counted as payment
+        // The ledger reads Payments from AgentDeduction rows with account 'Paid'.
+        // A pending Receivable is NOT a payment.
+        $this->makeDeduction($agent, 6000, AgentDeduction::ACCOUNT_PAID);
+        $this->makeReceivable($agent, 9000, 'pending', null, 'Agents & Applicant Payment');
 
         $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
             ->assertOk()
@@ -300,7 +335,9 @@ class AgentReportTest extends TestCase
     {
         $agent = $this->makeAgent();
 
-        $this->makeAgentExpense($agent, 10, 'USD', null, 'Other Commission'); // USD 10 -> PHP 560 @ 56
+        // The ledger reads commission from a commission account — 'Fit to work'
+        // is one of RECEIVABLE_ACCOUNT_NAMES. 'Other Commission' is not.
+        $this->makeAgentExpense($agent, 10, 'USD', null, 'Fit to work', 'released'); // USD 10 -> PHP 560 @ 56
 
         $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
             ->assertOk()
@@ -323,8 +360,8 @@ class AgentReportTest extends TestCase
         $agentA = $this->makeAgent();
         $agentB = $this->makeAgent();
 
-        $this->makeReceivable($agentA, 5000, 'received');
-        $this->makeReceivable($agentB, 99999, 'received');
+        $this->makeReceivable($agentA, 5000, 'received', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agentB, 99999, 'received', null, 'Agents & Applicant Payment');
 
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'report', 'agent_id' => $agentA->id]))
