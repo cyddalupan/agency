@@ -216,7 +216,10 @@ class ReportController extends Controller
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
 
-        $query = Applicant::with(['statusCode', 'country'])->forBranchUser();
+        // Eager-load every relation a column reads. The screen at
+        // reports/applicants.blade.php loads all six; this export loaded two,
+        // so the columns it renders were resolved a row at a time.
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'branch'])->forBranchUser();
 
         if (!$isSuperAdmin) {
             $query->where('agency_id', $agencyId);
@@ -240,9 +243,17 @@ class ReportController extends Controller
 
         $applicants = $query->latest()->get();
 
+        // The columns are the ones the screen shows, in the same order — this
+        // export is that table, downloadable. It used to emit a different set
+        // (First/Last Name split, plus Gender and Employer) so an operator who
+        // exported what they were looking at got columns they had never seen
+        // and none of Position, Agent or Branch.
+        //
+        // The agent heading goes through agent_term(): 'Agent' on Gulf,
+        // 'Marketing Staff' on CSDI/FINAS. Same list, different word.
         $headers = [
-            'First Name', 'Last Name', 'Email', 'Contact',
-            'Gender', 'Country', 'Status', 'Employer', 'Created At',
+            'Name', 'Position', agent_header('Agent'), 'Branch',
+            'Status', 'Country', 'Contact', 'Email', 'Created At',
         ];
 
         $callback = function () use ($applicants, $headers) {
@@ -252,15 +263,19 @@ class ReportController extends Controller
 
             foreach ($applicants as $applicant) {
                 fputcsv($file, [
-                    $applicant->first_name,
-                    $applicant->last_name,
-                    $applicant->email,
-                    $applicant->contact,
-                    $applicant->gender,
-                    $applicant->country?->name ?? 'N/A',
-                    $applicant->statusCode?->name ?? 'N/A',
-                    $applicant->employer?->name ?? 'N/A',
-                    $applicant->created_at->format('Y-m-d'),
+                    trim($applicant->first_name.' '.$applicant->last_name),
+                    $applicant->position?->name ?? '',
+                    $applicant->agent?->name ?? '',
+                    $applicant->branch?->name ?? '',
+                    // ->label, not ->name: StatusCode has no `name` column, so
+                    // this read returned null and the fallback printed 'N/A'
+                    // on every row of every export. The screen always used
+                    // ->label; this is the one place that did not.
+                    $applicant->statusCode?->label ?? '',
+                    $applicant->country?->name ?? '',
+                    $applicant->contact ?? '',
+                    $applicant->email ?? '',
+                    $applicant->created_at?->format('Y-m-d') ?? '',
                 ]);
             }
 
