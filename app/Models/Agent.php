@@ -21,6 +21,7 @@ class Agent extends Authenticatable
         'password',
         'commission_rate',
         'status',
+        'created_by',
     ];
 
     protected $hidden = [
@@ -36,6 +37,12 @@ class Agent extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /** The user who created this agent (Cyd / accounting). */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function applicants(): HasMany
