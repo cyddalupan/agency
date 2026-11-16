@@ -59,6 +59,61 @@ class AgentReportTest extends TestCase
     }
 
     /**
+     * Extract the Agent Ledger table's <tbody> HTML from a rendered page.
+     *
+     * The page contains a filter <select> listing every agent, so assertions
+     * like "this agent is absent" must be scoped to the ledger rows or they
+     * match the dropdown instead. Keeping the extraction here means the scope
+     * is stated once and every test that needs it gets the same one.
+     */
+    private function ledgerTbody(string $html): string
+    {
+        $start = strpos($html, 'Agent Ledger');
+        $this->assertNotFalse($start, 'Agent Ledger card not found in page');
+
+        $open = strpos($html, '<tbody>', $start);
+        $this->assertNotFalse($open, 'ledger <tbody> not found');
+
+        $close = strpos($html, '</tbody>', $open);
+        $this->assertNotFalse($close, 'ledger </tbody> not found');
+
+        return substr($html, $open, $close - $open);
+    }
+
+    /**
+     * Extract one ledger row's money cells, in column order:
+     * commission, cash advance, backout/repat, AR, return payment, payments, balance.
+     *
+     * assertSeeInOrder() is NOT enough for this: it only requires the values to
+     * appear in order somewhere on the page, with arbitrary content in between.
+     * A figure leaking from one column into another still passes. Comparing the
+     * actual cells is what pins each number to its own column.
+     *
+     * @return list<string> e.g. ['₱0.00','₱560.00',...,'₱560.00']
+     */
+    private function ledgerRow(string $html, string $agentName): array
+    {
+        $tbody = $this->ledgerTbody($html);
+
+        // Split into <tr> rows and find the one belonging to $agentName.
+        preg_match_all('#<tr>(.*?)</tr>#s', $tbody, $rows);
+
+        foreach ($rows[1] as $row) {
+            if (! str_contains($row, $agentName)) {
+                continue;
+            }
+
+            preg_match_all('#<td[^>]*>(.*?)</td>#s', $row, $cells);
+            $cells = array_map(fn ($c) => trim(html_entity_decode(strip_tags($c))), $cells[1]);
+
+            // Drop the leading name and branch cells; keep the seven money columns.
+            return array_slice($cells, 2);
+        }
+
+        $this->fail("no ledger row found for agent {$agentName}");
+    }
+
+    /**
      * @param  string  $account  The ledger reads Payments from Receivables whose
      *                           account is 'Agents & Applicant Payment'. Other
      *                           suites use the historical 'Placement Fee', so the
@@ -320,14 +375,44 @@ class AgentReportTest extends TestCase
         $agent = $this->makeAgent();
 
         // The ledger reads Payments from AgentDeduction rows with account 'Paid'.
-        // A pending Receivable is NOT a payment.
+        // A pending Receivable is NOT a payment — only a RECEIVED one counts,
+        // and then it lands in the AR column, never in Payments.
         $this->makeDeduction($agent, 6000, AgentDeduction::ACCOUNT_PAID);
-        $this->makeReceivable($agent, 9000, 'pending', null, 'Agents & Applicant Payment');
 
-        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
-            ->assertOk()
-            ->assertSee('6,000.00')
-            ->assertDontSee('15,000.00');
+        // One RECEIVED receivable. This is what makes the column separation
+        // observable: if receipts ever leak into Payments, AR and Payments
+        // stop being distinguishable and this test goes red.
+        $this->makeReceivable($agent, 2500, 'received', null, 'Agents & Applicant Payment');
+
+        // Pending receivables of arbitrary, deliberately unrelated amounts.
+        // None of these may move ANY figure. Several different amounts mean no
+        // single magic sum can stand in for the property: whatever the ledger
+        // adds up, it cannot equal one of these by luck.
+        $this->makeReceivable($agent, 9000, 'pending', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agent, 1234, 'pending', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agent, 77, 'pending', null, 'Agents & Applicant Payment');
+
+        // Assert the ledger ROW in column order, not a number found anywhere on
+        // the page. Columns: commission, cash advance, backout/repat,
+        // receivable (AR), return payment, payments, balance.
+        //   Payments = 6,000.00 (the Paid deduction only)
+        //   AR       = 2,500.00 (the received receivable only)
+        //   Balance  = 0 + 0 - 2,500 + 0 - 6,000 = -8,500.00
+        // If either pending receivable were counted, AR and/or Payments would
+        // move and this row would not match.
+        $response = $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk();
+
+        $this->assertSame([
+            '₱0.00',       // commission
+            '₱0.00',       // cash advance
+            '₱0.00',       // backout and repat
+            '₱2,500.00',   // receivable (AR) — the received row only
+            '₱0.00',       // return payment
+            '₱6,000.00',   // payments — the Paid deduction only
+            '₱-8,500.00',  // balance
+        ], $this->ledgerRow($response->getContent(), $agent->name));
     }
 
     #[Test]
@@ -339,9 +424,23 @@ class AgentReportTest extends TestCase
         // is one of RECEIVABLE_ACCOUNT_NAMES. 'Other Commission' is not.
         $this->makeAgentExpense($agent, 10, 'USD', null, 'Fit to work', 'released'); // USD 10 -> PHP 560 @ 56
 
-        $this->actingAs($this->user)->get(route('agent_report.index', ['tab' => 'report']))
-            ->assertOk()
-            ->assertSee('560.00'); // converted commission
+        // Assert the commission COLUMN of the row, not a number anywhere on the
+        // page: a bare assertSee('560.00') would also match an amount that had
+        // leaked into cash advance, AR, payments or the balance. Column order is
+        // commission, cash advance, backout/repat, AR, return, payments, balance.
+        $response = $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'report']))
+            ->assertOk();
+
+        $this->assertSame([
+            '₱560.00',  // commission — converted from USD 10 @ 56
+            '₱0.00',    // cash advance
+            '₱0.00',    // backout and repat
+            '₱0.00',    // AR
+            '₱0.00',    // return payment
+            '₱0.00',    // payments
+            '₱0.00',    // balance
+        ], $this->ledgerRow($response->getContent(), $agent->name));
     }
 
     #[Test]
@@ -363,11 +462,31 @@ class AgentReportTest extends TestCase
         $this->makeReceivable($agentA, 5000, 'received', null, 'Agents & Applicant Payment');
         $this->makeReceivable($agentB, 99999, 'received', null, 'Agents & Applicant Payment');
 
-        $this->actingAs($this->user)
+        // Assert on the ledger TABLE, not on numbers found anywhere in the page.
+        // assertSee('5,000.00') alone would pass even if the filter did nothing,
+        // because agent A's row is rendered either way. The property is that the
+        // ledger body contains exactly one agent row — A's — and B never appears.
+        // (B's name DOES legitimately appear in the filter dropdown, so the
+        // assertion is scoped to <tbody>, not the whole page.)
+        $response = $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'report', 'agent_id' => $agentA->id]))
-            ->assertOk()
-            ->assertSee('5,000.00')
-            ->assertDontSee('99,999.00');
+            ->assertOk();
+
+        $tbody = $this->ledgerTbody($response->getContent());
+        $this->assertStringContainsString($agentA->name, $tbody, 'selected agent must be in the ledger');
+        $this->assertStringNotContainsString($agentB->name, $tbody, 'filtered-out agent must not be in the ledger');
+
+        // A's AR is 5,000.00; if B's 99,999.00 had been folded in it would read
+        // 104,999.00, and A's balance would move off -5,000.00.
+        $this->assertSame([
+            '₱0.00',       // commission
+            '₱0.00',       // cash advance
+            '₱0.00',       // backout and repat
+            '₱5,000.00',   // AR — agent A only
+            '₱0.00',       // return payment
+            '₱0.00',       // payments
+            '₱-5,000.00',  // balance = -AR
+        ], $this->ledgerRow($response->getContent(), $agentA->name));
     }
 
     // ---------- Single-agent ledger detail view + PDF (clickable Name) ----------
