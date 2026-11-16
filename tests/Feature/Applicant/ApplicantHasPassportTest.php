@@ -220,11 +220,15 @@ class ApplicantHasPassportTest extends TestCase
     // ─── CSV EXPORT ─────────────────────────────────────────────────
 
     #[Test]
-    public function export_contains_has_passport_column(): void
+    public function export_includes_applicant_regardless_of_passport_state(): void
     {
         app()->instance('tenant_agency', $this->agency);
 
-        Applicant::factory()->create([
+        // has_passport is not a column of this export (see
+        // ApplicantController::applicantCsvHeaders, single "Name" column set
+        // since 52b47b7b). What the export must guarantee is that an applicant
+        // with passport data set is not silently filtered out.
+        $applicant = Applicant::factory()->create([
             'agency_id'    => $this->agency->id,
             'has_passport' => 'with',
         ]);
@@ -235,7 +239,15 @@ class ApplicantHasPassportTest extends TestCase
         $response->assertOk();
         $content = $response->streamedContent();
 
-        $this->assertStringContainsString('Has Passport', $content);
-        $this->assertStringContainsString('with', $content);
+        // Assert the exact header line, not a loose 'Name' substring: a header
+        // regression to "First Name,Last Name" also contains 'Name', so the
+        // loose form would stay green. This test must fail on its own, not rely
+        // on a sibling test carrying the strict check.
+        $lines = explode("\n", $content);
+        $this->assertSame(
+            'Name,Contact#,Gender,Age,Branch,Agent,Position,Country,FRA,Status,"Created At",Encoder',
+            trim(str_replace("\xEF\xBB\xBF", '', $lines[0]))
+        );
+        $this->assertStringContainsString($applicant->last_name, $content);
     }
 }

@@ -142,7 +142,8 @@ class ApplicantAgentLinkTest extends TestCase
         $response->assertOk();
         $content = $response->streamedContent();
 
-        $this->assertStringContainsString('Referred By', $content);
+        // Column is `agent_header('Agent')` => "Agent" for a default agency.
+        $this->assertStringContainsString('Agent', $content);
         $this->assertStringContainsString($this->agent->name, $content);
     }
 }
