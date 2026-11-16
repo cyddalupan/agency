@@ -303,6 +303,13 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::get('/controlled-documents/create', [ControlledDocumentController::class, 'create'])->name('controlled_documents.create');
     Route::post('/controlled-documents', [ControlledDocumentController::class, 'store'])->name('controlled_documents.store');
 
+    // QMS-10 (card 6afa0da7): review → approve lifecycle + version history.
+    Route::get('/controlled-documents/{controlledDocument}', [ControlledDocumentController::class, 'show'])->name('controlled_documents.show');
+    Route::post('/controlled-documents/{controlledDocument}/versions/{version}/submit', [ControlledDocumentController::class, 'submitForReview'])->name('controlled_documents.versions.submit');
+    Route::post('/controlled-documents/{controlledDocument}/versions/{version}/return', [ControlledDocumentController::class, 'returnVersion'])->name('controlled_documents.versions.return');
+    Route::post('/controlled-documents/{controlledDocument}/versions/{version}/approve', [ControlledDocumentController::class, 'approve'])->name('controlled_documents.versions.approve');
+    Route::post('/controlled-documents/{controlledDocument}/versions', [ControlledDocumentController::class, 'newVersion'])->name('controlled_documents.versions.store');
+
     // Agency management (admin, super_admin only)
     Route::group([], function () {
         Route::get('/agencies', [AgencyController::class, 'index'])->name('agencies.index');

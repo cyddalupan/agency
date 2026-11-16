@@ -260,7 +260,11 @@ class ControlledDocumentScreenTest extends TestCase
             return [];
         }
 
-        preg_match_all('#<td class="font-mono font-semibold">([A-Z0-9\-]+)</td>#', $body[1], $codes);
+        // QMS-10 turned the code cell into a link to the detail screen, so read
+        // the code from the link's data attribute rather than from the exact
+        // cell markup — the assertion is about which documents are listed, not
+        // about how the cell is rendered.
+        preg_match_all('#data-document-link="([^"]+)"#', $body[1], $codes);
 
         return $codes[1];
     }

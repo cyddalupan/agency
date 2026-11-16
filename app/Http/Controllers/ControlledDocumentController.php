@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\ControlledDocument;
 use App\Models\ControlledDocumentVersion;
 use App\Models\User;
+use App\Services\DocumentControlWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use RuntimeException;
 
 /**
  * QMS-08 (card 6afa0da5dd70c2a22cda903e): document-control create + list.
@@ -156,6 +158,141 @@ class ControlledDocumentController extends Controller
         return redirect()
             ->route('controlled_documents.index')
             ->with('success', "Document {$document->code} created.");
+    }
+
+    /**
+     * QMS-10: the document detail screen — the version history timeline.
+     *
+     * Read-only roles may open it (the Internal Auditor audits against these
+     * documents); the lifecycle actions inside are gated separately.
+     */
+    public function show(Request $request, ControlledDocument $controlledDocument): View
+    {
+        $this->authoriseRead($request);
+
+        $controlledDocument->load([
+            'versions.preparedBy',
+            'versions.reviewedBy',
+            'versions.approvedBy',
+            // The timeline shows "supersedes vX" per row; without this the
+            // relation lazy-loads (or, under stricter settings, shows nothing).
+            'versions.supersedes',
+            'currentVersion',
+            'processOwner',
+            'creator',
+        ]);
+
+        return view('controlled_documents.show', [
+            'document'        => $controlledDocument,
+            'versions'        => $controlledDocument->versions,
+            // The version the action panel operates on: the approved current
+            // version, unless a newer draft is in flight — in that case the
+            // draft, because that is what the next action applies to.
+            'workflowVersion' => $controlledDocument->versions->first(
+                fn (ControlledDocumentVersion $v) => in_array($v->status, [
+                    ControlledDocumentVersion::STATUS_DRAFT,
+                    ControlledDocumentVersion::STATUS_IN_REVIEW,
+                ], true)
+            ) ?? $controlledDocument->currentVersion,
+            'canManage'       => app(DocumentControlWorkflow::class)->userCanManage($request->user()),
+            'canReview'       => app(DocumentControlWorkflow::class)->userCanReview($request->user()),
+        ]);
+    }
+
+    /** QMS-10: preparer submits a draft version for review. */
+    public function submitForReview(
+        Request $request,
+        ControlledDocument $controlledDocument,
+        ControlledDocumentVersion $version,
+        DocumentControlWorkflow $workflow
+    ): RedirectResponse {
+        $this->authorise($request);
+        $this->assertVersionBelongsTo($controlledDocument, $version);
+
+        try {
+            $workflow->submitForReview($version, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Version {$version->version_no} submitted for review.");
+    }
+
+    /** QMS-10: reviewer returns a version to the preparer, with a note. */
+    public function returnVersion(
+        Request $request,
+        ControlledDocument $controlledDocument,
+        ControlledDocumentVersion $version,
+        DocumentControlWorkflow $workflow
+    ): RedirectResponse {
+        $this->authorise($request);
+        $this->assertVersionBelongsTo($controlledDocument, $version);
+
+        $validated = $request->validate([
+            'note' => ['required', 'string', 'max:2000'],
+        ], [
+            'note.required' => 'A note is required when returning a document.',
+        ]);
+
+        try {
+            $workflow->returnToPreparer($version, $request->user(), $validated['note']);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Version {$version->version_no} returned to the preparer.");
+    }
+
+    /** QMS-10: reviewer approves a version — this is what makes it effective. */
+    public function approve(
+        Request $request,
+        ControlledDocument $controlledDocument,
+        ControlledDocumentVersion $version,
+        DocumentControlWorkflow $workflow
+    ): RedirectResponse {
+        $this->authorise($request);
+        $this->assertVersionBelongsTo($controlledDocument, $version);
+
+        try {
+            $workflow->approve($version, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Version {$version->version_no} approved and made effective.");
+    }
+
+    /** QMS-10: open the next draft version of an approved document. */
+    public function newVersion(
+        Request $request,
+        ControlledDocument $controlledDocument,
+        DocumentControlWorkflow $workflow
+    ): RedirectResponse {
+        $this->authorise($request);
+
+        $validated = $request->validate([
+            'bump'             => ['nullable', 'in:' . ControlledDocumentVersion::BUMP_MAJOR . ',' . ControlledDocumentVersion::BUMP_MINOR],
+            'revision_summary' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $version = $workflow->openNextVersion(
+                $controlledDocument,
+                $request->user(),
+                $validated['bump'] ?? ControlledDocumentVersion::BUMP_MINOR,
+                $validated['revision_summary'] ?? null
+            );
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Draft version {$version->version_no} opened.");
+    }
+
+    /** A version route parameter must belong to the document in the URL. */
+    private function assertVersionBelongsTo(ControlledDocument $document, ControlledDocumentVersion $version): void
+    {
+        abort_unless((int) $version->controlled_document_id === (int) $document->id, 404);
     }
 
     /**

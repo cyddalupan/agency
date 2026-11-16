@@ -75,7 +75,10 @@
                     <tbody>
                         @forelse ($documents as $document)
                             <tr>
-                                <td class="font-mono font-semibold">{{ $document->code }}</td>
+                                <td class="font-mono font-semibold">
+                                    <a href="{{ route('controlled_documents.show', $document) }}" class="link link-primary"
+                                       data-document-link="{{ $document->code }}">{{ $document->code }}</a>
+                                </td>
                                 <td>
                                     <div class="font-medium">{{ $document->title }}</div>
                                     @if ($document->document_type)
