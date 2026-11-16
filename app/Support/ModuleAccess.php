@@ -34,6 +34,9 @@ class ModuleAccess
         // in agreement.
         'audit_trail',
         'controlled_documents',
+        // QMS-12: the risk register is its own module, same governance
+        // reasoning as above.
+        'risks',
     ];
 
     /**
@@ -101,6 +104,7 @@ class ModuleAccess
         'dashboard',
         'controlled_documents',
         'audit_trail',
+        'risks',
         'notifications',
         'logout',
         'storage',
@@ -115,6 +119,10 @@ class ModuleAccess
         'dashboard',
         'audit_trail',
         'controlled_documents',
+        // QMS-12: an internal auditor audits the risk register, so it needs to
+        // read it. Creating and editing risks is gated in the controller, the
+        // same way document control splits read from manage.
+        'risks',
         'notifications',
         'logout',
         'storage',
@@ -268,6 +276,8 @@ class ModuleAccess
         // moduleFor() falls through to the URL segment "audit-trail" (hyphen),
         // which never matches an underscore allowlist entry.
         'audit_trail'              => 'audit_trail',
+        // QMS-12: the risk register is its own module.
+        'risks'                    => 'risks',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',

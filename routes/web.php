@@ -26,6 +26,7 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\ControlledDocumentController;
+use App\Http\Controllers\RiskController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
 use App\Http\Controllers\PasswordResetController;
@@ -309,6 +310,15 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::post('/controlled-documents/{controlledDocument}/versions/{version}/return', [ControlledDocumentController::class, 'returnVersion'])->name('controlled_documents.versions.return');
     Route::post('/controlled-documents/{controlledDocument}/versions/{version}/approve', [ControlledDocumentController::class, 'approve'])->name('controlled_documents.versions.approve');
     Route::post('/controlled-documents/{controlledDocument}/versions', [ControlledDocumentController::class, 'newVersion'])->name('controlled_documents.versions.store');
+
+    // QMS-12 (card 6afa0da9): risk register — CRUD screens + 5x5 matrix view.
+    Route::get('/risks', [RiskController::class, 'index'])->name('risks.index');
+    Route::get('/risks/matrix', [RiskController::class, 'matrix'])->name('risks.matrix');
+    Route::get('/risks/create', [RiskController::class, 'create'])->name('risks.create');
+    Route::post('/risks', [RiskController::class, 'store'])->name('risks.store');
+    Route::get('/risks/{risk}/edit', [RiskController::class, 'edit'])->name('risks.edit');
+    Route::put('/risks/{risk}', [RiskController::class, 'update'])->name('risks.update');
+    Route::delete('/risks/{risk}', [RiskController::class, 'destroy'])->name('risks.destroy');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {
