@@ -26,6 +26,7 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\ControlledDocumentController;
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\RiskController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
@@ -319,6 +320,16 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::get('/risks/{risk}/edit', [RiskController::class, 'edit'])->name('risks.edit');
     Route::put('/risks/{risk}', [RiskController::class, 'update'])->name('risks.update');
     Route::delete('/risks/{risk}', [RiskController::class, 'destroy'])->name('risks.destroy');
+
+    // QMS-14 (card 6afa0dab): complaint intake, register and resolution screens.
+    Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
+    Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
+    Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
+    Route::post('/complaints/{complaint}/acknowledge', [ComplaintController::class, 'acknowledge'])->name('complaints.acknowledge');
+    Route::post('/complaints/{complaint}/investigate', [ComplaintController::class, 'investigate'])->name('complaints.investigate');
+    Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('complaints.resolve');
+    Route::post('/complaints/{complaint}/close', [ComplaintController::class, 'close'])->name('complaints.close');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {

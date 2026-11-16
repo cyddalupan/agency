@@ -37,6 +37,8 @@ class ModuleAccess
         // QMS-12: the risk register is its own module, same governance
         // reasoning as above.
         'risks',
+        // QMS-14: complaints are the same governance family.
+        'complaints',
     ];
 
     /**
@@ -105,6 +107,7 @@ class ModuleAccess
         'controlled_documents',
         'audit_trail',
         'risks',
+        'complaints',
         'notifications',
         'logout',
         'storage',
@@ -123,6 +126,9 @@ class ModuleAccess
         // read it. Creating and editing risks is gated in the controller, the
         // same way document control splits read from manage.
         'risks',
+        // QMS-14: a complaint register is auditable, but the auditor does not
+        // handle complaints. Read-only is enforced in the controller.
+        'complaints',
         'notifications',
         'logout',
         'storage',
@@ -278,6 +284,8 @@ class ModuleAccess
         'audit_trail'              => 'audit_trail',
         // QMS-12: the risk register is its own module.
         'risks'                    => 'risks',
+        // QMS-14: complaints is its own module.
+        'complaints'               => 'complaints',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',

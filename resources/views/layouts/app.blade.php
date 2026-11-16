@@ -482,6 +482,15 @@
                         </a>
                         @endif
 
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('complaints'))
+                        <a href="{{ route('complaints.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('complaints.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📣</span>
+                            Complaints
+                        </a>
+                        @endif
+
                         @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('settings'))
                         <a href="{{ route('settings.index') }}"
                        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
