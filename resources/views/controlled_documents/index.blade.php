@@ -22,10 +22,12 @@
                     <span class="font-bold" id="document-count">{{ number_format($documents->total()) }}</span>
                     {{ $documents->total() === 1 ? 'document' : 'documents' }}
                 </span>
+                @if (in_array((string) auth()->user()->user_type, ['super_admin', 'admin', 'qms_manager'], true))
                 <a href="{{ route('controlled_documents.create') }}"
                    class="btn btn-sm btn-secondary shadow-md" id="document-new">
                     ➕ New Document
                 </a>
+                @endif
             </div>
         </div>
     </div>

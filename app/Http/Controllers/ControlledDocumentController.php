@@ -22,13 +22,20 @@ use Illuminate\View\View;
  */
 class ControlledDocumentController extends Controller
 {
-    /** Roles allowed into document control. */
+    /** Roles allowed to *manage* (read + write) controlled documents. */
     private const ALLOWED_ROLES = ['super_admin', 'admin', 'qms_manager'];
 
-    /** Register list: code, title, version, status, next review, owner. */
+    /**
+     * Roles allowed to *read* the register. QMS-09: the Internal Auditor may
+     * see documents (it audits against them) but must not create or change
+     * them — spec §19 read-only rule.
+     */
+    private const READ_ROLES = ['super_admin', 'admin', 'qms_manager', 'internal_auditor'];
+
+    /** The register list: code, title, version, status, next review, owner. */
     public function index(Request $request): View
     {
-        $this->authorise($request);
+        $this->authoriseRead($request);
 
         $filters = $request->validate([
             'status' => ['nullable', 'string', 'max:32'],
@@ -161,6 +168,16 @@ class ControlledDocumentController extends Controller
             in_array((string) $request->user()?->user_type, self::ALLOWED_ROLES, true),
             403,
             'You are not allowed to manage controlled documents.'
+        );
+    }
+
+    /** Read-only access (adds Internal Auditor). */
+    private function authoriseRead(Request $request): void
+    {
+        abort_unless(
+            in_array((string) $request->user()?->user_type, self::READ_ROLES, true),
+            403,
+            'You are not allowed to view controlled documents.'
         );
     }
 

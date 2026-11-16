@@ -20,7 +20,7 @@ use Illuminate\View\View;
 class AuditTrailController extends Controller
 {
     /** Roles allowed to read the audit trail. */
-    private const ALLOWED_ROLES = ['super_admin', 'admin'];
+    private const ALLOWED_ROLES = ['super_admin', 'admin', 'internal_auditor', 'qms_manager'];
 
     /**
      * Agency-scope list with filters: date range, actor, action, subject type

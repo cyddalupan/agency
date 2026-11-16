@@ -26,6 +26,14 @@ class ModuleAccess
         'languages',
         'skills',
         'report-templates',
+        // QMS-09 (card 6afa0da6eb58094f7e27f315): the audit trail and document
+        // control are governance records owned by admin/QMS roles (spec §19).
+        // Accounting never asked for them: before this they were visible to
+        // billing only because the module gate is "admin minus denylist".
+        // Listing them here keeps the sidebar and the controller allowlists
+        // in agreement.
+        'audit_trail',
+        'controlled_documents',
     ];
 
     /**
@@ -83,6 +91,33 @@ class ModuleAccess
         // (Cyd 2026-10-23) Agents Report is shown to every user; branch
         // accounts only see the agents registered under their own branch.
         'agent_report',
+    ];
+
+    /**
+     * QMS-09 (card 6afa0da6eb58094f7e27f315): QMS Manager gets full QMS
+     * modules (spec §19).
+     */
+    public const QMS_MANAGER_ALLOWED = [
+        'dashboard',
+        'controlled_documents',
+        'audit_trail',
+        'notifications',
+        'logout',
+        'storage',
+    ];
+
+    /**
+     * QMS-09: Internal Auditor is READ-ONLY on audits (spec §19) — it may read
+     * the trail and the document register, and record findings, but it cannot
+     * manage controlled documents or alter source evidence.
+     */
+    public const INTERNAL_AUDITOR_ALLOWED = [
+        'dashboard',
+        'audit_trail',
+        'controlled_documents',
+        'notifications',
+        'logout',
+        'storage',
     ];
 
     /**
@@ -229,6 +264,10 @@ class ModuleAccess
         'settings'                 => 'settings',
         // QMS-08: controlled documents is its own module.
         'controlled_documents'     => 'controlled_documents',
+        // QMS-03/QMS-09: the audit trail is its own module. Without this entry
+        // moduleFor() falls through to the URL segment "audit-trail" (hyphen),
+        // which never matches an underscore allowlist entry.
+        'audit_trail'              => 'audit_trail',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',
@@ -359,11 +398,16 @@ class ModuleAccess
             return in_array($module, self::WELFARE_ALLOWED, true);
         }
 
-        // QMS-08/QMS-09: the QMS roles exist for document control and the audit
-        // trail only. QMS-09 formalises the role; this keeps the module gate from
-        // refusing a role the document-control controller deliberately allows.
+        // QMS-08/QMS-09: the QMS roles exist for document control and the
+        // audit trail only. QMS-09 splits them: QMS Manager manages, Internal
+        // Auditor reads (spec §19). Both are explicit allowlists, so neither
+        // may fall through to STAFF_ALLOWED below.
         if ($userType === 'qms_manager') {
-            return in_array($module, ['controlled_documents', 'audit_trail'], true);
+            return in_array($module, self::QMS_MANAGER_ALLOWED, true);
+        }
+
+        if ($userType === 'internal_auditor') {
+            return in_array($module, self::INTERNAL_AUDITOR_ALLOWED, true);
         }
 
         if ($userType === 'employer') {
@@ -423,6 +467,9 @@ class ModuleAccess
         return ! in_array($userType, [
             'super_admin', 'admin', 'billing', 'encoder',
             'recruitment', 'branch', 'welfare', 'employer', 'dmw_user',
+            // QMS-09: the QMS roles have their own explicit allowlists, so the
+            // generic Rest-of-Account carve-outs must not override them.
+            'qms_manager', 'internal_auditor',
         ], true);
     }
 }

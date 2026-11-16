@@ -57,7 +57,16 @@ class User extends Authenticatable
         // Logs into /fra only, tied to one employer (FRA) record, and sees
         // that employer's applicants exclusively.
         'employer'    => 'FRA (Employer)',
+        // QMS-09 (card 6afa0da6eb58094f7e27f315): document control / audit
+        // roles from spec §19. Additive only — no existing role is renumbered
+        // or renamed, and both are appended so stored user_type values are
+        // untouched.
+        'qms_manager'      => 'QMS Manager',
+        'internal_auditor' => 'Internal Auditor',
     ];
+
+    /** The two QMS roles (QMS-09). */
+    public const QMS_ROLES = ['qms_manager', 'internal_auditor'];
 
     /** True for FRA portal accounts (user_type = employer). */
     public function isFraAccount(): bool

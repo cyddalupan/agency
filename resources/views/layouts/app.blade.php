@@ -453,7 +453,7 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true))
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('audit_trail'))
                         <a href="{{ route('audit_trail.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('audit_trail.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
@@ -462,7 +462,9 @@
                         </a>
                         @endif
 
-                        @if (!auth()->user()->isBranchAccount() && in_array((string) auth()->user()->user_type, ['super_admin', 'admin', 'qms_manager'], true))
+                        {{-- QMS-09: ask the module gate, not a hardcoded role list, so the
+                             sidebar and the route middleware can never disagree. --}}
+                        @if (!auth()->user()->isBranchAccount() && auth()->user()->canAccessModule('controlled_documents'))
                         <a href="{{ route('controlled_documents.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                                   {{ request()->routeIs('controlled_documents.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
