@@ -100,6 +100,8 @@ class NonConformity extends Model
         'detected_date',
         'process_area',
         'description',
+        'containment',
+        'root_cause',
         'requirement_breached',
         'severity',
         'status',

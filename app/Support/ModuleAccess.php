@@ -39,6 +39,8 @@ class ModuleAccess
         'risks',
         // QMS-14: complaints are the same governance family.
         'complaints',
+        // QMS-16: non-conformities and CAPA, likewise.
+        'non_conformities',
     ];
 
     /**
@@ -108,6 +110,7 @@ class ModuleAccess
         'audit_trail',
         'risks',
         'complaints',
+        'non_conformities',
         'notifications',
         'logout',
         'storage',
@@ -129,6 +132,9 @@ class ModuleAccess
         // QMS-14: a complaint register is auditable, but the auditor does not
         // handle complaints. Read-only is enforced in the controller.
         'complaints',
+        // QMS-16: same for non-conformities — the auditor reads the CAPA
+        // record it will sample, and cannot sign off its own findings.
+        'non_conformities',
         'notifications',
         'logout',
         'storage',
@@ -286,6 +292,11 @@ class ModuleAccess
         'risks'                    => 'risks',
         // QMS-14: complaints is its own module.
         'complaints'               => 'complaints',
+        // QMS-16: non-conformities is its own module. The key must be the
+        // route-name prefix (underscores, "non_conformities.*"), because
+        // moduleFor() matches the route name first. The URL segment
+        // "non-conformities" is only the fallback when a route has no name.
+        'non_conformities'         => 'non_conformities',
         // Accounts is its own module: Accounting (billing) keeps it while
         // Settings stays admin-only (FINAS card "Access to ... Accounts module").
         'accounts'                 => 'accounts',

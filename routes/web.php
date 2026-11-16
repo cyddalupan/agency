@@ -27,6 +27,7 @@ use App\Http\Controllers\MarketingAgentController;
 use App\Http\Controllers\AuditTrailController;
 use App\Http\Controllers\ControlledDocumentController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\NonConformityController;
 use App\Http\Controllers\RiskController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\OfficialReceiptController;
@@ -330,6 +331,17 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::post('/complaints/{complaint}/investigate', [ComplaintController::class, 'investigate'])->name('complaints.investigate');
     Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('complaints.resolve');
     Route::post('/complaints/{complaint}/close', [ComplaintController::class, 'close'])->name('complaints.close');
+
+    // QMS-16 (card 6afa0dad): non-conformity + CAPA screens and the closure gate.
+    Route::get('/non-conformities', [NonConformityController::class, 'index'])->name('non_conformities.index');
+    Route::get('/non-conformities/create', [NonConformityController::class, 'create'])->name('non_conformities.create');
+    Route::post('/non-conformities', [NonConformityController::class, 'store'])->name('non_conformities.store');
+    Route::get('/non-conformities/{nonConformity}', [NonConformityController::class, 'show'])->name('non_conformities.show');
+    Route::put('/non-conformities/{nonConformity}', [NonConformityController::class, 'update'])->name('non_conformities.update');
+    Route::post('/non-conformities/{nonConformity}/close', [NonConformityController::class, 'close'])->name('non_conformities.close');
+    Route::post('/non-conformities/{nonConformity}/actions', [NonConformityController::class, 'storeAction'])->name('non_conformities.actions.store');
+    Route::put('/non-conformities/{nonConformity}/actions/{action}', [NonConformityController::class, 'updateAction'])->name('non_conformities.actions.update');
+    Route::delete('/non-conformities/{nonConformity}/actions/{action}', [NonConformityController::class, 'destroyAction'])->name('non_conformities.actions.destroy');
 
     // Agency management (admin, super_admin only)
     Route::group([], function () {
