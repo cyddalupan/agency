@@ -176,7 +176,20 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        // Capture the pre-update role: the logger needs both values and
+        // $user is mutated in place by update(). Neither applyBranchDefaults()
+        // nor applyEmployerDefaults() rewrites user_type, so this stays the truth.
+        $oldRole = $user->user_type;
+
         $user->update($data);
+
+        // Log role changes. The call site for this used to live in the deleted
+        // permissions() action, so role changes went unlogged from 5cd83d07
+        // (2026-10-06) until this was restored. Guarded so ordinary profile
+        // edits do not flood the audit log.
+        if ($oldRole !== $user->user_type) {
+            SensitiveActionLogger::roleChanged($user, $oldRole, $user->user_type, auth()->user());
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully.');

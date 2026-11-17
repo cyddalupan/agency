@@ -195,9 +195,11 @@ class SensitiveActionLoggingAndRateLimitingTest extends TestCase
         ]);
 
         $this->actingAs($this->admin);
-        $this->put(route('users.permissions.update', $targetUser), [
-            'user_type'    => 'manager',
-            'permissions'  => [],
+        $this->put(route('users.update', $targetUser), [
+            'name'      => $targetUser->name,
+            'email'     => $targetUser->email,
+            'user_type' => 'manager',
+            'status'    => 'active',
         ]);
 
         $this->assertDatabaseHas('activity_logs', [
@@ -218,15 +220,44 @@ class SensitiveActionLoggingAndRateLimitingTest extends TestCase
         ]);
 
         $this->actingAs($this->admin);
-        $this->put(route('users.permissions.update', $targetUser), [
-            'user_type'    => 'manager',
-            'permissions'  => [],
+        $this->put(route('users.update', $targetUser), [
+            'name'      => $targetUser->name,
+            'email'     => $targetUser->email,
+            'user_type' => 'manager',
+            'status'    => 'active',
         ]);
 
         $log = ActivityLog::where('action', 'role_changed')->latest()->first();
         $this->assertNotNull($log);
         $this->assertEquals('staff', $log->metadata['old_role']);
         $this->assertEquals('manager', $log->metadata['new_role']);
+    }
+
+    #[Test]
+    public function editing_a_user_without_changing_role_writes_no_role_change_log(): void
+    {
+        $targetUser = User::factory()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'staff',
+        ]);
+
+        $this->actingAs($this->admin);
+        $this->put(route('users.update', $targetUser), [
+            'name'      => 'Renamed Person',
+            'email'     => 'renamed@test.com',
+            'user_type' => 'staff',
+            'status'    => 'active',
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'id'   => $targetUser->id,
+            'name' => 'Renamed Person',
+        ]);
+
+        $this->assertDatabaseMissing('activity_logs', [
+            'action'     => 'role_changed',
+            'subject_id' => $targetUser->id,
+        ]);
     }
 
     // ─── DATA EXPORT LOGGING ─────────────────────────────────────────
