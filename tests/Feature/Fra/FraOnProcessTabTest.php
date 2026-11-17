@@ -315,16 +315,30 @@ class FraOnProcessTabTest extends TestCase
         $this->loginAsEmployer();
         $pos = $this->createPosition('Domestic Helper');
 
-        for ($i = 1; $i <= 3; $i++) {
+        // Explicit, verified on-process codes — do NOT derive these with `6 + $i`.
+        // 7 = For Deployment, 9 = For PDOS, 10 = PDOS. All three are in
+        // FraDashboardController::$onProcessCodes. Code 8 is "Deployed", which is
+        // deliberately NOT an on-process status; including it here only passes if
+        // the product regresses.
+        $statusCodes = [7, 9, 10];
+
+        foreach ($statusCodes as $i => $statusCode) {
             $this->createOnProcessApplicant([
-                'first_name'  => "Applicant{$i}",
+                'first_name'  => 'Applicant' . ($i + 1),
                 'last_name'   => 'Test',
                 'position_id' => $pos->id,
-                'status_code' => 6 + $i,
+                'status_code' => $statusCode,
             ]);
         }
 
         $response = $this->get(route('fra.onprocess'));
+
+        // Fail loudly if the fixture stops producing three on-process rows,
+        // rather than relying solely on assertSee to notice a shrunken set.
+        $response->assertViewHas('applicants', function ($applicants) {
+            return $applicants->count() === 3;
+        });
+
         $response->assertSee('Applicant1');
         $response->assertSee('Applicant2');
         $response->assertSee('Applicant3');
