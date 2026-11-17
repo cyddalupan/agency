@@ -462,7 +462,8 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::resource('commissions', CommissionController::class);
 
         // Commission payment routes (nested under commissions)
-        Route::resource('commissions.commission-payments', CommissionPaymentController::class);
+        // No show(): payments are listed inline on the commissions page. (CYD 2026-11-17)
+        Route::resource('commissions.commission-payments', CommissionPaymentController::class)->except(['show']);
     });
 
     // Custom field management (admin, super_admin only)
@@ -474,9 +475,17 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::post('agents/bulk/import', [AgentController::class, 'bulkImport'])->name('agents.bulk.import');
         // Gulf-only destructive action (CYD 2026-11-04): wipe every registered agent.
         Route::post('agents/delete-all', [AgentController::class, 'deleteAll'])->name('agents.delete_all');
-        Route::resource('agents', \App\Http\Controllers\AgentController::class);
+        // No show(): the agent detail/ledger page lives at agent_report.show
+        // (/agents-report/ledger/{agent}) and is linked from the Agent Report.
+        // Do not re-add a show() here — that would be a second, divergent copy.
+        Route::resource('agents', \App\Http\Controllers\AgentController::class)->except(['show']);
 
-    Route::resource('custom-fields', CustomFieldDefinitionController::class);
+        // No show(): every column is in the index row and `options` is edited
+        // in edit.blade.php's fieldset. Same reasoning as the lookup tables
+        // below. NOTE: this resource is named `custom-fields`, NOT
+        // `custom-field-definitions` — the latter is only a lowercase alias
+        // route-name block further down, and has no show route at all.
+        Route::resource('custom-fields', CustomFieldDefinitionController::class)->except(['show']);
 
         // Custom field definitions (alias route names for test compatibility)
         Route::name('custom-field-definitions.')->group(function () {
@@ -490,10 +499,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         // NOTE: legacy expenses CRUD (ExpenseController) removed 2026-08-11 —
         // replaced by Tab 2 Expense Request module (expense_request.*). See
         // LegacyExpenseModuleDeprecationTest.
-        Route::resource('branches', \App\Http\Controllers\BranchController::class);
-        Route::resource('languages', \App\Http\Controllers\LanguageController::class);
-        Route::resource('skills', \App\Http\Controllers\SkillController::class);
-        Route::resource('countries', \App\Http\Controllers\CountryController::class);
+        // Lookup tables: every column is already shown in index; no detail page intended.
+        Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['show']);
+        Route::resource('languages', \App\Http\Controllers\LanguageController::class)->except(['show']);
+        Route::resource('skills', \App\Http\Controllers\SkillController::class)->except(['show']);
+        Route::resource('countries', \App\Http\Controllers\CountryController::class)->except(['show']);
         // Positions CSV: define fixed paths before the resource so
         // /positions/export and /positions/bulk are not captured as {position}.
         Route::get('positions/export', [\App\Http\Controllers\PositionController::class, 'export'])->name('positions.export');
@@ -501,8 +511,8 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::get('positions/bulk/template', [\App\Http\Controllers\PositionController::class, 'bulkTemplate'])->name('positions.bulk.template');
         Route::post('positions/bulk/import', [\App\Http\Controllers\PositionController::class, 'bulkImport'])->name('positions.bulk.import');
 
-        Route::resource('positions', \App\Http\Controllers\PositionController::class);
-        Route::resource('status-codes', \App\Http\Controllers\StatusCodeController::class);
+        Route::resource('positions', \App\Http\Controllers\PositionController::class)->except(['show']);
+        Route::resource('status-codes', \App\Http\Controllers\StatusCodeController::class)->except(['show']);
     });
 
     // Accounting routes

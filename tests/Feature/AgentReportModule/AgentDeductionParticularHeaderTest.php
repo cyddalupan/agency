@@ -139,17 +139,18 @@ class AgentDeductionParticularHeaderTest extends TestCase
         $rows = $meth->invoke($ref->newInstanceWithoutConstructor(), $path);
 
         $this->assertIsArray($rows, 'The client template must parse, not be refused.');
-        $this->assertCount(1000, $rows, 'Every data row in the template must survive.');
-        $this->assertSame('LOVELY SOMODIO NOT BACKOUT', $rows[0]['data']['particular']);
+        $this->assertCount(12, $rows, 'Every data row in the template must survive.');
+        $this->assertSame('UNIFORM DEDUCTION', $rows[0]['data']['particular']);
 
         $blank = array_filter($rows, fn ($r) => trim((string) ($r['data']['particular'] ?? '')) === '');
-        // The client's own file has one row (line 970, MARCELLA ORILLE) whose
-        // description is a single space — that is their data, not a parse loss.
-        // What must never happen is the column itself being dropped.
-        $this->assertLessThanOrEqual(
+        // The fixture carries exactly one row whose description is a single
+        // space. The original client export had the same shape (line 970), and
+        // that row is data, not a parse loss. What must never happen is the
+        // description column itself being dropped — which would blank every row.
+        $this->assertCount(
             1,
-            count($blank),
-            'At most the client\'s own blank row may lack a particular.'
+            $blank,
+            'The fixture carries exactly one single-space particular; it must survive parsing.'
         );
         $this->assertArrayHasKey('particular', $rows[0]['data'], 'The description column must be mapped.');
     }
