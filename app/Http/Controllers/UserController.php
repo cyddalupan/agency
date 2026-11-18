@@ -49,7 +49,10 @@ class UserController extends Controller
             $query->where('status', $request->status);
         }
 
-        $users = $query->paginate(print_per_page(20));
+        // Card 6afae4a7 (Cyd 2026-11-16): no pagination — 73 users total,
+        // 42 in the largest agency. Eager-load the branch column the table
+        // renders, since we now hydrate every row in one request.
+        $users = $query->with('branch')->get();
 
         return view('users.index', compact('users'));
     }

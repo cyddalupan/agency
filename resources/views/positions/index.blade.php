@@ -77,10 +77,6 @@
                 </table>
             </div>
         </div>
-
-        <div class="mt-4">
-            {{ $positions->links() }}
-        </div>
     @else
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">

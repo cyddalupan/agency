@@ -15,7 +15,11 @@ class PositionController extends Controller
 
     public function index(): View
     {
-        $positions = Position::orderBy('name')->paginate(print_per_page(20));
+        // Card 6afae4a7 (Cyd 2026-11-16): the list is no longer paginated.
+        // Positions are global (no agency_id) and total 127 rows, so rendering
+        // every row at once is cheap and the pager only hid data.
+        // MAX_ROWS below is unrelated — it caps bulk CSV import rows.
+        $positions = Position::orderBy('name')->get();
 
         return view('positions.index', compact('positions'));
     }

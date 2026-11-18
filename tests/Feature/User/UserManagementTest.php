@@ -39,7 +39,7 @@ class UserManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertViewHas('users');
-        // The paginated list should contain the admin + 3 created users
+        // The list is not paginated (card 6afae4a7), so all 4 rows come back.
         $this->assertCount(4, $response->viewData('users'));
     }
 

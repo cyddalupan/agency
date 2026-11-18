@@ -38,7 +38,10 @@ class AgentController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $agents = $query->orderBy('name')->paginate(print_per_page(20));
+        // Card 6afae4a7 (Cyd 2026-11-16): no pagination. The largest tenant has
+        // 427 agents, which renders in one pass; the pager only hid rows from
+        // anyone who did not notice page 2. Reports: agents already did this.
+        $agents = $query->orderBy('name')->get();
 
         return view('agents.index', compact('agents'));
     }

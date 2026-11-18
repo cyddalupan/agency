@@ -40,7 +40,7 @@
             <div class="modal-box">
                 <h3 class="font-bold text-lg">Delete all registered agents?</h3>
                 <p class="text-sm opacity-70 mt-1">
-                    This permanently deletes all <b>{{ $agents->total() }}</b> registered agent(s) of
+                    This permanently deletes all <b>{{ $agents->count() }}</b> registered agent(s) of
                     <b>{{ $manageAgency->name }}</b>. This cannot be undone.
                 </p>
                 <form method="POST" action="{{ route('agents.delete_all') }}" class="mt-4 space-y-3">
@@ -101,7 +101,7 @@
 
     <div class="card bg-base-100 shadow-sm">
         <div class="flex justify-between items-center px-4 pt-4">
-            <span class="text-sm opacity-60">{{ $agents->total() }} agent(s)</span>
+            <span class="text-sm opacity-60">{{ $agents->count() }} agent(s)</span>
             <a href="{{ route('reports.agents', request()->only(['search', 'status'])) }}" class="btn btn-sm btn-outline btn-info gap-1">
                 <span>📊</span> View Report
             </a>
@@ -155,9 +155,6 @@
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-            <div class="p-4">
-                {{ $agents->links() }}
             </div>
             @else
             <div class="text-center py-10 opacity-50">
