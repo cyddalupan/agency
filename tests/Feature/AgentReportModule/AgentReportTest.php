@@ -215,33 +215,60 @@ class AgentReportTest extends TestCase
             ->assertDontSee('💼 Commission');
     }
 
-    // ---------- Receivables + Cash Advance tab routing ----------
+    // ---------- Receivables tab routing ----------
 
     #[Test]
-    public function receivable_accounts_appear_in_receivables_tab(): void
+    public function receivables_tab_shows_received_agents_and_applicant_payment_receivables(): void
     {
+        // Card 6afb09e9: the tab reads the Receivable module, not expense
+        // requests. One row that belongs, one that is the wrong status, one
+        // that is the wrong account.
         $agent = $this->makeAgent();
-        $this->makeAgentExpense($agent, 10000, 'PHP', null, 'Partial');
-        $this->makeAgentExpense($agent, 20000, 'PHP', null, 'Full');
-        $this->makeAgentExpense($agent, 30000, 'PHP', null, 'Deployed');
-        $this->makeAgentExpense($agent, 40000, 'PHP', null, 'Other Commission');
+        $this->makeReceivable($agent, 4000, 'received', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agent, 7777, 'pending', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agent, 5555, 'received', null, 'Placement Fee');
 
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'receivables']))
             ->assertOk()
-            ->assertSee('Partial')
-            ->assertSee('Full')
-            ->assertSee('Deployed')
-            ->assertDontSee('Other Commission');
+            ->assertSee('4,000.00')
+            ->assertDontSee('7,777.00')   // pending is not money collected
+            ->assertDontSee('5,555.00');  // wrong account
+    }
 
-        // The Commission tab this used to assert against was removed (card
-        // 6afae127). The routing claim that matters is unchanged and is now
-        // checked against a tab that still exists: an account that is not a
-        // receivable must not appear on the Receivables tab's totals either.
+    #[Test]
+    public function receivables_tab_does_not_show_pending_agent_expense_requests(): void
+    {
+        // The regression this card exists to fix: PENDING agent-charged expense
+        // items used to be listed here, which is the wrong table entirely —
+        // they are expense requests, not receivables, and they also belong to
+        // the Receivable module only by accident of an old tab.
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 12345, 'PHP', null, 'Deployed', 'pending');
+        $this->makeAgentExpense($agent, 54321, 'PHP', null, 'Fit to work', 'pending');
+
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'receivables']))
             ->assertOk()
-            ->assertDontSee('40,000.00');
+            ->assertDontSee('12,345.00')
+            ->assertDontSee('54,321.00')
+            ->assertSee('No received receivables');
+    }
+
+    #[Test]
+    public function receivables_tab_respects_agent_filter(): void
+    {
+        $agentA = $this->makeAgent();
+        $agentB = $this->makeAgent();
+
+        $this->makeReceivable($agentA, 10000, 'received', null, 'Agents & Applicant Payment');
+        $this->makeReceivable($agentB, 99999, 'received', null, 'Agents & Applicant Payment');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'receivables', 'agent_id' => $agentA->id]))
+            ->assertOk()
+            ->assertSee('10,000.00')
+            ->assertDontSee('99,999.00');
     }
 
     #[Test]
@@ -266,21 +293,7 @@ class AgentReportTest extends TestCase
             ->assertDontSee('25,000.00');
     }
 
-    #[Test]
-    public function receivable_and_cash_advance_tabs_respect_agent_filter(): void
-    {
-        $agentA = $this->makeAgent();
-        $agentB = $this->makeAgent();
-
-        $this->makeAgentExpense($agentA, 10000, 'PHP', null, 'Partial');
-        $this->makeAgentExpense($agentB, 99999, 'PHP', null, 'Partial');
-
-        $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'receivables', 'agent_id' => $agentA->id]))
-            ->assertOk()
-            ->assertSee('10,000.00')
-            ->assertDontSee('99,999.00');
-    }
+    // ---------- Cash Advance tab routing ----------
 
     // ---------- Report tab: new confirmed formula ----------
 

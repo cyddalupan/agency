@@ -38,6 +38,14 @@ class AgentReportController extends Controller
     /** Account names that route to the Receivables tab (moved out of Commission). */
     private const RECEIVABLE_ACCOUNT_NAMES = ['Partial', 'Full', 'Fit to work', 'Contract', 'Deployed', 'Return'];
 
+    /**
+     * The one Receivable-module account the Receivables tab shows (card
+     * 6afb09e9). Note this is a `receivables.account` value, not an
+     * `accounts.name` — the two vocabularies have nothing in common, which is
+     * why RECEIVABLE_ACCOUNT_NAMES above cannot be reused here.
+     */
+    private const RECEIVABLE_AR_ACCOUNT = 'Agents & Applicant Payment';
+
     /** Released expenses shown as their own block on the Commission tab (Cyd 2026-11-01). */
     private const RELEASED_COMMISSION_ACCOUNT_NAMES = ['Fit to work', 'Deployed'];
 
@@ -117,16 +125,34 @@ class AgentReportController extends Controller
             ->select('expense_request_items.*')
             ->get();
 
-        // ---- Tab 1c: Receivables (pending agent-charged items on the six receivable accounts) ----
-        $receivableItems = ExpenseRequestItem::query()
-            ->where('charge', 'agent')
+        // ---- Tab 1c: Receivables (Receivable module, Agents & Applicant Payment, RECEIVED) ----
+        //
+        // (Card 6afb09e9, Cyd 2026-11-16) This tab used to list PENDING
+        // agent-charged rows from the Expenses & Payments module. That was the
+        // wrong table: those rows are expense requests, and displaying them here
+        // put the same transaction on two screens while showing nothing that the
+        // Receivable module actually owns. The tab is now a read-only view of
+        // the Receivable module's own rows, on the one account the card names,
+        // in the one status that means money was collected.
+        //
+        // It also makes the tab agree with the Agent Ledger: buildReportRows()
+        // and agentLedgerData() have always computed the receivable (AR) figure
+        // from exactly this query, so the summary and the detail finally read
+        // the same records.
+        //
+        // Read-only by design — no expense request is written, migrated or
+        // backfilled. An expense request is not a receivable and inventing one
+        // would put a number in the books with no source document behind it.
+        $receivableItems = Receivable::query()
+            ->where('agency_id', $agencyId)
             ->whereNotNull('agent_id')
-            ->whereHas('expenseRequest', fn ($er) => $er->where('agency_id', $agencyId)->where('status', ExpenseRequest::STATUS_PENDING))
-            ->when($receivableAccountIds->isNotEmpty(), fn ($q) => $q->whereIn('account_id', $receivableAccountIds))
+            ->where('account', self::RECEIVABLE_AR_ACCOUNT)
+            ->where('status', Receivable::STATUS_RECEIVED)
             ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
-            ->with(['expenseRequest.user', 'expenseRequest.branch', 'applicant', 'agent', 'account', 'country'])
+            ->with(['applicant', 'agent', 'encoder'])
             ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
-            ->orderByDesc('created_at')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
             ->get();
 
         // ---- Tab 1d: Return Payment (Cyd 2026-11-04) ----
@@ -220,6 +246,11 @@ class AgentReportController extends Controller
             'canManagePayments'   => $this->canManagePayments(),
             // Cyd 2026-11-01 (card 124): only Admin may delete Deduction/Payment rows.
             'canDeleteTransactions' => in_array((string) auth()->user()->user_type, ['super_admin', 'admin'], true),
+            // Card 6afb09e9: the Receivables tab links out to receivable.show.
+            // That route has its own agency + branch guards and would 404 on a
+            // row this user cannot see, so the link is offered only to the
+            // roles that already see every row on this screen.
+            'canViewReceivable' => auth()->user()->seesAllAccountingData(),
         ]);
     }
 
