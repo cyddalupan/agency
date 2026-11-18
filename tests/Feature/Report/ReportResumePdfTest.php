@@ -34,9 +34,10 @@ class ReportResumePdfTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        // Resume PDFs are one of the privileged-only print reports
-        // (reports/index.blade.php), so the fixture must be a real privileged
-        // account rather than the default faker-named `staff` user.
+        // Resume PDFs sit under the `reports` module gate, which admin/super_admin
+        // pass unconditionally; isPrivileged() only decides whether the print-report
+        // links are OFFERED on reports/index.blade.php. The original fixture's real
+        // defect was user_type `staff`, not the missing privilege.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

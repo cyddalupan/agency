@@ -26,10 +26,11 @@ class ReportPdfTest extends TestCase
         parent::setUp();
 
         $this->agency = Agency::factory()->create();
-        // The print reports (bill / OR / commission / resume) are inside the
-        // privileged-only "Print Reports" block of reports/index.blade.php and
-        // sit under the module map's `reports` gate: the fixture must be a real
-        // privileged account, not the default faker-named `staff` user.
+        // These print reports live under the module map's `reports` gate, which
+        // admin/super_admin pass unconditionally. isPrivileged() only controls
+        // whether the "Print Reports" block is OFFERED on reports/index.blade.php,
+        // not whether the PDF routes answer. The original fixture's real defect was
+        // user_type `staff`, not the missing privilege.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

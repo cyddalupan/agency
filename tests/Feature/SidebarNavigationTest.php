@@ -19,11 +19,10 @@ class SidebarNavigationTest extends TestCase
         parent::setUp();
 
         $this->agency = Agency::factory()->create();
-        // This class navigates the admin sidebar: it opens the Settings page and
-        // expects the settings link, which only exist for accounts the module
-        // map treats as admin. Use a real privileged account (the shipped
-        // MAE/EVELYN/ANGEL name list) rather than the default faker-named
-        // `staff` user, which the module gate 403s.
+        // This class opens the Settings page, which the module map restricts to
+        // admin/super_admin — the default faker-named `staff` user 403s there. The
+        // privileged() state is not required by these routes; it is kept only
+        // because that is how the admin sidebar is actually exercised in production.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

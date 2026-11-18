@@ -29,9 +29,10 @@ class AccountingOverviewTest extends TestCase
         app()->instance('tenant_agency', $this->agency);
 
         // `accounting.*` is restricted to admin/super_admin/billing by the module
-        // map, and several of its screens also hang off the privileged list, so
-        // the fixture must be a real privileged account rather than the default
-        // faker-named `staff` user.
+        // map, so the default faker-named `staff` user was the real problem.
+        // NOTE: these routes do NOT gate on privilege — the privileged() state is
+        // harmless (it is how Admin/Accounting look in production) but it is not
+        // load-bearing; mutating its name leaves this class green.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',

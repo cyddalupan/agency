@@ -27,9 +27,10 @@ class AccountingAgentTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        // `accounting.*` is admin/accounting-only, and the privileged accounts
-        // (MAE/EVELYN/ANGEL) read it too. The fixture used the default
-        // faker-named `staff` user, which the module gate 403s.
+        // `accounting.*` is admin/accounting-only in the module map. The fixture
+        // used the default faker-named `staff` user, which the gate 403s. Privilege
+        // plays no part in these routes; the privileged() state mirrors how Admin
+        // and Accounting look in production and is harmless, not load-bearing.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',

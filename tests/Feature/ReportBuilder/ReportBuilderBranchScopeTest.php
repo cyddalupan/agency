@@ -36,9 +36,10 @@ class ReportBuilderBranchScopeTest extends TestCase
         $this->branchA = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'QC Branch']);
         $this->branchB = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Cebu Branch']);
 
-        // The admin here drives both reports.applicants and reports.statistics;
-        // the statistics page is gated on isPrivileged() (shipped
-        // MAE/EVELYN/ANGEL name list), so a plain faker-named "admin" 403s.
+        // The admin here drives reports.applicants and reports.statistics. Neither
+        // route gates on privilege (EnsureModuleAccess passes admin unconditionally);
+        // isPrivileged() only decides whether the Statistics CARD is offered. The
+        // privileged() state is faithful to production but not load-bearing.
         $this->agencyAdmin = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

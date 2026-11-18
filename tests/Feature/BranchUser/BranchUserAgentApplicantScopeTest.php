@@ -46,11 +46,12 @@ class BranchUserAgentApplicantScopeTest extends TestCase
         $this->branchB = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'DAVAO']);
         $this->mainBranch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'mAIN BRANCH']);
 
-        // Accounting plus the privileged accounts keep the full picture; the
-        // receivable screens read seesAllAccountingData(), which returns true
-        // for billing on its own but the report tabs also gate on
-        // isPrivileged() (shipped MAE/EVELYN/ANGEL name list), so the fixture
-        // is a real privileged account.
+        // Accounting keeps the full picture on its own: seesAllAccountingData()
+        // returns true for billing, and the receivable screens do not read
+        // isPrivileged(). The privileged() state is kept because that is what the
+        // real Accounting accounts look like (MAE/EVELYN are billing users), but it
+        // is not load-bearing for this class — the real fix was the agency subdomain
+        // below, since agent_report is offered on gulf/finas/csdi only.
         $this->billingA = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',

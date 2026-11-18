@@ -26,10 +26,14 @@ class ReportStatisticsTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        // Model the real path: `reports.statistics` is one of the screens only
-        // a privileged account opens (reports/index.blade.php gates the whole
-        // Statistics card on isPrivileged(), which matches the shipped
-        // MAE,EVELYN,ANGEL name list). An "admin" fixture was never enough.
+        // NOTE: `reports.statistics` does NOT gate on privilege. EnsureModuleAccess
+        // returns early for admin/super_admin, so a plain admin gets the full page.
+        // isPrivileged() only decides whether the Statistics CARD is offered on
+        // reports/index.blade.php. The privileged fixture is kept because that is
+        // the account that actually reaches this screen in production (MAE, id 249,
+        // is a billing user); it is harmless here and not load-bearing — mutating
+        // privileged() to an unprivileged name leaves these tests green. What the
+        // original fixture lacked was user_type admin, not privilege.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

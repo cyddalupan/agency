@@ -26,9 +26,11 @@ class TransactionHistoryTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        // /transactions is a privileged-account screen (module `transactions`
-        // plus the Transactions card's isPrivileged() gate). A faker-named
-        // `staff` user was never the account this page is for.
+        // /transactions sits under the module map's `transactions` gate, which
+        // admin/super_admin pass unconditionally. isPrivileged() only controls
+        // whether the Transactions card is OFFERED on reports/index.blade.php,
+        // not whether this route answers. A faker-named `staff` user was the real
+        // problem; the privileged fixture matches production but is not required.
         $this->user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
