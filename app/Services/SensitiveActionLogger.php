@@ -95,6 +95,29 @@ class SensitiveActionLogger
     }
 
     /**
+     * Log an administrator resetting another user's password.
+     *
+     * Distinct action name from the self-service `password_reset` so an auditor
+     * searching `LIKE 'password_reset%'` sees only user-initiated resets; this
+     * prefix cannot collide with that query.
+     *
+     * Never log the password or its hash - only who did it and to whom.
+     */
+    public static function userPasswordResetByAdmin(Model $user, ?User $changedBy = null): void
+    {
+        self::log(
+            'user_password_reset_by_admin',
+            subject: $user,
+            description: ($changedBy?->name ?? 'System') . " reset the password of {$user->name} ({$user->email}).",
+            metadata: [
+                'target_email' => $user->email,
+                'reset_by'     => $changedBy?->id,
+            ],
+            userId: $changedBy?->id,
+        );
+    }
+
+    /**
      * Log a data export.
      */
     public static function dataExport(string $exportType, string $description): void

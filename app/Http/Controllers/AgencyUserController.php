@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agency;
 use App\Models\User;
+use App\Services\SensitiveActionLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -105,7 +106,21 @@ class AgencyUserController extends Controller
             $data['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
         }
 
+        // Same sensitive-action rule as UserController::update: an admin
+        // resetting another user's password must leave an audit trail. Capture
+        // before the write (password is a hash after this point), log after it.
+        $passwordChanged = ! empty($validated['password']);
+        $oldRole = $user->user_type;
+
         $user->update($data);
+
+        if ($oldRole !== $user->user_type) {
+            SensitiveActionLogger::roleChanged($user, $oldRole, $user->user_type, auth()->user());
+        }
+
+        if ($passwordChanged) {
+            SensitiveActionLogger::userPasswordResetByAdmin($user, auth()->user());
+        }
 
         return redirect()->route('agencies.show', $agency)
             ->with('success', "User {$user->name} updated.");

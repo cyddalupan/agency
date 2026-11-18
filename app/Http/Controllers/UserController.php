@@ -181,6 +181,12 @@ class UserController extends Controller
         // nor applyEmployerDefaults() rewrites user_type, so this stays the truth.
         $oldRole = $user->user_type;
 
+        // An admin resetting someone else's password is a sensitive action.
+        // Capture the fact BEFORE the update: $data['password'] holds a bcrypt
+        // hash by this point, and after update() $user->password would compare
+        // hash-to-hash. Reading the post-update value would always look "changed".
+        $passwordChanged = filled($data['password'] ?? null);
+
         $user->update($data);
 
         // Log role changes. The call site for this used to live in the deleted
@@ -189,6 +195,13 @@ class UserController extends Controller
         // edits do not flood the audit log.
         if ($oldRole !== $user->user_type) {
             SensitiveActionLogger::roleChanged($user, $oldRole, $user->user_type, auth()->user());
+        }
+
+        // Logged AFTER the write so a rolled-back save never leaves a phantom
+        // entry. Both guards are independent: a save that changes role AND
+        // password produces two rows, one per action.
+        if ($passwordChanged) {
+            SensitiveActionLogger::userPasswordResetByAdmin($user, auth()->user());
         }
 
         return redirect()->route('users.index')
