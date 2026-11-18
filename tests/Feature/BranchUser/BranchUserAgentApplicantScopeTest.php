@@ -38,12 +38,20 @@ class BranchUserAgentApplicantScopeTest extends TestCase
 
         config(['mjolnir.branch_restrictions' => true]);
 
-        $this->agency = Agency::factory()->create();
+        // `agent_report` is only offered on gulf/finas/csdi
+        // (ModuleAccess::AGENT_REPORT_AGENCIES); a random-subdomain agency
+        // 403s the Agent Ledger regardless of who is signed in.
+        $this->agency = Agency::factory()->create(['subdomain' => 'gulf', 'name' => 'Gulf Agency']);
         $this->branchA = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'BACOLOD']);
         $this->branchB = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'DAVAO']);
         $this->mainBranch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'mAIN BRANCH']);
 
-        $this->billingA = User::factory()->create([
+        // Accounting plus the privileged accounts keep the full picture; the
+        // receivable screens read seesAllAccountingData(), which returns true
+        // for billing on its own but the report tabs also gate on
+        // isPrivileged() (shipped MAE/EVELYN/ANGEL name list), so the fixture
+        // is a real privileged account.
+        $this->billingA = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',
             'branch_id' => $this->branchA->id,
@@ -165,7 +173,7 @@ class BranchUserAgentApplicantScopeTest extends TestCase
     #[Test]
     public function main_branch_named_agency_is_treated_as_head_office(): void
     {
-        $headOffice = User::factory()->create([
+        $headOffice = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',
             'branch_id' => $this->mainBranch->id,
@@ -191,7 +199,7 @@ class BranchUserAgentApplicantScopeTest extends TestCase
     public function main_office_spelling_is_also_head_office(): void
     {
         $branch = Branch::factory()->create(['agency_id' => $this->agency->id, 'name' => 'Main Office']);
-        $user = User::factory()->create([
+        $user = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'billing',
             'branch_id' => $branch->id,

@@ -26,7 +26,13 @@ class TransactionHistoryTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // /transactions is a privileged-account screen (module `transactions`
+        // plus the Transactions card's isPrivileged() gate). A faker-named
+        // `staff` user was never the account this page is for.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
         $this->employer = Employer::factory()->create(['agency_id' => $this->agency->id]);
     }
 

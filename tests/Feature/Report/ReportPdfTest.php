@@ -26,7 +26,14 @@ class ReportPdfTest extends TestCase
         parent::setUp();
 
         $this->agency = Agency::factory()->create();
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // The print reports (bill / OR / commission / resume) are inside the
+        // privileged-only "Print Reports" block of reports/index.blade.php and
+        // sit under the module map's `reports` gate: the fixture must be a real
+        // privileged account, not the default faker-named `staff` user.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
         $this->employer = Employer::factory()->create([
             'agency_id' => $this->agency->id,
         ]);

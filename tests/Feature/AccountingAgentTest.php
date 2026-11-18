@@ -27,7 +27,13 @@ class AccountingAgentTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // `accounting.*` is admin/accounting-only, and the privileged accounts
+        // (MAE/EVELYN/ANGEL) read it too. The fixture used the default
+        // faker-named `staff` user, which the module gate 403s.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'billing',
+        ]);
         $this->employer = Employer::factory()->create(['agency_id' => $this->agency->id]);
     }
 

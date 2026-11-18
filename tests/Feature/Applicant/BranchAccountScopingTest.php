@@ -49,6 +49,9 @@ class BranchAccountScopingTest extends TestCase
             'branch_id' => null,
         ]);
 
+        // REVERTED to a plain factory user: being privileged changes nothing
+        // for these six tests (they all go through the applicants module, not
+        // the privileged-only report screens), and it would muddy the picture.
         $this->adminWithBranch = User::factory()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',

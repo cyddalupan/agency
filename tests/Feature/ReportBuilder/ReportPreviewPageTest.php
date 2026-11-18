@@ -25,7 +25,11 @@ class ReportPreviewPageTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->admin = User::factory()->create([
+        // The Reports index renders the template cards inside
+        // @if(auth()->user()->isPrivileged()), so this page needs a real
+        // privileged account (shipped MAE/EVELYN/ANGEL list) — an "admin"
+        // fixture with a faker name is 200 with an empty template grid.
+        $this->admin = User::factory()->privileged()->create([
             'agency_id' => $this->agency->id,
             'user_type' => 'admin',
         ]);

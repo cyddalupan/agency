@@ -34,7 +34,13 @@ class ReportResumePdfTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // Resume PDFs are one of the privileged-only print reports
+        // (reports/index.blade.php), so the fixture must be a real privileged
+        // account rather than the default faker-named `staff` user.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
 
         $country = Country::factory()->create();
 

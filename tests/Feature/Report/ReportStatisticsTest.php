@@ -26,7 +26,14 @@ class ReportStatisticsTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // Model the real path: `reports.statistics` is one of the screens only
+        // a privileged account opens (reports/index.blade.php gates the whole
+        // Statistics card on isPrivileged(), which matches the shipped
+        // MAE,EVELYN,ANGEL name list). An "admin" fixture was never enough.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'admin',
+        ]);
     }
 
     #[Test]

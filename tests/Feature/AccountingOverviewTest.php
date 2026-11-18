@@ -28,7 +28,14 @@ class AccountingOverviewTest extends TestCase
         $this->agency = Agency::factory()->create();
         app()->instance('tenant_agency', $this->agency);
 
-        $this->user = User::factory()->create(['agency_id' => $this->agency->id]);
+        // `accounting.*` is restricted to admin/super_admin/billing by the module
+        // map, and several of its screens also hang off the privileged list, so
+        // the fixture must be a real privileged account rather than the default
+        // faker-named `staff` user.
+        $this->user = User::factory()->privileged()->create([
+            'agency_id' => $this->agency->id,
+            'user_type' => 'billing',
+        ]);
         $this->employer = Employer::factory()->create(['agency_id' => $this->agency->id]);
     }
 
