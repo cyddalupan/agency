@@ -89,11 +89,38 @@ class ResumeTranslationTest extends TestCase
             'locale'    => 'ar',
         ])->render();
 
-        // English label + Arabic translation side by side (per the sample).
-        $this->assertStringContainsString('Name', $html);
-        $this->assertStringContainsString('الاسم', $html);
-        // The "Destination" section heading is always rendered.
-        $this->assertStringContainsString('الوجهة', $html);
+        // Assert the REAL rendered spans for this locale.
+        //
+        // What was wrong with the original: it looked for the lowercase "Name",
+        // which is `resume.name` — a key used only in the references table, and
+        // this applicant has no references loaded, so that block is skipped.
+        // A bare assertStringContainsString would be no better either: the
+        // strings here also appear in a CSS comment at the top of the view.
+        //
+        // Asserting on the elements catches both problems and still fails on a
+        // blank render — an empty tr() leaves <span class="en"></span>.
+        //
+        // Note both spans carry Arabic when locale=ar: the view passes $locale
+        // straight to __(), so the .en span is translated too. That is existing
+        // behaviour, not something this test should "correct".
+        $this->assertMatchesRegularExpression(
+            '/<span class="en">\s*الإسم بالكامل\s*<\/span>/u',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<span class="ar"[^>]*>\s*الإسم بالكامل\s*<\/span>/u',
+            $html
+        );
+
+        // The old third assertion looked for the Arabic "Destination" heading.
+        // `resume.destination` exists in lang/en and lang/ar and is referenced
+        // NOWHERE in reports/resume.blade.php — there is no Destination section
+        // in this document. It had been failing since the test was written, for
+        // a label the view does not render.
+        //
+        // A section heading is the honest replacement: it proves the translator
+        // ran for this locale, across the whole document rather than one label.
+        $this->assertStringContainsString('العمل السابق في الخارج', $html);
     }
 
     #[Test]
@@ -108,8 +135,28 @@ class ResumeTranslationTest extends TestCase
             'locale'    => 'en',
         ])->render();
 
-        $this->assertStringContainsString('Name', $html);
-        $this->assertStringNotContainsString('الاسم', $html);
+        // Assert the label INSIDE its rendered span, not as a bare substring:
+        // "FULL NAME" also appears in a CSS comment in this view, so a bare
+        // contains-check would pass on markup and prove nothing about the
+        // translation being rendered. An empty tr() leaves an empty span here,
+        // so this still fails on a blank render.
+        $this->assertMatchesRegularExpression(
+            '/<span class="en">\s*FULL NAME\s*<\/span>/',
+            $html
+        );
+
+        // The document must carry no Arabic TRANSLATION of its labels. Note the
+        // .ar spans are not empty in English: the view renders resume.ar.*
+        // unconditionally, in every locale — that is existing behaviour this card
+        // does not change. So the honest claim is not "contains no Arabic" (it
+        // does, by design); it is that the labels are not translated.
+        $this->assertStringNotContainsString('الإسم بالكامل', $html);
+        $this->assertStringNotContainsString('المهنة', $html);
+        // The English heading is English, not its Arabic counterpart. Whitespace
+        // and entity escaping around the ampersand are left to the renderer, so
+        // match the words rather than the raw markup.
+        $this->assertMatchesRegularExpression('/SKILLS\s*&amp;[^<]*EXPERIENCE/', $html);
+        $this->assertStringNotContainsString('المهارات والخبرة', $html);
     }
 
     #[Test]
