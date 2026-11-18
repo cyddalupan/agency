@@ -304,6 +304,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit_trail.index');
     Route::get('/audit-trail/export', [AuditTrailController::class, 'export'])->name('audit_trail.export');
 
+    // Card 6afdc2b9: sensitive actions live in activity_logs, a separate spine
+    // from audit_events. Same role gate, separate screen and export.
+    Route::get('/audit-trail/sensitive-actions', [AuditTrailController::class, 'sensitiveActions'])->name('audit_trail.sensitive');
+    Route::get('/audit-trail/sensitive-actions/export', [AuditTrailController::class, 'sensitiveExport'])->name('audit_trail.sensitive.export');
+
     // Document control (QMS-08, card 6afa0da5) — super_admin, admin, qms_manager.
     Route::get('/controlled-documents', [ControlledDocumentController::class, 'index'])->name('controlled_documents.index');
     Route::get('/controlled-documents/create', [ControlledDocumentController::class, 'create'])->name('controlled_documents.create');

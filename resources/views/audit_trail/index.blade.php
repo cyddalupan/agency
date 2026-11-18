@@ -34,6 +34,13 @@
         </div>
     </div>
 
+    {{-- Cross-link between the two audit spines. audit_events holds record
+         changes; activity_logs holds sensitive actions (card 6afdc2b9). --}}
+    <div role="tablist" class="tabs tabs-boxed w-fit" id="audit-tabs">
+        <a role="tab" href="{{ route('audit_trail.index') }}" class="tab tab-active">Record changes</a>
+        <a role="tab" href="{{ route('audit_trail.sensitive') }}" class="tab">Sensitive actions</a>
+    </div>
+
     {{-- Filters --}}
     <form method="GET" action="{{ route('audit_trail.index') }}" id="audit-filters" class="card bg-base-100 shadow-md">
         <div class="card-body p-4">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -169,6 +170,151 @@ class AuditTrailController extends Controller
             ->whereNotNull('actor_user_id')
             ->distinct()
             ->pluck('actor_user_id');
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return User::query()
+            ->whereIn('id', $ids)
+            ->orderBy('surname')
+            ->get(['id', 'name', 'middle_name', 'surname'])
+            ->mapWithKeys(fn (User $u) => [$u->id => trim(implode(', ', array_filter([$u->surname, $u->name]))) ?: ('User #' . $u->id)])
+            ->all();
+    }
+
+    /**
+     * Card 6afdc2b9: the Sensitive Actions screen.
+     *
+     * `SensitiveActionLogger` writes `activity_logs` (logins, failed logins,
+     * role changes, admin password resets, exports, suspicious activity). The
+     * Audit Trail above reads `audit_events`. The two spines share no rows and
+     * no vocabulary, so they are deliberately two screens rather than one
+     * union: `activity_logs` has no before/after diff, and its `action` values
+     * are free-form slugs that would render as blanks in the diff columns.
+     */
+    public function sensitiveActions(Request $request): View
+    {
+        $this->authorise($request);
+
+        $filters = $request->validate([
+            'from'   => ['nullable', 'date'],
+            'to'     => ['nullable', 'date'],
+            'actor'  => ['nullable', 'integer'],
+            'action' => ['nullable', 'string', 'max:64'],
+            'q'      => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $logs = $this->sensitiveActionsQuery($request, $filters)
+            ->with('user')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('audit_trail.sensitive', [
+            'logs'            => $logs,
+            'filters'         => $filters,
+            'actions'         => $this->sensitiveActionOptions($request),
+            'actors'          => $this->sensitiveActorOptions($request),
+            'totalCount'      => ActivityLog::query()->forAgency($request->user()->agency_id)->count(),
+            'filteredCount'   => $logs->total(),
+            'activeFilterCnt' => count(array_filter($filters, fn ($v) => $v !== null && $v !== '')),
+        ]);
+    }
+
+    /**
+     * CSV export of the Sensitive Actions screen.
+     *
+     * Own headers: `activity_logs` has description + metadata, not a
+     * before/after diff, so the audit_events column set would export blanks.
+     * Honours the same filters as the screen, so row counts match.
+     */
+    public function sensitiveExport(Request $request)
+    {
+        $this->authorise($request);
+
+        $filters = $request->validate([
+            'from'   => ['nullable', 'date'],
+            'to'     => ['nullable', 'date'],
+            'actor'  => ['nullable', 'integer'],
+            'action' => ['nullable', 'string', 'max:64'],
+            'q'      => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $query = $this->sensitiveActionsQuery($request, $filters);
+
+        $headers = [
+            'Timestamp', 'Actor', 'Action', 'Description',
+            'Subject type', 'Subject ID', 'IP', 'User agent',
+        ];
+
+        $filename = 'sensitive_actions_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($query, $headers) {
+            $out = fopen('php://output', 'w');
+
+            fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($out, $headers);
+
+            $query->with('user')->chunk(500, function ($logs) use ($out) {
+                foreach ($logs as $log) {
+                    $meta = $log->metadata ?? [];
+
+                    fputcsv($out, [
+                        $log->created_at?->format('Y-m-d H:i:s') ?? '',
+                        $log->user
+                            ? trim(implode(', ', array_filter([$log->user->surname, $log->user->name])))
+                            : 'system',
+                        $log->action,
+                        (string) $log->description,
+                        $log->subject_type ? class_basename($log->subject_type) : '',
+                        $log->subject_id ?? '',
+                        $meta['ip'] ?? '',
+                        $meta['user_agent'] ?? '',
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+        ]);
+    }
+
+    /** The one filter definition shared by the Sensitive Actions screen and its export. */
+    private function sensitiveActionsQuery(Request $request, array $filters)
+    {
+        return ActivityLog::query()
+            ->forAgency($request->user()->agency_id)
+            ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
+            ->when($filters['actor'] ?? null, fn ($q, $actor) => $q->where('user_id', $actor))
+            ->when($filters['action'] ?? null, fn ($q, $action) => $q->where('action', $action))
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('description', 'like', '%' . $term . '%'))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    /** Distinct action slugs present in this agency's activity log. */
+    private function sensitiveActionOptions(Request $request): array
+    {
+        return ActivityLog::query()
+            ->forAgency($request->user()->agency_id)
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->mapWithKeys(fn (string $action) => [$action => (new ActivityLog(['action' => $action]))->action_label])
+            ->all();
+    }
+
+    /** Users who appear as an actor in this agency's activity log. */
+    private function sensitiveActorOptions(Request $request): array
+    {
+        $ids = ActivityLog::query()
+            ->forAgency($request->user()->agency_id)
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id');
 
         if ($ids->isEmpty()) {
             return [];

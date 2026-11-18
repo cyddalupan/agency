@@ -50,4 +50,34 @@ class ActivityLog extends Model
     {
         return $this->morphTo();
     }
+
+    /**
+     * Tenant scope. The Sensitive Actions screen must never show another
+     * agency's rows. agency_id is nullable on this table (see the 2026-06-18
+     * migration), and a null row belongs to nobody - so it only shows for an
+     * actor with no agency of their own.
+     */
+    public function scopeForAgency($query, ?int $agencyId)
+    {
+        return $agencyId === null
+            ? $query->whereNull('agency_id')
+            : $query->where('agency_id', $agencyId);
+    }
+
+    /**
+     * Human label for the action. action values here are free-form slugs
+     * (`user_password_reset_by_admin`, `bulk_applicant_import`), not the fixed
+     * six-value audit_events vocabulary, so this renders a readable sentence
+     * fragment rather than looking up a fixed map.
+     */
+    public function getActionLabelAttribute(): string
+    {
+        $raw = (string) $this->action;
+
+        if ($raw === '') {
+            return '—';
+        }
+
+        return ucfirst(str_replace('_', ' ', $raw));
+    }
 }
