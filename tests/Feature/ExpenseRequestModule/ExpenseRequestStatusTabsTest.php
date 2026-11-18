@@ -83,6 +83,35 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->patch(route('expense_request.status', $request), ['status' => $status]);
     }
 
+    /**
+     * How many times a request's Ref# is rendered in the request-level cell.
+     *
+     * The index puts the ref in a rowspan cell with the value on its own
+     * line (`<td class="font-mono" rowspan="2">\n  2001\n</td>`), so the old
+     * `'>'.$ref.'<'` form could never match — it assumed the value sat flush
+     * against both tags. Counting inside the request-level cell asserts the
+     * contract (once per request) rather than the shape of the markup, and is
+     * stricter: three copies inside one cell still fail.
+     *
+     * Scoped to the cell carrying BOTH `font-mono` and `rowspan`, so it cannot
+     * drift onto a per-item cell.
+     */
+    private function refCellOccurrences(string $html, string $ref): int
+    {
+        preg_match_all(
+            '#<td[^>]*\bfont-mono\b[^>]*\browspan="[^"]*"[^>]*>(.*?)</td>#s',
+            $html,
+            $cells
+        );
+
+        $total = 0;
+        foreach ($cells[1] as $cell) {
+            $total += substr_count($cell, $ref);
+        }
+
+        return $total;
+    }
+
     #[Test]
     public function index_page_renders_a_tab_for_every_status(): void
     {
@@ -114,9 +143,9 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('>'.$pending->reference_no.'<', $html);
-        $this->assertStringContainsString('>'.$approved->reference_no.'<', $html);
-        $this->assertStringContainsString('>'.$cancelled->reference_no.'<', $html);
+        $this->assertSame(1, $this->refCellOccurrences($html, $pending->reference_no), 'Ref# must render exactly once per request: '.$pending->reference_no);
+        $this->assertSame(1, $this->refCellOccurrences($html, $approved->reference_no), 'Ref# must render exactly once per request: '.$approved->reference_no);
+        $this->assertSame(1, $this->refCellOccurrences($html, $cancelled->reference_no), 'Ref# must render exactly once per request: '.$cancelled->reference_no);
     }
 
     #[Test]
@@ -131,8 +160,8 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('>'.$pending->reference_no.'<', $html);
-        $this->assertStringNotContainsString('>'.$approved->reference_no.'<', $html);
+        $this->assertSame(1, $this->refCellOccurrences($html, $pending->reference_no), 'Ref# must render exactly once per request: '.$pending->reference_no);
+        $this->assertSame(0, $this->refCellOccurrences($html, $approved->reference_no), 'Ref# must not be listed on this tab: '.$approved->reference_no);
     }
 
     #[Test]
@@ -147,8 +176,8 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('>'.$released->reference_no.'<', $html);
-        $this->assertStringNotContainsString('>'.$pending->reference_no.'<', $html);
+        $this->assertSame(1, $this->refCellOccurrences($html, $released->reference_no), 'Ref# must render exactly once per request: '.$released->reference_no);
+        $this->assertSame(0, $this->refCellOccurrences($html, $pending->reference_no), 'Ref# must not be listed on this tab: '.$pending->reference_no);
     }
 
     #[Test]
@@ -163,8 +192,8 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('>'.$cancelled->reference_no.'<', $html);
-        $this->assertStringNotContainsString('>'.$pending->reference_no.'<', $html);
+        $this->assertSame(1, $this->refCellOccurrences($html, $cancelled->reference_no), 'Ref# must render exactly once per request: '.$cancelled->reference_no);
+        $this->assertSame(0, $this->refCellOccurrences($html, $pending->reference_no), 'Ref# must not be listed on this tab: '.$pending->reference_no);
     }
 
     #[Test]
@@ -198,7 +227,7 @@ class ExpenseRequestStatusTabsTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('>'.$pending->reference_no.'<', $html);
-        $this->assertStringContainsString('>'.$approved->reference_no.'<', $html);
+        $this->assertSame(1, $this->refCellOccurrences($html, $pending->reference_no), 'Ref# must render exactly once per request: '.$pending->reference_no);
+        $this->assertSame(1, $this->refCellOccurrences($html, $approved->reference_no), 'Ref# must render exactly once per request: '.$approved->reference_no);
     }
 }
