@@ -86,15 +86,37 @@ class ExpenseRequestStatusTabsTest extends TestCase
     /**
      * How many times a request's Ref# is rendered in the request-level cell.
      *
-     * The index puts the ref in a rowspan cell with the value on its own
-     * line (`<td class="font-mono" rowspan="2">\n  2001\n</td>`), so the old
-     * `'>'.$ref.'<'` form could never match — it assumed the value sat flush
-     * against both tags. Counting inside the request-level cell asserts the
-     * contract (once per request) rather than the shape of the markup, and is
-     * stricter: three copies inside one cell still fail.
+     * The index puts the ref in a request-level cell that carries `rowspan`
+     * and puts the value on its own line:
      *
-     * Scoped to the cell carrying BOTH `font-mono` and `rowspan`, so it cannot
-     * drift onto a per-item cell.
+     *     <td class="font-mono" rowspan="2">
+     *                             2001
+     *     </td>
+     *
+     * so the old `'>'.$ref.'<'` form could never match — it assumed the value
+     * sat flush against both tags. This counts occurrences of the ref inside
+     * that request-level rowspan cell, which asserts the contract (once per
+     * request) rather than the shape of the markup, and is stricter: three
+     * copies inside one cell still fail.
+     *
+     * TWO LIMITS, both deliberate and both documented so the next blade change
+     * fails loudly instead of quietly returning 0 and going green:
+     *
+     * 1. The regex requires `class` to appear BEFORE `rowspan` on the <td>
+     *    because it matches `<td ... class="font-mono" ... rowspan="...">`
+     *    in that order. Swapping the attribute order in the blade
+     *    (`<td rowspan="2" class="font-mono">`) makes this return 0 for a ref
+     *    that is visibly on screen. If you reorder the attributes, update this
+     *    pattern in the same commit.
+     *
+     * 2. A request with NO line items does not render through this cell at all.
+     *    index.blade.php has a separate `@if($request->items->isEmpty())` branch
+     *    that emits a plain `<td class="font-mono">{{ $request->reference_no }}</td>`
+     *    with no rowspan — so this helper returns 0 for a ref that is on screen.
+     *    That branch is real in production (302 of 26,978 requests at the time
+     *    of writing) and no test builds an empty request today. This helper is
+     *    therefore only correct for requests that HAVE line items; a test for
+     *    the empty case needs its own matcher.
      */
     private function refCellOccurrences(string $html, string $ref): int
     {
