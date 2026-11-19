@@ -198,9 +198,10 @@ class ReceivableController extends Controller
             $validated['applicant_id'] = null;
         }
 
-        // (Branch feature) Branch accounts (non-admin with a branch) may only
-        // file receivables against agents of their OWN branch or main-office
-        // agents (no branch); another branch's agent is rejected.
+        // (Branch feature) Branch accounts (any user with a branch_id, admins
+        // included — rule changed in c0125113) may only file receivables against
+        // agents of their OWN branch or main-office agents (no branch); another
+        // branch's agent is rejected.
         $user = auth()->user();
         if ($user && $user->isBranchLocked() && $agent) {
             $agentBranchId = $agent->branch_id;

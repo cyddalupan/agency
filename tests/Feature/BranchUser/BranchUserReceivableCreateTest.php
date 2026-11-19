@@ -16,9 +16,11 @@ use Tests\TestCase;
  * Receivable ("Save Transaction") create page for branch accounts.
  *
  * Receivable routes are role:admin,super_admin,billing — a branch-locked
- * billing user (branch_id > 0, non-admin) may file receivables but must
- * only be offered agents from their OWN branch (plus main-office agents
- * with no branch). Server-side store() must reject other-branch agents.
+ * billing user (branch_id > 0) may file receivables but must only be offered
+ * agents from their OWN branch (plus main-office agents with no branch).
+ * Server-side store() must reject other-branch agents. Admins are branch-locked
+ * too when they carry a branch_id (rule changed in c0125113); only super_admin
+ * and branch-less main office accounts are unrestricted.
  */
 class BranchUserReceivableCreateTest extends TestCase
 {

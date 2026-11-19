@@ -386,10 +386,14 @@ class User extends Authenticatable
     }
 
     /**
-     * True when the user is branch-restricted: a NON-admin account that
-     * belongs to a branch. Admins (and super admins) are never locked,
-     * even when their account carries a branch_id — they may assign
-     * applicants to any branch.
+     * True when the user is branch-restricted: ANY account bound to a branch
+     * (admin included) is locked to that branch. Only super_admin is exempt,
+     * and only because it is system-wide; branch-less accounts (main office)
+     * are unlocked by the branch_id check below.
+     *
+     * The admin exemption was removed in c0125113 (2026-09-05). Prose written
+     * before that still claims admins are never locked with a branch_id — it
+     * is stale, do not implement from it.
      */
     public function isBranchLocked(): bool
     {

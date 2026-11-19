@@ -179,9 +179,10 @@ class Applicant extends Model implements AuthenticatableContract
     }
 
     /**
-     * True when the given user is branch-scoped: a non-admin account that
-     * belongs to a branch. Admins are never branch-scoped, even when their
-     * account carries a branch_id.
+     * True when the given user is branch-scoped: any account bound to a branch
+     * is scoped to it, admins included (rule changed in c0125113, 2026-09-05).
+     * Only super_admin is exempt; branch-less (main office) accounts are
+     * unlocked because they carry no branch_id.
      */
     public static function isBranchUser(?\Illuminate\Contracts\Auth\Authenticatable $user = null): bool
     {

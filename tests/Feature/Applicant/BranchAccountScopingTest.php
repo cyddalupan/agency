@@ -32,7 +32,7 @@ class BranchAccountScopingTest extends TestCase
     private Branch $branchB;
     private User $agencyAdmin; // no branch_id
     private User $branchUserA; // branch_id = branchA
-    private User $adminWithBranch; // admin type BUT has branch_id (must stay unrestricted)
+    private User $adminWithBranch; // admin type WITH branch_id — IS locked (rule r c0125113)
 
     protected function setUp(): void
     {
@@ -262,7 +262,10 @@ class BranchAccountScopingTest extends TestCase
         $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
     }
 
-    // ─── RULE (Cyd 2026-08-10): admin = any branch, branch user = own only ──
+    // ─── RULE (c0125113, 2026-09-05): any account with a branch_id is
+    //     branch-locked, admins included. Only super_admin and branch-less
+    //     (main office) accounts are unrestricted. The tests below used to
+    //     assert the opposite; do not re-invert them. ──
 
     #[Test]
     public function admin_with_branch_id_add_form_lists_all_branches(): void
@@ -271,23 +274,24 @@ class BranchAccountScopingTest extends TestCase
             ->get(route('applicants.create'))
             ->getContent();
 
-        // An admin must still see ALL branches even when their account has a branch_id.
+        // Rule changed in c0125113: an admin carrying a branch_id IS branch-locked,
+        // so it gets no dropdown and cannot see other branches.
+        $this->assertStringNotContainsString('<select name="branch_id"', $html);
         $this->assertStringContainsString(sprintf('value="%d"', $this->branchA->id), $html);
-        $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+        $this->assertStringNotContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+        $this->assertStringNotContainsString($this->branchB->name, $html);
     }
 
     #[Test]
     public function admin_with_branch_id_can_store_applicant_into_any_branch(): void
     {
+        // Rule changed in c0125113: admin + branch_id = branch account, so writing
+        // to another branch is refused and nothing is persisted.
         $this->actingAs($this->adminWithBranch)
             ->post(route('applicants.store'), $this->validPayload(['branch_id' => $this->branchB->id]))
-            ->assertRedirect(route('applicants.index'));
+            ->assertForbidden();
 
-        $this->assertDatabaseHas('applicants', [
-            'agency_id' => $this->agency->id,
-            'branch_id' => $this->branchB->id,
-            'first_name' => 'BranchSave',
-        ]);
+        $this->assertDatabaseCount('applicants', 0);
     }
 
     #[Test]
@@ -299,8 +303,10 @@ class BranchAccountScopingTest extends TestCase
             ->get(route('applicants.edit', $alice))
             ->getContent();
 
+        // Rule changed in c0125113: branch-locked even for an admin with a branch_id.
+        $this->assertStringNotContainsString('<select name="branch_id"', $html);
         $this->assertStringContainsString(sprintf('value="%d"', $this->branchA->id), $html);
-        $this->assertStringContainsString(sprintf('value="%d"', $this->branchB->id), $html);
+        $this->assertStringNotContainsString(sprintf('value="%d"', $this->branchB->id), $html);
     }
 
     #[Test]
@@ -308,23 +314,34 @@ class BranchAccountScopingTest extends TestCase
     {
         $alice = $this->applicant($this->branchA->id, 'Alice');
 
+        // Rule changed in c0125113. This is the ONLY update-path proof that an
+        // admin cannot move an applicant across branches — invert it, never
+        // delete it.
         $this->actingAs($this->adminWithBranch)
             ->patch(route('applicants.update', $alice), $this->validPayload(['branch_id' => $this->branchB->id]))
-            ->assertRedirect();
+            ->assertForbidden();
 
         $this->assertDatabaseHas('applicants', [
             'id' => $alice->id,
-            'branch_id' => $this->branchB->id,
+            'branch_id' => $this->branchA->id,
         ]);
     }
 
     #[Test]
     public function admin_with_branch_id_can_open_applicant_from_other_branch(): void
     {
-        $bob = $this->applicant($this->branchB->id, 'Bob');
+        $bob   = $this->applicant($this->branchB->id, 'Bob');
+        $alice = $this->applicant($this->branchA->id, 'Alice');
 
+        // Rule changed in c0125113. Assert both halves: the other branch is
+        // refused, and the own branch still works — otherwise this would pass
+        // even if the controller ignored branch entirely.
         $this->actingAs($this->adminWithBranch)
             ->get(route('applicants.show', $bob))
+            ->assertForbidden();
+
+        $this->actingAs($this->adminWithBranch)
+            ->get(route('applicants.show', $alice))
             ->assertOk();
     }
 
@@ -334,11 +351,12 @@ class BranchAccountScopingTest extends TestCase
         $this->applicant($this->branchA->id, 'Alice');
         $this->applicant($this->branchB->id, 'Bob');
 
+        // Rule changed in c0125113: the list is scoped to the admin's branch.
         $this->actingAs($this->adminWithBranch)
             ->get(route('applicants.index'))
             ->assertOk()
             ->assertSee('Alice')
-            ->assertSee('Bob');
+            ->assertDontSee('Bob');
     }
 
     // ─── STORE: branch persistence for branch user + admin ────────────

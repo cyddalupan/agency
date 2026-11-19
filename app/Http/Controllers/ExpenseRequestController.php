@@ -845,9 +845,10 @@ class ExpenseRequestController extends Controller
 
         $branchId = $validated['branch_id'] ?? null;
 
-        // (Branch feature) Branch accounts (non-admin with a branch) may only file
-        // expense requests for their OWN branch: omitted defaults to their branch,
-        // a different branch is rejected. Admins/main-office users pick freely.
+        // (Branch feature) Branch accounts (any user with a branch_id, admins
+        // included — rule changed in c0125113) may only file expense requests for
+        // their OWN branch: omitted defaults to their branch, a different branch
+        // is rejected. Only super_admin and branch-less (main office) pick freely.
         $user = auth()->user();
         if ($this->branchLocked($user)) {
             if (blank($branchId)) {

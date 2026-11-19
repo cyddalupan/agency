@@ -1502,9 +1502,11 @@ class ApplicantController extends Controller
     }
 
     /**
-     * (Branch feature) Agents a branch user may assign an applicant to. Branch
-     * accounts (non-admin) only see agents of their OWN branch (plus unassigned
-     * main-office agents); admins see every active agent in the agency.
+     * (Branch feature) Agents a branch user may assign an applicant to. A
+     * branch account (any user with a branch_id, admins included — rule changed
+     * in c0125113) only sees agents of its OWN branch (plus unassigned
+     * main-office agents). Only super_admin and branch-less accounts see every
+     * active agent in the agency.
      */
     private function assignableAgents()
     {
@@ -1544,9 +1546,10 @@ class ApplicantController extends Controller
 
     /**
      * (Branch feature) Branches a user may actually assign an applicant to.
-     * Branch accounts (non-admin) only see their OWN branch in the Add/Edit
-     * dropdown (assigning elsewhere is forbidden); admins see all branches
-     * even when their account carries a branch_id.
+     * A branch account (any user with a branch_id, admins included — rule
+     * changed in c0125113) only sees its OWN branch in the Add/Edit dropdown
+     * (assigning elsewhere is forbidden). Only super_admin and branch-less
+     * accounts see all branches.
      */
     private function assignableBranches()
     {
@@ -1563,10 +1566,11 @@ class ApplicantController extends Controller
 
     /**
      * (Branch feature) Enforce branch ownership rules when persisting an
-     * applicant. A branch account (non-admin) is locked to their own branch:
-     * if omitted it defaults to their branch; if set to some other branch it
-     * is rejected. Admins may assign to any branch, even when their account
-     * carries a branch_id.
+     * applicant. A branch account — any user with a branch_id, admins
+     * included (rule changed in c0125113) — is locked to its own branch: if
+     * omitted it defaults to their branch; if set to some other branch it is
+     * rejected. Only super_admin and branch-less (main office) accounts assign
+     * freely.
      */
     private function applyBranchDefaults(array &$validated): void
     {
@@ -1590,8 +1594,10 @@ class ApplicantController extends Controller
 
     /**
      * (Branch feature) Authorize that a branch account may view/edit an
-     * applicant only when it belongs to their branch. Admins pass regardless
-     * of their own branch_id.
+     * applicant only when it belongs to their branch. A branch account is any
+     * user with a branch_id, admins included (rule changed in c0125113). Only
+     * super_admin and branch-less (main office) accounts pass regardless of
+     * the applicant's branch.
      */
     private function authorizeBranchAccess(Applicant $applicant): void
     {

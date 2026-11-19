@@ -576,9 +576,10 @@ class AgentController extends Controller
     }
 
     /**
-     * (Branch feature) Branch accounts (non-admin with a branch) may only
-     * assign/create agents under their OWN branch. Omitted branch_id defaults
-     * to their branch; any other branch is rejected server-side.
+     * (Branch feature) Branch accounts (any user with a branch_id, admins
+     * included — rule changed in c0125113) may only assign/create agents under
+     * their OWN branch. Omitted branch_id defaults to their branch; any other
+     * branch is rejected server-side.
      */
     private function applyBranchDefaults(array &$validated): void
     {
