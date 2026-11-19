@@ -121,10 +121,19 @@
                 <!-- Password -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1.5">Admin Password</label>
-                    <input type="password" name="admin_password" required
+                    <input type="password" name="admin_password" required minlength="8"
                         class="input-field w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none"
                         placeholder="Enter password">
                     @error('admin_password') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1.5">Confirm Admin Password</label>
+                    <input type="password" name="admin_password_confirmation" required minlength="8"
+                        class="input-field w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none"
+                        placeholder="Repeat password">
+                    @error('admin_password_confirmation') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <button type="submit"

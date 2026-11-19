@@ -192,6 +192,7 @@ class AgencyManagementTest extends TestCase
                 'name'      => 'New Agency Member',
                 'email'     => 'member@example.com',
                 'password'  => 'password',
+                'password_confirmation' => 'password',
                 'user_type' => 'staff',
                 'status'    => 'active',
             ]);

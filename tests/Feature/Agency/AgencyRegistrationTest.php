@@ -67,6 +67,7 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 3,
             'admin_username'  => 'admin_juan',
             'admin_password'  => 'simple123',
+            'admin_password_confirmation' => 'simple123',
         ]);
 
         $response->assertRedirect();
@@ -94,6 +95,7 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 2,
             'admin_username'  => 'maria_admin',
             'admin_password'  => 'simple456',
+            'admin_password_confirmation' => 'simple456',
         ]);
 
         $this->assertDatabaseHas('agencies', [
@@ -114,6 +116,7 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 1,
             'admin_username'  => 'admin_test',
             'admin_password'  => 'adminpass',
+            'admin_password_confirmation' => 'adminpass',
         ]);
 
         $agency = \App\Models\Agency::where('email', 'admintest@example.com')->first();
@@ -139,6 +142,7 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 2,
             'admin_username'  => 'test_admin_user',
             'admin_password'  => 'testpass',
+            'admin_password_confirmation' => 'testpass',
         ]);
 
         $this->assertDatabaseHas('users', [
@@ -158,6 +162,7 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 4,
             'admin_username'  => 'notice_admin',
             'admin_password'  => 'noticepw',
+            'admin_password_confirmation' => 'noticepw',
         ]);
 
         $response->assertRedirect(route('agency.pending-approval'));
@@ -185,7 +190,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('agency_name');
@@ -202,7 +208,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('address');
@@ -219,7 +226,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('city');
@@ -236,7 +244,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -253,7 +262,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -270,7 +280,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => '',
             'num_branches'    => 1,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('contact_person');
@@ -287,7 +298,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => '',
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('num_branches');
@@ -304,7 +316,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 'abc',
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('num_branches');
@@ -321,7 +334,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 0,
             'admin_username'  => 'admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('num_branches');
@@ -340,7 +354,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'admin1',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -359,7 +374,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => '',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('admin_username');
@@ -377,13 +393,20 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 1,
             'admin_username'  => 'admin',
             'admin_password'  => '',
+            'admin_password_confirmation' => '',
         ]);
 
         $response->assertSessionHasErrors('admin_password');
     }
 
+    /**
+     * Card 6afc416bf5cbaf78c28dc57e: the public form used to accept a 1-character
+     * admin password (rule was 'min:1'). It now matches every other password
+     * rule in the codebase at min:8, so a short password is refused and the
+     * agency is never created.
+     */
     #[Test]
-    public function admin_password_accepts_simple_passwords(): void
+    public function admin_password_shorter_than_eight_characters_is_rejected(): void
     {
         $response = $this->post(route('agency.register.post'), [
             'agency_name'     => 'Simple Pass Agency',
@@ -394,14 +417,84 @@ class AgencyRegistrationTest extends TestCase
             'num_branches'    => 2,
             'admin_username'  => 'simple_admin',
             'admin_password'  => '12',
+            'admin_password_confirmation' => '12',
+        ]);
+
+        $response->assertSessionHasErrors('admin_password');
+        $this->assertDatabaseMissing('agencies', ['email' => 'simple@example.com']);
+        $this->assertDatabaseMissing('users', ['username' => 'simple_admin']);
+    }
+
+    #[Test]
+    public function admin_password_at_eight_characters_is_accepted(): void
+    {
+        $response = $this->post(route('agency.register.post'), [
+            'agency_name'     => 'Eight Pass Agency',
+            'address'         => '8 Eight St',
+            'city'            => 'Manila',
+            'email'           => 'eight@example.com',
+            'contact_person'  => 'Eight Person',
+            'num_branches'    => 1,
+            'admin_username'  => 'eight_admin',
+            'admin_password'  => '12345678',
+            'admin_password_confirmation' => '12345678',
         ]);
 
         $response->assertSessionDoesntHaveErrors('admin_password');
         $response->assertRedirect();
+        $this->assertDatabaseHas('agencies', ['email' => 'eight@example.com']);
+    }
 
-        $this->assertDatabaseHas('agencies', [
-            'email' => 'simple@example.com',
+    /**
+     * The field is named admin_password, not password, so `confirmed` looks for
+     * admin_password_confirmation. A mismatched pair must not create the admin
+     * account — that is the whole point of the rule on a form anyone can reach.
+     */
+    #[Test]
+    public function mismatched_admin_password_confirmation_does_not_create_an_admin(): void
+    {
+        $response = $this->post(route('agency.register.post'), [
+            'agency_name'     => 'Mismatch Agency',
+            'address'         => '1 Mismatch St',
+            'city'            => 'Manila',
+            'email'           => 'mismatch@example.com',
+            'contact_person'  => 'Mismatch Person',
+            'num_branches'    => 1,
+            'admin_username'  => 'mismatch_admin',
+            'admin_password'  => 'correct-horse',
+            'admin_password_confirmation' => 'different-horse',
         ]);
+
+        $response->assertSessionHasErrors('admin_password');
+        $this->assertDatabaseMissing('agencies', ['email' => 'mismatch@example.com']);
+        $this->assertDatabaseMissing('users', ['username' => 'mismatch_admin']);
+    }
+
+    #[Test]
+    public function missing_admin_password_confirmation_is_rejected(): void
+    {
+        $response = $this->post(route('agency.register.post'), [
+            'agency_name'     => 'Missing Confirm Agency',
+            'address'         => '1 Missing St',
+            'city'            => 'Manila',
+            'email'           => 'missing@example.com',
+            'contact_person'  => 'Missing Person',
+            'num_branches'    => 1,
+            'admin_username'  => 'missing_admin',
+            'admin_password'  => 'correct-horse',
+        ]);
+
+        $response->assertSessionHasErrors('admin_password');
+        $this->assertDatabaseMissing('agencies', ['email' => 'missing@example.com']);
+        $this->assertDatabaseMissing('users', ['username' => 'missing_admin']);
+    }
+
+    #[Test]
+    public function registration_form_emits_the_confirmation_field(): void
+    {
+        $this->get(route('agency.register'))
+            ->assertOk()
+            ->assertSee('name="admin_password_confirmation"', false);
     }
 
     #[Test]
@@ -419,7 +512,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Person',
             'num_branches'    => 1,
             'admin_username'  => 'taken_admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('admin_username');
@@ -436,7 +530,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Space Person',
             'num_branches'    => 1,
             'admin_username'  => '  admin_user  ',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'password',
         ]);
 
         $this->assertDatabaseHas('users', [
@@ -459,7 +554,8 @@ class AgencyRegistrationTest extends TestCase
             'contact_person'  => 'Other Person',
             'num_branches'    => 3,
             'admin_username'  => 'unique_admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionDoesntHaveErrors('agency_name');
@@ -475,7 +571,8 @@ class AgencyRegistrationTest extends TestCase
             'email'           => 'default@example.com',
             'contact_person'  => 'Default Person',
             'admin_username'  => 'default_admin',
-            'admin_password'  => 'pass',
+            'admin_password'  => 'password',
+            'admin_password_confirmation' => 'pass',
         ]);
 
         $response->assertSessionHasErrors('num_branches');

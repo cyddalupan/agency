@@ -50,6 +50,16 @@
             </div>
 
             <div class="form-control mb-4">
+                <label class="label" for="password_confirmation">
+                    <span class="label-text">Confirm Password</span>
+                    <span class="label-text-alt opacity-60">Repeat the new password</span>
+                </label>
+                <input type="password" name="password_confirmation" id="password_confirmation" minlength="8"
+                       autocomplete="new-password"
+                       class="input input-bordered @error('password_confirmation') input-error @enderror">
+            </div>
+
+            <div class="form-control mb-4">
                 <label class="label" for="user_type"><span class="label-text">Access Level</span></label>
                 <select name="user_type" id="user_type" required class="select select-bordered w-full">
                     @foreach($roles as $val => $label)

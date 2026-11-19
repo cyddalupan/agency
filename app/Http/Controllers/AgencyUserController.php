@@ -46,7 +46,7 @@ class AgencyUserController extends Controller
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'email', Rule::unique('users', 'email')],
-            'password'  => ['required', 'string', 'min:8'],
+            'password'  => ['required', 'string', 'min:8', 'confirmed'],
             'user_type' => ['required', 'string', 'max:50'],
             'status'    => ['required', 'in:active,inactive'],
         ]);
@@ -90,7 +90,7 @@ class AgencyUserController extends Controller
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
-            'password'  => ['nullable', 'string', 'min:8'],
+            'password'  => ['nullable', 'string', 'min:8', 'confirmed'],
             'user_type' => ['required', 'string', 'max:50'],
             'status'    => ['required', 'in:active,inactive'],
         ]);

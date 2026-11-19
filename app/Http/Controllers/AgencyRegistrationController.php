@@ -28,7 +28,7 @@ class AgencyRegistrationController extends Controller
             'contact_person' => 'required|string|max:255',
             'num_branches'   => 'required|integer|min:1',
             'admin_username' => 'required|string|max:50|unique:users,username',
-            'admin_password' => 'required|string|min:1',
+            'admin_password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $agency = Agency::create([
