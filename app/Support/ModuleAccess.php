@@ -26,6 +26,17 @@ class ModuleAccess
         'languages',
         'skills',
         'report-templates',
+        // (Card 6afe3debac50fd61b181944b) The case-management API had no role
+        // gate at all: /api/cases and /api/cases/search returned every case in
+        // the agency to ANY authenticated user, each row eager-loading the full
+        // applicant - and Applicant declares no $hidden, so that payload
+        // carried names, birthdate, contact, address and the bcrypt password
+        // hash. Billing is the tier that reaches it by falling through to
+        // "admin minus denylist", so denying `api` here closes index and search
+        // together at the one choke point every route in the group passes
+        // through. Deliberately narrow: applicants, agencies, branches,
+        // countries and positions are NOT touched by this entry.
+        'api',
         // QMS-09 (card 6afa0da6eb58094f7e27f315): the audit trail and document
         // control are governance records owned by admin/QMS roles (spec §19).
         // Accounting never asked for them: before this they were visible to

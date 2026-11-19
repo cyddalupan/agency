@@ -439,7 +439,14 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         });
     });
 
-    // Employer routes (admin, super_admin only)
+    // Employer routes. NOT admin-only at the route layer: the group below is
+    // deliberately empty of middleware, and the actual gate lives in the
+    // controller - EmployerController::authorizeFraManager(), called from
+    // create(), store(), and the other write actions. That gate refuses every
+    // "Rest of Account" tier and admits admin/super_admin/billing (client
+    // decision 2026-10-07: adding an FRA is reserved for Admin + Accounting).
+    // If you need to change who may add an FRA, change authorizeFraManager(),
+    // not this comment and not this group.
     Route::group([], function () {
         // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an employer id)
         Route::get('employers/export', [EmployerController::class, 'export'])->name('employers.export');
