@@ -430,16 +430,62 @@ class BranchAccountScopingTest extends TestCase
     #[Test]
     public function branch_user_sidebar_hides_admin_finance_and_system_items(): void
     {
+        // (Card 6afe4e3d, 2026-11-19) Asserted on the bare string 'Accounting'
+        // and on label text, which made it unsatisfiable: staff deliberately keep
+        // Receivable + Expenses and Payments since Cyd 2026-09-28, and the old
+        // single-block heading literally read "Accounting Dashboard". The rule
+        // under test is module reach, so assert on route URLs — those cannot be
+        // satisfied by heading prose and are not fooled by a tenant-renamed
+        // agent_terms() label.
         $html = $this->actingAs($this->branchUserA)
             ->get(route('agency.dashboard'))
             ->getContent();
 
-        // Remove: Accounting, Receivables, Expenses, Settings, Users,
-        // Custom Fields, Branches, Agencies, Agents, Accounts, Report Templates,
-        // Languages, Skills (route middleware is admin/super_admin-only)
-        foreach (['Accounting', 'Receivable', 'Expenses', 'Settings', 'Users', 'Custom Fields', 'Branches', 'Report Templates', 'Languages', 'Skills'] as $label) {
-            $this->assertStringNotContainsString($label, $html, "Branch sidebar should hide: {$label}");
+        // Kept deliberately (2026-09-28): branch staff file their own requests.
+        $this->assertStringContainsString(route('receivable.index'), $html,
+            'Branch staff should keep Receivable.');
+        $this->assertStringContainsString(route('expense_request.index'), $html,
+            'Branch staff should keep Expenses and Payments.');
+
+        // Out of reach: the accounting family and the admin/super_admin modules.
+        foreach ([
+            'accounting.dashboard',
+            'general_ledger.index',
+            'agent_report.index',
+        ] as $routeName) {
+            $this->assertStringNotContainsString(route($routeName), $html,
+                "Branch staff sidebar should not link to: {$routeName}");
         }
+
+        // Admin-only system screens (route middleware is admin/super_admin-only).
+        foreach ([
+            'users.index',
+            'custom-fields.index',
+            'branches.index',
+            'report-templates.index',
+            'languages.index',
+            'skills.index',
+            'settings.index',
+        ] as $routeName) {
+            if (! \Illuminate\Support\Facades\Route::has($routeName)) {
+                continue;
+            }
+            $this->assertStringNotContainsString(route($routeName), $html,
+                "Branch staff sidebar should not link to: {$routeName}");
+        }
+    }
+
+    #[Test]
+    public function agency_admin_sidebar_does_link_to_the_accounting_screens(): void
+    {
+        // Companion to the test above: proves the gate DISCRIMINATES. Without it,
+        // an empty sidebar would satisfy every assertStringNotContainsString.
+        $html = $this->actingAs($this->agencyAdmin)
+            ->get(route('agency.dashboard'))
+            ->getContent();
+
+        $this->assertStringContainsString(route('accounting.dashboard'), $html,
+            'Agency admin must still reach Statistics.');
     }
 
     #[Test]

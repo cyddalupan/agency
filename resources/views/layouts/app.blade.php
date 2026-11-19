@@ -335,10 +335,6 @@
 
                     @php
                         $navUser = auth()->user();
-                        // (Cyd 2026-09-26) Main Office (head-office) accounts may also
-                        // see the Accounting Dashboard group — they file expenses/receivables
-                        // for any branch. Other branch accounts stay trimmed as before.
-                        $showAccountingNav = ! $navUser->isBranchAccount() || $navUser->isMainOffice();
                         // (Mjolnir "LANDAS: Transaction Statistics" 2026-10-08) The
                         // Statistics page (Receivable + Expenses) is shown ONLY to
                         // Admin + Accounting users. Use the module map as the single
@@ -358,7 +354,17 @@
                         // (Mjolnir "New Module: General Ledger", 2026-11-05)
                         $showGeneralLedger = $navUser->canAccessModule('general_ledger');
                     @endphp
-                    @if ($showStats || $showReceivable || $showExpenses || $showAgentReport || $showGeneralLedger)
+                    {{-- (Card 6afe4e3d, 2026-11-19) Two groups, not one.
+                         "Accounting Dashboard" used to head a single block gated on any
+                         of the five modules, so a staff user who has only Receivable and
+                         Expenses saw a heading naming two modules they cannot reach. The
+                         split is presentational only: nobody's access changed. Group 1 is
+                         the accounting family proper (Statistics + General Ledger); group 2
+                         is the money-operations links every role may hold. Label for group 2
+                         is "Finance" because for a staff user it is exactly the two finance
+                         actions they are allowed, and it matches the section name the sibling
+                         test and Cyd's 2026-09 "finance tab" wording already use. --}}
+                    @if ($showStats || $showGeneralLedger)
                     <div class="pt-4 mt-4 border-t border-white/10">
                         <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Accounting Dashboard</p>
                         @if ($showStats)
@@ -369,6 +375,20 @@
                             Statistics
                         </a>
                         @endif
+                        @if ($showGeneralLedger)
+                        <a href="{{ route('general_ledger.index') }}"
+                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                                  {{ request()->routeIs('general_ledger.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
+                            <span class="text-lg">📚</span>
+                            General Ledger
+                        </a>
+                        @endif
+                    </div>
+                    @endif
+
+                    @if ($showReceivable || $showExpenses || $showAgentReport)
+                    <div class="pt-4 mt-4 border-t border-white/10">
+                        <p class="px-3 text-xs opacity-40 uppercase tracking-wider font-semibold mb-2">💰 Finance</p>
                         @if ($showReceivable)
                         <a href="{{ route('receivable.index') }}"
                            class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
@@ -392,14 +412,6 @@
                             <span class="text-lg">📈</span>
                             {{-- Card 6af81c30: "Marketing Staff Report" on FINAS/CSDI. --}}
                             {{ agent_terms() }} Report
-                        </a>
-                        @endif
-                        @if ($showGeneralLedger)
-                        <a href="{{ route('general_ledger.index') }}"
-                           class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                                  {{ request()->routeIs('general_ledger.*') ? 'active bg-[#0f1724] shadow-sm' : 'hover:bg-white/10' }}">
-                            <span class="text-lg">📚</span>
-                            General Ledger
                         </a>
                         @endif
                     </div>

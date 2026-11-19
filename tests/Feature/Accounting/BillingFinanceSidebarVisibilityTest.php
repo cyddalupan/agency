@@ -51,9 +51,9 @@ class BillingFinanceSidebarVisibilityTest extends TestCase
         $this->renderSidebar($billing)
             ->assertOk()
             ->assertSee('Accounting Dashboard', false)
-            ->assertSee('Accounting', false)
-            ->assertSee('Receivable', false)
-            ->assertSee('Expenses and Payments', false);
+            ->assertSee(route('accounting.dashboard'), false)
+            ->assertSee(route('receivable.index'), false)
+            ->assertSee(route('expense_request.index'), false);
     }
 
     #[Test]
@@ -69,9 +69,9 @@ class BillingFinanceSidebarVisibilityTest extends TestCase
         $this->renderSidebar($billing)
             ->assertOk()
             ->assertSee('Accounting Dashboard', false)
-            ->assertSee('Accounting', false)
-            ->assertSee('Receivable', false)
-            ->assertSee('Expenses and Payments', false);
+            ->assertSee(route('accounting.dashboard'), false)
+            ->assertSee(route('receivable.index'), false)
+            ->assertSee(route('expense_request.index'), false);
     }
 
     #[Test]
@@ -84,12 +84,18 @@ class BillingFinanceSidebarVisibilityTest extends TestCase
             'user_type' => 'staff',
         ]);
 
-        // staff is not allowed on expense_request; render a page they can access
-        // and assert the Finance section is still hidden for them.
-        $this->actingAs($staff)
+        // staff is not allowed on expense_request; render a page they can access.
+        // (Card 6afe4e3d, 2026-11-19) This used to assert the word 'Finance' was
+        // absent. That word now names the money-operations group, which staff
+        // DO get — they keep Receivable and Expenses and Payments (2026-09-28).
+        // Assert the actual contract instead: the accounting family is hidden.
+        $html = $this->actingAs($staff)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Finance', false);
+            ->getContent();
+
+        $this->assertStringNotContainsString(route('accounting.dashboard'), $html);
+        $this->assertStringNotContainsString(route('general_ledger.index'), $html);
     }
 
     #[Test]
