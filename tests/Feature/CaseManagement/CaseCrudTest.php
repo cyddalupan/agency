@@ -125,8 +125,16 @@ class CaseCrudTest extends TestCase
     }
 
     #[Test]
-    public function create_case_scopes_to_agency(): void
+    public function create_case_refuses_an_applicant_from_another_agency(): void
     {
+        // This used to be named create_case_scopes_to_agency and asserted that
+        // a cross-agency POST returned 201 with the case silently re-filed under
+        // the caller's agency. That is not scoping, it is a hijack: it created a
+        // case row pointing at an applicant the caller cannot see. The assertion
+        // was written before Api\CaseController::store() checked the applicant's
+        // agency; once that check existed the test asserted the opposite of the
+        // controller, and CaseApiAccessTest::admin_cannot_store_case_for_applicant_of_another_agency
+        // has asserted the correct behaviour all along. Corrected, not deleted.
         $otherAgency = Agency::factory()->create();
         $otherApplicant = Applicant::factory()->create(['agency_id' => $otherAgency->id]);
 
@@ -136,11 +144,8 @@ class CaseCrudTest extends TestCase
                 'applicant_id' => $otherApplicant->id,
             ]);
 
-        $response->assertCreated();
-        $this->assertDatabaseHas('cases', [
-            'title' => 'Cross-agency attempt',
-            'agency_id' => $this->agency->id,
-        ]);
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('cases', ['title' => 'Cross-agency attempt']);
     }
 
     // ─── READ / LIST ─────────────────────────────────────────────────
