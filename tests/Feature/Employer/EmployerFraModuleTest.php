@@ -116,7 +116,12 @@ class EmployerFraModuleTest extends TestCase
     #[Test]
     public function rest_of_account_does_not_see_add_or_bulk_upload_links(): void
     {
-        foreach (['staff', 'processor', 'paralegal', 'branch', 'operation'] as $type) {
+        // Same correction as the create-page test below: 'branch' is not a
+        // Rest-of-Account tier (ModuleAccess::isRestOfAccount() excludes it,
+        // BRANCH_ALLOWED lists employer management deliberately), so it does
+        // see these links and asserting otherwise encoded a rule that does not
+        // exist.
+        foreach (['staff', 'processor', 'paralegal', 'operation'] as $type) {
             $response = $this->actingAs($this->user($type))
                 ->get(route('employers.index'));
 
@@ -131,7 +136,15 @@ class EmployerFraModuleTest extends TestCase
     #[Test]
     public function rest_of_account_cannot_open_add_or_bulk_pages(): void
     {
-        foreach (['staff', 'processor', 'paralegal', 'branch', 'operation'] as $type) {
+        // 'branch' is deliberately NOT in this list. branch is not a
+        // Rest-of-Account tier: ModuleAccess::isRestOfAccount() excludes it,
+        // BRANCH_ALLOWED lists `employers` by design (Cyd 2026-10-23), and
+        // authorizeFraManager() therefore admits it - measured 200 on
+        // employers.create and employers.bulk, alongside 403 for the other
+        // four. The original loop assumed all five were Rest of Account and so
+        // asserted a rule that was never written. The gate is correct; this
+        // test was wrong.
+        foreach (['staff', 'processor', 'paralegal', 'operation'] as $type) {
             $user = $this->user($type);
 
             $this->actingAs($user)->get(route('employers.create'))->assertForbidden();
