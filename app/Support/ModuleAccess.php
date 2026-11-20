@@ -30,12 +30,26 @@ class ModuleAccess
         // gate at all: /api/cases and /api/cases/search returned every case in
         // the agency to ANY authenticated user, each row eager-loading the full
         // applicant - and Applicant declares no $hidden, so that payload
-        // carried names, birthdate, contact, address and the bcrypt password
-        // hash. Billing is the tier that reaches it by falling through to
+        // carried names, birthdate, contact, address, parent names and remarks.
+        // Billing is the tier that reaches it by falling through to
         // "admin minus denylist", so denying `api` here closes index and search
         // together at the one choke point every route in the group passes
-        // through. Deliberately narrow: applicants, agencies, branches,
-        // countries and positions are NOT touched by this entry.
+        // through.
+        //
+        // Scope of this line, measured, because it is narrower than it looks:
+        // it closes the hole for BILLING only. Every other tier that reaches
+        // the API (staff, processor, paralegal, operation, branch, welfare,
+        // recruitment, via STAFF_ALLOWED / BRANCH_ALLOWED / WELFARE_ALLOWED /
+        // RECRUITMENT_ALLOWED, and billing on the FINAS tenant via
+        // FINAS_ACCOUNTING_ALLOWED) still gets 200 and the same PII. Those
+        // allowlists are a separate decision and are deliberately untouched
+        // here. Do not read this entry as "the API is now gated".
+        //
+        // Also measured: the bcrypt hash was NOT in those responses. The
+        // applicants table holds 0 non-null passwords, so the column
+        // serialises as null in every row today. The credential exposure was
+        // latent - one applicant with a password set would have leaked it -
+        // not live. The PII leak was live.
         'api',
         // QMS-09 (card 6afa0da6eb58094f7e27f315): the audit trail and document
         // control are governance records owned by admin/QMS roles (spec §19).
