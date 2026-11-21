@@ -54,6 +54,7 @@
     <div class="tabs tabs-boxed bg-base-100 border border-base-300 shadow-sm p-1.5 overflow-x-auto">
         @php
             $tabDefs = [
+                'commission'        => ['label' => '💼 Commission',        'url' => null],
                 'cash-advance'      => ['label' => '💰 Cash Advance',      'url' => null],
                 'receivables'       => ['label' => '📊 Receivables',       'url' => null],
                 'return-payment'    => ['label' => '↩️ Return Payment',    'url' => null],
@@ -97,7 +98,9 @@
     </form>
 
     {{-- Tab content --}}
-    @if($tab === 'cash-advance')
+    @if($tab === 'commission')
+        @include('agent_report._commission')
+    @elseif($tab === 'cash-advance')
         @include('agent_report._cash_advance')
     @elseif($tab === 'receivables')
         @include('agent_report._receivables')

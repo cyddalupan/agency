@@ -178,7 +178,7 @@ class AgentReportTest extends TestCase
     #[Test]
     public function each_tab_renders_with_an_agent_filter(): void
     {
-        foreach (['cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'] as $tab) {
+        foreach (['commission', 'cash-advance', 'receivables', 'payments', 'deductions', 'starting-balances', 'report'] as $tab) {
             $this->actingAs($this->user)
                 ->get(route('agent_report.index', ['tab' => $tab]))
                 ->assertOk();
@@ -188,31 +188,42 @@ class AgentReportTest extends TestCase
     #[Test]
     public function unknown_tab_falls_back_to_the_agent_ledger(): void
     {
-        // The Commission tab was removed (card 6afae127), so the invalid-tab
-        // fallback must land on DEFAULT_TAB rather than on TABS[0].
+        // An invalid tab must land on DEFAULT_TAB (the Agent Ledger). The
+        // Commission tab was removed by aa87fe4b and restored on Josh's
+        // 2026-11-20 decision, but the default deliberately did NOT move back
+        // to it: Commission opens empty for agencies with no commission data.
         $this->actingAs($this->user)
             ->get(route('agent_report.index', ['tab' => 'bogus']))
-            ->assertOk()
-            ->assertSee(agent_term().' Ledger');
-    }
-
-    #[Test]
-    public function a_stale_commission_bookmark_lands_on_the_agent_ledger(): void
-    {
-        $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'commission']))
             ->assertOk()
             ->assertSee(agent_term().' Ledger')
             ->assertDontSee('No commission transactions yet.');
     }
 
     #[Test]
-    public function the_commission_tab_is_no_longer_offered(): void
+    public function the_commission_tab_is_offered_but_is_not_the_default(): void
     {
+        // Card 6afae127: Josh asked for the tab back (2026-11-20). The tab is in
+        // the bar; the screen still opens on the Agent Ledger.
         $this->actingAs($this->user)
             ->get(route('agent_report.index'))
             ->assertOk()
-            ->assertDontSee('💼 Commission');
+            ->assertSee('💼 Commission')
+            ->assertSee(agent_term().' Ledger')
+            ->assertDontSee('No commission transactions yet.');
+    }
+
+    #[Test]
+    public function the_commission_tab_renders_its_pending_items(): void
+    {
+        $agent = $this->makeAgent();
+        $this->makeAgentExpense($agent, 31000, 'PHP', null, 'Other Commission');
+
+        $this->actingAs($this->user)
+            ->get(route('agent_report.index', ['tab' => 'commission']))
+            ->assertOk()
+            ->assertSee('Other Commission')
+            ->assertSee('31,000.00')
+            ->assertDontSee('No commission transactions yet.');
     }
 
     // ---------- Receivables tab routing ----------
@@ -284,13 +295,14 @@ class AgentReportTest extends TestCase
             ->assertSee('Cash advance')
             ->assertDontSee('Other Commission');
 
-        // Was asserted against the removed Commission tab. Keep the half that
-        // still means something: the non-cash-advance row must not leak into
-        // the Cash Advance tab's figures.
+        // Card 6afae127: the Commission tab is back, so the routing claim is
+        // asserted where it was originally made — receivable rows are listed on
+        // Receivables and must not leak into the pending Commission list.
         $this->actingAs($this->user)
-            ->get(route('agent_report.index', ['tab' => 'cash-advance']))
+            ->get(route('agent_report.index', ['tab' => 'commission']))
             ->assertOk()
-            ->assertDontSee('25,000.00');
+            ->assertSee('Other Commission')
+            ->assertDontSee('40,000.00');
     }
 
     // ---------- Cash Advance tab routing ----------

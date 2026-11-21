@@ -133,15 +133,17 @@ class ApprovalBecomesPaidTest extends TestCase
      * An approved expense reaches the Agent Ledger, and reaches it as the NET
      * amount — not the gross, and not twice.
      *
-     * Renamed from approved_item_appears_in_deductions_tab_and_not_in_commission.
-     * That name described UI that no longer exists. The Deductions tab is
-     * deductions-only: AgentReportController::index() builds it with
-     * where('account', AgentDeduction::ACCOUNT_DEDUCTION), and the comment there
-     * records Cyd's 2026-10-23 decision to keep approval-generated 'Paid' rows
-     * off it. The Commission tab was removed outright in 3e83726c. So the old
-     * test asserted `Paid` on a tab that can never show it, and searched for
-     * '10,000.00' on the Payments tab — which renders that number as the item
-     * AMOUNT column, one column reorder away from flipping for no good reason.
+     * Was briefly named approved_item_appears_in_deductions_tab_and_not_in_commission
+     * and then approved_item_reaches_the_ledger_as_net_once. The first name
+     * described UI that no longer existed (the Commission tab was removed in
+     * aa87fe4b and restored on Josh's 2026-11-20 decision, card 6afae127). The
+     * Deductions tab is deductions-only: AgentReportController::index() builds
+     * it with where('account', AgentDeduction::ACCOUNT_DEDUCTION), and the
+     * comment there records Cyd's 2026-10-23 decision to keep
+     * approval-generated 'Paid' rows off it. So a `Paid` row must never be
+     * asserted on that tab, and searching the Payments tab for '10,000.00'
+     * would be reading the item AMOUNT column, one column reorder away from
+     * flipping for no good reason.
      *
      * What survives is the claim worth keeping, and the one nothing else makes:
      * the DB-level tests above prove the Paid row is WRITTEN, none prove it
@@ -162,10 +164,20 @@ class ApprovalBecomesPaidTest extends TestCase
      * that killed the old test name.)
      */
     #[Test]
-    public function approved_item_reaches_the_ledger_as_net_once(): void
+    public function approved_item_leaves_commission_and_reaches_the_ledger_as_net_once(): void
     {
         $request = $this->storeRequest(10000.00, 4000.00);
         $this->approve($request);
+
+        // Card 6afae127: the Commission tab only lists PENDING requests. Once
+        // approved the line must be gone from it — approving is what turns a
+        // commission line into a Paid entry, and showing it on both screens is
+        // the double-display this assertion exists to prevent.
+        $this->actingAs($this->admin)
+            ->get(route('agent_report.index', ['tab' => 'commission', 'agent_id' => $this->agent->id]))
+            ->assertOk()
+            ->assertSee('No commission transactions yet.')
+            ->assertDontSee('Placement fee');
 
         $response = $this->actingAs($this->admin)
             ->get(route('agent_report.index', ['tab' => 'report', 'agent_id' => $this->agent->id]))
@@ -186,12 +198,18 @@ class ApprovalBecomesPaidTest extends TestCase
     }
 
     #[Test]
-    public function pending_item_is_not_yet_a_paid_deduction(): void
+    public function pending_item_still_appears_in_commission_tab_and_not_in_deductions(): void
     {
-        // Replaces pending_item_still_appears_in_commission_tab(). The tab that
-        // used to show it is gone; the fact it encoded — a pending item is not
-        // yet Paid — is still worth pinning.
+        // Original test name, restored with the tab (card 6afae127). Both halves
+        // matter: the pending line is visible on Commission, and it is NOT yet a
+        // deduction because it has not been approved.
         $this->storeRequest(10000.00, 0.00);
+
+        $this->actingAs($this->admin)
+            ->get(route('agent_report.index', ['tab' => 'commission', 'agent_id' => $this->agent->id]))
+            ->assertOk()
+            ->assertSee('Placement fee')
+            ->assertSee('10,000.00');
 
         $this->actingAs($this->admin)
             ->get(route('agent_report.index', ['tab' => 'deductions']))
