@@ -82,6 +82,7 @@ class AgentReportController extends Controller
             $tab = self::DEFAULT_TAB;
         }
         $agentId = $request->input('agent_id');
+        $this->authorizeAgentFilter($agentId);
 
         $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))
             ->with('branch')
@@ -1804,6 +1805,7 @@ class AgentReportController extends Controller
     {
         $agencyId = auth()->user()->agency_id;
         $agentId  = $request->input('agent_id');
+        $this->authorizeAgentFilter($agentId);
 
         $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->with('branch')->orderBy('name')->get();
         $converter = new CurrencyConverter();
@@ -1833,6 +1835,7 @@ class AgentReportController extends Controller
     {
         $agencyId = auth()->user()->agency_id;
         $agentId  = $request->input('agent_id');
+        $this->authorizeAgentFilter($agentId);
 
         $agents = $this->scopeAgentsByBranch(Agent::where('agency_id', $agencyId))->with('branch')->orderBy('name')->get();
         $converter = new CurrencyConverter();
@@ -2263,6 +2266,24 @@ class AgentReportController extends Controller
         if (! $agent || (int) $agent->branch_id !== (int) $user->branch_id) {
             abort(404);
         }
+    }
+
+    /**
+     * ?agent_id= from the URL is unvalidated input: a branch user could paste
+     * another branch's id and have every tab filter on it. Resolve it inside
+     * the caller's branch scope and 404 if it is not there.
+     */
+    private function authorizeAgentFilter(?string $agentId): void
+    {
+        if ($agentId === null || $agentId === '') {
+            return;
+        }
+
+        $agent = $this->scopeAgentsByBranch(
+            Agent::where('agency_id', auth()->user()->agency_id)
+        )->find($agentId);
+
+        $this->authorizeAgentBranch($agent);
     }
 
 }
