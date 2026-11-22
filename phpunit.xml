@@ -26,6 +26,9 @@
         <env name="APP_DEBUG" value="false"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- Card 6b0363676e4f389b5b3fd002: do not inherit SESSION_DRIVER=file
+             from .env; the suite was writing into the live app's session dir. -->
+        <env name="SESSION_DRIVER" value="array"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="MAIL_MAILER" value="array"/>
