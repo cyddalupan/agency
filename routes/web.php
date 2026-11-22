@@ -54,6 +54,7 @@ use App\Http\Controllers\AgentReportController;
 use App\Http\Controllers\ExpenseRequestController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\GodModeAuthController;
+use App\Http\Controllers\GodMode\GodAgencyController;
 use Illuminate\Support\Facades\Route;
 
 // === Health Check ===
@@ -86,6 +87,19 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
     Route::middleware(['auth:godmode', 'godmode.only'])->group(function () {
         Route::get('/', [GodModeAuthController::class, 'index'])->name('dashboard');
         Route::post('/logout', [GodModeAuthController::class, 'logout'])->name('logout');
+
+        // Card 6b0344184136c21243a7af8b — Agencies (clients). `godmode.only` is
+        // the sole gate: no policy, no role check in the controller. No destroy
+        // route exists: archive is a status change and hard delete is a console
+        // command (§1 of the card). Writes are POST with CSRF; no mutating GETs.
+        Route::get('/agencies', [GodAgencyController::class, 'index'])->name('agencies.index');
+        Route::get('/agencies/create', [GodAgencyController::class, 'create'])->name('agencies.create');
+        Route::post('/agencies', [GodAgencyController::class, 'store'])->name('agencies.store');
+        Route::get('/agencies/{agency}', [GodAgencyController::class, 'show'])->name('agencies.show');
+        Route::get('/agencies/{agency}/edit', [GodAgencyController::class, 'edit'])->name('agencies.edit');
+        Route::put('/agencies/{agency}', [GodAgencyController::class, 'update'])->name('agencies.update');
+        Route::post('/agencies/{agency}/archive', [GodAgencyController::class, 'archive'])->name('agencies.archive');
+        Route::post('/agencies/{agency}/activate', [GodAgencyController::class, 'activate'])->name('agencies.activate');
     });
 });
 

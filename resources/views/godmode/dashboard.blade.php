@@ -8,11 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 {{--
-    Card 6b0341cf42a2071fc8b38ea5 — PLACEHOLDER dashboard.
+    Card 6b0341cf42a2071fc8b38ea5 — the dashboard.
 
-    This card delivers the door, not the rooms. The four sibling cards (agencies
-    CRUD, payments + dashboard, custom agency settings) fill this in. Do not add
-    screens here.
+    Card 6b0344184136c21243a7af8b adds the Agencies entry point: /godmode is
+    the control plane's index, so the first screen an operator lands on has to
+    name the rooms that exist rather than describe itself as a placeholder.
 --}}
 <body class="min-h-screen bg-slate-950 text-slate-100 p-8">
     <div class="max-w-3xl mx-auto">
@@ -27,13 +27,20 @@
             </form>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
             <p class="text-slate-300">
                 Signed in as <span class="font-semibold text-slate-100">{{ $user->username ?: $user->email }}</span>.
             </p>
-            <p class="text-sm text-slate-500 mt-2">
-                This is a placeholder. The console pages ship separately.
-            </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a href="{{ route('godmode.agencies.index') }}"
+               class="block bg-slate-900 border border-slate-800 hover:border-slate-600 rounded-2xl p-6 transition">
+                <h2 class="text-lg font-semibold">Agencies</h2>
+                <p class="text-sm text-slate-400 mt-1">
+                    Every client on the platform: status, size and subdomain. Create, edit, archive.
+                </p>
+            </a>
         </div>
     </div>
 </body>
