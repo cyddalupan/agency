@@ -57,11 +57,11 @@
                                         : '—' }}
                                 </td>
                                 <td>{{ $receivable->agent?->name ?? '—' }}</td>
-                                <td class="text-right font-semibold">₱{{ number_format((float) $receivable->amount, 2) }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $receivable->particular }}">{{ $receivable->particular ?? '—' }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format((float) $receivable->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $receivable->particular }}">{{ $receivable->particular ?? '—' }}</td>
                                 <td>{{ $receivable->encoder?->name ?? '—' }}</td>
                                 @if($canViewReceivable)
-                                    <td>
+                                    <td class="align-top">
                                         <a href="{{ route('receivable.show', $receivable) }}"
                                            class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">View →</a>
                                     </td>

@@ -43,10 +43,10 @@
                                 <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
-                                <td class="text-right font-semibold">
+                                <td class="text-right font-semibold align-top whitespace-nowrap">
                                     {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
                                 </td>
-                                <td class="text-right opacity-70">
+                                <td class="text-right opacity-70 align-top whitespace-nowrap">
                                     @if($item->currency === 'USD')
                                         ≈ ₱{{ number_format($phpEquivalent, 2) }}
                                     @else
@@ -55,12 +55,12 @@
                                 </td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td>{{ $item->country?->name ?? '—' }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="align-top">
                                     <span class="badge badge-sm {{ $item->charge === 'office' ? 'badge-ghost' : 'badge-info' }}">{{ $item->charge }}</span>
                                 </td>
                                 @if(in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
-                                    <td>
+                                    <td class="align-top">
                                         <a href="{{ route('expense_request.show', $req) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                     </td>
                                 @endif
@@ -125,10 +125,10 @@
                                 <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
-                                <td class="text-right font-semibold">
+                                <td class="text-right font-semibold align-top whitespace-nowrap">
                                     {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
                                 </td>
-                                <td class="text-right opacity-70">
+                                <td class="text-right opacity-70 align-top whitespace-nowrap">
                                     @if($item->currency === 'USD')
                                         ≈ ₱{{ number_format($phpEquivalent, 2) }}
                                     @else
@@ -137,12 +137,12 @@
                                 </td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td>{{ $item->country?->name ?? '—' }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="align-top">
                                     <span class="badge badge-sm {{ $item->charge === 'office' ? 'badge-ghost' : 'badge-info' }}">{{ $item->charge }}</span>
                                 </td>
                                 @if(in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']))
-                                    <td>
+                                    <td class="align-top">
                                         <a href="{{ route('expense_request.show', $req) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                     </td>
                                 @endif

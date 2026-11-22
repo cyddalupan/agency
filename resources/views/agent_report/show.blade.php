@@ -100,8 +100,8 @@
                                 <td>{{ $item->applicant?->full_name ?? '—' }}</td>
                                 <td class="opacity-40">—</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
-                                <td class="max-w-xs truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td class="text-right font-mono">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -151,8 +151,8 @@
                                 <td>{{ $item->applicant?->full_name ?? '—' }}</td>
                                 <td class="opacity-40">—</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
-                                <td class="max-w-xs truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td class="text-right font-mono">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -200,8 +200,8 @@
                                 <td>{{ $d->account ?? '—' }}</td>
                                 <td>{{ $d->agent?->name ?? '—' }}</td>
                                 <td>{{ $d->applicant?->full_name ?? '—' }}</td>
-                                <td class="text-right font-mono">₱{{ number_format($d->amount, 2) }}</td>
-                                <td class="max-w-xs truncate" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($d->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -252,8 +252,8 @@
                                 <td>{{ $r->applicant?->full_name ?? '—' }}</td>
                                 <td>{{ $r->mode ?? '—' }}</td>
                                 <td>{{ $r->account ?? '—' }}</td>
-                                <td class="max-w-xs truncate" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
-                                <td class="text-right font-mono">₱{{ number_format($r->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($r->amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -303,8 +303,8 @@
                                 <td>{{ $rp->account?->name ?? 'Return' }}</td>
                                 <td>{{ $rp->agent?->name ?? $agent->name }}</td>
                                 <td>{{ $rp->applicant?->full_name ?? '—' }}</td>
-                                <td class="max-w-xs truncate" title="{{ $rp->particular }}">{{ $rp->particular ?? '—' }}</td>
-                                <td class="text-right font-mono">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $rp->particular }}">{{ $rp->particular ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -352,8 +352,8 @@
                                 <td>{{ $p['account'] ?? '—' }}</td>
                                 <td>{{ $p['agent'] ?? '—' }}</td>
                                 <td>{{ $p['applicant'] ?? '—' }}</td>
-                                <td class="text-right font-mono">₱{{ number_format($p['amount'], 2) }}</td>
-                                <td class="max-w-xs truncate" title="{{ $p['particular'] }}">{{ $p['particular'] ?? '—' }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($p['amount'], 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $p['particular'] }}">{{ $p['particular'] ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr>

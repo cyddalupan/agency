@@ -29,13 +29,13 @@
                                 <td>{{ $item->account?->name ?? 'Return' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
-                                <td class="text-right font-semibold">
+                                <td class="text-right font-semibold align-top whitespace-nowrap">
                                     {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
                                     @if($item->currency === 'USD')
                                         <span class="block text-xs font-normal opacity-60">≈ ₱{{ number_format($phpEquivalent, 2) }}</span>
                                     @endif
                                 </td>
-                                <td class="max-w-[18rem] truncate" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

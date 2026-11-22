@@ -175,13 +175,13 @@
                                     @endif
                                 </td>
                                 <td>{{ $r->agent->name ?? '—' }}</td>
-                                <td class="text-right font-semibold">₱{{ number_format($r->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format($r->amount, 2) }}</td>
                                 <td>{{ $r->account ?? '—' }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
                                 <td>{{ $r->mode ?? '—' }}</td>
                                 <td>{{ $r->type ?? '—' }}</td>
                                 <td>{{ $r->debit_account ?? '—' }}</td>
-                                <td>
+                                <td class="align-top">
                                     <div class="flex items-center gap-1">
                                         <a href="{{ route('receivable.show', $r->id) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                         {{-- Admin + Accounting may edit (Cyd 2026-11-01) --}}

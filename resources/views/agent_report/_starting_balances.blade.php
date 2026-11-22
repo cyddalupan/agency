@@ -30,9 +30,9 @@
                                     @else —
                                     @endif
                                 </td>
-                                <td class="text-right font-semibold">₱{{ number_format((float) $sb->amount, 2) }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $sb->particular }}">{{ $sb->particular ?? '—' }}</td>
-                                <td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format((float) $sb->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $sb->particular }}">{{ $sb->particular ?? '—' }}</td>
+                                <td class="align-top">
                                     <a href="{{ route('agent_report.starting_balance.show', $sb) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                 </td>
                             </tr>
