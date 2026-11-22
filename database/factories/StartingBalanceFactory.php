@@ -16,7 +16,8 @@ class StartingBalanceFactory extends Factory
     public function definition(): array
     {
         return [
-            'agency_id' => Agency::factory(),
+            // Card 6b0363676e4f389b5b3fd002: derive from the user who owns the row.
+            'agency_id' => fn (array $a) => User::find($a['user_id'] ?? null)?->agency_id ?? Agency::factory(),
             'user_id'   => User::factory(),
             'agent_id'  => Agent::factory(),
             'applicant_id' => null,

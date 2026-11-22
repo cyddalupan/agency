@@ -14,7 +14,8 @@ class NotificationFactory extends Factory
     public function definition(): array
     {
         return [
-            'agency_id' => Agency::factory(),
+            // Card 6b0363676e4f389b5b3fd002: derive from the notified user.
+            'agency_id' => fn (array $a) => User::find($a['user_id'] ?? null)?->agency_id ?? Agency::factory(),
             'user_id'   => User::factory(),
             'type'      => fake()->randomElement(['status_change', 'approval', 'bill_due', 'message']),
             'data'      => ['message' => fake()->sentence()],

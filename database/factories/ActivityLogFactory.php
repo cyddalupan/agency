@@ -14,7 +14,8 @@ class ActivityLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'agency_id'    => Agency::factory(),
+            // Card 6b0363676e4f389b5b3fd002: derive from the acting user.
+            'agency_id'    => fn (array $a) => User::find($a['user_id'] ?? null)?->agency_id ?? Agency::factory(),
             'user_id'      => User::factory(),
             'subject_type' => User::class,
             'subject_id'   => User::factory(),
