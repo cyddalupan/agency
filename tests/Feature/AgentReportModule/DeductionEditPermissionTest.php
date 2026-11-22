@@ -184,7 +184,10 @@ class DeductionEditPermissionTest extends TestCase
                 'amount'     => 1.00,
                 'particular' => 'hijacked',
             ])
-            ->assertForbidden();
+            // Deliberate 404, not 403: authorizeAgency() refuses to confirm the
+            // existence of a cross-tenant record. Do not "fix" this back to 403.
+            // Same-agency role denials elsewhere in this file stay 403.
+            ->assertNotFound();
 
         // Blocked before any write — inside or outside the tenant.
         $this->assertNull($this->deduction->fresh()->particular);
