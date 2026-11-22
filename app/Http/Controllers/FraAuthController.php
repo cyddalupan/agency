@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Tenant;
 use App\Traits\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,9 +38,12 @@ class FraAuthController extends Controller
         }
 
         // Find user by either email or username
-        $user = User::where('username', $login)
-            ->orWhere('email', $login)
-            ->first();
+        $user = Tenant::bypass(
+            fn () => User::where('username', $login)
+                ->orWhere('email', $login)
+                ->first(),
+            'fra login: resolve user before tenant is known',
+        );
 
         // Must exist, be employer type, and be active
         if (! $user || $user->user_type !== 'employer') {
@@ -70,6 +74,12 @@ class FraAuthController extends Controller
         $this->clearRateLimit($throttleKey);
 
         Auth::login($user, $request->boolean('remember'));
+
+        // Bind the tenant so the FRA dashboard is scoped, same as login.
+        if ($user->agency_id && ($agency = \App\Models\Agency::find($user->agency_id))) {
+            app()->instance('tenant_agency', $agency);
+            session(['tenant_agency_id' => $agency->id]);
+        }
 
         $request->session()->regenerate();
 

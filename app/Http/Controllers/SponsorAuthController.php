@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use App\Models\Sponsor;
 use App\Models\User;
+use App\Support\Tenant;
 use App\Traits\LoginThrottle;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -99,9 +100,12 @@ class SponsorAuthController extends Controller
             ]);
         }
 
-        $user = User::where('username', $login)
-            ->orWhere('email', $login)
-            ->first();
+        $user = Tenant::bypass(
+            fn () => User::where('username', $login)
+                ->orWhere('email', $login)
+                ->first(),
+            'sponsor login: resolve user before tenant is known',
+        );
 
         if (! $user || $user->user_type !== 'sponsor') {
             $this->hitRateLimit($throttleKey);
@@ -127,6 +131,12 @@ class SponsorAuthController extends Controller
         $this->clearRateLimit($throttleKey);
 
         Auth::login($user, $request->boolean('remember'));
+
+        // Bind the tenant so the sponsor dashboard is scoped, same as login.
+        if ($user->agency_id && ($agency = Agency::find($user->agency_id))) {
+            app()->instance('tenant_agency', $agency);
+            session(['tenant_agency_id' => $agency->id]);
+        }
         $request->session()->regenerate();
 
         return redirect()->intended(route('sponsor.dashboard'));
@@ -143,8 +153,9 @@ class SponsorAuthController extends Controller
             'email' => 'required|email',
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $status = Tenant::bypass(
+            fn () => Password::sendResetLink($request->only('email')),
+            'sponsor password reset request: broker resolves the user',
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -165,17 +176,20 @@ class SponsorAuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->setRememberToken(Str::random(60));
+        $status = Tenant::bypass(
+            fn () => Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function (User $user, string $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password),
+                    ])->setRememberToken(Str::random(60));
 
-                $user->save();
+                    $user->save();
 
-                event(new PasswordReset($user));
-            }
+                    event(new PasswordReset($user));
+                }
+            ),
+            'sponsor password reset: broker resolves the user',
         );
 
         return $status === Password::PASSWORD_RESET

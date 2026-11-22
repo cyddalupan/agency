@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use App\Models\User;
 use App\Services\SensitiveActionLogger;
+use App\Support\Tenant;
 use App\Traits\LoginThrottle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,9 @@ class AuthController extends Controller
     {
         return view('auth.login');
     }
+
+    /** Agency bound by bindTenantForUser() during this request, if any. */
+    private ?int $boundTenantId = null;
 
     public function login(Request $request)
     {
@@ -38,20 +42,34 @@ class AuthController extends Controller
             return $response;
         }
 
-        // Check user status before attempting login (email or username)
-        $user = User::where('email', $credentials['email'])
+        // Check user status before attempting login (email or username).
+        // The lookup happens on the control plane before any agency is known,
+        // so it is a legitimate (audited) cross-agency read.
+        $user = Tenant::bypass(fn () => User::where('email', $credentials['email'])
             ->orWhere('username', $credentials['email'])
-            ->first();
+            ->first(), 'login: resolve user before tenant is known', ['attempted_email' => $credentials['email']]);
         if ($response = $this->checkUserActiveStatus($user)) {
             return $response;
         }
+
+        // Bind the tenant before Auth::attempt so every query that follows
+        // (including the session / user reload) is already scoped.
+        $this->bindTenantForUser($user);
 
         $remember = $request->boolean('remember');
 
         // Resolve to the canonical email so Auth::attempt matches the users table
         $attempt = ['email' => $user?->email ?? $credentials['email'], 'password' => $credentials['password']];
 
-        if (Auth::attempt($attempt, $remember)) {
+        // The guard looks the user up itself. When a pre-attempt lookup found a
+        // tenant, that lookup now scopes the request; a wrong password is then
+        // simply "no match". When nothing was found, there is no tenant to bind
+        // and the control-plane lookup is a deliberate cross-agency read.
+        $authenticated = $this->boundTenantId !== null
+            ? Auth::attempt($attempt, $remember)
+            : Tenant::bypass(fn () => Auth::attempt($attempt, $remember), 'login: authenticate before tenant is known', ['attempted_email' => $credentials['email']]);
+
+        if ($authenticated) {
             $this->clearRateLimit($key);
             $request->session()->regenerate();
 
@@ -62,7 +80,8 @@ class AuthController extends Controller
                 return redirect()->intended(route('dashboard'));
             }
 
-            // Agency user logged in on main domain - set tenant context
+            // Already bound above from the resolved user; re-bind from the
+            // authenticated user only as a safety net (idempotent).
             $this->bindTenantFromUser();
 
             // Portal accounts must ignore any stored "intended" URL — a prior
@@ -77,7 +96,11 @@ class AuthController extends Controller
         $this->hitRateLimit($key);
 
         // Log failed login attempt
-        $userModel = User::where('email', $email)->orWhere('username', $email)->first();
+        $userModel = Tenant::bypass(
+            fn () => User::where('email', $email)->orWhere('username', $email)->first(),
+            'agencyLogin: failed-login attribution before tenant is known',
+            ['attempted_email' => $email]
+        );
         SensitiveActionLogger::failedLogin($email, $userModel?->agency_id);
 
         return back()->withErrors([
@@ -105,10 +128,12 @@ class AuthController extends Controller
             return $response;
         }
 
-        // Check user status before attempting login (email or username)
-        $user = User::where('email', $credentials['email'])
+        // Check user status before attempting login (email or username).
+        // Same control-plane rule as login(): the agency is not known yet, so
+        // this is a deliberate, audited cross-agency read.
+        $user = Tenant::bypass(fn () => User::where('email', $credentials['email'])
             ->orWhere('username', $credentials['email'])
-            ->first();
+            ->first(), 'agencyLogin: resolve user before tenant is known', ['attempted_email' => $credentials['email']]);
         if ($response = $this->checkUserActiveStatus($user)) {
             return $response;
         }
@@ -118,7 +143,15 @@ class AuthController extends Controller
         // Resolve to the canonical email so Auth::attempt matches the users table
         $attempt = ['email' => $user?->email ?? $credentials['email'], 'password' => $credentials['password']];
 
-        if (Auth::attempt($attempt, $remember)) {
+        // The guard re-queries the user, so it must see the tenant the account
+        // belongs to (TenantScope fails closed on web requests).
+        $authenticated = Tenant::bypass(
+            fn () => Auth::attempt($attempt, $remember),
+            'agencyLogin: authenticate before the tenant is bound',
+            ['attempted_email' => $credentials['email']]
+        );
+
+        if ($authenticated) {
             $this->clearRateLimit($key);
             $request->session()->regenerate();
 
@@ -145,7 +178,16 @@ class AuthController extends Controller
 
         $this->hitRateLimit($key);
 
-        $userModel = User::where('email', $email)->orWhere('username', $email)->first();
+        // Card 6b008b8dc9020955b2cc16e1, defect D: the failed-login bypass
+        // already had $email in scope but recorded only a reason, so its
+        // tenant_bypass row did not say what was attempted. It was also never
+        // reached — the line below re-queried the user directly — so the lost
+        // bypass is restored here and its result is what gets attributed.
+        $userModel = Tenant::bypass(
+            fn () => User::where('email', $email)->orWhere('username', $email)->first(),
+            'agencyLogin: failed-login attribution before tenant is known',
+            ['attempted_email' => $email]
+        );
         SensitiveActionLogger::failedLogin($email, $userModel?->agency_id);
         $this->trackFailedLoginAttempt($email, $userModel?->agency_id, $request);
 
@@ -200,13 +242,31 @@ class AuthController extends Controller
 
     private function bindTenantFromUser(): void
     {
-        $user = auth()->user();
-        if ($user->agency_id) {
-            $agency = Agency::find($user->agency_id);
-            if ($agency) {
-                app()->instance('tenant_agency', $agency);
-                session(['tenant_agency_id' => $agency->id]);
-            }
+        $this->bindTenantForUser(auth()->user());
+    }
+
+    /**
+     * Bind the tenant for a known user (before or after authentication).
+     * `Agency::find()` reads the control-plane agencies table, so it is done
+     * inside a bypass while no tenant is bound yet.
+     */
+    private function bindTenantForUser(?User $user): void
+    {
+        $this->boundTenantId = null;
+
+        if (! $user || ! $user->agency_id) {
+            return;
+        }
+
+        $agency = Tenant::bypass(
+            fn () => Agency::find($user->agency_id),
+            'auth: bind tenant from user',
+        );
+
+        if ($agency) {
+            app()->instance('tenant_agency', $agency);
+            session(['tenant_agency_id' => $agency->id]);
+            $this->boundTenantId = (int) $agency->id;
         }
     }
 
@@ -217,9 +277,14 @@ class AuthController extends Controller
     {
         $ip = $request->ip() ?? '127.0.0.1';
 
-        // Find the user to get agency_id if not provided
+        // Find the user to get agency_id if not provided. Runs before login /
+        // before any tenant is bound, so it is an audited cross-agency read.
         if (is_null($agencyId)) {
-            $user = User::where('email', $email)->orWhere('username', $email)->first();
+            $user = Tenant::bypass(
+                fn () => User::where('email', $email)->orWhere('username', $email)->first(),
+                'login: failed-attempt user lookup',
+                ['attempted_email' => $email],
+            );
             if ($user) {
                 $agencyId = $user->agency_id;
             }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\SensitiveActionLogger;
+use App\Support\Tenant;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -44,7 +45,11 @@ class PasswordResetController extends Controller
         RateLimiter::hit($key, 3600);
 
         // Log the password reset request
-        $user = User::where('email', $email)->first();
+        // Unauthenticated control-plane lookup: audited bypass.
+        $user = Tenant::bypass(
+            fn () => User::where('email', $email)->first(),
+            'password reset request: resolve user',
+        );
         if ($user) {
             SensitiveActionLogger::log(
                 'password_reset_requested',
@@ -54,8 +59,9 @@ class PasswordResetController extends Controller
             );
         }
 
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $status = Tenant::bypass(
+            fn () => Password::sendResetLink($request->only('email')),
+            'password reset request: broker resolves the user',
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -82,31 +88,37 @@ class PasswordResetController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->setRememberToken(Str::random(60));
+        $status = Tenant::bypass(
+            fn () => Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function (User $user, string $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password),
+                    ])->setRememberToken(Str::random(60));
 
-                $user->save();
+                    $user->save();
 
-                event(new PasswordReset($user));
+                    event(new PasswordReset($user));
 
-                // Log the password reset completion
-                SensitiveActionLogger::log(
-                    'password_reset',
-                    subject: $user,
-                    description: "Password reset completed for {$user->email}.",
-                    metadata: ['target_email' => $user->email],
-                );
-            }
+                    // Log the password reset completion
+                    SensitiveActionLogger::log(
+                        'password_reset',
+                        subject: $user,
+                        description: "Password reset completed for {$user->email}.",
+                        metadata: ['target_email' => $user->email],
+                    );
+                }
+            ),
+            'password reset: broker resolves the user',
         );
 
         // If the broker didn't succeed, check if the user has a pending reset token
         // Only bypass token verification if a password reset was legitimately requested
         if ($status !== Password::PASSWORD_RESET) {
-            $user = User::where('email', $request->input('email'))->first();
+            $user = Tenant::bypass(
+                fn () => User::where('email', $request->input('email'))->first(),
+                'password reset: resolve user',
+            );
             if ($user) {
                 $hasPendingReset = \DB::table(config('auth.passwords.users.table', 'password_resets'))
                     ->where('email', $user->email)
@@ -155,8 +167,9 @@ class PasswordResetController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $status = Tenant::bypass(
+            fn () => Password::sendResetLink($request->only('email')),
+            'password reset request: broker resolves the user',
         );
 
         return $status === Password::RESET_LINK_SENT
@@ -183,17 +196,20 @@ class PasswordResetController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->setRememberToken(Str::random(60));
+        $status = Tenant::bypass(
+            fn () => Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'),
+                function (User $user, string $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password),
+                    ])->setRememberToken(Str::random(60));
 
-                $user->save();
+                    $user->save();
 
-                event(new PasswordReset($user));
-            }
+                    event(new PasswordReset($user));
+                }
+            ),
+            'password reset: broker resolves the user',
         );
 
         return $status === Password::PASSWORD_RESET

@@ -20,6 +20,33 @@ class ApplicantRegistrationTest extends TestCase
         $this->agency = Agency::factory()->create();
     }
 
+    /**
+     * Post to the registration form AS A TENANT HOST.
+     *
+     * Registration has no tenant on the control plane any more (defect B,
+     * card 6b008b8dc9020955b2cc16e1): a self-registration belongs to the agency
+     * whose site it arrives on, and the control plane no longer guesses
+     * Agency::first(). Rejecting it is covered separately below. The portal is
+     * normally reached on the agency's own host, so these tests do the same.
+     */
+    private function postRegistration(array $payload)
+    {
+        return $this->post('https://' . $this->agency->subdomain . '.fixitautoservices.com' . route('portal.register.post', [], false), $payload);
+    }
+
+    /**
+     * Post-registration assertions read the applicant row directly, with no
+     * HTTP request and no bound tenant. TenantScope fails closed on web
+     * requests (card 6b008b8dc9020955b2cc16e1), so say the read is deliberate.
+     */
+    private function applicantByEmail(string $email): ?\App\Models\Applicant
+    {
+        return \App\Support\Tenant::bypass(
+            fn () => \App\Models\Applicant::where('email', $email)->first(),
+            'ApplicantRegistrationTest: read back the applicant just registered'
+        );
+    }
+
     #[Test]
     public function registration_page_displays(): void
     {
@@ -35,7 +62,7 @@ class ApplicantRegistrationTest extends TestCase
     #[Test]
     public function applicant_can_register(): void
     {
-        $response = $this->post(route('portal.register.post'), [
+        $response = $this->postRegistration([
             'first_name'      => 'Juan',
             'last_name'       => 'Dela Cruz',
             'email'           => 'juan@example.com',
@@ -53,7 +80,7 @@ class ApplicantRegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs(
-            \App\Models\Applicant::where('email', 'juan@example.com')->first(),
+            $this->applicantByEmail('juan@example.com'),
             'applicant'
         );
     }
@@ -117,7 +144,7 @@ class ApplicantRegistrationTest extends TestCase
     #[Test]
     public function registration_assigns_pending_status(): void
     {
-        $response = $this->post(route('portal.register.post'), [
+        $response = $this->postRegistration([
             'first_name'            => 'Juan',
             'last_name'             => 'Dela Cruz',
             'email'                 => 'juan@example.com',
@@ -128,8 +155,41 @@ class ApplicantRegistrationTest extends TestCase
 
         $response->assertRedirect(route('portal.dashboard'));
 
-        $applicant = \App\Models\Applicant::where('email', 'juan@example.com')->first();
+        $applicant = $this->applicantByEmail('juan@example.com');
         $this->assertNotNull($applicant);
+    }
+
+    /**
+     * Defect B (card 6b008b8dc9020955b2cc16e1): QA saw a control-plane
+     * self-registration land in agency_id=1 because the controller guessed
+     * Agency::first(). A registration that arrives with no tenant is refused —
+     * and, crucially, NOT written into anybody's agency.
+     */
+    #[Test]
+    public function control_plane_registration_is_rejected_and_creates_nothing(): void
+    {
+        // A second agency sorting before $this->agency would be the old
+        // "first()" target; the assertion below is that neither gets the row.
+        Agency::factory()->create(['name' => 'AAA First', 'subdomain' => 'aaa-first']);
+
+        $response = $this->post(route('portal.register.post'), [
+            'first_name'            => 'Juan',
+            'last_name'             => 'Dela Cruz',
+            'email'                 => 'control@example.com',
+            'contact'               => '09171234567',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrors('registration');
+        $response->assertRedirect();
+
+        $this->assertSame(0, \App\Support\Tenant::bypass(
+            fn () => \App\Models\Applicant::withoutGlobalScopes()->where('email', 'control@example.com')->count(),
+            'ApplicantRegistrationTest: assert the rejected registration wrote no row'
+        ));
+
+        $this->assertGuest('applicant');
     }
 
     #[Test]
@@ -140,10 +200,18 @@ class ApplicantRegistrationTest extends TestCase
         $response->assertRedirect(route('portal.login'));
     }
 
+    /**
+     * Replaces the old "registration_sets_default_agency": there is no default
+     * agency any more. On the agency's own host the registrant lands in THAT
+     * agency, not in whichever one sorts first.
+     */
     #[Test]
-    public function registration_sets_default_agency(): void
+    public function registration_assigns_the_agency_of_the_host(): void
     {
-        $response = $this->post(route('portal.register.post'), [
+        $first = Agency::factory()->create(['name' => 'AAA First', 'subdomain' => 'aaa-first']);
+        $this->assertNotSame($first->id, $this->agency->id);
+
+        $response = $this->postRegistration([
             'first_name'            => 'Juan',
             'last_name'             => 'Dela Cruz',
             'email'                 => 'juan@example.com',
@@ -152,7 +220,10 @@ class ApplicantRegistrationTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $applicant = \App\Models\Applicant::where('email', 'juan@example.com')->first();
-        $this->assertNotNull($applicant->agency_id);
+        $response->assertRedirect(route('portal.dashboard'));
+
+        $applicant = $this->applicantByEmail('juan@example.com');
+        $this->assertSame($this->agency->id, $applicant->agency_id,
+            'registrant was written into ' . $applicant->agency_id . ', expected host agency ' . $this->agency->id);
     }
 }

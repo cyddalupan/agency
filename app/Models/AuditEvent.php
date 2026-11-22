@@ -36,6 +36,15 @@ class AuditEvent extends Model
     public const ACTION_ARCHIVED = 'archived';
     public const ACTION_DELETED  = 'deleted';
 
+    /**
+     * Card 6b008b8dc9020955b2cc16e1: an intentional cross-agency read through
+     * App\Support\Tenant::bypass(). Recorded so a bypass is visible after the
+     * fact rather than silent. Not part of ACTIONS: that list is the material
+     * create/update/approve/reject/archive/delete vocabulary (spec §26), and
+     * this is an access event, not a record change.
+     */
+    public const ACTION_TENANT_BYPASS = 'tenant_bypass';
+
     public const ACTIONS = [
         self::ACTION_CREATED,
         self::ACTION_UPDATED,
@@ -52,6 +61,7 @@ class AuditEvent extends Model
         self::ACTION_REJECTED => 'Rejected',
         self::ACTION_ARCHIVED => 'Archived',
         self::ACTION_DELETED  => 'Deleted',
+        self::ACTION_TENANT_BYPASS => 'Tenant bypass',
     ];
 
     protected $table = 'audit_events';

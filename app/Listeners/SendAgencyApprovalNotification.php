@@ -47,9 +47,15 @@ class SendAgencyApprovalNotification
      */
     private function createNotification($agency, string $action): void
     {
-        $userId = User::where('user_type', 'super_admin')->value('id')
-            ?? User::where('user_type', 'admin')->value('id')
-            ?? User::value('id');
+        // The target is a super admin: by definition not a tenant read, and
+        // an agency-approval event may fire on the control plane before the
+        // agency exists. Say so explicitly (TenantScope fails closed on web
+        // requests, card 6b008b8dc9020955b2cc16e1).
+        $userId = \App\Support\Tenant::bypass(function () {
+            return User::where('user_type', 'super_admin')->value('id')
+                ?? User::where('user_type', 'admin')->value('id')
+                ?? User::value('id');
+        }, 'SendAgencyApprovalNotification: find the super admin to notify');
 
         Notification::create([
             'agency_id' => $agency->id,

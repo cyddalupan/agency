@@ -103,13 +103,30 @@ class InternalAudit extends Model
      */
     public static function suggestNextRef(?int $agencyId = null): string
     {
-        $last = static::query()
-            ->withTrashed()
-            ->when($agencyId !== null, fn ($q) => $q->where('agency_id', $agencyId))
-            ->where('ref_no', 'like', 'AUD-%')
-            ->pluck('ref_no')
-            ->map(fn ($ref) => (int) preg_replace('/\D/', '', (string) $ref))
-            ->max() ?? 0;
+        // Card 6b008b8dc9020955b2cc16e1: this is called from the create screen
+        // before an agency argument is known, and from the model itself in some
+        // tests. TenantScope now fails closed on web requests, so the read must
+        // declare its scope: filter to the bound agency when there is one
+        // (the normal path), or read across agencies as an audited bypass.
+        $read = function () use ($agencyId) {
+            return static::query()
+                ->withTrashed()
+                ->when($agencyId !== null, fn ($q) => $q->where('agency_id', $agencyId))
+                ->where('ref_no', 'like', 'AUD-%')
+                ->pluck('ref_no')
+                ->map(fn ($ref) => (int) preg_replace('/\D/', '', (string) $ref))
+                ->max() ?? 0;
+        };
+
+        $bound = app()->has('tenant_agency') ? app('tenant_agency') : null;
+
+        if ($agencyId !== null) {
+            $last = $read();
+        } elseif ($bound) {
+            $last = $read();
+        } else {
+            $last = \App\Support\Tenant::bypass($read, 'InternalAudit::suggestNextRef without a bound agency');
+        }
 
         return 'AUD-' . str_pad((string) ($last + 1), 3, '0', STR_PAD_LEFT);
     }

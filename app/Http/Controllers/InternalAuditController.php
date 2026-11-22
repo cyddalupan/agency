@@ -90,7 +90,9 @@ class InternalAuditController extends Controller
         $this->authorisePlan($request);
 
         return view('internal_audits.create', [
-            'suggestedRef' => InternalAudit::suggestNextRef(),
+            // Scope the next-reference read to this agency explicitly; the
+            // tenant scope fails closed on the web (card 6b008b8dc9020955b2cc16e1).
+            'suggestedRef' => InternalAudit::suggestNextRef($request->user()->agency_id),
             'auditors'     => $this->auditorOptions(),
             'statuses'     => InternalAudit::STATUS_LABELS,
         ]);

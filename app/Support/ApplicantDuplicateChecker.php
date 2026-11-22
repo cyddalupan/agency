@@ -180,7 +180,14 @@ class ApplicantDuplicateChecker
             }
         });
 
-        $candidates = $query->orderByDesc('applicants.created_at')->limit(40)->get();
+        // Duplicate detection is explicitly cross-agency: it exists to catch the
+        // same person registering again, and registration runs on the control
+        // plane before any tenant is bound (TenantScope fails closed on web
+        // requests, card 6b008b8dc9020955b2cc16e1).
+        $candidates = \App\Support\Tenant::bypass(
+            fn () => $query->orderByDesc('applicants.created_at')->limit(40)->get(),
+            'ApplicantDuplicateChecker::find: duplicate scan is cross-agency by design'
+        );
 
         return $candidates
             ->map(function (Applicant $a) use ($email, $contact, $phoneUsable, $first, $last, $nameUsable, $birth, $passport) {

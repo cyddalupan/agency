@@ -19,6 +19,10 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Test fixture host (card 6b008b8dc9020955b2cc16e1): never inherit
+             production .env APP_URL, whose first label ("landas") would read
+             as a tenant slug and 404 every synthetic test request. -->
+        <env name="APP_URL" value="http://localhost"/>
         <env name="APP_DEBUG" value="false"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="CACHE_STORE" value="array"/>

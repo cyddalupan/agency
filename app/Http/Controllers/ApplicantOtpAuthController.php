@@ -80,9 +80,20 @@ class ApplicantOtpAuthController extends Controller
         // Invalidate OTP after successful use
         Cache::forget($cacheKey);
 
-        $applicant = Applicant::where('email', $email)->firstOrFail();
+        // The portal login is reached on the control plane before any tenant
+        // is known: the applicant record itself names the agency, so the
+        // lookup is a deliberate, audited cross-agency read (TenantScope fails
+        // closed on web requests, card 6b008b8dc9020955b2cc16e1).
+        $applicant = \App\Support\Tenant::bypass(
+            fn () => Applicant::where('email', $email)->firstOrFail(),
+            'ApplicantOtpAuthController::verifyOtp: resolve applicant before login'
+        );
 
         Auth::guard('applicant')->login($applicant);
+
+        if ($applicant->agency_id) {
+            app()->instance('tenant_agency', \App\Models\Agency::find($applicant->agency_id));
+        }
 
         $request->session()->regenerate();
 
