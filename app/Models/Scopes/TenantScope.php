@@ -64,13 +64,37 @@ class TenantScope implements Scope
 
     public function apply(Builder $builder, Model $model): void
     {
+        $agencyId = self::tenantFilter($model->getTable());
+
+        if ($agencyId !== null) {
+            $builder->where($model->getTable() . '.agency_id', $agencyId);
+        }
+    }
+
+    /**
+     * Which agency, if any, is bound for this statement.
+     *
+     * Returns the agency id to filter by, or null for "no filter" (super admin,
+     * an explicit audited bypass, console/queue, or an allowed guest path). A web
+     * request with nothing resolvable throws UnboundTenantException.
+     *
+     * Extracted verbatim from apply() for card 6b008b8e7c2a220f1cd6d2e1. The
+     * `expense_request_items` scope has no `agency_id` of its own and filters
+     * through the parent request, but it must still answer "who is the tenant?"
+     * the same way every tenant model does — same order, same exceptions, same
+     * bypass. It therefore calls this, rather than re-implementing the order and
+     * drifting. apply() is now the only consumer that adds a WHERE, so there is
+     * one place that decides, and all statements follow it.
+     */
+    public static function tenantFilter(string $table): ?int
+    {
         // Super admin bypass — skip tenant filtering when logged in as super_admin
         if (! self::$resolvingAuth) {
             self::$resolvingAuth = true;
             try {
                 $user = auth()->user();
                 if ($user && $user->user_type === 'super_admin') {
-                    return;
+                    return null;
                 }
             } finally {
                 self::$resolvingAuth = false;
@@ -79,22 +103,20 @@ class TenantScope implements Scope
 
         // Explicit, audited escape hatch (see App\Support\Tenant).
         if (Tenant::isBypassing()) {
-            return;
+            return null;
         }
 
         // Check container-bound agency (from middleware or controller)
         $agency = app()->has('tenant_agency') ? app('tenant_agency') : null;
 
         if ($agency) {
-            $builder->where($model->getTable() . '.agency_id', $agency->id);
-            return;
+            return (int) $agency->id;
         }
 
         // Fallback: session-bound agency (when logged in on main domain)
         $agencyId = session('tenant_agency_id');
         if ($agencyId) {
-            $builder->where($model->getTable() . '.agency_id', $agencyId);
-            return;
+            return (int) $agencyId;
         }
 
         // Console / queue workers have no request host to bind a tenant from.
@@ -111,7 +133,7 @@ class TenantScope implements Scope
         // for every test, and those tests must still reach the guest mark or
         // the throw. Real HTTP never sets that flag.
         if (app()->runningInConsole() && ! self::$testingWebRequest) {
-            return;
+            return null;
         }
 
         // Guest entry point (login, public portal page): IdentifyAgency marked
@@ -119,10 +141,10 @@ class TenantScope implements Scope
         // The authenticating middleware right behind it redirects, so nothing is
         // rendered unscoped — see IdentifyAgency::isPublicPath().
         if (request()?->attributes->get('tenant_unbound_allowed')) {
-            return;
+            return null;
         }
 
         // Web request with no resolvable agency: fail closed.
-        throw UnboundTenantException::forHost(request()?->getHost(), $model->getTable());
+        throw UnboundTenantException::forHost(request()?->getHost(), $table);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\ExpenseRequestItem;
+use App\Models\Scopes\ExpenseRequestItemTenantScope;
 use App\Services\CurrencyConverter;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -164,20 +165,34 @@ class GeneralLedgerController extends Controller
         ];
     }
 
-    /** Sum of non-cancelled line items per account, converted to PHP. */
+    /**
+     * Sum of non-cancelled line items per account, converted to PHP.
+     *
+     * Card 6b008b8e7c2a220f1cd6d2e1: this statement joins the items table, so
+     * the model's global scope cannot reach it — a toBase() builder is a query
+     * builder, and the scope applies to Eloquent builders. The item scope's own
+     * constrain() is therefore applied explicitly, with the same
+     * expense_requests.agency_id predicate the statement already carried. This
+     * is money: the two predicates are the same tenant test, so the totals are
+     * unchanged, and the aliased join cannot quietly outlive the scope.
+     */
     private function accountTotals(int $agencyId): array
     {
-        $rows = ExpenseRequestItem::query()
-            ->join('expense_requests as er', 'er.id', '=', 'expense_request_items.expense_request_id')
-            ->where('er.agency_id', $agencyId)
-            ->whereNull('er.deleted_at')
-            ->whereNotIn('expense_request_items.status', self::EXCLUDED_STATUSES)
-            ->groupBy('expense_request_items.account_id', 'expense_request_items.currency')
-            ->selectRaw('expense_request_items.account_id as account_id')
-            ->selectRaw('expense_request_items.currency as currency')
-            ->selectRaw('COUNT(*) as tx_count')
-            ->selectRaw('SUM(expense_request_items.amount) as total')
-            ->get();
+        $rows = ExpenseRequestItemTenantScope::constrain(
+            ExpenseRequestItem::query()
+                ->join('expense_requests as er', 'er.id', '=', 'expense_request_items.expense_request_id')
+                ->where('er.agency_id', $agencyId)
+                ->whereNull('er.deleted_at')
+                ->whereNotIn('expense_request_items.status', self::EXCLUDED_STATUSES)
+                ->groupBy('expense_request_items.account_id', 'expense_request_items.currency')
+                ->selectRaw('expense_request_items.account_id as account_id')
+                ->selectRaw('expense_request_items.currency as currency')
+                ->selectRaw('COUNT(*) as tx_count')
+                ->selectRaw('SUM(expense_request_items.amount) as total')
+                ->toBase(),
+            'expense_request_items',
+            $agencyId,
+        )->get();
 
         $converter = new CurrencyConverter();
         $totals    = [];

@@ -358,7 +358,14 @@ class PaymentBulkUploadTest extends TestCase
             ])
             ->assertSessionHasErrors('csv_file');
 
-        $this->assertSame('0.00', (string) $foreign->items()->first()->fresh()->payment);
+        // Read past the tenant scope on purpose: the line belongs to another
+        // agency, and this test is about the import refusing the row, not about
+        // the scope hiding it. A scoped relation would return null here and the
+        // assertion would crash instead of checking the payment.
+        $this->assertSame('0.00', (string) ExpenseRequestItem::withoutGlobalScopes()
+            ->where('expense_request_id', $foreign->id)
+            ->firstOrFail()
+            ->payment);
     }
 
     #[Test]

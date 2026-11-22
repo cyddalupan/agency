@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\ExpenseRequestItemTenantScope;
 use App\Models\Traits\AuditsChanges;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ExpenseRequestItem extends Model
 {
     use HasFactory, AuditsChanges;
+
+    /**
+     * Card 6b008b8e7c2a220f1cd6d2e1: the inheritance below is ENFORCED, not
+     * merely intended. The table still has no agency_id; the scope filters
+     * through the parent request and takes its tenant from
+     * TenantScope::tenantFilter(), so items cannot be read across agencies by
+     * a query that forgot the parent. Raw DB::table()/join readers are not
+     * covered by this and must constrain themselves — see the scope class.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new ExpenseRequestItemTenantScope());
+    }
 
     /**
      * QMS-02: expense_request_items carries no agency_id of its own — it
