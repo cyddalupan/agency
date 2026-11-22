@@ -11,7 +11,14 @@ class DatabaseBackup extends Command
     protected $signature = 'backup:database {--type=daily : daily|weekly|monthly}';
     protected $description = 'Create a database backup with retention management';
 
-    private string $backupDir = 'backups';
+    /**
+     * Backup directory. Single source for both writing and pruning, so a
+     * config override cannot redirect one and leave the other on production.
+     */
+    private function backupDir(): string
+    {
+        return (string) config('backup.path', storage_path('backups'));
+    }
 
     public function handle(): int
     {
@@ -22,7 +29,7 @@ class DatabaseBackup extends Command
         }
 
         $driver = DB::connection()->getDriverName();
-        $backupDir = storage_path($this->backupDir);
+        $backupDir = $this->backupDir();
         if (!is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
         }
@@ -147,7 +154,7 @@ class DatabaseBackup extends Command
     private function enforceRetention(string $type): void
     {
         $keep = config("backup.retention.{$type}", 7);
-        $dir  = storage_path($this->backupDir);
+        $dir  = $this->backupDir();
         if (!is_dir($dir)) {
             return;
         }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Infrastructure;
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -9,6 +10,35 @@ use Tests\TestCase;
 class DatabaseBackupAndMonitoringTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Where backup:database is pointed for these tests. Never the production
+     * storage/backups: that directory holds a git-tracked backup, and the
+     * retention pass below deletes whatever exceeds retention.daily.
+     */
+    private string $testBackupDir;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->testBackupDir = storage_path('framework/testing/backups');
+        (new Filesystem)->deleteDirectory($this->testBackupDir);
+        (new Filesystem)->makeDirectory($this->testBackupDir, 0755, true);
+
+        config(['backup.path' => $this->testBackupDir]);
+    }
+
+    protected function tearDown(): void
+    {
+        (new Filesystem)->deleteDirectory($this->testBackupDir);
+
+        // Drop the override so a later test in this process sees the real
+        // default, and so does anything that reads config after us.
+        config(['backup.path' => storage_path('backups')]);
+
+        parent::tearDown();
+    }
 
     // ─── Backup Command ─────────────────────────────────────────────────
 
@@ -31,24 +61,90 @@ class DatabaseBackupAndMonitoringTest extends TestCase
     #[Test]
     public function backup_database_command_creates_backup_file(): void
     {
-        $backupDir = storage_path('backups');
-        $this->assertDirectoryExists($backupDir,
-            'A storage/backups directory must exist for backup output.'
-        );
-
-        // Clear any previous backup files
-        $existingFiles = glob($backupDir . '/*.sql');
-        foreach ($existingFiles as $file) {
-            unlink($file);
-        }
+        $this->assertDirectoryExists($this->testBackupDir);
 
         $this->artisan('backup:database')
             ->assertSuccessful();
 
-        $files = glob($backupDir . '/*.sql');
+        $files = glob($this->testBackupDir . '/*.sql');
         $this->assertNotEmpty($files,
-            'Running backup:database should produce at least one .sql file in storage/backups/.'
+            'Running backup:database should produce at least one .sql file in the configured backup path.'
         );
+
+        $this->assertGreaterThan(0, filesize($files[0]),
+            'The created backup file must be non-empty.'
+        );
+    }
+
+    /**
+     * The command must write where config says, not to a hardcoded storage
+     * subdirectory. This is what makes the test path above meaningful.
+     */
+    #[Test]
+    public function backup_database_writes_to_the_configured_path_only(): void
+    {
+        $productionDir = storage_path('backups');
+        $productionBefore = $this->listing($productionDir);
+
+        $this->artisan('backup:database')->assertSuccessful();
+
+        $this->assertNotEmpty(glob($this->testBackupDir . '/*.sql'),
+            'backup:database ignored config(backup.path).'
+        );
+        $this->assertSame($productionBefore, $this->listing($productionDir),
+            'backup:database wrote into storage/backups despite the config override.'
+        );
+    }
+
+    /**
+     * Retention is a second, separate use of the backup directory. If it keeps
+     * reading storage_path('backups') it will prune production files from a
+     * test run — the exact accident this card exists to stop.
+     */
+    #[Test]
+    public function retention_prunes_the_configured_path_and_leaves_production_alone(): void
+    {
+        $productionDir = storage_path('backups');
+        $productionBefore = $this->listing($productionDir);
+
+        $keep = (int) config('backup.retention.daily');
+        $seed = $keep + 3;
+
+        // Seed more than retention keeps, oldest first, so the pruned ones are
+        // unambiguous.
+        for ($i = 0; $i < $seed; $i++) {
+            $file = sprintf('%s/database_daily_2020-01-01_00-00-%02d.sql', $this->testBackupDir, $i);
+            file_put_contents($file, "seed {$i}\n");
+            touch($file, 1_600_000_000 + $i);
+        }
+
+        $this->artisan('backup:database')->assertSuccessful();
+
+        $remaining = glob($this->testBackupDir . '/*.sql');
+        $this->assertCount($keep, $remaining,
+            "Retention must keep exactly backup.retention.daily ({$keep}) daily files in the configured path."
+        );
+
+        // The oldest seeds are the ones gone; the newest ones and the fresh
+        // backup survive.
+        $this->assertFileDoesNotExist($this->testBackupDir . '/database_daily_2020-01-01_00-00-00.sql');
+
+        $this->assertSame($productionBefore, $this->listing($productionDir),
+            'Retention pruned files in storage/backups. enforceRetention() is not reading config(backup.path).'
+        );
+    }
+
+    /** @return list<string> filenames in $dir, sorted; [] if it does not exist. */
+    private function listing(string $dir): array
+    {
+        if (! is_dir($dir)) {
+            return [];
+        }
+
+        $names = array_map('basename', glob($dir . '/*') ?: []);
+        sort($names);
+
+        return $names;
     }
 
     // ─── Backup Schedule ────────────────────────────────────────────────
