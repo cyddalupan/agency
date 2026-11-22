@@ -1815,12 +1815,15 @@ class AgentReportController extends Controller
             'agentId'   => $agentId,
             'reportRows' => $rows,
             'totals'    => [
-                'commission'    => $rows->sum('commission'),
-                'cash_advance'  => $rows->sum('cash_advance'),
-                'backout_repat' => $rows->sum('backout_repat'),
-                'receivable'    => $rows->sum('receivable'),
-                'payments'      => $rows->sum('payments'),
-                'balance'       => $rows->sum('balance'),
+                'commission'     => $rows->sum('commission'),
+                'cash_advance'   => $rows->sum('cash_advance'),
+                'backout_repat'  => $rows->sum('backout_repat'),
+                'receivable'     => $rows->sum('receivable'),
+                // print.blade.php renders this column; leaving it out of the
+                // array 500'd the whole route (card 6b02fb4e).
+                'return_payment' => $rows->sum('return_payment'),
+                'payments'       => $rows->sum('payments'),
+                'balance'        => $rows->sum('balance'),
             ],
             'printedAt' => now(),
         ]);
@@ -1840,6 +1843,10 @@ class AgentReportController extends Controller
         fputcsv($csv, [
             agent_header('Agent'), 'Branch', 'Total Commission', 'Total Cash Advance',
             'Total Backout and Repat', 'Total Receivable (AR)',
+            // Return Payment sits between Receivable and Payments on screen
+            // and in the print view; the CSV skipped it, so a downloaded
+            // ledger's columns did not line up with either.
+            'Total Return Payment',
             'Total Payments', "Agent's Balance",
         ]);
         foreach ($rows as $row) {
@@ -1850,6 +1857,7 @@ class AgentReportController extends Controller
                 number_format($row['cash_advance'], 2),
                 number_format($row['backout_repat'], 2),
                 number_format($row['receivable'], 2),
+                number_format($row['return_payment'], 2),
                 number_format($row['payments'], 2),
                 number_format($row['balance'], 2),
             ]);
