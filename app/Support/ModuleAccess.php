@@ -3,17 +3,23 @@
 namespace App\Support;
 
 /**
- * Central access map for web (agency) users.
+ * Central access map for web (agency) users — the single entry point.
+ *
+ * Role-to-module gating now lives in a declarative table
+ * (App\Support\ModuleGating\GatingTable, applied by ModuleGate); this class
+ * keeps the public API, the route→module mapping and the agency feature flags.
  *
  * Three access tiers beyond the full-access roles (super_admin/admin):
  *
- *  - Accounting (`billing`): full admin access MINUS ACCOUNTING_DENIED.
- *  - "Rest of Account" (every other user_type): only STAFF_ALLOWED modules.
- *  - Encoder (`encoder`): ONLY the Dashboard + Applicant module (ENCODER_ALLOWED).
+ *  - Accounting (`billing`): full admin access MINUS the table's denylist.
+ *  - "Rest of Account" (every other user_type): only the staff allowlist.
+ *  - Encoder (`encoder`): ONLY the Dashboard + Applicant module.
  *
  * Introduced 2026-09-24 per client request (Cyd). Kept here so the middleware,
  * the sidebar, and the User model all read from one source of truth.
  * Encoder tier added 2026-10-08 (Mjolnir card "User Access Level 'Encoder'").
+ * Gating extracted to GatingTable 2026-11-22 (card 6b008b8f3843d89fea14fa60):
+ * zero behavior change, proven by ModuleAccessEquivalenceTest.
  */
 class ModuleAccess
 {
@@ -425,6 +431,26 @@ class ModuleAccess
         'storage'                  => 'storage',
     ];
 
+    /**
+     * Whether a user_type may access a module at all (optionally per agency).
+     *
+     * Signature and behavior are unchanged since 2026-09-24; the decision
+     * itself is now read off App\Support\ModuleGating\GatingTable by
+     * ModuleGate. Precedence, before any role rule:
+     *   feature gates (welfare, employees, agent_report, the QMS family) close
+     *   the module for every role unless the agency carries it; then the
+     *   user_type's role rule applies; then the "Rest of Account" default.
+     * See GatingTable for the stage-by-stage table.
+     *
+     * The deprecated `$userType` first argument stays nullable and is cast to
+     * string, so a null user type keeps falling through to the default rule
+     * exactly as before.
+     */
+    public static function allows(?string $userType, string $module, ?int $agencyId = null): bool
+    {
+        return \App\Support\ModuleGating\ModuleGate::allows($userType, $module, $agencyId);
+    }
+
     /** Resolve the module for a request from its route name (falls back to the URI segment). */
     public static function moduleFor(?string $routeName, string $path): string
     {
@@ -441,106 +467,6 @@ class ModuleAccess
         $segment = explode('/', trim($path, '/'))[0] ?? '';
 
         return $segment !== '' ? $segment : 'other';
-    }
-
-    /** Whether a user_type may access a module at all (optionally per agency). */
-    public static function allows(?string $userType, string $module, ?int $agencyId = null): bool
-    {
-        $userType = (string) $userType;
-
-        // Gulf-only modules (Cyd 2026-09): Agents Report used to exist for the
-        // Gulf tenant alone. Checked BEFORE the full-access shortcut so an
-        // admin of another agency cannot reach it either. Now offered on the
-        // agencies named in AGENT_REPORT_AGENCIES (card 6af3ddf8).
-        // WELFARE module is offered on CSDI and FINAS only (card 6af81f6a).
-        if ($module === 'welfare' && ! self::isAnyAgency($agencyId, self::WELFARE_MODULE_AGENCIES)) {
-            return false;
-        }
-
-        // EMPLOYEE module is offered on CSDI and FINAS only (card 6af6fe94).
-        if ($module === 'employees' && ! self::isAnyAgency($agencyId, self::EMPLOYEE_AGENCIES)) {
-            return false;
-        }
-
-        if ($module === 'agent_report' && ! self::isAnyAgency($agencyId, self::AGENT_REPORT_AGENCIES)) {
-            return false;
-        }
-
-        // QMS is one feature switch, not eight modules (card 6afb2e83,
-        // 2026-11-16). Checked before the full-access shortcut so an admin of
-        // an agency with QMS off cannot reach any of its screens either.
-        if (self::isQmsModule($module) && ! self::qmsEnabled($agencyId)) {
-            return false;
-        }
-
-        if (in_array($userType, ['super_admin', 'admin'], true)) {
-            return true;
-        }
-
-        if ($userType === 'billing') {
-            // FINAS tenant: narrowed Accounting role per the FINAS card.
-            if (self::isFinasAgency($agencyId)) {
-                return in_array($module, self::FINAS_ACCOUNTING_ALLOWED, true);
-            }
-
-            return ! in_array($module, self::ACCOUNTING_DENIED, true);
-        }
-
-        if ($userType === 'encoder') {
-            return in_array($module, self::ENCODER_ALLOWED, true);
-        }
-
-        if ($userType === 'dmw_user') {
-            // Card 6af81c30: DMW User exists on FINAS and CSDI only, and gets
-            // exactly the modules the card lists.
-            if (! self::isAnyAgency($agencyId, self::DMW_USER_AGENCIES)) {
-                return false;
-            }
-
-            return in_array($module, self::DMW_USER_ALLOWED, true);
-        }
-
-        if ($userType === 'recruitment') {
-            return in_array($module, self::RECRUITMENT_ALLOWED, true);
-        }
-
-        if ($userType === 'branch') {
-            // (Card 6af3ddf8, 2026-11-11) FINAS and CSDI Branch users get the
-            // Receivable and Expenses & Payments modules. Branch data stays
-            // branch-scoped by the existing branchLocked() rules, so a branch
-            // user still only sees their own branch's rows.
-            if (in_array($module, ['receivable', 'expense_request'], true)
-                && self::isAnyAgency($agencyId, self::BRANCH_FINANCE_AGENCIES)) {
-                return true;
-            }
-
-            return in_array($module, self::BRANCH_ALLOWED, true);
-        }
-
-        if ($userType === 'welfare') {
-            return in_array($module, self::WELFARE_ALLOWED, true);
-        }
-
-        // QMS-08/QMS-09: the QMS roles exist for document control and the
-        // audit trail only. QMS-09 splits them: QMS Manager manages, Internal
-        // Auditor reads (spec §19). Both are explicit allowlists, so neither
-        // may fall through to STAFF_ALLOWED below.
-        if ($userType === 'qms_manager') {
-            return in_array($module, self::QMS_MANAGER_ALLOWED, true);
-        }
-
-        if ($userType === 'internal_auditor') {
-            return in_array($module, self::INTERNAL_AUDITOR_ALLOWED, true);
-        }
-
-        if ($userType === 'employer') {
-            // FRA portal accounts (Mjolnir card "FINAS: FRA Feature"). They live
-            // in /fra and must never reach agency-panel modules; only app chrome
-            // is allowed so logout/notification links keep working.
-            return in_array($module, ['notifications', 'logout', 'storage'], true);
-        }
-
-        return in_array($module, self::STAFF_ALLOWED, true);
     }
 
     /** True when the agency offers the EMPLOYEE module (CSDI / FINAS only). */
