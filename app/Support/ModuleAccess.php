@@ -476,6 +476,21 @@ class ModuleAccess
     }
 
     /**
+     * True when the agency offers the Agents Report module (Gulf / FINAS /
+     * CSDI). Read-only helper for callers that need the *name* of the feature
+     * without going through the role rules (the Agents Report screen labels
+     * itself differently per agency — see AgentTerm).
+     *
+     * Card 6b00a6ec: the label is a per-agency display name, not a second
+     * module. The literal list stays in AGENT_REPORT_AGENCIES; this method
+     * only exposes it.
+     */
+    public static function agentReportEnabled(?int $agencyId): bool
+    {
+        return self::isAnyAgency($agencyId, self::AGENT_REPORT_AGENCIES);
+    }
+
+    /**
      * Whether this agency has the QMS feature switched on.
      *
      * The agency's own switch in Agency Settings wins; when it has never been
