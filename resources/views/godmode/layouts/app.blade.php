@@ -24,8 +24,14 @@
             <div class="flex items-center gap-6">
                 <a href="{{ route('godmode.dashboard') }}" class="font-extrabold tracking-tight">God Mode</a>
                 <nav class="flex items-center gap-1 text-sm">
-                    <a href="{{ route('godmode.dashboard') }}" class="px-3 py-1.5 rounded-lg hover:bg-neutral-content/10">Dashboard</a>
-                    <a href="{{ route('godmode.agencies.index') }}" class="px-3 py-1.5 rounded-lg bg-neutral-content/15 font-semibold">Agencies</a>
+                    {{-- Active mark: the same hand-written pattern as the Agencies
+                         link, per section. No nav refactor (§3.4). --}}
+                    <a href="{{ route('godmode.dashboard') }}"
+                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.dashboard') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Dashboard</a>
+                    <a href="{{ route('godmode.agencies.index') }}"
+                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.agencies.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Agencies</a>
+                    <a href="{{ route('godmode.payments.index') }}"
+                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.payments.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Payments</a>
                 </nav>
             </div>
             <div class="flex items-center gap-3">

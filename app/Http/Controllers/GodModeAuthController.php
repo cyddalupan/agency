@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditEvent;
 use App\Models\User;
+use App\Services\GodMode\GodReceivableService;
 use App\Services\SensitiveActionLogger;
 use App\Support\Tenant;
 use Illuminate\Auth\SessionGuard;
@@ -154,11 +155,17 @@ class GodModeAuthController extends Controller
         return redirect()->route('godmode.login');
     }
 
-    public function index(Request $request): View
+    /**
+     * Card 6b0342ac4cf7cfdc3e26d6a9 §3.4 — the dashboard is no longer a
+     * standalone placeholder page. It reads the SAME `GodReceivableService`
+     * methods as `/godmode/payments`, so a number on the index and a number on
+     * the ledger are one computation, not two that agree today.
+     */
+    public function index(Request $request, GodReceivableService $ledger): View
     {
         return view('godmode.dashboard', [
             'user' => $request->user('godmode'),
-        ]);
+        ] + $ledger->dashboard());
     }
 
     // ── rate limiting ────────────────────────────────────────────────

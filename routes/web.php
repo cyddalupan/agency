@@ -55,6 +55,7 @@ use App\Http\Controllers\ExpenseRequestController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\GodModeAuthController;
 use App\Http\Controllers\GodMode\GodAgencyController;
+use App\Http\Controllers\GodMode\GodPaymentsController;
 use Illuminate\Support\Facades\Route;
 
 // === Health Check ===
@@ -100,6 +101,14 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::put('/agencies/{agency}', [GodAgencyController::class, 'update'])->name('agencies.update');
         Route::post('/agencies/{agency}/archive', [GodAgencyController::class, 'archive'])->name('agencies.archive');
         Route::post('/agencies/{agency}/activate', [GodAgencyController::class, 'activate'])->name('agencies.activate');
+
+        // Card 6b0342ac4cf7cfdc3e26d6a9 — Payments (cross-tenant receivables
+        // ledger). READ ONLY: two GET routes, no POST/PUT/DELETE, ever. Money is
+        // the agency's record; the operator may look, not touch (§0). The list
+        // `{agency}` is `whereNumber` so `/godmode/payments/anything` is a 404
+        // from the route, not a 200 with a string injected into a filter.
+        Route::get('/payments', [GodPaymentsController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{agency}', [GodPaymentsController::class, 'show'])->whereNumber('agency')->name('payments.show');
     });
 });
 
