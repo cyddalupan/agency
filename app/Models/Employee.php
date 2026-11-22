@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 class Employee extends Model
 {
     use HasFactory;
+    use HasTenant;
 
     public const EMPLOYMENT_STATUSES = ['Active', 'Inactive', 'Resigned'];
     public const DOCUMENT_STATUSES = ['Complete', 'Incomplete', 'Expired'];

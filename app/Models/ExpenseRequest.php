@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasTenant;
 use App\Models\Traits\AuditsChanges;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ExpenseRequest extends Model
 {
-    use HasFactory, AuditsChanges;
+    use HasFactory, AuditsChanges, HasTenant;
     use SoftDeletes;
 
     public const STATUS_PENDING       = 'pending';

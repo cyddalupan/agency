@@ -43,15 +43,33 @@ class BranchController extends Controller
             ->with('success', 'Branch created successfully.');
     }
 
-    public function edit(Branch $branch): View
+    /**
+     * Resolve the branch by primary key WITHOUT the tenant scope, so the
+     * documented answer to "another agency's branch" stays 403 rather than
+     * becoming a 404 from route-model binding (card
+     * 6b008b8d3ca32bfcb58ce970). Branch is tenant-scoped now; the explicit
+     * check below is what decides, and it is the only thing that runs.
+     */
+    private function findBranch($branch): Branch
     {
+        return $branch instanceof Branch
+            ? $branch
+            : Branch::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)->findOrFail($branch);
+    }
+
+    public function edit($branch): View
+    {
+        $branch = $this->findBranch($branch);
+
         abort_unless($branch->agency_id === auth()->user()->agency_id, 403);
 
         return view('branches.edit', compact('branch'));
     }
 
-    public function update(Request $request, Branch $branch): RedirectResponse
+    public function update(Request $request, $branch): RedirectResponse
     {
+        $branch = $this->findBranch($branch);
+
         abort_unless($branch->agency_id === auth()->user()->agency_id, 403);
 
         $validated = $request->validate([
@@ -67,8 +85,10 @@ class BranchController extends Controller
             ->with('success', 'Branch updated successfully.');
     }
 
-    public function destroy(Branch $branch): RedirectResponse
+    public function destroy($branch): RedirectResponse
     {
+        $branch = $this->findBranch($branch);
+
         abort_unless($branch->agency_id === auth()->user()->agency_id, 403);
 
         $branch->delete();

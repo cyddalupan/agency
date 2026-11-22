@@ -23,6 +23,23 @@ class AgentAuthController extends Controller
         ]);
 
         if (Auth::guard('agent')->attempt($credentials, $request->boolean('remember'))) {
+            // Card 6b008b8d3ca32bfcb58ce970: the guard lookup is filtered by
+            // the HOST's agency, so without this an agent of agency B could
+            // sign in on agency A's host and land on a dashboard with a tenant
+            // that is not theirs. Refuse, and leave nobody signed in.
+            $bound = app()->has('tenant_agency') ? app('tenant_agency') : null;
+            $agent = Auth::guard('agent')->user();
+
+            if ($bound && $agent && (int) $agent->agency_id !== (int) $bound->id) {
+                Auth::guard('agent')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'These credentials do not belong to this agency.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
 
             return redirect()->intended(route('agent.dashboard'));

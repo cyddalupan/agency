@@ -145,16 +145,16 @@ class EmployeeController extends Controller
             ->with('success', 'Employee created successfully.');
     }
 
-    public function edit(Employee $employee): View
+    public function edit($employee): View
     {
-        $this->authorizeEmployee($employee);
+        $employee = $this->authorizeEmployee($employee);
 
         return view('employees.form', $this->formData($employee));
     }
 
-    public function update(Request $request, Employee $employee): RedirectResponse
+    public function update(Request $request, $employee): RedirectResponse
     {
-        $this->authorizeEmployee($employee);
+        $employee = $this->authorizeEmployee($employee);
         $agencyId = $this->agencyId();
 
         $validated = $this->validateEmployee($request, $agencyId, $employee->id);
@@ -167,9 +167,9 @@ class EmployeeController extends Controller
             ->with('success', 'Employee updated successfully.');
     }
 
-    public function destroy(Employee $employee): RedirectResponse
+    public function destroy($employee): RedirectResponse
     {
-        $this->authorizeEmployee($employee);
+        $employee = $this->authorizeEmployee($employee);
 
         foreach (array_keys(self::DOC_FIELDS) as $field) {
             if ($employee->{$field}) {
@@ -184,9 +184,9 @@ class EmployeeController extends Controller
     }
 
     /** Download a stored document — keeps files out of /storage-with-the-rest. */
-    public function download(Employee $employee, string $field)
+    public function download($employee, string $field)
     {
-        $this->authorizeEmployee($employee);
+        $employee = $this->authorizeEmployee($employee);
         abort_unless(array_key_exists($field, self::DOC_FIELDS), 404);
         abort_unless($employee->{$field}, 404);
 
@@ -244,9 +244,9 @@ class EmployeeController extends Controller
         return back()->with('success', 'Added to ' . EmployeeSetting::TYPES[$validated['type']] . '.');
     }
 
-    public function updateSetting(Request $request, EmployeeSetting $setting): RedirectResponse
+    public function updateSetting(Request $request, $setting): RedirectResponse
     {
-        abort_unless((int) $setting->agency_id === $this->agencyId(), 403);
+        $setting = $this->authorizeSetting($setting);
 
         $validated = $request->validate([
             'name'        => 'required|string|max:191',
@@ -259,9 +259,10 @@ class EmployeeController extends Controller
         return back()->with('success', 'Updated.');
     }
 
-    public function destroySetting(EmployeeSetting $setting): RedirectResponse
+    public function destroySetting($setting): RedirectResponse
     {
-        abort_unless((int) $setting->agency_id === $this->agencyId(), 403);
+        $setting = $this->authorizeSetting($setting);
+
         $setting->delete();
 
         return back()->with('success', 'Removed.');
@@ -277,9 +278,35 @@ class EmployeeController extends Controller
         return $agencyId;
     }
 
-    private function authorizeEmployee(Employee $employee): void
+    /**
+     * Resolve the employee WITHOUT the tenant scope, then apply the agency
+     * check this controller documents. Card 6b008b8d3ca32bfcb58ce970: Employee
+     * is tenant-scoped now, and route-model binding would answer another
+     * agency's id with a 404 before the 403 ever ran. Resolve-with-bypass
+     * keeps the documented 403 (see the class docblock) and the check is
+     * unconditional, so nothing unscoped ever reaches a response.
+     */
+    private function authorizeEmployee($employee): Employee
     {
+        $employee = $employee instanceof Employee
+            ? $employee
+            : Employee::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)->findOrFail($employee);
+
         abort_unless((int) $employee->agency_id === $this->agencyId(), 403);
+
+        return $employee;
+    }
+
+    /** Same pattern for the per-agency option rows. */
+    private function authorizeSetting($setting): EmployeeSetting
+    {
+        $setting = $setting instanceof EmployeeSetting
+            ? $setting
+            : EmployeeSetting::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)->findOrFail($setting);
+
+        abort_unless((int) $setting->agency_id === $this->agencyId(), 403);
+
+        return $setting;
     }
 
     private function formData(?Employee $employee): array

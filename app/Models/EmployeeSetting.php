@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeeSetting extends Model
 {
     use HasFactory;
+    use HasTenant;
 
     public const TYPES = [
         'position'        => 'Position / Designation',

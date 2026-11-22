@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class ReportGeneratedLog extends Model
 {
+    use HasTenant;
+
     protected $fillable = [
         'agency_id',
         'user_id',
