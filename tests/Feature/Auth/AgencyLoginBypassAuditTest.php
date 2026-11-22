@@ -50,35 +50,28 @@ class AgencyLoginBypassAuditTest extends TestCase
     }
 
     /**
-     * On the control plane (no tenant bound) the same failed login cannot reach
-     * audit_events at all; with defect C's fix it is logged at warning level
-     * with the attempted email rather than disappearing.
+     * On the control plane, the failed login's bypasses are now written as
+     * control-plane audit rows (agency_id NULL — card 6b0341cf42a2071fc8b38ea5
+     * made the column nullable), so the attempted email is still recorded
+     * rather than only logged at warning level.
      */
     #[Test]
-    public function failed_agency_login_without_a_tenant_is_logged_not_silent(): void
+    public function failed_agency_login_without_a_tenant_records_control_plane_rows(): void
     {
-        // The failed agencyLogin takes several audited bypasses (user lookup,
-        // authenticate, failed-login attribution); with no tenant, EVERY one of
-        // them is unattributable, so every one logs at warning level.
-        $log = \Mockery::mock(\Illuminate\Log\LogManager::class);
-        $attempts = [];
-        $log->shouldReceive('warning')->atLeast()->once()
-            ->withArgs(function (string $message, array $context) use (&$attempts) {
-                if (! str_contains($message, 'could not be written to audit_events')) {
-                    return false;
-                }
-                $attempts[] = $context['identifier'] ?? null;
-
-                return true;
-            });
-        \Illuminate\Support\Facades\Log::swap($log);
-
         $this->post(route('agency.login.post'), [
             'email'    => 'nobody@example.test',
             'password' => 'wrong-password',
         ]);
 
-        $this->assertContains('attempted email: nobody@example.test', $attempts,
-            'the unattributable failed-login bypass never logged the attempted email: ' . json_encode($attempts));
+        $rows = AuditEvent::withoutGlobalScopes()
+            ->where('action', AuditEvent::ACTION_TENANT_BYPASS)
+            ->whereNull('agency_id')
+            ->get();
+
+        $this->assertNotEmpty($rows, 'a control-plane bypass must still leave an audit row');
+
+        $attribution = $rows->first(fn ($row) => str_contains((string) $row->subject_label, 'failed-login attribution'));
+        $this->assertNotNull($attribution, 'the failed-login bypass was not recorded');
+        $this->assertSame('nobody@example.test', $attribution->after['attempted_email'] ?? null);
     }
 }

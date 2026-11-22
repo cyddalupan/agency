@@ -41,6 +41,15 @@
         <a role="tab" href="{{ route('audit_trail.sensitive') }}" class="tab">Sensitive actions</a>
     </div>
 
+    {{-- Card 6b0341cf42a2071fc8b38ea5: control-plane rows (god mode sign-ins,
+         god account creation) are visible to super_admin only. Say so, so "no
+         agency" reads as intended rather than as a data gap. --}}
+    @if (!empty($includesControlPlane))
+        <p class="text-xs opacity-60" id="audit-control-plane">
+            Includes control-plane events with no agency: god mode sign-ins and god account creation.
+        </p>
+    @endif
+
     {{-- Filters --}}
     <form method="GET" action="{{ route('audit_trail.index') }}" id="audit-filters" class="card bg-base-100 shadow-md">
         <div class="card-body p-4">

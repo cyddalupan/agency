@@ -358,34 +358,21 @@ class TenantIsolationTest extends TestCase
     }
 
     /**
-     * Card 6b008b8dc9020955b2cc16e1, defect C: with NO agency to attribute to,
-     * audit_events cannot hold the row (agency_id is NOT NULL). The bypass must
-     * still leave an explicit outcome somewhere — it used to vanish silently —
-     * and that outcome is a warning in the application log naming the attempt.
-     * No fake agency id is written.
+     * A bypass with no agency is a CONTROL-PLANE row, not a lost one.
+     *
+     * Card 6b0341cf42a2071fc8b38ea5 made `audit_events.agency_id` nullable for
+     * exactly this: a god-mode login lookup or a control-plane registration has
+     * no agency to attribute to, and inventing an id would attribute one
+     * agency's access to another. The row is written with NULL and is visible
+     * to `super_admin` only. The warning fallback stays in place for any write
+     * that still fails.
      */
     #[Test]
-    public function unattributable_bypass_is_logged_and_writes_no_audit_row(): void
+    public function unattributable_bypass_is_written_as_a_control_plane_row(): void
     {
         $this->clearTenant();
         session()->forget('tenant_agency_id');
         $this->assertNull(auth()->user(), 'no guard user: there is no agency to attribute to');
-
-        $before = \App\Models\AuditEvent::withoutGlobalScopes()
-            ->where('action', \App\Models\AuditEvent::ACTION_TENANT_BYPASS)
-            ->count();
-
-        $log = \Mockery::mock(\Illuminate\Log\LogManager::class);
-        $log->shouldReceive('warning')->once()
-            ->withArgs(function (string $message, array $context) {
-                $this->assertStringContainsString('could not be written to audit_events', $message);
-                $this->assertSame('control-plane registration: no tenant', $context['reason'] ?? null);
-                $this->assertSame('attempted email: ghost@example.test', $context['identifier'] ?? null);
-                $this->assertArrayNotHasKey('agency_id', $context);
-
-                return true;
-            });
-        \Illuminate\Support\Facades\Log::swap($log);
 
         \App\Support\Tenant::bypass(
             fn () => Applicant::count(),
@@ -393,11 +380,14 @@ class TenantIsolationTest extends TestCase
             ['attempted_email' => 'ghost@example.test']
         );
 
-        $after = \App\Models\AuditEvent::withoutGlobalScopes()
+        $audit = \App\Models\AuditEvent::withoutGlobalScopes()
             ->where('action', \App\Models\AuditEvent::ACTION_TENANT_BYPASS)
-            ->count();
+            ->where('subject_label', 'like', 'control-plane registration: no tenant%')
+            ->firstOrFail();
 
-        $this->assertSame($before, $after, 'no audit_events row may be invented without an agency');
+        $this->assertNull($audit->agency_id, 'a control-plane row is attributed to no agency');
+        $this->assertSame('ghost@example.test', $audit->after['attempted_email'] ?? null);
+        $this->assertNull($audit->actor_user_id);
     }
 
     /** A bypass with no context keeps the plain reason label it always had. */

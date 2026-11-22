@@ -52,6 +52,36 @@ class AppServiceProvider extends ServiceProvider
         // Register User policy for agency-scoped user management.
         Gate::policy(User::class, UserPolicy::class);
 
+        // Card 6b0341cf42a2071fc8b38ea5: the `godmode` guard.
+        //
+        // AuthManager::createSessionDriver() ALWAYS constructs a plain
+        // SessionGuard, so a custom driver cannot be injected that way — and a
+        // plain SessionGuard on the `users` provider SHARES its session key
+        // with `web`, meaning an agency login would open god mode. So a
+        // `session` guard that names a `guard` class is built by the stock
+        // code path and then instantiated as that class instead, re-running the
+        // same public setters the factory uses. App\Auth\GodModeGuard only
+        // overrides getName().
+        Auth::extend('godmode', function ($app, $name, array $config) {
+            $class = $config['guard'] ?? \App\Auth\GodModeGuard::class;
+
+            $guard = new $class(
+                $name,
+                $app['auth']->createUserProvider($config['provider'] ?? null),
+                $app['session.store'],
+                $app['request'],
+                rehashOnLogin: $app['config']->get('hashing.rehash_on_login', true),
+                timeboxDuration: $app['config']->get('auth.timebox_duration', 200000),
+                hashKey: $app['config']->get('app.key'),
+            );
+
+            $guard->setCookieJar($app['cookie']);
+            $guard->setDispatcher($app['events']);
+            $guard->setRequest($app->refresh('request', $guard, 'setRequest'));
+
+            return $guard;
+        });
+
         // 🔒 Block destructive artisan commands in non-production when .env is 'local' but
         // this is a production server. Only allow them when APP_ENV is explicitly 'testing'.
         $this->blockDestructiveCommands();
@@ -62,6 +92,7 @@ class AppServiceProvider extends ServiceProvider
         $router = $this->app['router'];
         $router->aliasMiddleware('employer', EnsureUserIsEmployer::class);
         $router->aliasMiddleware('role', CheckRole::class);
+        $router->aliasMiddleware('godmode.only', \App\Http\Middleware\EnsureIsGodMode::class);
     }
 
     /**

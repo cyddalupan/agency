@@ -57,6 +57,16 @@ return [
             'driver' => 'session',
             'provider' => 'agents',
         ],
+
+        // Card 6b0341cf42a2071fc8b38ea5: god mode. Same users table and
+        // provider, but its own session key (App\Auth\GodModeGuard overrides
+        // getName()), so a `web` login cannot satisfy `auth:godmode` and vice
+        // versa. Registered by Auth::extend('godmode') in AppServiceProvider.
+        // No remember-me: god sessions never outlive the session cookie.
+        'godmode' => [
+            'driver' => 'godmode',
+            'provider' => 'users',
+        ],
     ],
 
     /*

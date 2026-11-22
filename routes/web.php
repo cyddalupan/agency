@@ -53,6 +53,7 @@ use App\Http\Controllers\ReceivableController;
 use App\Http\Controllers\AgentReportController;
 use App\Http\Controllers\ExpenseRequestController;
 use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\GodModeAuthController;
 use Illuminate\Support\Facades\Route;
 
 // === Health Check ===
@@ -69,6 +70,24 @@ Route::get('/health', function () {
 // to a single token-bound form.
 Route::get('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'entry'])->name('applicant-qr.entry');
 Route::post('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'store'])->name('applicant-qr.store');
+
+// === God mode (control plane) ===
+// Card 6b0341cf42a2071fc8b38ea5. Main host only: IdentifyAgency 404s
+// `godmode`/`godmode/*` on any tenant host before it binds a tenant, so these
+// routes never exist on an agency's subdomain. The `godmode` guard has its own
+// session key, and `guest:godmode` / `auth:godmode` are what keep it from being
+// satisfied by a normal agency login (see App\Auth\GodModeGuard).
+Route::prefix('godmode')->name('godmode.')->group(function () {
+    Route::middleware('guest:godmode')->group(function () {
+        Route::get('/login', [GodModeAuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [GodModeAuthController::class, 'login'])->name('login.post');
+    });
+
+    Route::middleware(['auth:godmode', 'godmode.only'])->group(function () {
+        Route::get('/', [GodModeAuthController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [GodModeAuthController::class, 'logout'])->name('logout');
+    });
+});
 
 Route::prefix('portal')->name('portal.')->group(function () {
     // Guest (not logged in as applicant)

@@ -44,6 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
             $redirectTo = match (true) {
                 in_array('applicant', $guards) => route('portal.login'),
                 in_array('employer', $guards) => route('employer.login'),
+                // Card 6b0341cf42a2071fc8b38ea5: an unauthenticated god request
+                // goes to its own login, never to the agency one.
+                in_array('godmode', $guards) => route('godmode.login'),
                 Str::startsWith($request->path(), 'fra/') || $request->path() === 'fra' => route('fra.login'),
                 Str::startsWith($request->path(), 'sponsor/') || $request->path() === 'sponsor' => route('sponsor.login'),
                 default => route('login'),

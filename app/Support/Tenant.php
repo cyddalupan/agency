@@ -95,23 +95,12 @@ final class Tenant
     private static function record(?string $reason, array $context = []): void
     {
         try {
-            // agency_id is NOT NULL on audit_events, and AuditsChanges skips the
-            // write when there is no agency to attribute to (see :116-118).
-            // When the host resolved no agency, at least try the actor's own.
+            // Card 6b0341cf42a2071fc8b38ea5: agency_id is nullable on
+            // audit_events now, so a control-plane bypass (a god-mode login
+            // lookup, a main-host registration) is written with NULL instead
+            // of being demoted to a log line. Genuinely unattributable rows
+            // still fall through below if the insert refuses a null.
             $agencyId = self::resolveAuditAgencyId();
-
-            if ($agencyId === null) {
-                // Card 6b008b8dc9020955b2cc16e1, defect C: this used to return
-                // silently and the bypass left NO trace at all (a control-plane
-                // registration's bypass wrote nothing, audit max unchanged).
-                // audit_events cannot hold the row — agency_id is NOT NULL and
-                // inventing an id would attribute one agency's access to
-                // another — so the outcome goes to the application log at
-                // warning level, with what was attempted.
-                self::recordUattributableBypass($reason, $context);
-
-                return;
-            }
 
             $caller = self::callerLocation();
             $actorId = auth()->id();

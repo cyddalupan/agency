@@ -40,7 +40,7 @@ class AuditTrailController extends Controller
             'q'            => ['nullable', 'string', 'max:120'],
         ]);
 
-        $events = $this->filteredQuery($filters)
+        $events = $this->filteredQuery($request, $filters)
             ->with('actor')
             ->paginate(50)
             ->withQueryString();
@@ -49,11 +49,12 @@ class AuditTrailController extends Controller
             'events'          => $events,
             'filters'         => $filters,
             'actions'         => AuditEvent::ACTION_LABELS,
-            'subjectTypes'    => $this->subjectTypeOptions(),
-            'actors'          => $this->actorOptions(),
-            'totalCount'      => AuditEvent::query()->count(),
+            'subjectTypes'    => $this->subjectTypeOptions($request),
+            'actors'          => $this->actorOptions($request),
+            'totalCount'      => $this->scopeQuery($request)->count(),
             'filteredCount'   => $events->total(),
             'activeFilterCnt' => count(array_filter($filters, fn ($v) => $v !== null && $v !== '')),
+            'includesControlPlane' => $this->seesControlPlane($request),
         ]);
     }
 
@@ -76,7 +77,7 @@ class AuditTrailController extends Controller
             'q'            => ['nullable', 'string', 'max:120'],
         ]);
 
-        $query = $this->filteredQuery($filters);
+        $query = $this->filteredQuery($request, $filters);
 
         $headers = [
             'Timestamp', 'Actor', 'Action', 'Record type', 'Record ID',
@@ -138,9 +139,9 @@ class AuditTrailController extends Controller
     }
 
     /** The one filter definition shared by the screen and the export. */
-    private function filteredQuery(array $filters)
+    private function filteredQuery(Request $request, array $filters)
     {
-        return AuditEvent::query()
+        return $this->scopeQuery($request)
             ->when($filters['from'] ?? null, fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
             ->when($filters['to'] ?? null, fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
             ->when($filters['actor'] ?? null, fn ($q, $actor) => $q->where('actor_user_id', $actor))
@@ -151,10 +152,32 @@ class AuditTrailController extends Controller
             ->orderByDesc('id');
     }
 
-    /** Distinct subject types present in this agency's trail, as short names. */
-    private function subjectTypeOptions(): array
+    /**
+     * Card 6b0341cf42a2071fc8b38ea5: `audit_events.agency_id` is nullable.
+     * Rows with NULL are control-plane events (god-mode login/logout, god
+     * account creation, pre-tenant bypasses). Only a `super_admin` reads them:
+     * to anyone else the column is simply absent, because a NULL row belongs
+     * to no agency and must not surface as an unattributed event. Distinct
+     * from `forAgency(null)`-style null-scoping on activity_logs, where a
+     * null-agency actor DOES see null rows.
+     */
+    private function seesControlPlane(Request $request): bool
     {
-        return AuditEvent::query()
+        return (string) $request->user()?->user_type === 'super_admin';
+    }
+
+    /** Every audit read starts here so the control-plane rule has one home. */
+    private function scopeQuery(Request $request)
+    {
+        return $this->seesControlPlane($request)
+            ? AuditEvent::query()
+            : AuditEvent::query()->whereNotNull('agency_id');
+    }
+
+    /** Distinct subject types present in this actor's view, as short names. */
+    private function subjectTypeOptions(Request $request): array
+    {
+        return $this->scopeQuery($request)
             ->select('subject_type')
             ->distinct()
             ->orderBy('subject_type')
@@ -164,9 +187,9 @@ class AuditTrailController extends Controller
     }
 
     /** Users who appear as an actor, for the actor dropdown. */
-    private function actorOptions(): array
+    private function actorOptions(Request $request): array
     {
-        $ids = AuditEvent::query()
+        $ids = $this->scopeQuery($request)
             ->whereNotNull('actor_user_id')
             ->distinct()
             ->pluck('actor_user_id');

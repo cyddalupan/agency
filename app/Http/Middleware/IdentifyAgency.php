@@ -39,6 +39,15 @@ class IdentifyAgency
     {
         $host = strtolower($request->getHost());
 
+        // Card 6b0341cf42a2071fc8b38ea5: god mode exists on the main host only.
+        // Refused BEFORE the tenant lookup, so a tenant-shaped host never binds
+        // an agency for a god-mode request and no agency session cookie is ever
+        // issued on a host an agency controls. 404 rather than 403: on an
+        // agency's own subdomain this path simply does not exist.
+        if ($request->is('godmode', 'godmode/*') && ! $this->isMainHost($host)) {
+            abort(404);
+        }
+
         // Control plane: no tenant to resolve from the host.
         if ($this->isMainHost($host)) {
             // A logged-in user on the control plane still needs their tenant

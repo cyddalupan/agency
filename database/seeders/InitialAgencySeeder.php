@@ -17,21 +17,24 @@ class InitialAgencySeeder extends Seeder
             'status'    => 'active',
         ]);
 
-        // Create a super admin (no agency_id)
-        User::create([
-            'name'      => 'Super Admin',
-            'email'     => 'admin@agency.com',
-            'password'  => bcrypt('password'),
-            'user_type' => 'super_admin',
-            'status'    => 'active',
-        ]);
+        // Card 6b0341cf42a2071fc8b38ea5: there is NO seeded super admin.
+        //
+        // `admin@agency.com` / `password` was a live known-password account with
+        // cross-agency read. It is gone: god accounts are minted only by
+        // `php artisan godmode:create`, with a password typed at a hidden
+        // prompt. Do not add one back here — a seeder password is a password in
+        // the repository.
+        //
+        // This edits the seeder, not a live row: on an existing deployment the
+        // operator must also set the old super admin to `status = 'pending'`
+        // (see the PR notes).
 
         // Create an agency admin
         User::create([
             'agency_id' => $agency->id,
             'name'      => 'Agency Admin',
             'email'     => 'agency@demo.com',
-            'password'  => bcrypt('password'),
+            'password'  => 'password',
             'user_type' => 'admin',
             'status'    => 'active',
         ]);
