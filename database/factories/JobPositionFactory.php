@@ -13,7 +13,8 @@ class JobPositionFactory extends Factory
     {
         return [
             'agency_id' => Agency::factory(),
-            'employer_id' => Employer::factory(),
+            // Card 6b0363676e4f389b5b3fd002: the employer lives in the position's agency.
+            'employer_id' => fn (array $a) => Employer::factory()->create(['agency_id' => $a['agency_id']])->id,
             'name' => $this->faker->jobTitle(),
             'gender_preference' => $this->faker->randomElement(['male', 'female', 'any']),
             'salary' => $this->faker->randomFloat(2, 10000, 100000),

@@ -14,7 +14,8 @@ class CommissionFactory extends Factory
     {
         return [
             'agency_id' => Agency::factory(),
-            'employer_id' => Employer::factory(),
+            // Card 6b0363676e4f389b5b3fd002: the employer lives in the commission's agency.
+            'employer_id' => fn (array $a) => Employer::factory()->create(['agency_id' => $a['agency_id']])->id,
             'commissionable_type' => $this->faker->randomElement([
                 'marketing_agency',
                 'marketing_agent',
