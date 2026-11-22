@@ -41,9 +41,9 @@
                                     @else —
                                     @endif
                                 </td>
-                                <td class="text-right font-semibold">₱{{ number_format((float) $d->amount, 2) }}</td>
-                                <td class="max-w-[16rem] truncate" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
-                                <td class="whitespace-nowrap">
+                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format((float) $d->amount, 2) }}</td>
+                                <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
+                                <td class="whitespace-nowrap align-top">
                                     <a href="{{ route('agent_report.deduction.show', $d) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
                                     {{-- (card 6af170f5) Admin and Accounting can correct a posted deduction. --}}
                                     @if($canManageDeductions ?? false)
