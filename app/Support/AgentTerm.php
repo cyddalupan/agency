@@ -35,6 +35,37 @@ class AgentTerm
     }
 
     /**
+     * The module's display name in this agency.
+     *
+     * Card 6b00a6ec (Cyd): Gulf shows "Agents Report", CSDI and FINAS show
+     * "Marketing Staff Report".  This is a LABEL, not a second module: the
+     * route, the route name (`agent_report.*`), the gate (`agent_report`), the
+     * tables and the permissions are one set for all three agencies.  Two
+     * modules would mean two gates to keep in sync and two sidebar branches
+     * for one screen; a label costs one call site.
+     *
+     * The vocabulary comes from the same per-agency rename that already powers
+     * agent_terms() (card 6af81c30, RENAME_AGENCIES), and whether the screen
+     * exists at all comes from ModuleAccess::AGENT_REPORT_AGENCIES — so an
+     * agency moved in or out of the allow-list changes its name automatically,
+     * with no second list to edit.
+     */
+    public static function reportModuleName(?int $agencyId = null): string
+    {
+        return self::plural($agencyId) . ' Report';
+    }
+
+    /** True when the agency offers the Agents Report module (Gulf / CSDI / FINAS). */
+    public static function reportModuleEnabled(?int $agencyId = null): bool
+    {
+        if ($agencyId === null) {
+            $agencyId = resolve_agency()?->id;
+        }
+
+        return ModuleAccess::agentReportEnabled($agencyId);
+    }
+
+    /**
      * Replace "Agent"/"Agents" inside an existing UI string, e.g. a page title
      * that already reads "Agents Report". Keeps the original casing shape.
      */
