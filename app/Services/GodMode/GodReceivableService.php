@@ -215,7 +215,18 @@ class GodReceivableService
      */
     public function narrowedQuery(array $filters): Builder
     {
-        return $this->applyStatus($this->query($filters), $filters['status'] ?? 'received');
+        $query = $this->query($filters);
+
+        // Live rows only, in every narrowed state. A voided row is never a
+        // collected, outstanding or listed row: on `all` the table is still
+        // live money, and the cancelled/deleted ones are listed WITH a badge
+        // in the voided section (`voidedPage()`) and counted by
+        // `voided_count`. Letting `all` through unfiltered is what made the
+        // row count 234 above a 229-row table (F3).
+        $query->whereNull('receivables.deleted_at')
+            ->where('receivables.status', '!=', Receivable::STATUS_CANCELLED);
+
+        return $this->applyStatus($query, $filters['status'] ?? 'received');
     }
 
     /**
@@ -273,29 +284,36 @@ class GodReceivableService
         return "SUM(CASE WHEN receivables.status = 'pending' AND receivables.deleted_at IS NULL THEN receivables.amount ELSE 0 END)";
     }
 
-    private function voidedSql(): string
-    {
-        return "SUM(CASE WHEN receivables.status = 'cancelled' OR receivables.deleted_at IS NOT NULL THEN 1 ELSE 0 END)";
-    }
-
     // ── summary ──────────────────────────────────────────────────────
 
     /**
-     * Collected, outstanding, voided count, row count and agency count in ONE
-     * query with conditional aggregates (§3.3.2).
+     * Collected, outstanding, voided count, row count and agency count — in
+     * TWO statements, never one carrying two builders (F1).
      *
-     * Two builders, one attempt at nothing: `money` is the status-narrowed
-     * rows (B2 — the KPI counts what the table lists) and `window` is the
-     * whole unfiltered window, used ONLY for `voided_count`. "1 voided" has
-     * to stay true above a `status=received` table, which by definition
-     * contains none of them. `row_count` and `agency_count` come from `money`.
-     * `window` costs no query: `toBase()` keeps the bindings and the
-     * where-clauses, so it joins the same statement.
+     * Statement 1 is the status-narrowed rows: `collected`, `outstanding`
+     * and `row_count` all come from the SAME set, the one `receivablePage()`
+     * paginates:
      *
-     * `window` compares the (unaliased) `id` against the window ids, because
-     * bindings are positional and both subqueries carry the month bounds.
+     *   received -> live received rows
+     *   pending  -> live pending rows
+     *   all      -> every live row in the window
      *
-     * @return array{collected: string, outstanding: string, voided_count: int, row_count: int, agency_count: int}
+     * So `row_count` is exactly the number of rows the table lists, in every
+     * state. It used to report 234 above a 229-row table on `status=all`
+     * (F3) because it counted voided rows the tables deliberately exclude.
+     *
+     * Statement 2 is `voided_count`, over the window and ignoring `status`
+     * only: it follows agency, account, date and search like everything else,
+     * so "1 voided" stays true above a `status=received` table that by
+     * definition holds none. It replaced a correlated sub-select that
+     * appended a second builder's bindings to the narrowed statement —
+     * Laravel binds POSITIONALLY, so the window silently shifted (F1).
+     * Two statements, two binding sets, nothing to misalign.
+     *
+     * `row_count` / `agency_count` are NULL when the window has no rows at all,
+     * so the view can print an em dash for "not measured" and never a fake 0.
+     *
+     * @return array{collected: string, outstanding: string, voided_count: int, row_count: int|null, agency_count: int|null}
      */
     public function summary(array $filters): array
     {
@@ -305,24 +323,77 @@ class GodReceivableService
             return $this->summaryCache[$key];
         }
 
-        $money = $this->narrowedQuery($filters);
-        $window = $this->query($filters);
+        $status = $filters['status'] ?? 'received';
 
-        $row = $money
-            ->selectRaw($this->collectedSql().' as collected')
-            ->selectRaw($this->outstandingSql().' as outstanding')
-            ->selectRaw('COUNT(*) as row_count')
-            ->selectRaw('COUNT(DISTINCT receivables.agency_id) as agency_count')
-            ->selectRaw('(SELECT '.$this->voidedSql().' FROM receivables WHERE receivables.id IN ('.$window->toBase()->select('receivables.id')->toSql().')) as voided', $window->getBindings())
+        // TWO statements, two binding sets, no stitching. The money and the
+        // row count are the status-narrowed rows; `voided_count` is the whole
+        // window and ignores `status` (F1: one statement carrying two
+        // builders' bindings binds them positionally and shifts the window).
+        $row = $this->narrowedQuery($filters)
+            ->selectRaw($this->summaryCollectedSql($status).' as collected')
+            ->selectRaw($this->summaryOutstandingSql($status).' as outstanding')
+            ->selectRaw('COUNT(*) as live_rows')
             ->first();
+
+        $voidedCount = (int) $this->query($filters)
+            ->where(function (Builder $q) {
+                $q->where('receivables.status', Receivable::STATUS_CANCELLED)
+                    ->orWhereNotNull('receivables.deleted_at');
+            })
+            ->count();
+
+        $live = $row?->live_rows === null ? null : (int) $row->live_rows;
+        $windowHasRows = $live === null || $live > 0 || $voidedCount > 0;
+
+        // F3: `row_count` is the number of rows the table lists in every
+        // state — the same set `receivablePage()` paginates (see
+        // `narrowedQuery()`). Voided rows never appear in it; `voided_count`
+        // carries them. A window with no rows at all is NULL, which renders
+        // as "—": a measured zero is a different fact from "nothing here".
+        $rowCount = $live === null ? 0 : $live;
 
         return $this->summaryCache[$key] = [
             'collected'    => $this->decimal($row?->collected),
             'outstanding'  => $this->decimal($row?->outstanding),
-            'voided_count' => (int) ($row?->voided ?? 0),
-            'row_count'    => (int) ($row?->row_count ?? 0),
-            'agency_count' => (int) ($row?->agency_count ?? 0),
+            'voided_count' => $voidedCount,
+            'row_count'    => $windowHasRows ? $rowCount : null,
+            // Agencies with at least one live row in the state. NULL (never a
+            // measured 0) when the filter measured no agency.
+            'agency_count' => $windowHasRows ? $this->agencyCount($filters) : null,
         ];
+    }
+
+    /** Agencies with at least one live row in the state — one aggregate. */
+    private function agencyCount(array $filters): int
+    {
+        return (int) $this->narrowedQuery($filters)
+            ->whereNull('receivables.deleted_at')
+            ->selectRaw('COUNT(DISTINCT receivables.agency_id) as n')
+            ->value('n');
+    }
+
+    // ── summary definitions, per status ──────────────────────────────
+
+    /**
+     * The rows `status` selects, as one SQL predicate per aggregate, so the
+     * five numbers in `summary()` cannot be computed from different row sets.
+     */
+    private function summaryCollectedSql(string $status): string
+    {
+        return match ($status) {
+            'pending' => 'SUM(0)',
+            'all'     => 'SUM(CASE WHEN receivables.status = \'received\' AND receivables.deleted_at IS NULL THEN receivables.amount ELSE 0 END)',
+            default   => $this->collectedSql(),
+        };
+    }
+
+    private function summaryOutstandingSql(string $status): string
+    {
+        return match ($status) {
+            'received' => 'SUM(0)',
+            'all'      => 'SUM(CASE WHEN receivables.status = \'pending\' AND receivables.deleted_at IS NULL THEN receivables.amount ELSE 0 END)',
+            default    => $this->outstandingSql(),
+        };
     }
 
     /**
@@ -411,39 +482,45 @@ class GodReceivableService
     }
 
     /**
-     * One row per agency, INCLUDING agencies with no collections in the window
-     * (§3.3.5). `₱0.00` is a real row an operator can click, not an absence.
+     * One row per agency THAT HAS ROWS IN THIS FILTER (B2R, F3). `₱0.00` is a
+     * real row an operator can click, not an absence.
      *
-     * Built from `query()` — the SAME filtered builder as the summary — so
-     * `sum(perAgency) == summary()['collected']` holds by construction, not by
-     * two hand-kept copies of the filter list drifting apart (§4.3).
+     * The join is INNER, and deliberately so: a status-narrowed window has
+     * nothing to say about an agency with no rows in that status, and the old
+     * `LEFT JOIN` + `COALESCE(..., 0)` said ₱0.00 instead — read as "this
+     * agency collected nothing", when it meant "not counted in this filter".
+     * Agency 8 (₱15,000 voided, nothing pending) is the case that matters.
+     * Now it is absent from the pending list rather than lying at zero, and
+     * the table's own row count is the number of agencies the filter measured.
      *
-     * One query: the aggregate is a grouped subquery, joined once to `agencies`.
-     * No per-row loads.
+     * Built from `query()` — the SAME filtered builder as the summary, with
+     * the same status narrowing — so `sum(perAgency) == summary()` holds by
+     * construction, not by two hand-kept copies of the filter list (§4.3).
+     *
+     * One query: the aggregate is a grouped subquery, joined once to
+     * `agencies`. No per-row loads.
      *
      * @return \Illuminate\Support\Collection<int, object>
      */
     public function perAgency(array $filters)
     {
-        // Status narrowed like the KPI above it, but `query()` on purpose:
-        // `agency_count` must keep counting every agency in the window, or a
-        // pending-only window would claim the other agencies paid nothing.
-        $aggregates = $this->query($filters)
-            ->tap(fn (Builder $q) => $this->applyStatus($q, $filters['status'] ?? 'received'))
+        $aggregates = $this->narrowedQuery($filters)
             ->selectRaw('receivables.agency_id as agency_id')
             ->selectRaw($this->collectedSql().' as collected')
             ->selectRaw($this->outstandingSql().' as outstanding')
             ->selectRaw("MAX(CASE WHEN receivables.status = 'received' AND receivables.deleted_at IS NULL THEN receivables.date END) as last_payment_date")
             ->selectRaw("SUM(CASE WHEN receivables.status = 'received' AND receivables.deleted_at IS NULL THEN 1 ELSE 0 END) as received_count")
+            ->selectRaw('COUNT(*) as row_count')
             ->groupBy('receivables.agency_id');
 
         $query = DB::table('agencies')
-            ->leftJoinSub($aggregates, 'receivable_totals', fn ($join) => $join->on('receivable_totals.agency_id', '=', 'agencies.id'))
+            ->joinSub($aggregates, 'receivable_totals', fn ($join) => $join->on('receivable_totals.agency_id', '=', 'agencies.id'))
             ->select('agencies.id', 'agencies.name', 'agencies.status', 'agencies.subdomain')
-            ->selectRaw('COALESCE(receivable_totals.collected, 0) as collected')
-            ->selectRaw('COALESCE(receivable_totals.outstanding, 0) as outstanding')
+            ->selectRaw('receivable_totals.collected as collected')
+            ->selectRaw('receivable_totals.outstanding as outstanding')
             ->selectRaw('receivable_totals.last_payment_date as last_payment_date')
-            ->selectRaw('COALESCE(receivable_totals.received_count, 0) as received_count')
+            ->selectRaw('receivable_totals.received_count as received_count')
+            ->selectRaw('receivable_totals.row_count as row_count')
             ->when(($filters['agency'] ?? null), fn ($q) => $q->where('agencies.id', (int) $filters['agency']));
 
         $dir = ($filters['dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
@@ -463,6 +540,7 @@ class GodReceivableService
             'outstanding'       => $this->decimal($row->outstanding),
             'last_payment_date' => $row->last_payment_date,
             'received_count'    => (int) $row->received_count,
+            'row_count'         => (int) $row->row_count,
         ]);
     }
 

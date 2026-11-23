@@ -33,11 +33,15 @@
 
     $service = app(\App\Services\GodMode\GodReceivableService::class);
 
+    // F3: the three money/row numbers in the strip come from ONE row set
+    // (summary()), so `Rows` is the number of rows the table below lists.
+    $rowsValue = $summary['row_count'] === null ? '—' : number_format($summary['row_count']);
+
     $tiles = [
         ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
         ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
-        ['key' => 'agencies', 'label' => 'Agencies with collections', 'value' => number_format($summary['agency_count']), 'hint' => 'At least one row in this window'],
-        ['key' => 'rows', 'label' => 'Rows', 'value' => number_format($summary['row_count']), 'hint' => number_format($summary['voided_count']).' voided'],
+        ['key' => 'agencies', 'label' => 'Agencies with collections', 'value' => $summary['agency_count'] === null ? '—' : number_format($summary['agency_count']), 'hint' => $filters['status'] === 'pending' ? 'No agency has pending rows in this filter' : 'At least one row in this window'],
+        ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
     ];
 @endphp
 
@@ -192,11 +196,11 @@
         </thead>
         <tbody>
             @forelse ($perAgency as $row)
-                <tr data-agency-id="{{ $row->id }}">
+                <tr data-agency-id="{{ $row->id }}" data-agency-name="{{ $row->name }}">
                     <td class="font-semibold">{{ $row->name }}</td>
                     <td class="text-right" data-collected="{{ $row->collected }}">{{ $service->formatMoney($row->collected) }}</td>
                     <td class="text-right" data-outstanding="{{ $row->outstanding }}">{{ $service->formatMoney($row->outstanding) }}</td>
-                    <td class="text-right">{{ number_format($row->received_count) }}</td>
+                    <td class="text-right" data-row-count="{{ $row->row_count }}">{{ number_format($row->row_count) }}</td>
                     <td>{{ $row->last_payment_date ? \Illuminate\Support\Carbon::parse($row->last_payment_date)->format('d/m/Y') : '—' }}</td>
                     <td class="text-right">
                         <a href="{{ route('godmode.payments.show', ['agency' => $row->id] + $base) }}" class="btn btn-xs btn-ghost">View</a>

@@ -311,6 +311,11 @@ class GodModePaymentsTest extends TestCase
         $response->assertSee('₱1,500.25');
     }
 
+    /**
+     * B2R replaced "zero-collection agencies included": an agency with no rows
+     * in the filter is not a ₱0.00 row. The same rule holds for a different
+     * reason now that "zero" means "measured and zero".
+     */
     #[Test]
     public function agencies_with_no_collections_are_still_listed(): void
     {
@@ -323,13 +328,60 @@ class GodModePaymentsTest extends TestCase
 
         $response = $this->get(route('godmode.payments.index'))->assertOk();
 
-        $response->assertSee('Empty Client')->assertSee('₱0.00');
+        // Not measured -> not a row in the table. (The filter dropdown still
+        // offers every agency by name, which is how an operator reaches it.)
+        $this->assertSame(0, $this->occurrences($response, 'data-agency-name="Empty Client"'));
 
         $rows = collect($response->viewData('perAgency'))->keyBy('name');
-        $this->assertSame('0.00', $rows['Empty Client']->collected);
-        $this->assertSame('0.00', $rows['Empty Client']->outstanding);
-        $this->assertNull($rows['Empty Client']->last_payment_date);
-        $this->assertSame(0, $rows['Empty Client']->received_count);
+        $this->assertArrayNotHasKey('Empty Client', $rows->all(), 'an agency with no rows in the window is not measured');
+        $this->assertSame('100.00', $rows['Gulf Horizon']->collected);
+        $this->assertSame(1, $rows['Gulf Horizon']->row_count);
+        $this->assertNotNull($rows['Gulf Horizon']->last_payment_date, 'the received row is this agency\'s last payment');
+        $this->assertSame(1, $rows['Gulf Horizon']->received_count, 'received_count counts live received rows');
+    }
+
+    /**
+     * B2R: `₱0.00` is a fact only when the filter measured the agency. An
+     * agency with no rows in the status is ABSENT from the table, not a zero —
+     * it used to render 15/16/13 rows of `COALESCE(NULL, 0)` that read as "this
+     * agency collected nothing", when they meant "not counted in this filter".
+     * The one zero allowed on screen is a measured zero: a live received row
+     * whose amount is 0.00.
+     */
+    #[Test]
+    public function agencies_with_no_rows_in_the_status_are_absent_not_zeroed(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $pendingOnly = $this->agency('Pending Only');
+        $voidedOnly = $this->agency('Voided Only');
+        $measuredZero = $this->agency('Measured Zero');
+        $nothing = $this->agency('Nothing At All');
+
+        $this->receivable($gulf, ['amount' => 1000]);
+        $this->receivable($pendingOnly, ['amount' => 800, 'status' => 'pending']);
+        $this->receivable($voidedOnly, ['amount' => 15000, 'status' => 'pending'])->delete();
+        $this->receivable($measuredZero, ['amount' => 0]);
+        $this->actAsGod();
+
+        $perAgency = collect($this->get(route('godmode.payments.index'))->assertOk()->viewData('perAgency'));
+        $names = $perAgency->pluck('name')->sort()->values()->all();
+
+        // Measured agencies are listed, a real zero included; unmeasured ones
+        // are not rows at all. (Default status is `received`, so Pending Only
+        // is not measured in it.)
+        $this->assertSame(['Gulf Horizon', 'Measured Zero'], $names);
+        $this->assertSame('0.00', $perAgency->firstWhere('name', 'Measured Zero')->collected, 'a measured zero stays a zero');
+
+        // The same on the status that used to zero everything but the leader.
+        $pending = collect($this->get(route('godmode.payments.index', ['status' => 'pending']))->assertOk()->viewData('perAgency'));
+        $this->assertSame(['Pending Only'], $pending->pluck('name')->all(), 'status=pending measures exactly the agencies with pending rows');
+        $this->assertSame('800.00', $pending->first()->outstanding);
+
+        // And the screen does not print a row for an agency it never measured.
+        $html = $this->get(route('godmode.payments.index', ['status' => 'pending']))->assertOk()->getContent();
+        $this->assertStringNotContainsString('data-agency-id="'.$voidedOnly->id.'"', $html);
+        $this->assertStringNotContainsString('data-agency-id="'.$nothing->id.'"', $html);
+        $this->assertStringNotContainsString('data-agency-id="'.$gulf->id.'"', $html, 'no collected-only agency on the pending list');
     }
 
     /**
@@ -529,16 +581,37 @@ class GodModePaymentsTest extends TestCase
 
         // `status=all` is the state that sees voided rows; `received` (the
         // default) legitimately hides them, so ask for the unfiltered view.
+        // F3: `status=all` is every row in the window, voided included. The
+        // drill-in's own table is live money only — voided rows are listed
+        // with a badge below it — so `all` must NOT count them, or the header
+        // claims 6 rows above a 4-row table (234 vs 229 in QA).
+        // The drill-in shows LIVE money only. On `status=all` the table it
+        // lists and the count above it must be the same set: one live row.
+        // (234 vs 229 in QA was the count including rows the table hides.)
         $response = $this->get(route('godmode.payments.show', [$gulf, 'status' => 'all']))->assertOk();
 
         $this->assertSame('1000.00', $response->viewData('summary')['collected']);
         $this->assertSame(1, $response->viewData('summary')['voided_count']);
+        $this->assertSame(
+            $response->viewData('rows')->total(),
+            $response->viewData('summary')['row_count'],
+            'status=all counts the rows the table lists, not the voided ones beside it'
+        );
 
         $voided = $response->viewData('voided');
         $this->assertCount(1, $voided);
         $this->assertSame($deleted->id, $voided->first()->id);
 
+        // AC11, restored: the voided row is only shown WITH the badge that says
+        // it is voided, and never in the live table without one. If the live
+        // table starts listing deleted rows again, this fails.
         $response->assertSee('data-badge="deleted"', false);
+        $this->assertSame(0, $this->occurrences($response, 'data-receivable-page="live" data-receivable-id="'.$deleted->id.'"'),
+            'a deleted row is not in the live receivables table');
+        $this->assertSame(0, $this->occurrences($response, 'data-receivable-id="'.$deleted->id.'" data-receivable-page="live"'),
+            'a deleted row is not in the live receivables table');
+        $this->assertSame(1, $this->occurrences($response, 'data-voided-id="'.$deleted->id.'"'),
+            'a deleted row appears exactly once, in the voided list');
         $response->assertSee('Voided money');
 
         // The ledger's own KPI strip reports the voided count too.
@@ -572,6 +645,142 @@ class GodModePaymentsTest extends TestCase
      * screen's vocabulary (which uses `deleted`, lowercase). One word,
      * lowercase, `voided`, for cancelled-and-deleted alike.
      */
+    /**
+     * F1: `voided_count` used to be a correlated sub-select built from a
+     * SECOND builder, with that builder's bindings appended to the narrowed
+     * statement's. Laravel binds positionally, so the narrowed placeholders
+     * consumed the window's values and the date window silently shifted —
+     * invisible on the default window, where both builders carry identical
+     * bounds. The fix is a separate window-bound statement, and this test
+     * asks the question the default window cannot: is the count the same as
+     * an independent count over the same window, with the filter narrowed to
+     * an agency AND an account?
+     */
+    #[Test]
+    public function voided_count_is_computed_over_the_whole_window_and_never_shifts(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $csdi = $this->agency('CSDI');
+
+        // Three voided rows across three months inside the window, one of
+        // them outside the account filter, one belonging to another agency.
+        $this->receivable($gulf, ['amount' => 100, 'date' => '2026-01-15'])->delete();
+        $this->receivable($gulf, ['amount' => 200, 'date' => '2026-06-10', 'status' => 'cancelled']);
+        $this->receivable($gulf, ['amount' => 300, 'date' => '2026-11-02', 'account' => 'Monthly Collection'])->delete();
+        $this->receivable($csdi, ['amount' => 400, 'date' => '2026-03-03'])->delete();
+
+        $this->actAsGod();
+
+        $service = app(GodReceivableService::class);
+
+        // Agency + account narrowed: two Gulf Placement Fee voided rows.
+        $filters = $this->filters(['from' => '2026-01', 'to' => '2026-12', 'agency' => $gulf->id, 'account' => 'Placement Fee']);
+        $this->assertSame(2, $service->summary($filters)['voided_count'], 'window = agency + account + date');
+
+        // The same count, independently, with raw SQL.
+        $raw = DB::table('receivables')
+            ->where('agency_id', $gulf->id)
+            ->where('account', 'Placement Fee')
+            ->whereBetween('date', ['2026-01-01', '2026-12-31'])
+            ->where(function ($q) {
+                $q->where('status', 'cancelled')->orWhereNotNull('deleted_at');
+            })
+            ->count();
+        $this->assertSame(2, $raw, 'sanity: the independent count agrees');
+
+        // A narrower month window must move the count with the window, not
+        // keep the default's. Under the old stitched statement this is where
+        // the numbers silently came from the wrong bounds.
+        $june = $this->filters(['agency' => $gulf->id, 'account' => 'Placement Fee', 'from' => '2026-06', 'to' => '2026-06']);
+        $this->assertSame(1, $service->summary($june)['voided_count'], 'June only: the cancelled row');
+
+        $q1 = $this->filters(['agency' => $gulf->id, 'account' => 'Placement Fee', 'from' => '2026-01', 'to' => '2026-01']);
+        $this->assertSame(1, $service->summary($q1)['voided_count'], 'January only: the deleted row');
+
+        // And it ignores `status` only: every status reports the same count.
+        foreach (['received', 'pending', 'all'] as $status) {
+            $f = $this->filters(['agency' => $gulf->id, 'from' => '2026-01', 'to' => '2026-12', 'status' => $status]);
+            $this->assertSame(3, $service->summary($f)['voided_count'], "voided_count must ignore status={$status} but follow the window");
+        }
+    }
+
+    /**
+     * F3: the number on screen must be the number of rows a reader can see.
+     * `status=all` used to report 234 above a 229-row table. Now the Rows
+     * KPI, the header count and the table's own pagination total are one
+     * number in every state, and voided rows are never part of it.
+     */
+    #[Test]
+    public function the_rows_kpi_is_the_number_of_rows_the_table_lists_in_every_state(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $csdi = $this->agency('CSDI');
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->receivable($gulf, ['amount' => 100 + $i]);
+            $this->receivable($csdi, ['amount' => 50, 'status' => 'pending']);
+        }
+        // Two voided rows in the same window: one deleted, one cancelled.
+        $this->receivable($gulf, ['amount' => 900])->delete();
+        $this->receivable($csdi, ['amount' => 700, 'status' => 'cancelled']);
+
+        $this->actAsGod();
+
+        $service = app(GodReceivableService::class);
+
+        foreach (['received', 'pending', 'all'] as $status) {
+            $filters = $this->filters(['status' => $status]);
+            $summary = $service->summary($filters);
+            $page = $service->receivablePage($filters);
+
+            $this->assertSame(
+                $page->total(),
+                $summary['row_count'],
+                "Rows KPI and table disagree on status={$status}"
+            );
+
+            $index = $this->get(route('godmode.payments.index', ['status' => $status]))->assertOk();
+            $this->assertSame(
+                number_format($page->total()),
+                $this->kpi($index, 'rows'),
+                "rendered Rows KPI on status={$status}"
+            );
+            $this->assertSame(
+                $page->total(),
+                $service->perAgency($filters)->sum('row_count'),
+                "per-agency row counts sum to the Rows KPI on status={$status}"
+            );
+
+            // The voided rows are counted, never listed.
+            $this->assertSame(2, $summary['voided_count'], "voided count on status={$status}");
+            foreach ($page as $row) {
+                $this->assertNull($row->deleted_at, 'a voided row is never listed');
+                $this->assertNotSame('cancelled', $row->status, 'a cancelled row is never listed');
+            }
+        }
+
+        // Default (no rows in a status): "—", not a measured zero.
+        $empty = $this->filters(['from' => '2020-01', 'to' => '2020-02']);
+        $this->assertNull($service->summary($empty)['row_count'], 'an empty window is not "0 rows", it is unmeasured');
+    }
+
+    /**
+     * B2R: the drill-in header and the ledger KPI print an em dash when the
+     * filter measured no rows, instead of a `₱0.00` that reads as a fact.
+     */
+    #[Test]
+    public function an_empty_window_renders_an_em_dash_not_a_zero(): void
+    {
+        $this->actAsGod();
+
+        $index = $this->get(route('godmode.payments.index', ['from' => '2020-01', 'to' => '2020-02']))->assertOk();
+        $this->assertSame('—', $this->kpi($index, 'rows'));
+
+        $gulf = $this->agency('Gulf Horizon');
+        $show = $this->get(route('godmode.payments.show', [$gulf, 'from' => '2020-01', 'to' => '2020-02']))->assertOk();
+        $this->assertSame('—', $this->kpi($show, 'rows'));
+    }
+
     #[Test]
     public function a_cancelled_row_carries_one_cancelled_badge_not_a_second_status_badge(): void
     {
@@ -583,8 +792,11 @@ class GodModePaymentsTest extends TestCase
 
         $response = $this->get(route('godmode.payments.show', [$gulf, 'status' => 'all']))->assertOk();
 
-        // The row's own status badge says what the row is.
-        $this->assertSame(1, $this->occurrences($response, 'data-receivable-status="cancelled"'));
+        // A cancelled row is voided, so it is never a live row: it appears
+        // once, in the voided list, with the badge that says why (B3).
+        $this->assertSame(0, $this->occurrences($response, 'data-receivable-status="cancelled"'),
+            'the live table is live money only');
+        $this->assertEqualsCanonicalizing(['received'], $this->rowStatuses($response->viewData('rows')), 'only the live row is listed');
 
         // The void list states the reason once, on the badge beside the
         // amount: "cancelled", lowercase, same vocabulary as `deleted`. The
@@ -728,8 +940,10 @@ class GodModePaymentsTest extends TestCase
         foreach (['%', '_', '%%', 'A%9'] as $wildcard) {
             $response = $this->get(route('godmode.payments.index', ['q' => $wildcard]))->assertOk();
 
-            $this->assertSame(0, $response->viewData('summary')['row_count'], '"'.$wildcard.'" must be escaped');
+            // No match in the window is "—", not a measured zero (F3).
+            $this->assertNull($response->viewData('summary')['row_count'], '"'.$wildcard.'" must be escaped');
             $this->assertSame('0.00', $response->viewData('summary')['collected']);
+            $this->assertSame(0, $response->viewData('perAgency')->count(), 'and it measures no agency');
         }
     }
 
@@ -943,11 +1157,17 @@ class GodModePaymentsTest extends TestCase
         $expected = [
             // `rows` is what the state sums: received rows, pending rows, or
             // every live row. Voided rows are never summed in any state.
+            // `rows` is the number of rows the table lists in that state.
+            // `received`/`pending` count their live rows; `all` counts every
+            // row in the window, voided included (F3) — the same set
+            // `receivablePage()` lists on `all`, not one number larger.
             'received' => ['collected' => 133455, 'outstanding' => 0, 'rows' => 2, 'statuses' => ['received'], 'live' => 2],
             'pending'  => ['collected' => 0, 'outstanding' => 130050, 'rows' => 2, 'statuses' => ['pending'], 'live' => 2],
-            // `all` is every row in the window, voided included — the state
-            // where the voided ones are visible. They are counted, not summed.
-            'all'      => ['collected' => 133455, 'outstanding' => 130050, 'rows' => 6, 'statuses' => ['cancelled', 'pending', 'received'], 'live' => 6],
+            // `all` is every LIVE row in the window: one collected, one
+            // pending per agency. The cancelled and the soft-deleted rows are
+            // voided — counted, never listed in the table — so 234 vs 229
+            // cannot recur (F3).
+            'all'      => ['collected' => 133455, 'outstanding' => 130050, 'rows' => 4, 'statuses' => ['pending', 'received'], 'live' => 4],
         ];
 
         foreach ($expected as $status => $want) {
@@ -1005,6 +1225,7 @@ class GodModePaymentsTest extends TestCase
                 'received' => ['received'],
                 default => ['pending', 'received'],
             };
+            // `all` lists live rows only; the deleted row is voided.
             $this->assertSame(
                 $service->formatMoney($status === 'pending' ? '0.00' : $showSummary['collected']),
                 $this->kpi($show, 'collected'),

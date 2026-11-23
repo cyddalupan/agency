@@ -16,10 +16,14 @@
 
     // The KPIs follow the status filter, like the table below them (B2). The
     // dashboard never filters by status, so its tiles are unchanged.
+    // The money and row numbers come from summary(), the same row set as the
+    // table below (F3); the Rows tile is the number of rows listed.
+    $rowsValue = $summary['row_count'] === null ? '—' : number_format($summary['row_count']);
+
     $tiles = [
-        ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($filters['status'] === 'pending' ? '0.00' : $summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
-        ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($filters['status'] === 'received' ? '0.00' : $summary['outstanding']), 'hint' => 'Pending, not yet received'],
-        ['key' => 'rows', 'label' => 'Rows', 'value' => number_format($summary['row_count']), 'hint' => number_format($summary['voided_count']).' voided'],
+        ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
+        ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
+        ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
         ['key' => 'last', 'label' => 'Last payment', 'value' => $rows->total() > 0 && $rows->first()->date ? $rows->first()->date->format('d/m/Y') : '—', 'hint' => 'Most recent row shown'],
     ];
 @endphp
@@ -127,7 +131,7 @@
             {{ $filters['status'] === 'pending' ? 'Outstanding rows' : ($filters['status'] === 'received' ? 'Collected rows' : 'All receivables') }}
         </h2>
         <p class="text-xs opacity-60">
-            {{ number_format($rows->total()) }} of {{ number_format($summary['row_count']) }} row(s) in this window.
+            {{ number_format($rows->total()) }} of {{ $summary['row_count'] === null ? '—' : number_format($summary['row_count']) }} row(s) in this window.
             Money: {{ $service->formatMoney($filters['status'] === 'pending' ? $summary['outstanding'] : $summary['collected']) }}.
         </p>
     </div>
@@ -148,7 +152,7 @@
         </thead>
         <tbody>
             @forelse ($rows as $row)
-                <tr data-receivable-id="{{ $row->id }}">
+                <tr data-receivable-id="{{ $row->id }}" data-receivable-page="live">
                     <td><code class="text-xs">{{ $row->code }}</code></td>
                     <td>{{ $row->date?->format('d/m/Y') }}</td>
                     <td>{{ $row->account ?? $unspecified }}</td>
