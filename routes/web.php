@@ -56,6 +56,7 @@ use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\GodModeAuthController;
 use App\Http\Controllers\GodMode\GodAgencyController;
 use App\Http\Controllers\GodMode\GodAgencySettingsController;
+use App\Http\Controllers\GodMode\GodAuditController;
 use App\Http\Controllers\GodMode\GodPaymentsController;
 use Illuminate\Support\Facades\Route;
 
@@ -117,6 +118,17 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         // from the route, not a 200 with a string injected into a filter.
         Route::get('/payments', [GodPaymentsController::class, 'index'])->name('payments.index');
         Route::get('/payments/{agency}', [GodPaymentsController::class, 'show'])->whereNumber('agency')->name('payments.show');
+
+        // Card 6b0383d516e52b9c418a9136 — Audit trail (control-plane plane
+        // events + sensitive actions). READ ONLY: three GETs, no POST/PUT/
+        // DELETE, ever. `['auth:godmode', 'godmode.only']` is the SOLE gate:
+        // `module.access` is deliberately absent — it reads auth()->user() on
+        // the default guard, which is nobody on a god session, and would 403
+        // the agency-less super_admin this screen exists for. See the
+        // controller docblock before adding anything here.
+        Route::get('/audit', [GodAuditController::class, 'index'])->name('audit.index');
+        Route::get('/audit/sensitive', [GodAuditController::class, 'sensitive'])->name('audit.sensitive');
+        Route::get('/audit/export', [GodAuditController::class, 'export'])->name('audit.export');
     });
 });
 

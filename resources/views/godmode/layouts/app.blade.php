@@ -32,6 +32,10 @@
                        class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.agencies.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Agencies</a>
                     <a href="{{ route('godmode.payments.index') }}"
                        class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.payments.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Payments</a>
+                    {{-- Card 6b0383d516e52b9c418a9136: the control-plane audit
+                         trail. Read-only, no badge count — the screen shows it. --}}
+                    <a href="{{ route('godmode.audit.index') }}"
+                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.audit.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Audit</a>
                 </nav>
             </div>
             <div class="flex items-center gap-3">
