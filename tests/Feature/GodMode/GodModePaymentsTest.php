@@ -209,6 +209,25 @@ class GodModePaymentsTest extends TestCase
         $this->get('/godmode/payments/999999')->assertNotFound();
     }
 
+    /**
+     * An out-of-range `?page=` on the drill-in is a page that does not exist,
+     * not a crashed page. `paginate()` happily returns an empty set for page
+     * 99, and the header's Last-payment tile read `->date` on a null
+     * `first()` — a 500 where the honest answer is "no such page".
+     */
+    #[Test]
+    public function an_out_of_range_page_on_the_drill_in_is_404_not_500(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $this->receivable($gulf, ['amount' => 1000]);
+
+        $this->actAsGod();
+
+        $this->get(route('godmode.payments.show', [$gulf, 'page' => 99]))->assertNotFound();
+        $this->get(route('godmode.payments.show', [$gulf, 'page' => 0]))->assertOk();
+        $this->get(route('godmode.payments.show', [$gulf, 'page' => 1]))->assertOk();
+    }
+
     // ── read only ────────────────────────────────────────────────────
 
     #[Test]
@@ -781,6 +800,41 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame('—', $this->kpi($show, 'rows'));
     }
 
+    /**
+     * The drill-in's Collected tile is a fact only when the status filter
+     * measured collected money. The default status is `received`, so for an
+     * agency whose money is all voided the narrowed row set is empty: an
+     * `₱0.00` there says "this agency collected nothing", when the truth is
+     * "nothing here was collected, and ₱15,000 is voided". Same em-dash
+     * treatment as the index (B2R).
+     */
+    #[Test]
+    public function the_drill_in_collected_tile_is_an_em_dash_when_nothing_was_measured(): void
+    {
+        $voidedOnly = $this->agency('Voided Only', ['status' => '']);
+        $this->receivable($voidedOnly, ['amount' => 15000, 'status' => 'pending'])->delete();
+
+        $gulf = $this->agency('Gulf Horizon');
+        $this->receivable($gulf, ['amount' => 0]);
+
+        $this->actAsGod();
+
+        $show = $this->get(route('godmode.payments.show', $voidedOnly))->assertOk();
+        $this->assertSame('—', $this->kpi($show, 'collected'), 'nothing collected in this filter is not ₱0.00');
+
+        // A measured zero stays a zero: a live received row of 0.00.
+        $zero = $this->get(route('godmode.payments.show', $gulf))->assertOk();
+        $this->assertSame('₱0.00', $this->kpi($zero, 'collected'), 'a measured zero is a fact');
+
+        // And a window that measured nothing says so on the ledger too: the
+        // agencies KPI is an em dash, not a fake zero, and its hint stops
+        // claiming "at least one row".
+        $empty = $this->get(route('godmode.payments.index', ['from' => '2020-01', 'to' => '2020-02']))->assertOk();
+        $this->assertSame('—', $this->kpi($empty, 'agencies'));
+        $this->assertSame('—', $this->kpi($empty, 'collected'));
+        $this->assertStringContainsString('Nothing measured in this window', $empty->getContent());
+    }
+
     #[Test]
     public function a_cancelled_row_carries_one_cancelled_badge_not_a_second_status_badge(): void
     {
@@ -940,9 +994,11 @@ class GodModePaymentsTest extends TestCase
         foreach (['%', '_', '%%', 'A%9'] as $wildcard) {
             $response = $this->get(route('godmode.payments.index', ['q' => $wildcard]))->assertOk();
 
-            // No match in the window is "—", not a measured zero (F3).
+            // No match in the window is "—", not a measured zero (F3) — the
+            // money has no row set to measure, so the sentinel says so.
             $this->assertNull($response->viewData('summary')['row_count'], '"'.$wildcard.'" must be escaped');
-            $this->assertSame('0.00', $response->viewData('summary')['collected']);
+            $this->assertSame(GodReceivableService::MEASURED_NOTHING, $response->viewData('summary')['collected']);
+            $this->assertSame('—', $this->kpi($response, 'collected'));
             $this->assertSame(0, $response->viewData('perAgency')->count(), 'and it measures no agency');
         }
     }
@@ -1030,16 +1086,22 @@ class GodModePaymentsTest extends TestCase
     }
 
     #[Test]
-    public function an_empty_database_renders_both_screens_with_zeroes_not_nan(): void
+    public function an_empty_database_renders_both_screens_without_a_fake_zero(): void
     {
         $this->actAsGod();
 
         $index = $this->get(route('godmode.payments.index'))->assertOk();
-        $index->assertSee('₱0.00');
+        $index->assertSee('—');
         $this->assertStringNotContainsString('NaN', $index->getContent());
-        $this->assertSame('0.00', $index->viewData('summary')['collected']);
+        // Nothing has been measured yet: "—", not a ₱0.00 that claims a
+        // measurement (B2R).
+        $this->assertSame(GodReceivableService::MEASURED_NOTHING, $index->viewData('summary')['collected']);
+        $this->assertSame('—', $this->kpi($index, 'collected'));
 
-        $this->get(route('godmode.dashboard'))->assertOk()->assertSee('₱0.00');
+        $dashboard = $this->get(route('godmode.dashboard'))->assertOk();
+        $this->assertStringNotContainsString('NaN', $dashboard->getContent());
+        $this->assertSame(GodReceivableService::MEASURED_NOTHING, $dashboard->viewData('summaryThis')['collected']);
+        $this->assertSame(GodReceivableService::MEASURED_NOTHING, $dashboard->viewData('summaryRolling')['collected']);
     }
 
     // ── query budget ─────────────────────────────────────────────────

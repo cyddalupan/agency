@@ -20,11 +20,15 @@
     // table below (F3); the Rows tile is the number of rows listed.
     $rowsValue = $summary['row_count'] === null ? '—' : number_format($summary['row_count']);
 
+    // A page past the last one is refused in the controller (404), so this
+    // page always has at least one row or is genuinely empty.
+    $firstRow = $rows->first();
+
     $tiles = [
         ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
         ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
         ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
-        ['key' => 'last', 'label' => 'Last payment', 'value' => $rows->total() > 0 && $rows->first()->date ? $rows->first()->date->format('d/m/Y') : '—', 'hint' => 'Most recent row shown'],
+        ['key' => 'last', 'label' => 'Last payment', 'value' => $firstRow && $firstRow->date ? $firstRow->date->format('d/m/Y') : '—', 'hint' => 'Most recent row shown'],
     ];
 @endphp
 

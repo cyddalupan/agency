@@ -55,12 +55,21 @@ class GodPaymentsController extends Controller
     /**
      * Agency drill-in. `{agency}` binds unscoped on the god plane; an unknown
      * id is a 404 from the implicit binding, never a 500 (§6.19).
+     *
+     * A `?page=` past the last page is a page that does not exist: `paginate()`
+     * returns an empty set and the view would read `first()` as null, so it is
+     * a 404 here instead of a 500 in the header (and `page=0`/junk clamps to 1,
+     * not to an empty page).
      */
     public function show(Request $request, Agency $agency): View
     {
         $query = $request->query();
         $query['agency'] = $agency->id;
         $filters = $this->ledger->filters($query);
+
+        $rows = $this->ledger->agencyPage($filters, $agency->id);
+
+        abort_if($rows->currentPage() < 1 || $rows->currentPage() > $rows->lastPage(), 404);
 
         return view('godmode.payments.show', [
             'filters'   => $filters,
@@ -70,7 +79,7 @@ class GodPaymentsController extends Controller
             'summary'   => $this->ledger->summary($filters),
             'series'    => $this->ledger->monthlySeries($filters),
             'byAccount' => $this->ledger->byAccount($filters),
-            'rows'      => $this->ledger->agencyPage($filters, $agency->id),
+            'rows'      => $rows,
             'voided'    => $this->ledger->voidedPage($filters, $agency->id),
             'perOptions' => GodReceivableService::PER_PAGE_OPTIONS,
             'accounts'  => Receivable::ACCOUNTS,

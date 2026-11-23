@@ -40,7 +40,7 @@
     $tiles = [
         ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
         ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
-        ['key' => 'agencies', 'label' => 'Agencies with collections', 'value' => $summary['agency_count'] === null ? '—' : number_format($summary['agency_count']), 'hint' => $filters['status'] === 'pending' ? 'No agency has pending rows in this filter' : 'At least one row in this window'],
+        ['key' => 'agencies', 'label' => 'Agencies with collections', 'value' => $summary['agency_count'] === null ? '—' : number_format($summary['agency_count']), 'hint' => $summary['agency_count'] !== null ? 'At least one row in this window' : ($filters['status'] === 'pending' ? 'No agency has pending rows in this filter' : 'Nothing measured in this window')],
         ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
     ];
 @endphp

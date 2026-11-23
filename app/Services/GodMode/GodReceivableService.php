@@ -41,6 +41,16 @@ class GodReceivableService
     /** Rows per page on the ledger and on the drill-in. */
     public const PER_PAGE_OPTIONS = [25, 50, 100];
 
+    /**
+     * `summary()['collected']` when the filter measured no collected money at
+     * all: the narrowed row set is empty. `formatMoney()` renders it as an em
+     * dash, because `₱0.00` would claim a measurement that never happened
+     * (B2R) — an agency whose money is all voided has collected nothing, not
+     * zero pesos. A live received row of 0.00 is a measured zero and stays
+     * `'0.00'`.
+     */
+    public const MEASURED_NOTHING = '\0unmeasured';
+
     /** Month buckets the chart and the series always carry. */
     public const SERIES_MONTHS = 12;
 
@@ -352,8 +362,23 @@ class GodReceivableService
         // as "—": a measured zero is a different fact from "nothing here".
         $rowCount = $live === null ? 0 : $live;
 
+        // No measured row set, no measured money. `MEASURED_NOTHING` renders
+        // as an em dash instead of a `₱0.00` that reads as a fact (B2R), EXCEPT
+        // on `status=pending`, where collected is excluded by definition and
+        // the zero is the honest answer. A live received row of 0.00 is a
+        // measured zero and stays "0.00".
+        //
+        // The test is `$live`, not `$windowHasRows`: an agency whose only rows
+        // in this filter are voided has NO collected row set to measure, even
+        // though the window knows about its voided money.
+        $collected = match (true) {
+            ! empty($live)        => $this->decimal($row?->collected),
+            $status === 'pending' => '0.00',
+            default               => self::MEASURED_NOTHING,
+        };
+
         return $this->summaryCache[$key] = [
-            'collected'    => $this->decimal($row?->collected),
+            'collected'    => $collected,
             'outstanding'  => $this->decimal($row?->outstanding),
             'voided_count' => $voidedCount,
             'row_count'    => $windowHasRows ? $rowCount : null,
@@ -737,6 +762,10 @@ class GodReceivableService
      */
     public function formatMoney($value): string
     {
+        if ($value === self::MEASURED_NOTHING) {
+            return '—';
+        }
+
         return '₱'.number_format($this->toCents($value) / 100, 2);
     }
 
