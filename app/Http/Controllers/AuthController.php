@@ -8,8 +8,10 @@ use App\Services\SensitiveActionLogger;
 use App\Support\Tenant;
 use App\Traits\LoginThrottle;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
@@ -34,22 +36,35 @@ class AuthController extends Controller
         $email = $request->input('email');
         $key = $this->loginRateLimitKey('web', $email);
 
+        // Check user status before attempting login (email or username).
+        // The lookup happens on the control plane before any agency is known,
+        // so it is a legitimate (audited) cross-agency read. Resolved first so
+        // the failed-attempt tracking below can attribute a known account to
+        // its agency without a second cross-agency lookup.
+        $user = Tenant::bypass(fn () => User::where('email', $credentials['email'])
+            ->orWhere('username', $credentials['email'])
+            ->first(), 'login: resolve user before tenant is known', ['attempted_email' => $credentials['email']]);
+
         // Track all failed attempts (before rate limit check) for suspicious activity detection
-        $this->trackFailedLoginAttempt($email, null, $request);
+        $this->trackFailedLoginAttempt($email, $user?->agency_id, $request);
 
         // Rate-limit check
         if ($response = $this->checkLoginRateLimit($key)) {
             return $response;
         }
 
-        // Check user status before attempting login (email or username).
-        // The lookup happens on the control plane before any agency is known,
-        // so it is a legitimate (audited) cross-agency read.
-        $user = Tenant::bypass(fn () => User::where('email', $credentials['email'])
-            ->orWhere('username', $credentials['email'])
-            ->first(), 'login: resolve user before tenant is known', ['attempted_email' => $credentials['email']]);
         if ($response = $this->checkUserActiveStatus($user)) {
             return $response;
+        }
+
+        // Card 6b0420a205f32d19776021d4: a control-plane operator has no tenant
+        // by design, so this form must not create a web session for one. The
+        // old branch that used to sit below ran AFTER Auth::attempt and sent
+        // them to route('dashboard') — the tenant dashboard — where the first
+        // scoped query threw and every page load 500'd. Decided here, before
+        // Auth::attempt, using the user already resolved above.
+        if ($this->isAgencyLessOperator($user)) {
+            return $this->refuseWebLoginForOperator($request, $user, $key);
         }
 
         // Bind the tenant before Auth::attempt so every query that follows
@@ -74,11 +89,6 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             SensitiveActionLogger::login(auth()->user());
-
-            // If this is a super admin (no agency), go to super dashboard
-            if (!auth()->user()->agency_id) {
-                return redirect()->intended(route('dashboard'));
-            }
 
             // Already bound above from the resolved user; re-bind from the
             // authenticated user only as a safety net (idempotent).
@@ -193,6 +203,53 @@ class AuthController extends Controller
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
+    }
+
+    /**
+     * A control-plane operator: no tenant (agency_id NULL) and user_type
+     * super_admin. Both halves are required — an agency-bound super_admin is
+     * a normal tenant user, and an agency-less non-operator is an orphaned
+     * account, not an operator.
+     */
+    private function isAgencyLessOperator(?User $user): bool
+    {
+        return $user !== null
+            && $user->agency_id === null
+            && $user->user_type === 'super_admin';
+    }
+
+    /**
+     * Answer a web login for an agency-less super_admin without creating a
+     * session; send them to the god mode door instead.
+     *
+     * The response is IDENTICAL for a correct and a wrong password (same
+     * redirect, same message), so this form cannot be used to confirm the
+     * operator's password. The check itself is still real work, so a
+     * wrong-password answer costs the same as a right one.
+     *
+     * No web session is created, which is the point: `GodModeGuard` gives the
+     * god guard its own session key precisely so a web login cannot satisfy
+     * `auth:godmode`. Promoting this session into god mode would undo that, so
+     * the operator signs in at /godmode/login like anyone else. A stale
+     * pre-fix web session is dropped by EnsureNoOperatorWebSession.
+     */
+    private function refuseWebLoginForOperator(Request $request, User $user, string $key): RedirectResponse
+    {
+        $password = (string) $request->input('password');
+        $correct = Hash::check($password, (string) $user->password);
+
+        // A wrong password is a failed attempt and costs budget; the correct
+        // one proves the account is the caller's and clears it. Both paths
+        // write the SAME failed-login attribution row: the operator did use
+        // this form even with the right password, so the try is recorded and
+        // the response and audit trail do not tell the two cases apart.
+        SensitiveActionLogger::failedLogin($user->email, null);
+
+        $correct ? $this->clearRateLimit($key) : $this->hitRateLimit($key);
+
+        return redirect()->route('godmode.login')->withErrors([
+            'email' => 'This account uses the operator sign-in.',
         ])->onlyInput('email');
     }
 

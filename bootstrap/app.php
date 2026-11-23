@@ -18,6 +18,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\IdentifyAgency::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        // Card 6b0420a205f32d19776021d4: an agency-less super_admin must never
+        // hold a `web` session — there is no tenant to serve them and the first
+        // scoped query throws [users]. Login no longer creates one; this drops
+        // the sessions created before that fix, on every auth:web request, and
+        // sends the operator to the god mode door. Agency-bound users never
+        // match the branch.
+        $middleware->append(\App\Http\Middleware\EnsureNoOperatorWebSession::class);
+        \Illuminate\Auth\Middleware\Authenticate::redirectUsing(
+            [\App\Http\Middleware\EnsureNoOperatorWebSession::class, 'redirectTo']
+        );
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
         ]);
