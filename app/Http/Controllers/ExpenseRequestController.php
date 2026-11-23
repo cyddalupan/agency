@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Agency;
 use App\Models\Agent;
 use App\Models\AgentDeduction;
 use App\Models\Applicant;
@@ -867,8 +868,25 @@ class ExpenseRequestController extends Controller
             }
         }
 
+        // (card 6b038452, 2026-11-23) Files are stored BEFORE the transaction
+        // opens: nextReference() holds the per-agency allocation lock until
+        // commit, so a multi-MB upload inside it would stall every other
+        // operator in the agency. Validation above has already passed, so the
+        // early return below only fires when the row is too big to store.
+        $lineFilePaths = [];
+        foreach ($validated['lines'] as $index => $line) {
+            $lineFilePaths[$index] = $this->storeLineFile($request, $index);
+            if (($line['file'] ?? null) && ! $lineFilePaths[$index]) {
+                return back()->withErrors([
+                    'lines' => "Could not store the attachment on line ".($index + 1).".",
+                ])->withInput();
+            }
+        }
+
         try {
-            $requestModel = DB::transaction(function () use ($request, $validated, $agencyId, $branchId) {
+            $requestModel = DB::transaction(function () use ($request, $validated, $agencyId, $branchId, $lineFilePaths) {
+                // First statement, deliberately: the row lock for the reference
+                // allocation must precede every read this transaction depends on.
                 $reference = $this->nextReference($agencyId);
 
                 $parent = ExpenseRequest::create([
@@ -984,7 +1002,7 @@ class ExpenseRequestController extends Controller
                         'status'             => ExpenseRequest::STATUS_PENDING,
                         'account_id'         => $account->id,
                         'particular'         => $line['particular'] ?? null,
-                        'file_path'          => $this->storeLineFile($request, $index),
+                        'file_path'          => $lineFilePaths[$index] ?? null,
                     ]);
                 }
 
@@ -1435,125 +1453,146 @@ class ExpenseRequestController extends Controller
         $fileDates = array_values(array_unique(array_column($validatedRows, 'date')));
         $fileAccounts = array_values(array_unique(array_column($validatedRows, 'account_id')));
 
-        // Only rows that could collide with this file (same agency, same dates,
-        // same accounts) — cancelled requests never block a re-import.
-        $existingCounts = [];
-        $existingItems = ExpenseRequestItem::query()
-            ->whereHas('expenseRequest', fn ($q) => $q
-                ->where('agency_id', $agencyId)
-                // DATE() so this matches on MySQL datetimes and SQLite alike.
-                ->whereIn(DB::raw('DATE(date)'), $fileDates)
-                ->where('status', '!=', ExpenseRequest::STATUS_CANCELLED))
-            ->whereIn('account_id', $fileAccounts)
-            ->get(['expense_request_id', 'charge', 'agent_id', 'applicant_id', 'country_id', 'account_id', 'currency', 'amount', 'payment', 'particular']);
-
-        if ($existingItems->isNotEmpty()) {
-            $existingRequests = ExpenseRequest::whereIn('id', $existingItems->pluck('expense_request_id'))
-                ->get(['id', 'date', 'branch_id']);
-
-            $itemDates = $existingRequests
-                ->pluck('date', 'id')
-                ->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : mb_substr((string) $d, 0, 10));
-
-            // The branch is part of the fingerprint, so it must be read back from
-            // the request. Bulk import writes the branch on the REQUEST only
-            // (expense_request_items.branch_id stays NULL), so passing null here
-            // made every existing row unmatchable: re-uploading the same sheet
-            // duplicated it instead of being skipped. (Cyd 2026-11-09)
-            $itemBranches = $existingRequests->pluck('branch_id', 'id');
-
-            foreach ($existingItems as $item) {
-                $key = $fingerprint([
-                    'charge'       => $item->charge,
-                    'branch_id'    => $itemBranches[$item->expense_request_id] ?? null,
-                    'agent_id'     => $item->agent_id,
-                    'applicant_id' => $item->applicant_id,
-                    'country_id'   => $item->country_id,
-                    'account_id'   => $item->account_id,
-                    'currency'     => $item->currency,
-                    'amount'       => $item->amount,
-                    'payment'      => $item->payment,
-                    'particular'   => $item->particular,
-                    'notes'        => null,
-                ], (string) ($itemDates[$item->expense_request_id] ?? ''));
-
-                $existingCounts[$key] = ($existingCounts[$key] ?? 0) + 1;
-            }
-        }
-
-        $incomingByKey = [];
-        foreach ($validatedRows as $data) {
-            $incomingByKey[$fingerprint($data)][] = $data;
-        }
-
-        $rowsToInsert = [];
+        // (card 6b038452, 2026-11-23) The whole duplicate decision AND the
+        // reference allocation now happen inside ONE transaction that takes the
+        // per-agency allocation lock first. Before this, the count-match read
+        // happened before the transaction and nextReference() sat OUTSIDE it
+        // entirely, so lockForUpdate there would have been a no-op and two
+        // imports racing in the same agency still collided.
+        //
+        // The sweep is the expensive part (one query per fingerprint + a per-row
+        // if), so it sits inside the transaction to stay under lock — the lock is
+        // now held for that time. It is a bounded read (one agency, this file's
+        // dates and accounts) and the rows are already capped at 2,000, so this
+        // is minutes-at-worst-vs-nothing, not a new cost class. The alternative,
+        // sweeping before the lock, re-opens exactly the race this card is about.
         $skipped = 0;
-        foreach ($incomingByKey as $key => $rowsForKey) {
-            $alreadyOnFile = $existingCounts[$key] ?? 0;
-            $matched = 0;
-            foreach ($rowsForKey as $data) {
-                if ($matched < $alreadyOnFile) {
-                    $matched++;
-                    $skipped++;
-                    continue;
-                }
-                $rowsToInsert[] = $data;
-            }
-        }
-
-        if (empty($rowsToInsert)) {
-            $total = count($validatedRows);
-
-            return redirect()->route('expense_request.index')
-                ->with('error', "Nothing imported: all {$total} row(s) in this file already exist and were skipped as duplicates.");
-        }
-
-        // ---- All valid, non-duplicate rows: insert in one transaction (all-or-nothing) ----
-        // Reference numbers are allocated once, up front, and then incremented
-        // in memory. nextReference() hydrates every expense request of the
-        // agency, so calling it per row (2,000 rows x 7,355 requests) blew the
-        // 120s PHP limit and killed the import. (Cyd 2026-11-06)
-        $count = count($rowsToInsert);
-        $nextReference = (int) $this->nextReference($agencyId);
+        $count = 0;
         try {
-            DB::transaction(function () use ($rowsToInsert, $agencyId, &$nextReference) {
-            foreach ($rowsToInsert as $data) {
-                $parent = ExpenseRequest::create([
-                    'agency_id'    => $agencyId,
-                    'user_id'      => $data['user_id'] ?? auth()->id(),
-                    'reference_no' => (string) $nextReference++,
-                    'date'         => $data['date'],
-                    'status'       => $data['status'],
-                    'branch_id'    => $data['branch_id'],
-                    'notes'        => $data['notes'],
-                ]);
+            DB::transaction(function () use (
+                $validatedRows, $agencyId, $fingerprint, $fileDates, $fileAccounts, &$rowsToInsert, &$skipped, &$count
+            ) {
+                // First statement, deliberately — the allocation lock must precede
+                // every read below.
+                $this->lockAgencyReference($agencyId);
 
-                ExpenseRequestStatusHistory::create([
-                    'expense_request_id' => $parent->id,
-                    'agency_id'          => $agencyId,
-                    'user_id'            => auth()->id(),
-                    'from_status'        => null,
-                    'to_status'          => $data['status'],
-                    'note'               => $data['status'] === ExpenseRequest::STATUS_PENDING
-                        ? 'Request created'
-                        : 'Imported from CSV with status '.ExpenseRequest::STATUS_LABELS[$data['status']],
-                ]);
+                // Only rows that could collide with this file (same agency, same dates,
+                // same accounts) — cancelled requests never block a re-import.
+                $existingCounts = [];
+                $existingItems = ExpenseRequestItem::query()
+                    ->whereHas('expenseRequest', fn ($q) => $q
+                        ->where('agency_id', $agencyId)
+                        // DATE() so this matches on MySQL datetimes and SQLite alike.
+                        ->whereIn(DB::raw('DATE(date)'), $fileDates)
+                        ->where('status', '!=', ExpenseRequest::STATUS_CANCELLED))
+                    ->whereIn('account_id', $fileAccounts)
+                    ->get(['expense_request_id', 'charge', 'agent_id', 'applicant_id', 'country_id', 'account_id', 'currency', 'amount', 'payment', 'particular']);
 
-                ExpenseRequestItem::create([
-                    'expense_request_id' => $parent->id,
-                    'charge'             => $data['charge'],
-                    'agent_id'           => $data['agent_id'],
-                    'applicant_id'       => $data['applicant_id'],
-                    'country_id'         => $data['country_id'],
-                    'currency'           => $data['currency'],
-                    'amount'             => $data['amount'],
-                    'payment'            => $data['payment'] ?? 0,
-                    'status'             => $data['status'],
-                    'account_id'         => $data['account_id'],
-                    'particular'         => $data['particular'],
-                    'file_path'          => null,
-                ]);
+                if ($existingItems->isNotEmpty()) {
+                    $existingRequests = ExpenseRequest::whereIn('id', $existingItems->pluck('expense_request_id'))
+                        ->get(['id', 'date', 'branch_id']);
+
+                    $itemDates = $existingRequests
+                        ->pluck('date', 'id')
+                        ->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : mb_substr((string) $d, 0, 10));
+
+                    // The branch is part of the fingerprint, so it must be read back from
+                    // the request. Bulk import writes the branch on the REQUEST only
+                    // (expense_request_items.branch_id stays NULL), so passing null here
+                    // made every existing row unmatchable: re-uploading the same sheet
+                    // duplicated it instead of being skipped. (Cyd 2026-11-09)
+                    $itemBranches = $existingRequests->pluck('branch_id', 'id');
+
+                    foreach ($existingItems as $item) {
+                        $key = $fingerprint([
+                            'charge'       => $item->charge,
+                            'branch_id'    => $itemBranches[$item->expense_request_id] ?? null,
+                            'agent_id'     => $item->agent_id,
+                            'applicant_id' => $item->applicant_id,
+                            'country_id'   => $item->country_id,
+                            'account_id'   => $item->account_id,
+                            'currency'     => $item->currency,
+                            'amount'       => $item->amount,
+                            'payment'      => $item->payment,
+                            'particular'   => $item->particular,
+                            'notes'        => null,
+                        ], (string) ($itemDates[$item->expense_request_id] ?? ''));
+
+                        $existingCounts[$key] = ($existingCounts[$key] ?? 0) + 1;
+                    }
                 }
+
+                $incomingByKey = [];
+                foreach ($validatedRows as $data) {
+                    $incomingByKey[$fingerprint($data)][] = $data;
+                }
+
+                $rowsToInsert = [];
+                $skipped = 0;
+                foreach ($incomingByKey as $key => $rowsForKey) {
+                    $alreadyOnFile = $existingCounts[$key] ?? 0;
+                    $matched = 0;
+                    foreach ($rowsForKey as $data) {
+                        if ($matched < $alreadyOnFile) {
+                            $matched++;
+                            $skipped++;
+                            continue;
+                        }
+                        $rowsToInsert[] = $data;
+                    }
+                }
+
+                // Nothing to insert is decided AFTER the transaction (below), because
+                // only the in-transaction sweep (against the locked agency) knows it.
+                if (empty($rowsToInsert)) {
+                    return;
+                }
+
+                    // ---- All valid, non-duplicate rows: insert in this same transaction ----
+                    // Reference numbers are allocated once, up front, and then incremented
+                    // in memory. nextReference() hydrates every expense request of the
+                    // agency, so calling it per row (2,000 rows x 7,355 requests) blew the
+                    // 120s PHP limit and killed the import. (Cyd 2026-11-06)
+                    $count = count($rowsToInsert);
+                    $nextReference = (int) $this->nextReference($agencyId);
+
+                    foreach ($rowsToInsert as $data) {
+                        $parent = ExpenseRequest::create([
+                            'agency_id'    => $agencyId,
+                            'user_id'      => $data['user_id'] ?? auth()->id(),
+                            'reference_no' => (string) $nextReference++,
+                            'date'         => $data['date'],
+                            'status'       => $data['status'],
+                            'branch_id'    => $data['branch_id'],
+                            'notes'        => $data['notes'],
+                        ]);
+
+                        ExpenseRequestStatusHistory::create([
+                            'expense_request_id' => $parent->id,
+                            'agency_id'          => $agencyId,
+                            'user_id'            => auth()->id(),
+                            'from_status'        => null,
+                            'to_status'          => $data['status'],
+                            'note'               => $data['status'] === ExpenseRequest::STATUS_PENDING
+                                ? 'Request created'
+                                : 'Imported from CSV with status '.ExpenseRequest::STATUS_LABELS[$data['status']],
+                        ]);
+
+                        ExpenseRequestItem::create([
+                            'expense_request_id' => $parent->id,
+                            'charge'             => $data['charge'],
+                            'agent_id'           => $data['agent_id'],
+                            'applicant_id'       => $data['applicant_id'],
+                            'country_id'         => $data['country_id'],
+                            'currency'           => $data['currency'],
+                            'amount'             => $data['amount'],
+                            'payment'            => $data['payment'] ?? 0,
+                            'status'             => $data['status'],
+                            'account_id'         => $data['account_id'],
+                            'particular'         => $data['particular'],
+                            'file_path'          => null,
+                        ]);
+                    }
             });
         } catch (\Illuminate\Database\QueryException $e) {
             // Never leave the user on a bare 500: report the database reason.
@@ -1563,6 +1602,13 @@ class ExpenseRequestController extends Controller
                 'csv_file' => 'Nothing was imported — the database rejected a row. '
                     . 'Check for text that is too long or a missing account, then try again.',
             ])->withInput();
+        }
+
+        if ($count === 0) {
+            $total = count($validatedRows);
+
+            return redirect()->route('expense_request.index')
+                ->with('error', "Nothing imported: all {$total} row(s) in this file already exist and were skipped as duplicates.");
         }
 
         $message = "Bulk upload complete: {$count} expense request(s) imported from CSV.";
@@ -1842,17 +1888,51 @@ class ExpenseRequestController extends Controller
 
     /**
      * Next reference number, unique per agency (sequential, starts at the configured value).
+     *
+     * (card 6b038452, 2026-11-23) MAX+1 with no lock handed two concurrent
+     * operators the same number — 303 duplicate refs in agency 7 in three
+     * weeks, every one a live row plus a soft-deleted loser. The allocation is
+     * now serialised per agency:
+     *
+     *  - The tenant row (`agencies.id = $agencyId`) is locked FOR UPDATE, so two
+     *    allocators in the same agency queue *before* they read MAX. Once holder
+     *    A commits, holder B sees A's row and MAX+1 is genuinely next.
+     *  - Use `withTrashed()`: a soft-deleted request still historically held its
+     *    reference and must not be handed out again (a restore, or an audit
+     *    reading the printed number, would then clash).
+     *  - Cast in SQL, not in PHP: `max(reference_no)` under MySQL's string
+     *    comparison returns '999' for a set containing 2000..9999, which would
+     *    allocate a used number forever. `CAST(... AS UNSIGNED)` keeps it numeric.
+     *
+     * The DB unique index on (agency_id, reference_no) is the last line of
+     * defence; this function is what makes the collision not happen, because an
+     * index alone would turn the duplicate into a failed request for a user.
+     *
+     * MUST be called inside an open transaction — `lockForUpdate()` is silently
+     * a plain read otherwise. Both call sites (store, bulk import) call it as the
+     * first statement of their DB::transaction for exactly this reason.
      */
     private function nextReference(int $agencyId): string
     {
         $start = (int) config('expense.reference_start', 2000);
 
-        $max = ExpenseRequest::where('agency_id', $agencyId)
-            ->get('reference_no')
-            ->map(fn ($r) => (int) $r->reference_no)
-            ->max();
+        $this->lockAgencyReference($agencyId);
 
-        return (string) ($max ? max($max + 1, $start) : $start);
+        $max = ExpenseRequest::withTrashed()
+            ->where('agency_id', $agencyId)
+            ->max(DB::raw('CAST(reference_no AS UNSIGNED)'));
+
+        return (string) ($max ? max((int) $max + 1, $start) : $start);
+    }
+
+    /**
+     * Take the per-agency allocation lock (see nextReference()). Split out so a
+     * caller that has already validated its input can take the lock exactly once
+     * before doing its own expensive pre-work inside the same transaction.
+     */
+    private function lockAgencyReference(int $agencyId): void
+    {
+        Agency::whereKey($agencyId)->lockForUpdate()->first();
     }
 
     /**
