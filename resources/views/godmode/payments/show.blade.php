@@ -14,9 +14,11 @@
         'per'     => $filters['per'] !== 25 ? $filters['per'] : null,
     ], fn ($v) => $v !== null && $v !== '');
 
+    // The KPIs follow the status filter, like the table below them (B2). The
+    // dashboard never filters by status, so its tiles are unchanged.
     $tiles = [
-        ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
-        ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
+        ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($filters['status'] === 'pending' ? '0.00' : $summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
+        ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($filters['status'] === 'received' ? '0.00' : $summary['outstanding']), 'hint' => 'Pending, not yet received'],
         ['key' => 'rows', 'label' => 'Rows', 'value' => number_format($summary['row_count']), 'hint' => number_format($summary['voided_count']).' voided'],
         ['key' => 'last', 'label' => 'Last payment', 'value' => $rows->total() > 0 && $rows->first()->date ? $rows->first()->date->format('d/m/Y') : '—', 'hint' => 'Most recent row shown'],
     ];
@@ -65,10 +67,10 @@
         </label>
         <label class="form-control">
             <span class="label-text text-xs font-semibold mb-1">Status</span>
-            <select name="status" class="select select-bordered select-sm">
-                <option value="received" @selected($filters['status'] === 'received')>Collected</option>
-                <option value="pending" @selected($filters['status'] === 'pending')>Outstanding</option>
-                <option value="all" @selected($filters['status'] === 'all')>All</option>
+            <select name="status" class="select select-bordered select-sm" data-status-selected="{{ $filters['status'] }}">
+                <option value="received" @selected($filters['status'] === 'received') data-status-option="received">Collected</option>
+                <option value="pending" @selected($filters['status'] === 'pending') data-status-option="pending">Outstanding</option>
+                <option value="all" @selected($filters['status'] === 'all') data-status-option="all">All</option>
             </select>
         </label>
         <label class="form-control flex-1 min-w-[12rem]">
@@ -119,10 +121,15 @@
 
 <div class="card bg-base-100 shadow overflow-x-auto">
     <div class="px-4 pt-4">
-        <h2 class="font-semibold">
-            {{ $filters['status'] === 'pending' ? 'Outstanding' : ($filters['status'] === 'received' ? 'Collected' : 'All receivables') }}
+        {{-- The heading names exactly the rows below it (B2): `pending` is
+             outstanding money only, `received` is collected money only. --}}
+        <h2 class="font-semibold" data-rows-heading="{{ $filters['status'] }}">
+            {{ $filters['status'] === 'pending' ? 'Outstanding rows' : ($filters['status'] === 'received' ? 'Collected rows' : 'All receivables') }}
         </h2>
-        <p class="text-xs opacity-60">{{ number_format($summary['row_count']) }} row(s) in this window.</p>
+        <p class="text-xs opacity-60">
+            {{ number_format($rows->total()) }} of {{ number_format($summary['row_count']) }} row(s) in this window.
+            Money: {{ $service->formatMoney($filters['status'] === 'pending' ? $summary['outstanding'] : $summary['collected']) }}.
+        </p>
     </div>
     <table class="table table-sm" id="payments-receivables">
         <thead>
@@ -153,12 +160,11 @@
                     <td class="max-w-[16rem] truncate" title="{{ $row->particular }}">{{ $row->particular ?: '—' }}</td>
                     <td class="text-right" data-amount="{{ $row->amount }}">{{ $service->formatMoney($row->amount) }}</td>
                     <td>
+                        {{-- This table is live money only, so the badge is the
+                             reason it is live: Collected or Outstanding. --}}
                         <span class="badge badge-sm {{ $row->status === 'received' ? 'badge-success' : 'badge-warning' }}" data-receivable-status="{{ $row->status }}">
-                            {{ ucfirst($row->status) }}
+                            {{ $row->status === 'received' ? 'Collected' : 'Outstanding' }}
                         </span>
-                        @if ($row->deleted_at)
-                            <span class="badge badge-sm badge-error" data-badge="deleted">deleted</span>
-                        @endif
                     </td>
                 </tr>
             @empty
@@ -187,10 +193,10 @@
             <h2 class="font-semibold">Voided money</h2>
             <p class="text-xs opacity-60">
                 {{ number_format($summary['voided_count']) }} voided row(s), excluded from every total above.
-                Cancelled and deleted rows stay visible so a voucher never silently disappears.
+                Excluded from totals: cancelled and deleted rows stay visible so a voucher never silently disappears.
             </p>
         </div>
-        <table class="table table-sm">
+        <table class="table table-sm" id="payments-voided-table">
             <thead>
                 <tr>
                     <th>Code</th>
@@ -198,22 +204,22 @@
                     <th>Account</th>
                     <th>Ref / AR</th>
                     <th class="text-right">Amount</th>
-                    <th>Status</th>
+                    <th>Reason</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($voided as $row)
-                    <tr data-voided-id="{{ $row->id }}">
+                    {{-- One badge, lowercase, the word an operator reads and
+                         QA can match: `cancelled` or `deleted` (B3). --}}
+                    @php $reason = $row->deleted_at ? 'deleted' : (string) $row->status; @endphp
+                    <tr data-voided-id="{{ $row->id }}" data-voided-reason="{{ $reason }}">
                         <td><code class="text-xs">{{ $row->code }}</code></td>
                         <td>{{ $row->date?->format('d/m/Y') }}</td>
                         <td>{{ $row->account ?? $unspecified }}</td>
                         <td>{{ $row->ref_ar ?: '—' }}</td>
                         <td class="text-right">{{ $service->formatMoney($row->amount) }}</td>
                         <td>
-                            <span class="badge badge-sm badge-ghost" data-voided-status="{{ $row->status }}">{{ ucfirst($row->status) }}</span>
-                            @if ($row->deleted_at)
-                                <span class="badge badge-sm badge-error" data-badge="deleted">deleted</span>
-                            @endif
+                            <span class="badge badge-sm {{ $reason === 'deleted' ? 'badge-error' : 'badge-ghost' }}" data-badge="{{ $reason }}">{{ ucfirst($reason) }}</span>
                         </td>
                     </tr>
                 @endforeach

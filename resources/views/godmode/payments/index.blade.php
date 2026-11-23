@@ -88,10 +88,12 @@
 
         <label class="form-control">
             <span class="label-text text-xs font-semibold mb-1">Status</span>
-            <select name="status" class="select select-bordered select-sm" id="payments-status">
-                <option value="received" @selected($filters['status'] === 'received')>Collected</option>
-                <option value="pending" @selected($filters['status'] === 'pending')>Outstanding</option>
-                <option value="all" @selected($filters['status'] === 'all')>All</option>
+            {{-- data-status-option is the rendered state, so a test can read
+                 which filter the page believes it is showing. --}}
+            <select name="status" class="select select-bordered select-sm" id="payments-status" data-status-selected="{{ $filters['status'] }}">
+                <option value="received" @selected($filters['status'] === 'received') data-status-option="received">Collected</option>
+                <option value="pending" @selected($filters['status'] === 'pending') data-status-option="pending">Outstanding</option>
+                <option value="all" @selected($filters['status'] === 'all') data-status-option="all">All</option>
             </select>
         </label>
 
@@ -151,7 +153,9 @@
 
     <div class="card bg-base-100 shadow">
         <div class="card-body p-4">
+            {{-- Ageing is about outstanding money, always: pending rows only. --}}
             <h2 class="font-semibold">Outstanding by age</h2>
+            <p class="text-xs opacity-60">Pending rows not yet received, by days since their date.</p>
             <table class="table table-xs" id="payments-ageing">
                 <thead>
                     <tr>

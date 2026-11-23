@@ -204,6 +204,21 @@ class GodReceivableService
     }
 
     /**
+     * `query()` narrowed by the `status` filter (B2 consistency).
+     *
+     * Everything the screen shows for one status — the KPIs, the monthly
+     * series, the account mix and the per-agency table — has to be computed
+     * from the SAME rows the table lists, or `status=pending` keeps a
+     * "Collected" KPI above an outstanding-only table. So the narrowed
+     * builder is opt-in: `query()` is untouched and the dashboard, which
+     * always means the whole ledger, cannot drift.
+     */
+    public function narrowedQuery(array $filters): Builder
+    {
+        return $this->applyStatus($this->query($filters), $filters['status'] ?? 'received');
+    }
+
+    /**
      * `LIKE %q%` across ref_ar, particular, code and applicant name.
      *
      * `%` and `_` are escaped and the LIKE names an ESCAPE character: a lone
@@ -269,6 +284,17 @@ class GodReceivableService
      * Collected, outstanding, voided count, row count and agency count in ONE
      * query with conditional aggregates (§3.3.2).
      *
+     * Two builders, one attempt at nothing: `money` is the status-narrowed
+     * rows (B2 — the KPI counts what the table lists) and `window` is the
+     * whole unfiltered window, used ONLY for `voided_count`. "1 voided" has
+     * to stay true above a `status=received` table, which by definition
+     * contains none of them. `row_count` and `agency_count` come from `money`.
+     * `window` costs no query: `toBase()` keeps the bindings and the
+     * where-clauses, so it joins the same statement.
+     *
+     * `window` compares the (unaliased) `id` against the window ids, because
+     * bindings are positional and both subqueries carry the month bounds.
+     *
      * @return array{collected: string, outstanding: string, voided_count: int, row_count: int, agency_count: int}
      */
     public function summary(array $filters): array
@@ -279,12 +305,15 @@ class GodReceivableService
             return $this->summaryCache[$key];
         }
 
-        $row = $this->query($filters)
+        $money = $this->narrowedQuery($filters);
+        $window = $this->query($filters);
+
+        $row = $money
             ->selectRaw($this->collectedSql().' as collected')
             ->selectRaw($this->outstandingSql().' as outstanding')
-            ->selectRaw($this->voidedSql().' as voided')
             ->selectRaw('COUNT(*) as row_count')
             ->selectRaw('COUNT(DISTINCT receivables.agency_id) as agency_count')
+            ->selectRaw('(SELECT '.$this->voidedSql().' FROM receivables WHERE receivables.id IN ('.$window->toBase()->select('receivables.id')->toSql().')) as voided', $window->getBindings())
             ->first();
 
         return $this->summaryCache[$key] = [
@@ -324,7 +353,7 @@ class GodReceivableService
         $chartFilters['from'] = $chart[0];
         $chartFilters['to'] = $bounds['to'];
 
-        $rows = $this->query($chartFilters)
+        $rows = $this->narrowedQuery($chartFilters)
             ->selectRaw($this->monthExpression().' as ym')
             ->selectRaw($this->collectedSql().' as collected')
             ->groupBy('ym')
@@ -358,7 +387,7 @@ class GodReceivableService
      */
     public function byAccount(array $filters): array
     {
-        $rows = $this->query($filters)
+        $rows = $this->narrowedQuery($filters)
             ->selectRaw('receivables.account as account')
             ->selectRaw($this->collectedSql().' as collected')
             ->selectRaw($this->outstandingSql().' as outstanding')
@@ -396,7 +425,11 @@ class GodReceivableService
      */
     public function perAgency(array $filters)
     {
+        // Status narrowed like the KPI above it, but `query()` on purpose:
+        // `agency_count` must keep counting every agency in the window, or a
+        // pending-only window would claim the other agencies paid nothing.
         $aggregates = $this->query($filters)
+            ->tap(fn (Builder $q) => $this->applyStatus($q, $filters['status'] ?? 'received'))
             ->selectRaw('receivables.agency_id as agency_id')
             ->selectRaw($this->collectedSql().' as collected')
             ->selectRaw($this->outstandingSql().' as outstanding')
@@ -441,35 +474,36 @@ class GodReceivableService
      * SQLite (tests) and MySQL (production) both support julianday/DATEDIFF
      * differently, so the difference is expressed once here.
      *
-     * @return array<string, array{count: int, amount: string}>
+     * The bucket is computed in SQL, by the same CASE the display labels use,
+     * and summed once per bucket — four rows, not one row per receivable.
+     * The result strings are converted to decimal ONCE, here. They must never
+     * be re-converted on the way out: the previous version fed an already
+     * decimal bucket string back through `toCents()`, which threw on the
+     * first row (500 on the default window) and would have reported every
+     * amount 100x too large if the cast had been loose (B1).
+     *
      */
     public function ageing(array $filters): array
     {
         $rows = $this->query($filters)
             ->whereNull('receivables.deleted_at')
             ->where('receivables.status', Receivable::STATUS_PENDING)
-            ->selectRaw($this->ageDaysExpression().' as age')
+            ->toBase()
+            ->selectRaw($this->ageBucketExpression().' as bucket')
             ->selectRaw('COUNT(*) as row_count')
             ->selectRaw('SUM(receivables.amount) as amount')
-            ->groupBy('age')
-            ->get();
+            ->groupBy('bucket')
+            ->get()
+            ->keyBy(fn ($row) => (string) $row->bucket);
 
         $out = [];
         foreach (self::AGEING_BUCKETS as $bucket) {
-            $out[$bucket] = ['count' => 0, 'amount' => '0.00'];
-        }
+            $row = $rows->get($bucket);
 
-        foreach ($rows as $row) {
-            $age = (int) $row->age;
-            $bucket = match (true) {
-                $age <= 30  => '0-30',
-                $age <= 60  => '31-60',
-                $age <= 90  => '61-90',
-                default     => '90+',
-            };
-
-            $out[$bucket]['count'] += (int) $row->row_count;
-            $out[$bucket]['amount'] = $this->decimal($this->toCents($out[$bucket]['amount']) + $this->toCents($row->amount));
+            $out[$bucket] = [
+                'count'  => (int) ($row?->row_count ?? 0),
+                'amount' => $this->decimal($row?->amount),
+            ];
         }
 
         return $out;
@@ -478,8 +512,22 @@ class GodReceivableService
     private function ageDaysExpression(): string
     {
         return DB::connection()->getDriverName() === 'sqlite'
-            ? "CAST(julianday('now') - julianday(receivables.date) AS INTEGER)"
+            ? "CAST(julianday('now') - julianday(date(receivables.date)) AS INTEGER)"
             : 'DATEDIFF(CURDATE(), receivables.date)';
+    }
+
+    /**
+     * The bucket label for one row, as server-side SQL, so every driver
+     * groups on the SAME definition of "90+ days".
+     */
+    private function ageBucketExpression(): string
+    {
+        $days = $this->ageDaysExpression();
+
+        return "CASE WHEN {$days} <= 30 THEN '0-30'
+                     WHEN {$days} <= 60 THEN '31-60'
+                     WHEN {$days} <= 90 THEN '61-90'
+                     ELSE '90+' END";
     }
 
     // ── pages ────────────────────────────────────────────────────────
@@ -488,35 +536,52 @@ class GodReceivableService
      * The ledger table: one row per receivable in the window, with its agency
      * name joined once (no per-row `->agency`), paginated 25/50/100.
      *
-     * `status` filter follows the summary's definitions, not a raw column:
-     * `received` hides voided rows, `pending` shows outstanding only, `all`
-     * shows everything including voided ones (that is where the badge lives).
+     * `status` follows the summary's definitions, not a raw column, and means
+     * what the heading above it says (B2): `received` = collected, `pending` =
+     * outstanding, `all` = everything including voided rows. `pending` used to
+     * show received rows under an Outstanding heading.
      */
     public function receivablePage(array $filters, ?int $agencyId = null): LengthAwarePaginator
     {
-        $local = $filters;
-        if ($agencyId !== null) {
-            $local['agency'] = $agencyId;
-        }
-
-        // The row status filter is deliberately NOT applied: this table is the
-        // detail behind the summary, and the summary counts every row in the
-        // window. The screen's heading says which of them is the money
-        // (§4.2 — status = pending puts Outstanding in the heading).
-        $status = $local['status'] ?? 'received';
-
-        return $this->query($local)
+        // One builder: the rows, the KPIs and the per-agency table all come
+        // from `narrowedQuery()`, so they cannot disagree (B2, §4.3).
+        return $this->narrowedQuery($this->forAgency($filters, $agencyId))
             ->join('agencies', 'agencies.id', '=', 'receivables.agency_id')
             ->select('receivables.*', 'agencies.name as agency_name')
-            // Wrapped in a closure on purpose: an un-grouped `orWhereNotNull`
-            // next to the agency join re-admits every agency row.
-            ->when($status !== 'all', fn (Builder $q) => $q->where(fn (Builder $w) => $w
-                ->whereIn('receivables.status', [Receivable::STATUS_RECEIVED, Receivable::STATUS_PENDING])
-                ->whereNull('receivables.deleted_at')))
             ->orderByDesc('receivables.date')
             ->orderByDesc('receivables.id')
-            ->paginate($this->perPage($local['per'] ?? null))
+            ->paginate($this->perPage($filters['per'] ?? null))
             ->withQueryString();
+    }
+
+    /** The same filters, narrowed to one agency. */
+    private function forAgency(array $filters, ?int $agencyId): array
+    {
+        if ($agencyId !== null) {
+            $filters['agency'] = $agencyId;
+        }
+
+        return $filters;
+    }
+
+    /**
+     * The status filter as ONE definition, in the terms the summary already
+     * uses: `received` = collected, `pending` = outstanding, `all` = every row
+     * including voided. Anything else falls back to collected.
+     *
+     * Public because the ledger's per-agency table is ONE query (aggregate
+     * subquery joined to `agencies`), so it cannot go through
+     * `narrowedQuery()` without losing the zero-collection agencies.
+     */
+    public function applyStatus(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'pending' => $query->where('receivables.status', Receivable::STATUS_PENDING)
+                ->whereNull('receivables.deleted_at'),
+            'all' => $query,
+            default => $query->where('receivables.status', Receivable::STATUS_RECEIVED)
+                ->whereNull('receivables.deleted_at'),
+        };
     }
 
     /**
@@ -529,19 +594,13 @@ class GodReceivableService
      */
     public function voidedPage(array $filters, ?int $agencyId = null)
     {
-        $local = $filters;
-        if ($agencyId !== null) {
-            $local['agency'] = $agencyId;
-        }
-
-        return $this->query($local)
+        return $this->query($this->forAgency($filters, $agencyId))
             ->join('agencies', 'agencies.id', '=', 'receivables.agency_id')
             ->select('receivables.*', 'agencies.name as agency_name')
             ->where(function (Builder $q) {
                 $q->where('receivables.status', Receivable::STATUS_CANCELLED)
                     ->orWhereNotNull('receivables.deleted_at');
             })
-            ->orderByDesc('receivables.id')
             ->orderByDesc('receivables.date')
             ->orderByDesc('receivables.id')
             ->limit(25)
@@ -549,21 +608,20 @@ class GodReceivableService
     }
 
     /**
-     * The drill-in page: every non-voided row for one agency, most recent
-     * first, with the applicant name joined only here (never on the aggregate
-     * screens, §4.5).
+     * The drill-in page: the rows for one agency that match `status`, most
+     * recent first, with the applicant name joined only here (never on the
+     * aggregate screens, §4.5).
      */
     public function agencyPage(array $filters, int $agencyId): LengthAwarePaginator
     {
-        $local = $filters;
-        $local['agency'] = $agencyId;
-
-        return $this->query($local)
+        // Status-narrowed like the ledger's table (B2). `agencyPage()` is only
+        // reached from `show()`, so this changes no dashboard number.
+        return $this->narrowedQuery($this->forAgency($filters, $agencyId))
             ->leftJoin('applicants', 'applicants.id', '=', 'receivables.applicant_id')
             ->select('receivables.*', 'applicants.first_name', 'applicants.middle_name', 'applicants.last_name')
             ->orderByDesc('receivables.date')
             ->orderByDesc('receivables.id')
-            ->paginate($this->perPage($local['per'] ?? null))
+            ->paginate($this->perPage($filters['per'] ?? null))
             ->withQueryString();
     }
 

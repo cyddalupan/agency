@@ -101,6 +101,22 @@ class GodModePaymentsTest extends TestCase
         return app(GodReceivableService::class)->filters($overrides);
     }
 
+    /** How many times a raw marker appears in the rendered HTML. */
+    /**
+     * A raw attribute without the base-class attribute normalisation, which
+     * would otherwise match `data-rows-heading="pending-2"` for a request for
+     * `data-rows-heading="pending"`.
+     */
+    private function rawOccurrences(\Illuminate\Testing\TestResponse $response, string $needle): int
+    {
+        return substr_count($response->getContent(), $needle);
+    }
+
+    private function occurrences(\Illuminate\Testing\TestResponse $response, string $needle): int
+    {
+        return substr_count($response->getContent(), $needle);
+    }
+
     // ── access ───────────────────────────────────────────────────────
 
     #[Test]
@@ -316,6 +332,47 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame(0, $rows['Empty Client']->received_count);
     }
 
+    /**
+     * B4 (reconciliation honesty): the agency table is an inner join on
+     * `agencies`, so a receivable whose agency id no longer resolves would
+     * drop out of the table while still counting in the KPI above it — a
+     * list that silently fails to add up to its own total. Either the money
+     * appears under a named bucket or the screen says it is missing. Silent
+     * is not an option.
+     */
+    #[Test]
+    public function deleting_an_agency_removes_its_receivables_so_the_table_still_matches_the_kpi(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $orphan = $this->agency('Orphan Incoming');
+        $engineer = User::factory()->create(['agency_id' => $orphan->id, 'user_type' => 'admin']);
+
+        $this->receivable($gulf, ['amount' => 1000]);
+        $this->receivable($orphan, ['amount' => 4242.42]);
+
+        // The agency row goes away underneath the money (a hard delete or a
+        // cross-agency move that did not carry its receivables). The receivable
+        // row survives; nothing joins to it any more.
+        DB::table('agencies')->where('id', $orphan->id)->delete();
+        $this->assertSame(0, DB::table('receivables')->where('agency_id', $orphan->id)->count(), 'FK cascades: the row goes too');
+        $unjoined = DB::table('receivables')->whereNotIn('agency_id', DB::table('agencies')->select('id'))->count();
+        $this->assertSame(0, $unjoined, 'so no receivable can be lost between the KPI and the table');
+
+        $this->actAsGod();
+
+        $response = $this->get(route('godmode.payments.index'))->assertOk();
+
+        $summary = $response->viewData('summary');
+        $this->assertSame('1000.00', $summary['collected'], 'the deleted agency took its money with it, consistently everywhere');
+
+        $listed = collect($response->viewData('perAgency'))->sum(fn ($row) => app(GodReceivableService::class)->toCents($row->collected));
+        $this->assertSame(app(GodReceivableService::class)->toCents($summary['collected']), $listed, 'the agency table must add up to the KPI');
+
+        // The screen does not pretend the money exists under a nameless row.
+        $response->assertDontSee('₱4,242.42');
+        unset($engineer);
+    }
+
     // ── window ───────────────────────────────────────────────────────
 
     #[Test]
@@ -442,15 +499,22 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame('800.00', $response->viewData('summary')['outstanding']);
         $response->assertSee('Outstanding');
 
-        // The table is the detail behind the summary: it lists the unpaid row
-        // and shows the received one in its own collected state, labelled —
-        // collected and outstanding never swap labels or merge into one number.
-        $this->assertSame(
-            ['pending', 'received'],
-            array_values($response->viewData('rows')->pluck('status')->unique()->sort()->values()->all())
-        );
-        $response->assertSee('data-receivable-status="pending"', false);
-        $response->assertSee('data-receivable-status="received"', false);
+        // B2: the heading and the table agree. `status = pending` used to
+        // render an "Outstanding" heading over rows that included received
+        // ones — a table that contradicts its own label. The filter means
+        // one thing on both screens: pending lists pending rows only.
+        $rows = $response->viewData('rows');
+        $this->assertSame(['pending'], array_values($rows->pluck('status')->unique()->all()));
+        $this->assertSame($rows->count(), $this->occurrences($response, 'data-receivable-status="pending"'));
+        $this->assertSame(0, $this->occurrences($response, 'data-receivable-status="received"'));
+
+        // Same meaning on the ledger: `status = pending` is the outstanding
+        // table, never the collected one.
+        $ledger = $this->get(route('godmode.payments.index', ['status' => 'pending']))->assertOk();
+        $this->assertSame('pending', $ledger->viewData('filters')['status']);
+        // And the money on that screen is the outstanding money, not collected.
+        $this->assertSame('0.00', $ledger->viewData('summary')['collected']);
+        $this->assertSame('800.00', $ledger->viewData('summary')['outstanding']);
     }
 
     #[Test]
@@ -463,7 +527,9 @@ class GodModePaymentsTest extends TestCase
 
         $this->actAsGod();
 
-        $response = $this->get(route('godmode.payments.show', $gulf))->assertOk();
+        // `status=all` is the state that sees voided rows; `received` (the
+        // default) legitimately hides them, so ask for the unfiltered view.
+        $response = $this->get(route('godmode.payments.show', [$gulf, 'status' => 'all']))->assertOk();
 
         $this->assertSame('1000.00', $response->viewData('summary')['collected']);
         $this->assertSame(1, $response->viewData('summary')['voided_count']);
@@ -476,6 +542,8 @@ class GodModePaymentsTest extends TestCase
         $response->assertSee('Voided money');
 
         // The ledger's own KPI strip reports the voided count too.
+        // The ledger reports it on every status, including the default one:
+        // the row is in the window, and the filter only narrows the money.
         $this->get(route('godmode.payments.index'))->assertOk()->assertSee('1 voided');
     }
 
@@ -493,11 +561,160 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame('1000.00', $response->viewData('summary')['collected']);
         $this->assertSame(1, $response->viewData('summary')['voided_count']);
 
-        $response->assertSee('data-voided-status="cancelled"', false);
+        $response->assertSee('data-badge="cancelled"', false);
         $response->assertSee('₱450.00');
     }
 
+    /**
+     * B3: the voided badge rendered a raw `ucfirst(status)` — "Cancelled" —
+     * while the same row's marker said `cancelled`, so the badge an operator
+     * reads and the badge a QA script reads disagreed with the rest of the
+     * screen's vocabulary (which uses `deleted`, lowercase). One word,
+     * lowercase, `voided`, for cancelled-and-deleted alike.
+     */
+    #[Test]
+    public function a_cancelled_row_carries_one_cancelled_badge_not_a_second_status_badge(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $this->receivable($gulf, ['amount' => 1200]);
+        $this->receivable($gulf, ['amount' => 450, 'status' => 'cancelled']);
+
+        $this->actAsGod();
+
+        $response = $this->get(route('godmode.payments.show', [$gulf, 'status' => 'all']))->assertOk();
+
+        // The row's own status badge says what the row is.
+        $this->assertSame(1, $this->occurrences($response, 'data-receivable-status="cancelled"'));
+
+        // The void list states the reason once, on the badge beside the
+        // amount: "cancelled", lowercase, same vocabulary as `deleted`. The
+        // second badge that used to repeat the status next to it is gone.
+        $this->assertSame(1, $this->occurrences($response, 'data-badge="cancelled"'));
+        $this->assertSame(0, $this->occurrences($response, 'data-badge="deleted"'));
+        $this->assertSame(0, $this->occurrences($response, 'data-voided-status='));
+        $this->assertSame(1, $this->occurrences($response, '>Cancelled</span>'));
+
+        $voided = $response->viewData('voided');
+        $this->assertCount(1, $voided);
+
+        // The section says what it excludes, in words, not a cryptic heading.
+        $response->assertSee('Excluded from totals');
+        $response->assertSee('Voided money');
+    }
+
     // ── search ───────────────────────────────────────────────────────
+
+    // ── ageing (B1) ──────────────────────────────────────────────────
+
+    /**
+     * B1: `ageing()` re-converted an already-decimal accumulator with
+     * `toCents()` on every bucket row, so the FIRST row in a bucket threw
+     * `TypeError` (declared return `int` = "10.00" * 100 = 1000.0 float) and
+     * the default 12-month window — the one every operator lands on —
+     * returned 500. Passing row amounts through unchanged would have fixed
+     * the 500 and left a 100x money error, so the assertion is on the
+     * centavo value, not just the status code.
+     */
+    #[Test]
+    public function ageing_renders_the_default_twelve_month_window_above_a_thousand_pesos(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+
+        // Three buckets, several rows each, whole pesos and centavos, at
+        // amounts that cross ₱999.99 so a 100x shift is unmistakable.
+        $fixtures = [
+            [0, '1500.50'], [5, '1500.50'], [29, '999.99'],
+            [31, '2500.25'], [60, '0.01'],
+            [61, '1000.00'],
+            [120, '4000.40'], [200, '1234.56'],
+        ];
+
+        // Amounts are asserted as written-out decimal strings below, not
+        // computed through `toCents()`/`decimal()`: re-deriving the expected
+        // value with the same helper the bug lived in would pass whatever
+        // the helper did.
+        $counts = ['0-30' => 0, '31-60' => 0, '61-90' => 0, '90+' => 0];
+        $service = app(GodReceivableService::class);
+
+        foreach ($fixtures as [$daysAgo, $amount]) {
+            $this->receivable($gulf, [
+                'amount'   => $amount,
+                'status'   => 'pending',
+                'date'     => now()->subDays($daysAgo)->toDateString(),
+            ]);
+
+            $bucket = match (true) {
+                $daysAgo <= 30 => '0-30',
+                $daysAgo <= 60 => '31-60',
+                $daysAgo <= 90 => '61-90',
+                default        => '90+',
+            };
+            $counts[$bucket]++;
+        }
+
+        $this->actAsGod();
+
+        // Default filters: no from/to, i.e. the 12-month window the operator
+        // gets on first load. This is the request that used to 500.
+        $response = $this->get(route('godmode.payments.index'))->assertOk();
+
+        $ageing = $response->viewData('ageing');
+        $this->assertSame(GodReceivableService::AGEING_BUCKETS, array_keys($ageing));
+
+        // Bucket by bucket: the count AND the centavo amount, written out.
+        // `assertOk()` above catches the 500; these catch a 100x shift.
+        // 0-30 = 1500.50 + 1500.50 + 999.99; 31-60 = 2500.25 + 0.01.
+        $this->assertSame($counts['0-30'], $ageing['0-30']['count']);
+        $this->assertSame('4000.99', $ageing['0-30']['amount']);
+        $this->assertSame('2500.26', $ageing['31-60']['amount']);
+        $this->assertSame($counts['61-90'], $ageing['61-90']['count']);
+        $this->assertSame('1000.00', $ageing['61-90']['amount']);
+        $this->assertSame($counts['90+'], $ageing['90+']['count']);
+
+        // Oldest bucket: 4000.40 + 1234.56 = 5234.96 — above ₱999.99, and not
+        // 100x that, and not ₱52.35 from a float round-trip.
+        $this->assertSame('5234.96', $ageing['90+']['amount']);
+        $response->assertSee('₱5,234.96');
+
+        // Every pending centavo in the window is in exactly one bucket. Ageing
+        // is outstanding money, so the comparison is against the pending view
+        // (B2: collected/pending are two different questions).
+        $bucketed = 0;
+        foreach ($ageing as $row) {
+            $bucketed += $service->toCents($row['amount']);
+        }
+        $pending = app(GodReceivableService::class)->summary(app(GodReceivableService::class)->filters(['status' => 'pending']));
+        $this->assertSame($service->toCents($pending['outstanding']), $bucketed);
+    }
+
+    /**
+     * The money bug behind B1, isolated: a bucket's amount must be the sum of
+     * its rows, at any row count and any centavo. A 100x conversion is the
+     * only way "₱10.00" becomes "1000.00".
+     */
+    #[Test]
+    public function ageing_bucket_amounts_are_the_exact_centavo_sum_of_their_rows(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+
+        foreach (['10.00', '999.99', '0.01', '1500.05'] as $amount) {
+            $this->receivable($gulf, ['amount' => $amount, 'status' => 'pending', 'date' => now()->subDays(10)->toDateString()]);
+        }
+
+        // One received row and one voided row must not appear in any bucket.
+        $this->receivable($gulf, ['amount' => '5000.00', 'status' => 'received', 'date' => now()->subDays(10)->toDateString()]);
+        $this->receivable($gulf, ['amount' => '7000.00', 'status' => 'pending', 'date' => now()->subDays(10)->toDateString()])->delete();
+
+        $this->actAsGod();
+
+        $ageing = $this->get(route('godmode.payments.index'))->assertOk()->viewData('ageing');
+
+        // 10.00 + 999.99 + 0.01 + 1500.05 = 2510.05
+        $this->assertSame('2510.05', $ageing['0-30']['amount']);
+        $this->assertSame(4, $ageing['0-30']['count']);
+        $this->assertSame('0.00', $ageing['90+']['amount']);
+        $this->assertSame(0, $ageing['90+']['count']);
+    }
 
     #[Test]
     public function a_percent_in_the_search_returns_zero_rows_not_the_whole_ledger(): void
@@ -691,6 +908,150 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame(123456789, $service->toCents('1234567.89'));
         $this->assertSame('1234567.89', $service->decimal('1234567.89'));
         $this->assertSame('0.00', $service->decimal(null));
+    }
+
+    /**
+     * B2, taken to its end: the status filter must narrow EVERY number on the
+     * screen, not only the row list. `status=pending` used to leave a
+     * Collected KPI, a collected-only chart and per-agency collected totals
+     * above an outstanding-only table — three answers to one question.
+     *
+     * States: `received` = collected, `pending` = outstanding, `all` = every
+     * live row (voided rows are never summed, in any state). For each one:
+     * sum(perAgency) == summary() == the rendered KPI, and the listed rows are
+     * exactly the rows that were summed.
+     */
+    #[Test]
+    public function the_status_filter_narrows_every_number_on_both_screens(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $csdi = $this->agency('CSDI');
+        $this->agency('Empty Client');
+
+        $this->receivable($gulf, ['amount' => 1234.56]);
+        $this->receivable($gulf, ['amount' => 800, 'status' => 'pending']);
+        $this->receivable($csdi, ['amount' => 99.99]);
+        $this->receivable($csdi, ['amount' => 500.50, 'status' => 'pending']);
+        // Voided: counted, never summed, never in the live tables.
+        $this->receivable($csdi, ['amount' => 700, 'status' => 'cancelled']);
+        $this->receivable($gulf, ['amount' => 400])->delete();
+
+        $this->actAsGod();
+
+        // Expected money per state, in centavos. Two live received rows
+        // (1,234.56 + 99.99) and two live pending rows (800.00 + 500.50).
+        $expected = [
+            // `rows` is what the state sums: received rows, pending rows, or
+            // every live row. Voided rows are never summed in any state.
+            'received' => ['collected' => 133455, 'outstanding' => 0, 'rows' => 2, 'statuses' => ['received'], 'live' => 2],
+            'pending'  => ['collected' => 0, 'outstanding' => 130050, 'rows' => 2, 'statuses' => ['pending'], 'live' => 2],
+            // `all` is every row in the window, voided included — the state
+            // where the voided ones are visible. They are counted, not summed.
+            'all'      => ['collected' => 133455, 'outstanding' => 130050, 'rows' => 6, 'statuses' => ['cancelled', 'pending', 'received'], 'live' => 6],
+        ];
+
+        foreach ($expected as $status => $want) {
+            $filters = app(GodReceivableService::class)->filters(['status' => $status]);
+            $summary = app(GodReceivableService::class)->summary($filters);
+
+
+            $this->assertSame($want['collected'], app(GodReceivableService::class)->toCents($summary['collected']), "summary collected for {$status}");
+            $this->assertSame($want['outstanding'], app(GodReceivableService::class)->toCents($summary['outstanding']), "summary outstanding for {$status}");
+                    $this->assertSame($want['rows'], $summary['row_count'], "summary row_count for {$status}");
+
+            // A fresh service: nothing below may come from a warm cache.
+            $this->app->forgetInstance(GodReceivableService::class);
+            $service = app(GodReceivableService::class);
+
+            $sumCollected = $sumOutstanding = 0;
+            foreach ($service->perAgency($filters) as $row) {
+                $sumCollected += $service->toCents($row->collected);
+                $sumOutstanding += $service->toCents($row->outstanding);
+            }
+            $this->assertSame($want['collected'], $sumCollected, "sum(perAgency collected) for {$status}");
+            $this->assertSame($want['outstanding'], $sumOutstanding, "sum(perAgency outstanding) for {$status}");
+
+            $sumByAccount = 0;
+            foreach ($service->byAccount($filters) as $row) {
+                $sumByAccount += $service->toCents($row['collected']) + $service->toCents($row['outstanding']);
+            }
+            $this->assertSame($want['collected'] + $want['outstanding'], $sumByAccount, "byAccount total for {$status}");
+
+            $series = 0;
+            foreach ($service->monthlySeries($filters) as $amount) {
+                $series += $service->toCents($amount);
+            }
+            $this->assertSame($want['collected'], $series, "monthlySeries collected for {$status}");
+
+            // The ledger screen: the rendered KPI is the service's number.
+            $index = $this->get(route('godmode.payments.index', ['status' => $status]))->assertOk();
+            $this->assertSame($status, $index->viewData('filters')['status'], "ledger honours status={$status}");
+            $this->assertSame($service->formatMoney($summary['collected']), $this->kpi($index, 'collected'), "rendered Collected KPI for {$status}");
+            $this->assertSame($service->formatMoney($summary['outstanding']), $this->kpi($index, 'outstanding'), "rendered Outstanding KPI for {$status}");
+            $this->assertSame(number_format($want['rows']), $this->kpi($index, 'rows'), "rendered Rows KPI for {$status}");
+
+            // ... and the table lists exactly the rows it counted.
+            $page = $service->receivablePage($filters);
+            $this->assertSame($want['live'], $page->total(), "ledger table row count for {$status}");
+            $this->assertSame($want['statuses'], $this->rowStatuses($page), "ledger table statuses for {$status}");
+
+            // The drill-in agrees with the ledger, row for row.
+            $show = $this->get(route('godmode.payments.show', [$gulf, 'status' => $status]))->assertOk();
+            $this->assertSame($status, $show->viewData('filters')['status'], "drill-in honours status={$status}");
+            $showSummary = $show->viewData('summary');
+            // One agency: its own live rows, and its own voided ones on `all`.
+            $gulfStatuses = match ($status) {
+                'pending' => ['pending'],
+                'received' => ['received'],
+                default => ['pending', 'received'],
+            };
+            $this->assertSame(
+                $service->formatMoney($status === 'pending' ? '0.00' : $showSummary['collected']),
+                $this->kpi($show, 'collected'),
+                "drill-in Collected KPI for {$status}"
+            );
+            $this->assertSame(
+                $service->formatMoney($status === 'received' ? '0.00' : $showSummary['outstanding']),
+                $this->kpi($show, 'outstanding'),
+                "drill-in Outstanding KPI for {$status}"
+            );
+            $this->assertSame(
+                $showSummary['row_count'],
+                $show->viewData('rows')->total(),
+                "drill-in lists every row its summary counted for {$status}"
+            );
+            $this->assertSame(
+                $gulfStatuses,
+                $this->rowStatuses($show->viewData('rows')),
+                "drill-in table statuses for {$status}"
+            );
+        }
+
+        // The dashboard has no status filter: it still means the whole ledger.
+        $dashboard = $this->get(route('godmode.dashboard'))->assertOk();
+        $this->assertSame(
+            133455,
+            app(GodReceivableService::class)->toCents($dashboard->viewData('summaryRolling')['collected']),
+            'the dashboard still reports all live collected money'
+        );
+    }
+
+    /** The distinct statuses of the rows a paginator lists, sorted. */
+    private function rowStatuses($rows): array
+    {
+        $statuses = array_values($rows->pluck('status')->unique()->all());
+        sort($statuses);
+
+        return $statuses;
+    }
+
+    /** The text inside `<span data-kpi="key">value</span>`, tag-free. */
+    private function kpi(\Illuminate\Testing\TestResponse $response, string $key): string
+    {
+        $pattern = '/data-kpi="'.preg_quote($key, '/').'"[^>]*>(.*?)<\/span>/s';
+        $this->assertSame(1, preg_match($pattern, $response->getContent(), $m), "KPI {$key} must render exactly once");
+
+        return trim(strip_tags($m[1]));
     }
 
     // ── no audit storm ───────────────────────────────────────────────
