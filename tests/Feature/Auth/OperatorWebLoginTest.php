@@ -324,11 +324,14 @@ class OperatorWebLoginTest extends TestCase
     // SessionGuard (userFromRecaller() throws UnboundTenantException).
 
     /** The recaller cookie value SessionGuard::createRecaller() produces. */
+    /**
+     * The recaller as the browser holds it: an id|token|hash string under the
+     * web guard's cookie name. Sent with withCookie()/withUnencryptedCookie(),
+     * so it reaches the guard exactly as SessionGuard::recaller() reads it.
+     */
     private function recallerCookie(User $user): string
     {
-        return encrypt(
-            $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword()
-        );
+        return $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword();
     }
 
     private function recallerCookieName(): string
@@ -342,7 +345,7 @@ class OperatorWebLoginTest extends TestCase
     {
         $operator = $this->operator(['remember_token' => str_repeat('t', 60)]);
 
-        $response = $this->withCookie(
+        $response = $this->withUnencryptedCookie(
             $this->recallerCookieName(),
             $this->recallerCookie($operator),
         )->get(route('dashboard'));
@@ -359,7 +362,7 @@ class OperatorWebLoginTest extends TestCase
         $operator = $this->operator(['remember_token' => str_repeat('r', 60)]);
         $cookie = $this->recallerCookie($operator);
 
-        $response = $this->withCookie($this->recallerCookieName(), $cookie)
+        $response = $this->withUnencryptedCookie($this->recallerCookieName(), $cookie)
             ->get(route('dashboard'));
 
         $response->assertRedirect(route('godmode.login'));
@@ -374,7 +377,7 @@ class OperatorWebLoginTest extends TestCase
 
         // Replay after the fix is a plain guest request, not a 500 and not a login.
         $this->flushSession();
-        $replay = $this->withCookie($this->recallerCookieName(), $cookie)->get(route('dashboard'));
+        $replay = $this->withUnencryptedCookie($this->recallerCookieName(), $cookie)->get(route('dashboard'));
         $replay->assertRedirect(route('login'));
         $this->assertGuest('web');
     }
@@ -392,7 +395,7 @@ class OperatorWebLoginTest extends TestCase
 
         $token = $admin->remember_token;
 
-        $response = $this->withCookie(
+        $response = $this->withUnencryptedCookie(
             $this->recallerCookieName(),
             $this->recallerCookie($admin),
         )->get('/dashboard');
