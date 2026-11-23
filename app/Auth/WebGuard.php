@@ -2,119 +2,161 @@
 
 namespace App\Auth;
 
-use App\Models\Scopes\TenantScope;
 use App\Models\User;
+use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Auth\SessionGuard;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Timebox;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 /**
- * Card 6b0420a205f32d19776021d4 — the `web` guard itself refuses an
- * agency-less user, from a session id or a remember-me recaller.
+ * Card 6b0420a205f32d19776021d4 — the `web` guard refuses an agency-less
+ * operator, from a session id AND from a remember-me recaller.
  *
- * The first attempt at this card put the operator check in a GLOBAL middleware
- * (EnsureNoOperatorWebSession). That middleware ran before StartSession, so
- * `Auth::guard('web')->check()` was false on every request that carried only a
- * remember-me recaller cookie: no session had been read yet. The middleware
- * passed through, StartSession restored the session in the `web` group,
- * SetLocale called Auth::user(), and `SessionGuard::userFromRecaller()` did a
- * plain `users` query — TenantScope, no agency, UnboundTenantException 500 on
- * table [users]. The middleware could never see it, because it ran before the
- * guard had a session to resolve from.
+ * be7a8ffb only stopped a `web` SESSION from 500ing. Production kept failing
+ * because the operator's browser held a remember-me recaller cookie and an
+ * empty `sessions` table:
  *
- * The clean seam is therefore the guard, at the ONE place `web` reads a user:
- * `retrieveById()` / `retrieveByToken()` are the only two `users` queries a
- * SessionGuard makes. Both are routed through `canBeWebUser()`, so:
+ *   SessionGuard::userFromRecaller() -> users query -> TenantScope -> throw
  *
- *   - Session restore and remember-me recall both go through it (same path).
- *   - No tenant is bound yet at that point in the pipeline — before
- *     `Authenticate` runs — so the lookup opts out of the scope explicitly,
- *     exactly like `GodModeGuard::user()` does for the god guard. This is the
- *     operator's own row, not a cross-agency read, so no audit row is written
- *     per request (the login-path bypasses still are).
- *   - An agency-less super_admin is refused here: the guard reports "no user",
- *     so `Auth::user()` is null, SetLocale takes the guest branch, and nothing
- *     downstream ever queries a tenant model with an unbound operator.
+ * and that read happens inside SetLocale, after the old global middleware had
+ * already passed the request through.
  *
- * Agency-bound users are untouched: `canBeWebUser()` returns true for anything
- * with an agency_id, and the scope is still applied normally for every other
- * query in the request.
+ * The seam is the guard's provider, because that is the ONE place a web session
+ * is turned into a user:
  *
- * NOT a `godmode` grant: this refuses the session, it never promotes one. See
- * GodModeGuard for why the two session keys stay disjoint.
+ *   - `userFromRecaller()` is a closure over the provider captured in the
+ *     parent constructor; it calls `retrieveByToken()` on the provider itself,
+ *     so an override of the guard method is not on that path.
+ *   - `user()` -> provider `retrieveById()` for the session id, same story.
+ *
+ * Both lookups are answered by a provider wrapper that refuses a user with no
+ * `agency_id` who is `super_admin`: the guard reports "no user", `Auth::user()`
+ * is null, SetLocale takes the guest branch, and no tenant model is ever read
+ * on an unbound operator's behalf. The wrapper never widens what the guard
+ * accepts — every other row passes through unchanged.
+ *
+ * No audit row per request: this is the account's own row being declined, not a
+ * cross-agency read (the login-path bypasses still log theirs).
+ *
+ * NOT a `godmode` grant: it refuses a session, it never promotes one.
+ * GodModeGuard keeps its own session key so the two can never satisfy each
+ * other, and that is deliberately untouched.
  */
-class WebGuard extends SessionGuard
+final class WebGuard extends SessionGuard
 {
     /**
-     * The stock `web` key, spelled out.
+     * The historical `web` session key.
      *
      * `SessionGuard::getName()` is `'login_'.$name.'_'.sha1(static::class)`.
-     * Before this subclass existed that sha1 was of `SessionGuard::class`
-     * (login_web_59ba36ad...); inheriting it here would produce a DIFFERENT
-     * key (sha1 of WebGuard), silently logging out every agency-bound user on
-     * deploy and ignoring every existing session. Pinned to the historical
-     * value so the guard's identity does not change.
+     * Before this subclass existed that sha1 was of `SessionGuard::class`;
+     * inheriting it here would yield a different key and silently log out every
+     * agency-bound user on deploy. Pinned so the guard's identity does not
+     * change.
      */
-    public function getName()
-    {
-        return 'login_web_'.self::STOCK_SESSION_HASH;
+    private const STOCK_HASH = '59ba36addc2b2f9401580f014c7f58ea4e30989d';
+
+    public function __construct(
+        $name,
+        UserProvider $provider,
+        Session $session,
+        ?SymfonyRequest $request = null,
+        ?Timebox $timebox = null,
+        bool $rehashOnLogin = true,
+        int $timeboxDuration = 200000,
+        ?string $hashKey = null,
+    ) {
+        parent::__construct(
+            $name,
+            self::refusingOperators($provider),
+            $session,
+            $request,
+            $timebox,
+            $rehashOnLogin,
+            $timeboxDuration,
+            $hashKey
+        );
     }
 
-    private const STOCK_SESSION_HASH = '59ba36addc2b2f9401580f014c7f58ea4e30989d';
-
     /**
-     * An authenticated `web` user must belong to a tenant. `super_admin` with no
-     * agency is the control-plane operator: it is served by the `godmode` guard
-     * and must never hold a `web` session. An agency-LESS non-operator is an
-     * orphaned account, not a legitimately tenant-free one, so it is refused
-     * too — the scope would throw on its first tenant query anyway.
+     * The provider wrapper. Every method but the two lookups forwards to the
+     * real provider, so credentials, rehashing and remember-token writes behave
+     * exactly as before.
      */
-    protected function canBeWebUser(?User $user): ?User
+    private static function refusingOperators(UserProvider $inner): UserProvider
     {
-        if ($user === null) {
-            return null;
+        if (! $inner instanceof EloquentUserProvider) {
+            return $inner;
         }
 
-        return $user->agency_id === null ? null : $user;
+        return new class($inner) extends EloquentUserProvider {
+            public function __construct(private readonly EloquentUserProvider $inner)
+            {
+                parent::__construct($inner->getHasher(), $inner->getModel());
+            }
+
+            public function retrieveById($identifier)
+            {
+                return $this->allowed($this->inner->retrieveById($identifier));
+            }
+
+            public function retrieveByToken($identifier, #[\SensitiveParameter] $token)
+            {
+                return $this->allowed($this->inner->retrieveByToken($identifier, $token));
+            }
+
+            public function retrieveByCredentials(array $credentials)
+            {
+                return $this->inner->retrieveByCredentials($credentials);
+            }
+
+            public function validateCredentials(Authenticatable $user, array $credentials)
+            {
+                return $this->inner->validateCredentials($user, $credentials);
+            }
+
+            public function rehashPasswordIfRequired(Authenticatable $user, array $credentials, bool $force = false)
+            {
+                return $this->inner->rehashPasswordIfRequired($user, $credentials, $force);
+            }
+
+            public function updateRememberToken(Authenticatable $user, $token)
+            {
+                return $this->inner->updateRememberToken($user, $token);
+            }
+
+            public function getModel()
+            {
+                return $this->inner->getModel();
+            }
+
+            private function allowed($user)
+            {
+                $isOperator = $user instanceof User
+                    && $user->agency_id === null
+                    && $user->user_type === 'super_admin';
+
+                return $isOperator ? null : $user;
+            }
+        };
     }
 
-    /**
-     * Session restore (`login_web_<sha1>` id) — the parent makes the same
-     * single provider query, which TenantScope would filter (or throw on).
-     */
-    public function retrieveById($identifier)
+    public function getName()
     {
-        return $this->canBeWebUser(
-            User::withoutGlobalScope(TenantScope::class)->find($identifier)
-        );
+        return 'login_web_'.self::STOCK_HASH;
     }
 
     /**
-     * Remember-me recall — the parent calls `retrieveByToken()` here, which is a
-     * `users` query by id + remember_token. This is the path that 500'd in
-     * production: `sessions` was empty and only the recaller cookie existed.
-     */
-    public function retrieveByToken($identifier, #[\SensitiveParameter] $token)
-    {
-        return $this->canBeWebUser(
-            User::withoutGlobalScope(TenantScope::class)
-                ->where('id', $identifier)
-                ->where('remember_token', $token)
-                ->first()
-        );
-    }
-
-    /**
-     * The recaller cookie NAME, pinned to the historical value.
-     *
-     * The name is derived from sha1(static::class) exactly like the session
-     * key, so inheriting it would rename the cookie and orphan every browser
-     * that is currently holding one. Pinned to the PRE-fix value
-     * (sha1('Illuminate\\Auth\\SessionGuard')) on purpose: the cookie an
-     * already-affected operator is carrying today must still be seen, or the
-     * fix cannot retire it.
+     * The recaller cookie NAME, pinned for the same reason as the session key:
+     * it is derived from `sha1(static::class)`, and every browser currently
+     * holding one has the PRE-fix name. Renaming it would orphan the very
+     * cookies this fix has to retire.
      */
     public function getRecallerName()
     {
-        return 'remember_'.$this->name.'_'.self::STOCK_SESSION_HASH;
+        return 'remember_'.$this->name.'_'.self::STOCK_HASH;
     }
 
     /**
@@ -123,8 +165,7 @@ class WebGuard extends SessionGuard
      * `SessionGuard::logout()` only drops the recaller cookie when it can read
      * one; for a refused operator the point is to drop it even though the guard
      * refuses to give them a user, so the browser stops presenting a token that
-     * can never be honoured. `clearUserDataFromStorage()` is exactly the parent's
-     * "forget the cookie and unqueue any queued one" step.
+     * can never be honoured.
      */
     public function logout()
     {
