@@ -91,10 +91,13 @@ class EnsureNoOperatorWebSession
         // together with AuthController never issuing one at login — is what
         // keeps it cleared: no web login mints a token for an agency-less
         // account, so there is nothing left to re-mint one from.
+        // Session work goes through the guard's store, not `$request->session()`:
+        // this also runs from Authenticate's redirect callback, where the
+        // request may not have been given a session yet.
         $guard->logout();
-        $request->session()->forget('tenant_agency_id');
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $guard->getSession()->forget('tenant_agency_id');
+        $guard->getSession()->invalidate();
+        $guard->getSession()->regenerateToken();
 
         if (! empty($carried->remember_token)) {
             $carried->forceFill(['remember_token' => null])->saveQuietly();
@@ -110,7 +113,7 @@ class EnsureNoOperatorWebSession
      */
     private static function operatorCarryingAuth(Request $request, SessionGuard $guard): ?User
     {
-        $id = $request->session()->get($guard->getName());
+        $id = $guard->getSession()->get($guard->getName());
 
         // Session ids carry a remember-me prefix when one was issued, so the
         // stored value is not always a bare integer.
