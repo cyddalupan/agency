@@ -1,0 +1,111 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # SQLite is the fast local driver. It stays first and unchanged in spirit, so
+  # a SQLite-only failure is still obviously a SQLite-only failure.
+  sqlite:
+    name: SQLite (in-memory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, bcmath, gd
+
+      - name: Install dependencies
+        run: composer install --optimize-autoloader
+
+      - name: Copy .env & generate key
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        run: php artisan test
+
+  # Card 6b03c8bdb9518f035dfa337c (A2): the same full suite on the engine
+  # production actually runs. SQLite accepts GROUP BY on a SELECT alias, is
+  # case-insensitive on LIKE, and types numbers dynamically; MySQL 8 is strict
+  # on all three and has no partial indexes. A green SQLite run says nothing
+  # about any of that, which is how ERROR 1060 shipped on a "green" master.
+  mysql:
+    name: MySQL 8
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: landas_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: landas_ci
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, bcmath, gd
+
+      - name: Install dependencies
+        run: composer install --optimize-autoloader
+
+      - name: Copy .env & generate key
+        # The DB_* values come from this job's `env:` block (MySQL service
+        # container). phpunit.xml would pin the suite back to SQLite, so the
+        # suite is pointed at phpunit.mysql.xml instead — that file sets
+        # DB_CONNECTION=mysql and leaves host/user/password to the environment.
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Assert the target database is the throwaway one
+        # A CI job that silently falls back to a default DSN and "passes" is
+        # worse than no CI. Fail loudly if the resolved database is not the
+        # scratch database this workflow created.
+        run: |
+          DB=$(php -r 'require "vendor/autoload.php";
+            $app = require "bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            echo config("database.connections.mysql.database");')
+          echo "Resolved MySQL database: $DB"
+          test "$DB" = "landas_ci" || { echo "::error::Refusing to run against '$DB'"; exit 1; }
+
+      - name: Migrate from an empty database
+        # A clean clone must be able to build the schema. If this fails, the
+        # suite never runs and the error is the finding.
+        run: |
+          set -o pipefail
+          php artisan migrate --force --no-interaction 2>&1 | tee /tmp/migrate.log
+
+      - name: Clear compiled views
+        run: php artisan view:clear || true
+
+      - name: Run the full suite on MySQL 8
+        run: php artisan test --configuration=phpunit.mysql.xml

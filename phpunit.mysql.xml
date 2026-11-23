@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Card 6b03c8bdb9518f035dfa337c (A2): the full suite on MySQL 8.
+
+    phpunit.xml stays the SQLite :memory: config so the local loop is fast.
+    CI runs this file instead (php artisan test, configuration flag pointed at
+    this file) against a throwaway MySQL 8 service container.
+
+    Not for local use against the production database. If you run it by hand,
+    point DB_DATABASE at a scratch database first; the suite truncates tables.
+
+    Do not diverge these two files. Everything except the three DB_* entries is
+    copied from phpunit.xml verbatim; add new invariants to both.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_URL" value="http://localhost"/>
+        <env name="APP_DEBUG" value="false"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <!-- Driver under test. Database/host/user all come from the
+             environment (CI sets them from its MySQL service container), so
+             this file is never the place a target database is hard-coded.
+             `force="false"` is PHPUnit's default and is stated here because we
+             depend on it: the CI step "Assert the target database" fails the
+             job unless the resolved database is the throwaway one. -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="landas_ci"/>
+        <env name="DB_URL" value=""/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="BRANCH_RESTRICTIONS" value="true"/>
+    </php>
+</phpunit>

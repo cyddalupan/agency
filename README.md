@@ -161,6 +161,32 @@ The `phpunit.xml` configuration overrides all env vars for testing:
 - `APP_DEBUG=false`
 - Rate limiting, Pulse, Telescope all disabled
 
+**The local suite does not cover MySQL.** `phpunit.xml` pins SQLite, which
+accepts `GROUP BY` on a `SELECT` alias, is case-insensitive on `LIKE` by
+default, types numbers dynamically, and supports partial indexes. MySQL 8 — the
+engine production runs — is strict on all four. A change can be green locally
+and fail on deploy.
+
+CI (`.github/workflows/tests.yml`) therefore runs the **full suite twice on
+every push**: once on SQLite, once on a MySQL 8 service container whose schema
+is built by `php artisan migrate` from empty. Both jobs must pass.
+
+To run the SQLite suite locally, nothing changes:
+
+```bash
+php artisan test
+```
+
+To reproduce the MySQL run, point it at a scratch database you own. **Never**
+point it at `super_landas`: the suite truncates tables.
+
+```bash
+DB_DATABASE=your_scratch_db DB_USERNAME=... DB_PASSWORD=... \
+  php artisan migrate --force
+DB_DATABASE=your_scratch_db DB_USERNAME=... DB_PASSWORD=... \
+  php artisan test --configuration=phpunit.mysql.xml
+```
+
 ---
 
 ## Database Schema
@@ -466,8 +492,11 @@ Employer login with:
 The project has extensive feature and unit tests. Run them with:
 
 ```bash
-# Run all tests
+# Run all tests (SQLite :memory: — fast, local)
 php artisan test
+
+# Run the same suite against MySQL 8 (what CI does, 3rd step in a scratch DB)
+php artisan test --configuration=phpunit.mysql.xml
 
 # Or directly with PHPUnit
 ./vendor/bin/phpunit
@@ -476,6 +505,10 @@ php artisan test
 ./vendor/bin/phpunit --testsuite=Feature
 ./vendor/bin/phpunit --testsuite=Unit
 ```
+
+SQLite only is not sufficient. See [Testing Environment](#testing-environment):
+the driver differences (alias `GROUP BY`, `LIKE` collation, numeric typing,
+partial indexes) are exactly the class of bug that has shipped before.
 
 ### Test Structure
 
