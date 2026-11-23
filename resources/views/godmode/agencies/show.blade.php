@@ -20,6 +20,8 @@
     </div>
     <div class="flex items-center gap-2">
         <a href="{{ route('godmode.agencies.edit', $agency) }}" class="btn btn-sm btn-neutral">Edit</a>
+        <a href="{{ route('godmode.agencies.settings', $agency) }}" class="btn btn-sm btn-ghost"
+           data-action="agency-settings">Settings</a>
 
         {{-- No delete control anywhere on this screen (§1, criterion 15). --}}
         @if ($agency->status === 'active')
@@ -68,8 +70,8 @@
 
             <h3 class="font-semibold text-sm mt-4">Payload (read-only)</h3>
             <p class="text-xs opacity-60">
-                Settings, logo and company profile are summarised here. Editing them belongs to the
-                per-agency settings screen, not this card.
+                Settings, logo and company profile are summarised here. Editing settings belongs to the
+                <a href="{{ route('godmode.agencies.settings', $agency) }}" class="link">per-agency settings screen</a>.
             </p>
             <ul class="text-sm mt-2 space-y-1">
                 <li>Logo: {{ $agency->logo ? 'set' : 'none' }}</li>

@@ -55,6 +55,7 @@ use App\Http\Controllers\ExpenseRequestController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\GodModeAuthController;
 use App\Http\Controllers\GodMode\GodAgencyController;
+use App\Http\Controllers\GodMode\GodAgencySettingsController;
 use App\Http\Controllers\GodMode\GodPaymentsController;
 use Illuminate\Support\Facades\Route;
 
@@ -101,6 +102,13 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::put('/agencies/{agency}', [GodAgencyController::class, 'update'])->name('agencies.update');
         Route::post('/agencies/{agency}/archive', [GodAgencyController::class, 'archive'])->name('agencies.archive');
         Route::post('/agencies/{agency}/activate', [GodAgencyController::class, 'activate'])->name('agencies.activate');
+
+        // Card 6b03439e6043673862503f2b — per-agency settings editor. Same sole
+        // gate, no policy. `{agency}` binds unscoped like `agencies.show`, so an
+        // unknown id is a 404 from the model binding. No PUT/PATCH/DELETE: the
+        // whole form is one POST, because the save is one read-modify-write.
+        Route::get('/agencies/{agency}/settings', [GodAgencySettingsController::class, 'edit'])->name('agencies.settings');
+        Route::post('/agencies/{agency}/settings', [GodAgencySettingsController::class, 'update'])->name('agencies.settings.update');
 
         // Card 6b0342ac4cf7cfdc3e26d6a9 — Payments (cross-tenant receivables
         // ledger). READ ONLY: two GET routes, no POST/PUT/DELETE, ever. Money is
@@ -765,9 +773,11 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::get('/settings/color-theme', [SettingsController::class, 'colorTheme'])->name('settings.color-theme');
     Route::post('/settings/color-theme', [SettingsController::class, 'updateColorTheme'])->name('settings.color-theme.update');
 
-    // Per-agency Agency Settings (sidebar visibility toggles)
-    Route::get('/settings/agency', [SettingsController::class, 'agencySettings'])->name('settings.agency');
-    Route::post('/settings/agency', [SettingsController::class, 'updateAgencySettings'])->name('settings.agency.update');
+    // Per-agency Agency Settings used to live here (`/settings/agency`).
+    // Card 6b03439e6043673862503f2b moved the QMS and company-profile toggles
+    // to the operator (god mode): they are entitlement, not branding, and an
+    // agency must not be able to switch its own QMS on. Deliberately no route
+    // here any more — a tenant host gets 404 for `/settings/agency`.
 
     // Settings -> QR Code (card 6af82438, FINAS/CSDI): a scannable code that
     // opens the Add Applicant form only.

@@ -191,70 +191,131 @@ class QmsFeatureToggleTest extends TestCase
         $this->assertStringContainsString('/non-conformities', $html);
     }
 
+    // ── the switch moved to the operator (card 6b03439e6043673862503f2b) ──
+    //
+    // The tenant's own /settings/agency screen is gone: QMS is entitlement,
+    // not branding, so only the god-plane settings editor writes it. The
+    // tests below keep the original intent — "the switch saves and the whole
+    // QMS family follows" — and add the half that did not exist before: an
+    // agency CANNOT flip its own switch any more.
+
     #[Test]
-    public function the_settings_toggle_saves_the_switch_and_the_page_reflects_it(): void
+    public function the_operator_settings_editor_saves_the_switch_and_the_qms_family_follows(): void
     {
         $gulf = $this->agencyWith('gulf');
-        $admin = $this->adminFor($gulf);
 
-        // Off by default for Gulf, so the toggle renders unchecked.
-        $html = $this->actingAs($admin)->get('/settings/agency')
-            ->assertOk()
-            ->assertSee('Quality Management (QMS)')
-            ->getContent();
-        $this->assertStringContainsString('id="toggle-qms-enabled"', $html);
-        $this->assertDoesNotMatchRegularExpression(
-            '/id="toggle-qms-enabled"[^>]*checked/',
-            $html,
-            'The QMS toggle must not be checked for an agency that has the feature off.'
-        );
+        $this->assertFalse(ModuleAccess::qmsEnabled($gulf->id));
 
-        $this->actingAs($admin)
-            ->post('/settings/agency', ['show_company_profile' => '1', 'qms_enabled' => '1'])
-            ->assertRedirect('/settings/agency');
+        $this->post(route('godmode.agencies.settings.update', $gulf), $this->godPayload($gulf, 'on'))
+            ->assertSessionHasNoErrors();
 
         $this->assertTrue(ModuleAccess::qmsEnabled($gulf->fresh()->id));
 
-        $this->actingAs($admin)->get('/qms')->assertOk();
+        // The god session is still on the god guard; a tenant request needs the
+        // web guard and the tenant host, as the original test did.
+        $admin = $this->adminFor($gulf);
+        $this->actingAs($admin, 'web');
+        $this->call('GET', 'http://'.$this->tenantHost('gulf').'/qms')->assertOk();
 
-        // Saving again with the box cleared turns it back off.
-        $this->actingAs($admin)
-            ->post('/settings/agency', ['show_company_profile' => '1'])
-            ->assertRedirect('/settings/agency');
+        // Back to the god guard, on the main host, with a fresh document read.
+        // Back to the god guard, reading the FRESH document for the version.
+        $gulf->refresh();
+        $payload = $this->godPayload($gulf, 'off');
+        $this->post('http://localhost'.parse_url(route('godmode.agencies.settings.update', $gulf), PHP_URL_PATH), $payload)
+            ->assertSessionHasNoErrors();
 
         $this->assertFalse(ModuleAccess::qmsEnabled($gulf->fresh()->id));
-        $this->actingAs($admin)->get('/qms')->assertForbidden();
+
+        $this->actingAs($admin, 'web');
+        $this->call('GET', 'http://'.$this->tenantHost('gulf').'/qms')->assertForbidden();
     }
 
     #[Test]
-    public function the_toggle_renders_checked_for_an_agency_that_has_qms_on(): void
+    public function the_operator_editor_reports_default_without_a_stored_key(): void
     {
         $finas = $this->agencyWith('finas');
-        $admin = $this->adminFor($finas);
 
-        $html = $this->actingAs($admin)->get('/settings/agency')->assertOk()->getContent();
+        $state = app(\App\Services\GodMode\GodAgencySettingsService::class)->formState($finas);
 
-        $this->assertMatchesRegularExpression(
-            '/id="toggle-qms-enabled"[^>]*checked|checked[^>]*id="toggle-qms-enabled"/',
-            $html,
-            'The QMS toggle should be checked for an agency that has the feature on.'
-        );
+        $this->assertSame('default', $state['qms_enabled'], 'finas resolves on with no stored key');
+        $this->assertTrue(ModuleAccess::qmsEnabled($finas->id));
     }
 
     #[Test]
-    public function saving_agency_settings_does_not_clobber_other_agency_settings(): void
+    public function saving_other_agency_settings_does_not_clobber_the_qms_switch(): void
     {
         $gulf = $this->agencyWith('gulf');
-        $gulf->update(['settings' => ['color_theme' => 'midnight']]);
-        $admin = $this->adminFor($gulf);
+        $gulf->update(['settings' => ['color_theme' => 'midnight', 'banner_color' => '#220dbf']]);
 
-        $this->actingAs($admin)
-            ->post('/settings/agency', ['show_company_profile' => '1', 'qms_enabled' => '1'])
-            ->assertRedirect('/settings/agency');
+        // Move an unrelated key (all_caps) and leave QMS on Default.
+        $this->post(route('godmode.agencies.settings.update', $gulf), $this->godPayload($gulf, 'default', ['all_caps' => '1']))
+            ->assertSessionHasNoErrors();
 
         $settings = $gulf->fresh()->settings;
 
         $this->assertEquals('midnight', $settings['color_theme'] ?? null);
-        $this->assertTrue((bool) ($settings[ModuleAccess::QMS_SETTINGS_KEY] ?? false));
+        $this->assertEquals('#220dbf', $settings['banner_color'] ?? null);
+        $this->assertArrayNotHasKey(ModuleAccess::QMS_SETTINGS_KEY, $settings, 'Default must not write a key');
+        $this->assertTrue((bool) ($settings['all_caps'] ?? false));
+    }
+
+    #[Test]
+    public function a_tenant_admin_can_no_longer_toggle_its_own_qms(): void
+    {
+        $gulf = $this->agencyWith('gulf');
+        $admin = $this->adminFor($gulf);
+
+        // The route is gone: 404 on a tenant host, not a 403 with a form.
+        $this->actingAs($admin)
+            ->get('/settings/agency')
+            ->assertNotFound();
+
+        // And it cannot be smuggled back through the old form action.
+        $this->actingAs($admin)
+            ->post('/settings/agency', ['qms_enabled' => '1', 'show_company_profile' => '1'])
+            ->assertNotFound();
+
+        $this->assertFalse(ModuleAccess::qmsEnabled($gulf->fresh()->id));
+    }
+
+    private function tenantHost(string $slug = 'gulf'): string
+    {
+        return $slug.'.fixitautoservices.com';
+    }
+
+    /** The god-plane settings payload, mirroring the rendered form. */
+    private function godPayload(Agency $agency, string $qms, array $overrides = []): array
+    {
+        $svc = app(\App\Services\GodMode\GodAgencySettingsService::class);
+        $state = $svc->formState($agency);
+
+        $god = User::factory()->create([
+            'agency_id' => null,
+            'username'  => 'qms-operator-'.substr(md5(uniqid('', true)), 0, 8),
+            'email'     => 'op'.substr(md5(uniqid('', true)), 0, 8).'@godmode.local',
+            'user_type' => 'super_admin',
+            'status'    => 'active',
+            'created_at' => now()->subYear(),
+        ]);
+
+        $this->actingAs($god, 'godmode')->withSession([
+            'godmode.started_at'       => now(),
+            'godmode.last_activity_at' => now(),
+        ]);
+
+        return array_merge([
+            'settings_version'     => $state['settings_version'],
+            'qms_enabled'          => $qms,
+            'hide_type_tab_counts' => $state['hide_type_tab_counts'] ? '1' : null,
+            'enable_firstimer'     => $state['enable_firstimer'] ? '1' : null,
+            'complaint_sla'        => [
+                'ack_days'     => $state['ack_days'],
+                'resolve_days' => $state['resolve_days'],
+            ],
+            'color_theme'          => $state['color_theme'],
+            'all_caps'             => $state['all_caps'] ? '1' : null,
+            'banner_color'         => $state['banner_color'] !== '' ? $state['banner_color'] : null,
+            'show_company_profile' => $state['show_company_profile'] ? '1' : null,
+        ], $overrides);
     }
 }
