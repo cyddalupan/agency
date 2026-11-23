@@ -20,11 +20,38 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         // Card 6b0420a205f32d19776021d4: an agency-less super_admin must never
         // hold a `web` session — there is no tenant to serve them and the first
-        // scoped query throws [users]. Login no longer creates one; this drops
-        // the sessions created before that fix, on every auth:web request, and
-        // sends the operator to the god mode door. Agency-bound users never
-        // match the branch.
-        $middleware->append(\App\Http\Middleware\EnsureNoOperatorWebSession::class);
+        // scoped query throws [users].
+        //
+        // Two gates, and the order is the whole fix:
+        //   1. WebGuard (config/auth.php `web.guard`) refuses to restore a
+        //      session or a remember-me recaller for an agency-less user. That
+        //      is the earlier bug's blind spot: a recaller is resolved by
+        //      SessionGuard::user() inside SetLocale, AFTER this pipeline, and
+        //      the users lookup there threw before any middleware could look.
+        //   2. EnsureNoOperatorWebSession runs inside the `web` group, RIGHT
+        //      AFTER StartSession (see $middleware->priority() below), so the
+        //      guard is fully resolved — session or recaller — when it looks.
+        //      It then drops the session, the recaller cookie and (once) the
+        //      stored remember_token, and redirects to the god mode door.
+        // It used to be a GLOBAL append, which ran before StartSession: with an
+        // empty sessions table it always saw "guest" and never fired.
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureNoOperatorWebSession::class,
+        ]);
+        $middleware->priority([
+            \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \App\Http\Middleware\EnsureNoOperatorWebSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+            \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Illuminate\Auth\Middleware\Authorize::class,
+        ]);
         \Illuminate\Auth\Middleware\Authenticate::redirectUsing(
             [\App\Http\Middleware\EnsureNoOperatorWebSession::class, 'redirectTo']
         );

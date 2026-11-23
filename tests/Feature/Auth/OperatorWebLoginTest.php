@@ -313,4 +313,104 @@ class OperatorWebLoginTest extends TestCase
         $this->assertNull(TenantScope::tenantFilter('applicants'));
         $this->assertSame(1, User::withoutGlobalScopes()->count());
     }
+
+    // ── AC1 (reopened): authenticated BY REMEMBER-ME, nothing else ────
+    //
+    // The 11:40:04 production 500. Sessions table empty, no session cookie,
+    // only the recaller. `actingAs()` and a session id both bypass the exact
+    // path that broke, so this test builds the cookie the guard builds and
+    // sends nothing else. It fails against commit be7a8ffb (the middleware ran
+    // before StartSession and never saw the recaller) and against the plain
+    // SessionGuard (userFromRecaller() throws UnboundTenantException).
+
+    /** The recaller cookie value SessionGuard::createRecaller() produces. */
+    private function recallerCookie(User $user): string
+    {
+        return encrypt(
+            $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword()
+        );
+    }
+
+    private function recallerCookieName(): string
+    {
+        // Pre-fix name on purpose: an operator's browser is carrying THIS one.
+        return 'remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d';
+    }
+
+    #[Test]
+    public function a_remember_me_cookie_alone_does_not_authenticate_the_operator_and_does_not_throw(): void
+    {
+        $operator = $this->operator(['remember_token' => str_repeat('t', 60)]);
+
+        $response = $this->withCookie(
+            $this->recallerCookieName(),
+            $this->recallerCookie($operator),
+        )->get(route('dashboard'));
+
+        // The bug: 500 from SetLocale -> Auth::user() -> userFromRecaller().
+        $this->assertNotSame(500, $response->status());
+        $response->assertRedirect(route('godmode.login'));
+        $this->assertGuest('web');
+    }
+
+    #[Test]
+    public function the_remember_me_cookie_is_retired_and_the_stored_token_cleared(): void
+    {
+        $operator = $this->operator(['remember_token' => str_repeat('r', 60)]);
+        $cookie = $this->recallerCookie($operator);
+
+        $response = $this->withCookie($this->recallerCookieName(), $cookie)
+            ->get(route('dashboard'));
+
+        $response->assertRedirect(route('godmode.login'));
+
+        // The one token that minted it is gone, so a replay cannot work.
+        $this->assertNull($operator->fresh()->remember_token);
+
+        // And the browser is told to drop the cookie.
+        $forget = collect($response->headers->getCookies())
+            ->first(fn ($c) => $c->getName() === $this->recallerCookieName());
+        $this->assertNotNull($forget, 'the recaller cookie must be expired on the response');
+
+        // Replay after the fix is a plain guest request, not a 500 and not a login.
+        $this->flushSession();
+        $replay = $this->withCookie($this->recallerCookieName(), $cookie)->get(route('dashboard'));
+        $replay->assertRedirect(route('login'));
+        $this->assertGuest('web');
+    }
+
+    #[Test]
+    public function an_agency_bound_users_remember_me_cookie_is_untouched(): void
+    {
+        $agency = Agency::factory()->create(['status' => 'active']);
+        $admin = User::factory()->create([
+            'agency_id' => $agency->id,
+            'user_type' => 'admin',
+            'status'    => 'active',
+            'remember_token' => str_repeat('k', 60),
+        ]);
+
+        $token = $admin->remember_token;
+
+        $response = $this->withCookie(
+            $this->recallerCookieName(),
+            $this->recallerCookie($admin),
+        )->get('/dashboard');
+
+        $this->assertNotSame(500, $response->status());
+        $this->assertSame($token, $admin->fresh()->remember_token, 'token must not be cycled');
+    }
+
+    #[Test]
+    public function the_web_guard_keeps_its_historical_session_and_cookie_keys(): void
+    {
+        // Changing either key would silently log out all 85 agency-bound users.
+        $guard = $this->app['auth']->guard('web');
+
+        $this->assertSame('login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d', $guard->getName());
+        $this->assertSame(
+            'remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d',
+            $guard->getRecallerName()
+        );
+    }
 }

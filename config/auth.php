@@ -38,8 +38,14 @@ return [
     */
 
     'guards' => [
+        // Card 6b0420a205f32d19776021d4: App\Auth\WebGuard refuses to restore
+        // a session or a remember-me recaller for an agency-less user (the
+        // control-plane operator). The `web` driver is registered by
+        // Auth::extend('web') in AppServiceProvider — a custom creator, because
+        // createSessionDriver() hard-codes `new SessionGuard` and a `guard`
+        // config key is ignored.
         'web' => [
-            'driver' => 'session',
+            'driver' => 'web',
             'provider' => 'users',
         ],
 

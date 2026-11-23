@@ -62,6 +62,33 @@ class AppServiceProvider extends ServiceProvider
         // code path and then instantiated as that class instead, re-running the
         // same public setters the factory uses. App\Auth\GodModeGuard only
         // overrides getName().
+        // Card 6b0420a205f32d19776021d4: the `web` guard is buildable as
+        // App\Auth\WebGuard through a custom driver. The stock
+        // createSessionDriver() hard-codes `new SessionGuard(...)` and ignores
+        // a `guard` key in config, so a config-only class hook does nothing
+        // (verified: get_class(auth('web')) stayed SessionGuard). This mirrors
+        // the stock factory exactly and only swaps the class.
+        Auth::extend('web', function ($app, $name, array $config) {
+            $guard = new \App\Auth\WebGuard(
+                $name,
+                $app['auth']->createUserProvider($config['provider'] ?? null),
+                $app['session.store'],
+                rehashOnLogin: $app['config']->get('hashing.rehash_on_login', true),
+                timeboxDuration: $app['config']->get('auth.timebox_duration', 200000),
+                hashKey: $app['config']->get('app.key'),
+            );
+
+            $guard->setCookieJar($app['cookie']);
+            $guard->setDispatcher($app['events']);
+            $guard->setRequest($app->refresh('request', $guard, 'setRequest'));
+
+            if (isset($config['remember'])) {
+                $guard->setRememberDuration($config['remember']);
+            }
+
+            return $guard;
+        });
+
         Auth::extend('godmode', function ($app, $name, array $config) {
             $class = $config['guard'] ?? \App\Auth\GodModeGuard::class;
 

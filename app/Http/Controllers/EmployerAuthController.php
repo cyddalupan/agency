@@ -43,6 +43,18 @@ class EmployerAuthController extends Controller
             return $response;
         }
 
+        // Card 6b0420a205f32d19776021d4: this route authenticates on the `web`
+        // guard, so it applies the same rule as the main login — an agency-less
+        // super_admin gets no web session and no remember-me token from it.
+        if ($user !== null && $user->agency_id === null && $user->user_type === 'super_admin') {
+            $this->hitRateLimit($key);
+            SensitiveActionLogger::failedLogin($email, null);
+
+            return redirect()->route('godmode.login')->withErrors([
+                'email' => 'This account uses the operator sign-in.',
+            ])->onlyInput('email');
+        }
+
         $remember = $request->boolean('remember');
 
         if (Tenant::bypass(
