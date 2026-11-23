@@ -62,6 +62,48 @@ class TenantScope implements Scope
 
     private static bool $testingWebRequest = false;
 
+    /**
+     * Nesting depth for disableFor(). See that method.
+     */
+    private static int $disabledDepth = 0;
+
+    /**
+     * Run $fn with this scope off for the statements it makes.
+     *
+     * Card 6b043f7298f1df31d8e5ee0e. App\Auth\WebGuard must look the account
+     * up before any tenant exists (a recaller on the main host), and a
+     * Tenant::bypass() around that read cannot work: the bypass is only
+     * consulted by tenantFilter(), whose first step is `auth()->user()` — the
+     * very lookup being made, with the guard's user still unset. Each level
+     * opened a fresh bypass and re-entered, until the process died.
+     *
+     * Disabling the scope at the source removes the question instead of
+     * answering it: the lookup never consults the tenant, so it can never call
+     * back into the guard. Deliberately the narrowest possible tool — one
+     * callable, statements made inside it only, no container or session
+     * effect — for reads that are about the ACTOR rather than the tenant
+     * (which account does this session id / recaller name?).
+     *
+     * Not a replacement for Tenant::bypass() in application code: that one is
+     * audited and refuses to be silent. A guard lookup is the guard's own
+     * plumbing, runs on every request carrying a session, and an audit row per
+     * page load would be noise, not oversight.
+     *
+     * @template T
+     * @param  callable():T  $fn
+     * @return T
+     */
+    public static function disableFor(callable $fn)
+    {
+        self::$disabledDepth++;
+
+        try {
+            return $fn();
+        } finally {
+            self::$disabledDepth--;
+        }
+    }
+
     public function apply(Builder $builder, Model $model): void
     {
         $agencyId = self::tenantFilter($model->getTable());
@@ -88,13 +130,32 @@ class TenantScope implements Scope
      */
     public static function tenantFilter(string $table): ?int
     {
-        // Super admin bypass — skip tenant filtering when logged in as super_admin
+        // A deliberate, narrowly scoped actor read (see disableFor()).
+        if (self::$disabledDepth > 0) {
+            return null;
+        }
+
+        // Super admin bypass — skip tenant filtering when logged in as super_admin.
+        //
+        // Card 6b043f7298f1df31d8e5ee0e: asked of EVERY guard, not the default
+        // one. WebGuard wraps two provider lookups in disableFor(), and a
+        // statement made inside them used to ask this same method whether the
+        // actor is a super_admin: the default-guard question came back "no"
+        // (the guard's user is not resolved yet), the scope fell through to
+        // "console or not?" — a test IS a console — and the query ran
+        // UNSCOPED even after the guard had every reason to refuse it.
+        // Answering identically from every guard removes that second path out
+        // of the scope and makes the actor test independent of which guard the
+        // statement happens to run for.
         if (! self::$resolvingAuth) {
             self::$resolvingAuth = true;
             try {
-                $user = auth()->user();
-                if ($user && $user->user_type === 'super_admin') {
-                    return null;
+                foreach (array_keys(config('auth.guards', [])) as $guardName) {
+                    $user = auth($guardName)->user();
+
+                    if ($user && ($user->user_type ?? null) === 'super_admin') {
+                        return null;
+                    }
                 }
             } finally {
                 self::$resolvingAuth = false;

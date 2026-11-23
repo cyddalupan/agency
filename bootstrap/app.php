@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Providers\ReportingServiceProvider::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Card 6b043f7298f1df31d8e5ee0e: IdentifyAgency is host-only now. Its
+        // session-derived half is BindTenantFromSession in the `web` group
+        // below — a global middleware runs before EncryptCookies/StartSession
+        // and therefore before any remember-me recaller exists, which is how
+        // every agency user returning with "keep me signed in" got a 500 on
+        // the `users` lookup.
         $middleware->append(\App\Http\Middleware\IdentifyAgency::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         // Card 6b0420a205f32d19776021d4: an agency-less super_admin must never
@@ -35,8 +41,18 @@ return Application::configure(basePath: dirname(__DIR__))
         //      stored remember_token, and redirects to the god mode door.
         // It used to be a GLOBAL append, which ran before StartSession: with an
         // empty sessions table it always saw "guest" and never fired.
+        // Card 6b043f7298f1df31d8e5ee0e: the order inside `web` is the fix, and
+        // it is priority-sorted — appending alone would drop BindTenantFromSession
+        // after SetLocale, whose Auth::user() is the very recaller resolution
+        // that throws. So StartSession -> EnsureNoOperatorWebSession ->
+        // BindTenantFromSession -> SetLocale, pinned below and asserted in
+        // tests/Feature/Tenant/RecallersBindTenantBeforeLocaleTest.php.
+        //
+        // EnsureNoOperatorWebSession first, on purpose: an operator's stale
+        // session/recaller is dropped BEFORE we try to bind a tenant from it.
         $middleware->web(append: [
             \App\Http\Middleware\EnsureNoOperatorWebSession::class,
+            \App\Http\Middleware\BindTenantFromSession::class,
         ]);
         $middleware->priority([
             \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
@@ -44,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \App\Http\Middleware\EnsureNoOperatorWebSession::class,
+            \App\Http\Middleware\BindTenantFromSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class,

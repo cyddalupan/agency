@@ -2,6 +2,7 @@
 
 namespace App\Auth;
 
+use App\Models\Scopes\TenantScope;
 use App\Models\User;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Auth\SessionGuard;
@@ -97,14 +98,36 @@ final class WebGuard extends SessionGuard
                 parent::__construct($inner->getHasher(), $inner->getModel());
             }
 
+            /**
+             * Card 6b043f7298f1df31d8e5ee0e: both lookups run with TenantScope
+             * off. `allowed()` only ever sees a result — it cannot filter a
+             * query that threw. TenantScope fails closed on a web request with
+             * no tenant bound, and a recaller is resolved on the main host
+             * where the tenant exists nowhere but in this row, so
+             * `retrieveByToken()` was throwing `[users]` before the operator
+             * refusal could answer.
+             *
+             * Why disableFor() and not Tenant::bypass(): the bypass is only
+             * consulted by TenantScope, whose first step is `auth()->user()` —
+             * this very call, with `$this->user` still unset. Each nested level
+             * opened a fresh bypass and re-entered, until the PHP process died
+             * (reproduced on the operator-session leg of
+             * OperatorWebLoginTest). Dropping the scope from the model removes
+             * the question instead of answering it. See
+             * TenantScope::disableFor().
+             */
             public function retrieveById($identifier)
             {
-                return $this->allowed($this->inner->retrieveById($identifier));
+                return $this->allowed(TenantScope::disableFor(
+                    fn () => $this->inner->retrieveById($identifier)
+                ));
             }
 
             public function retrieveByToken($identifier, #[\SensitiveParameter] $token)
             {
-                return $this->allowed($this->inner->retrieveByToken($identifier, $token));
+                return $this->allowed(TenantScope::disableFor(
+                    fn () => $this->inner->retrieveByToken($identifier, $token)
+                ));
             }
 
             public function retrieveByCredentials(array $credentials)

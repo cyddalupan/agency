@@ -323,15 +323,30 @@ class OperatorWebLoginTest extends TestCase
     // before StartSession and never saw the recaller) and against the plain
     // SessionGuard (userFromRecaller() throws UnboundTenantException).
 
-    /** The recaller cookie value SessionGuard::createRecaller() produces. */
     /**
-     * The recaller as the browser holds it: an id|token|hash string under the
-     * web guard's cookie name. Sent with withCookie()/withUnencryptedCookie(),
-     * so it reaches the guard exactly as SessionGuard::recaller() reads it.
+     * The recaller as the browser holds it: the id|token|hash string ENCRYPTED
+     * behind a CookieValuePrefix, with serialize=false — the shape EncryptCookies
+     * in the web group decrypts.
+     *
+     * Card 6b043f7298f1df31d8e5ee0e / AC11. This used to return the plain
+     * string and send it with withUnencryptedCookie(). EncryptCookies cannot
+     * decrypt that, nulls it, and the request arrives as a plain guest — which
+     * still "passed" the redirect assertion, because a guest on /dashboard
+     * redirects to /login. The evidence for the operator-recaller path did not
+     * stand. Sending the encrypted form is what makes this test (and A3's
+     * SmokeAuthPagesTest legs) reach the guard.
      */
     private function recallerCookie(User $user): string
     {
-        return $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword();
+        $plain = $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword();
+
+        return encrypt(
+            \Illuminate\Cookie\CookieValuePrefix::create(
+                $this->recallerCookieName(),
+                app('encrypter')->getKey()
+            ).$plain,
+            false
+        );
     }
 
     private function recallerCookieName(): string
@@ -375,10 +390,17 @@ class OperatorWebLoginTest extends TestCase
             ->first(fn ($c) => $c->getName() === $this->recallerCookieName());
         $this->assertNotNull($forget, 'the recaller cookie must be expired on the response');
 
-        // Replay after the fix is a plain guest request, not a 500 and not a login.
+        // Replay after the fix is refused, not a 500 and not a login. It is
+        // refused at the god mode door, same as the first attempt: the cookie
+        // is still a validly-encrypted recaller naming the operator, so
+        // EnsureNoOperatorWebSession sees it and answers honestly. (Asserting
+        // /login here was wrong for an encrypted recaller — that is the guest
+        // redirect, and expecting it is how the plain-cookie version of this
+        // test passed while proving nothing.)
         $this->flushSession();
         $replay = $this->withUnencryptedCookie($this->recallerCookieName(), $cookie)->get(route('dashboard'));
-        $replay->assertRedirect(route('login'));
+        $this->assertLessThan(500, $replay->status());
+        $replay->assertRedirect(route('godmode.login'));
         $this->assertGuest('web');
     }
 
