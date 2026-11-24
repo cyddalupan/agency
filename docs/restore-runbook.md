@@ -329,3 +329,29 @@ with `RESTORE_LOG_DIR`).
   start. A `kill -9` of the whole process group is the one case that can leave
   the ~297 MB temp dir under `/tmp`; it is named `zz_rehearsal.*` so it is easy
   to find and remove.
+
+---
+
+## After any incident: check log growth, not just the application
+
+Card `6b042ed87e2121a0890fce7c`. Two outages on this box were two log files
+filling the disk, not the app misbehaving. Before and after any restore or
+incident, run:
+
+```bash
+df -h /                                                     # free space
+stat -c '%n %s %y' /var/www/landas-fixit/storage/logs/*.log  # size AND mtime
+sudo logrotate -d /etc/logrotate.d/landas                     # rule still parses
+```
+
+A `laravel.log` over 200 MB with an mtime in the last hour is an active
+writer. Two things write it: the app, and (before this card) the test suite,
+which inherited `LOG_CHANNEL` from `.env` and wrote to the **production**
+log — 99.9% of bytes in a 200 MB sample were `testing.*` entries. The suite is
+now pinned to `LOG_CHANNEL=null` in `phpunit.xml`, so if `testing.*` entries
+reappear, a `phpunit.xml`/`phpunit.mysql.xml` edit has been reverted.
+
+A single incident file is preserved under
+`/var/backups/landas_logs/laravel_incident_20261123.log` (`root:root 0600`,
+sha256 in the adjacent `.sha256`). Do not delete it to free space without
+checking whether it is still the evidence for an open incident.
