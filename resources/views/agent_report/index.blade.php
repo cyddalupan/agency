@@ -59,6 +59,7 @@
                 'receivables'       => ['label' => '📊 Receivables',       'url' => null],
                 'return-payment'    => ['label' => '↩️ Return Payment',    'url' => null],
                 'payments'          => ['label' => '💳 Payments',          'url' => null],
+                'previous-payments' => ['label' => '💵 Previous Payment',   'url' => null],
                 'deductions'        => ['label' => '🧾 Deductions',          'url' => null],
                 'starting-balances' => ['label' => '⚖️ Starting Balance',  'url' => null],
                 'report'            => ['label' => '📑 ' . agent_term() . ' Ledger',      'url' => null],
@@ -66,6 +67,10 @@
         @endphp
         @foreach($tabDefs as $key => $def)
             @if($key === 'deductions' && ! $canManageDeductions)
+                @continue
+            @endif
+            {{-- Gulf only (card 6b056b38): absent from the HTML for FINAS/CSDI. --}}
+            @if($key === 'previous-payments' && ! \App\Support\ModuleAccess::gulfOnly($agencyId))
                 @continue
             @endif
             <a href="{{ route('agent_report.index', ['tab' => $key, 'agent_id' => $agentId]) }}"
@@ -108,6 +113,8 @@
         @include('agent_report._return_payment')
     @elseif($tab === 'payments')
         @include('agent_report._payments')
+    @elseif($tab === 'previous-payments')
+        @include('agent_report._previous_payments')
     @elseif($tab === 'deductions')
         @include('agent_report._deductions')
     @elseif($tab === 'starting-balances')

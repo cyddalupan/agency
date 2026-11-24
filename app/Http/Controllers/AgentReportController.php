@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Agent;
 use App\Models\AgentDeduction;
+use App\Models\AgentPreviousPayment;
 use App\Models\Applicant;
 use App\Models\ExpenseRequest;
 use App\Models\ExpenseRequestStatusHistory;
@@ -12,6 +13,7 @@ use App\Models\ExpenseRequestItem;
 use App\Models\Receivable;
 use App\Models\StartingBalance;
 use App\Services\CurrencyConverter;
+use App\Support\ModuleAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -24,7 +26,7 @@ class AgentReportController extends Controller
     private const BACKOUT_STATUSES = [35, 38, 50];
 
     /** Agent Report tabs (Return Payment tab added per Cyd 2026-11-04, card 129). */
-    private const TABS = ['commission', 'cash-advance', 'receivables', 'return-payment', 'payments', 'deductions', 'starting-balances', 'report'];
+    private const TABS = ['commission', 'cash-advance', 'receivables', 'return-payment', 'payments', 'previous-payments', 'deductions', 'starting-balances', 'report'];
 
     /**
      * The tab this screen opens on.
@@ -79,6 +81,11 @@ class AgentReportController extends Controller
         // TABS[0] — landing on 'cash-advance' would look like a different bug.
         $tab = $request->input('tab', self::DEFAULT_TAB);
         if (! in_array($tab, self::TABS, true)) {
+            $tab = self::DEFAULT_TAB;
+        }
+        // Gulf only (card 6b056b38): a typed ?tab=previous-payments on FINAS/
+        // CSDI falls back to the default tab exactly like an unknown one.
+        if ($tab === 'previous-payments' && ! ModuleAccess::gulfOnly($agencyId)) {
             $tab = self::DEFAULT_TAB;
         }
         $agentId = $request->input('agent_id');
@@ -247,6 +254,26 @@ class AgentReportController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // ---- Tab 2b: Previous Payment (Gulf only, card 6b056b38) ----
+        // Payments made before go-live, uploaded as history. Reads ONLY the new
+        // table — never loops over expense items. No `payment > 0` filter: an
+        // amount of 0 is a valid imported row and must stay visible.
+        $previousPayments = collect();
+        $previousPaymentsTotal = 0.0;
+        if (ModuleAccess::gulfOnly($agencyId)) {
+            $previousPayments = AgentPreviousPayment::query()
+                ->where('agency_id', $agencyId)
+                ->with(['agent', 'applicant', 'encoder'])
+                ->when($agentId, fn ($q) => $q->where('agent_id', $agentId))
+                ->when($this->ledgerBranchLocked(), fn ($q) => $q->whereHas('agent', fn ($a) => $this->branchLockedAgentCondition($a)))
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->get();
+
+            $previousPaymentsTotal = $previousPayments
+                ->sum(fn ($p) => $converter->toPhp((float) $p->amount, $p->currency));
+        }
+
         // ---- Tab 4: Starting Balance (new table) ----
         $startingBalances = StartingBalance::query()
             ->where('agency_id', $agencyId)
@@ -282,6 +309,8 @@ class AgentReportController extends Controller
             'returnPaymentItems',
             'returnPaymentTotal',
             'payments',
+            'previousPayments',
+            'previousPaymentsTotal',
             'deductions',
             'startingBalances',
             'reportRows',
@@ -1160,6 +1189,227 @@ class AgentReportController extends Controller
         return $this->canManageDeductions();
     }
 
+    // ------------------------------------------------------------------
+    // Tab 2b: Previous Payment — Gulf only (card 6b056b38)
+    // ------------------------------------------------------------------
+
+    /**
+     * Bulk upload page for Previous Payments. Gulf only, at all four gates.
+     */
+    public function previousPaymentBulkUpload(): View
+    {
+        abort_unless(ModuleAccess::gulfOnly((int) auth()->user()->agency_id), 403);
+        abort_unless($this->canManagePayments(), 403, 'Only Admin and Accounting can record payments.');
+
+        return view('agent_report.previous_payment_bulk');
+    }
+
+    /**
+     * CSV template for the previous-payment upload. The first line is exactly
+     * `Date,Applicant,Agent,Currency,Payment,Particular` (accepted as-is).
+     */
+    public function previousPaymentBulkTemplate()
+    {
+        abort_unless(ModuleAccess::gulfOnly((int) auth()->user()->agency_id), 403);
+        abort_unless($this->canManagePayments(), 403, 'Only Admin and Accounting can record payments.');
+
+        $headers = ['Date', 'Applicant', 'Agent', 'Currency', 'Payment', 'Particular'];
+        $sample = [
+            [now()->toDateString(), 'Dela Cruz, Maria', 'Juan Dela Cruz', 'PHP', '1250.00', 'Commission before go-live'],
+            [now()->toDateString(), '', 'Juan Dela Cruz', 'PHP', '0.00', ''],
+        ];
+
+        return response()->streamDownload(function () use ($headers, $sample) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            foreach ($sample as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'previous-payments-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Import a previous-payment CSV. All-or-nothing: every row is validated
+     * first; one bad row and nothing is inserted. Rows are INSERTED, never
+     * matched to an expense line. Amount 0 is valid; negative is rejected.
+     */
+    public function previousPaymentBulkImport(Request $request): RedirectResponse
+    {
+        $agencyId = (int) auth()->user()->agency_id;
+        abort_unless(ModuleAccess::gulfOnly($agencyId), 403);
+        abort_unless($this->canManagePayments(), 403, 'Only Admin and Accounting can record payments.');
+
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $rows = $this->parsePaymentCsv($request->file('csv_file')->getRealPath());
+        if (is_string($rows)) {
+            return back()->withErrors(['csv_file' => $rows]);
+        }
+
+        $norm = fn ($v) => mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $v)));
+
+        // Agents in this agency, indexed by normalised name. Exact-name match only.
+        $agentsByName = [];
+        foreach (Agent::where('agency_id', $agencyId)
+                     ->when($this->ledgerBranchLocked(), fn ($q) => $this->branchLockedAgentCondition($q))
+                     ->get() as $agent) {
+            $agentsByName[$norm($agent->name)] = $agent;
+        }
+
+        // Applicants in this agency: "First Middle Last Suffix" and "Last, First".
+        $applicantsByName = [];
+        foreach (Applicant::where('agency_id', $agencyId)->get() as $applicant) {
+            $applicantsByName[$norm($applicant->full_name)][] = $applicant;
+            $lastFirst = trim(($applicant->last_name ?? '') . ', ' . ($applicant->first_name ?? ''), ', ');
+            if ($lastFirst !== '') {
+                $applicantsByName[$norm($lastFirst)][] = $applicant;
+            }
+        }
+
+        $errors = [];
+        $inserts = [];
+
+        foreach ($rows as $row) {
+            $line = $row['line'];
+            $d = $row['data'];
+            $rowErrors = [];
+
+            // ---- Date (required) ----
+            $dateRaw = trim((string) ($d['date'] ?? ''));
+            $date = null;
+            if ($dateRaw === '') {
+                $rowErrors[] = 'Date is required.';
+            } else {
+                $date = $this->parsePaymentCsvDate($dateRaw);
+                if (! $date) {
+                    $rowErrors[] = "Date '{$dateRaw}' is not a valid date (use YYYY-MM-DD or MM/DD/YYYY).";
+                }
+            }
+
+            // ---- Amount: required, >= 0 (0 is valid; negative is not) ----
+            $paymentRaw = str_replace([',', '₱', '$', ' '], '', trim((string) ($d['payment'] ?? '')));
+            $amount = null;
+            if ($paymentRaw === '') {
+                $rowErrors[] = 'Payment is required (use 0 if the amount is zero).';
+            } elseif (! is_numeric($paymentRaw)) {
+                $rowErrors[] = "Payment '{$paymentRaw}' must be a number.";
+            } elseif ((float) $paymentRaw < 0) {
+                $rowErrors[] = "Payment '{$paymentRaw}' cannot be negative.";
+            } else {
+                $amount = round((float) $paymentRaw, 2);
+            }
+
+            // ---- Currency: PHP or USD, default PHP ----
+            $currency = strtoupper(trim((string) ($d['currency'] ?? '')));
+            if ($currency === '') {
+                $currency = 'PHP';
+            } elseif (! in_array($currency, ['PHP', 'USD'], true)) {
+                $rowErrors[] = "Currency '{$currency}' must be PHP or USD.";
+            }
+
+            // ---- Agent: exact name in this agency; blank is allowed ----
+            $agentRaw = trim((string) ($d['agent'] ?? ''));
+            $agentId = null;
+            if ($agentRaw !== '') {
+                if (isset($agentsByName[$norm($agentRaw)])) {
+                    $agentId = $agentsByName[$norm($agentRaw)]->id;
+                } else {
+                    $rowErrors[] = "Agent '{$agentRaw}' was not found in this agency.";
+                }
+            }
+
+            // ---- Applicant: existing applicant; blank is allowed ----
+            $applicantRaw = trim((string) ($d['applicant'] ?? ''));
+            $applicantId = null;
+            if ($applicantRaw !== '') {
+                $hits = $applicantsByName[$norm($applicantRaw)] ?? [];
+                $hits = collect($hits)->unique('id')->values();
+                if ($hits->isEmpty()) {
+                    $rowErrors[] = "Applicant '{$applicantRaw}' was not found in this agency.";
+                } elseif ($hits->count() > 1) {
+                    $rowErrors[] = "Applicant '{$applicantRaw}' matches {$hits->count()} records — the name is ambiguous.";
+                } else {
+                    $applicantId = $hits->first()->id;
+                }
+            }
+
+            // ---- Particular: optional, max 1000 ----
+            $particularRaw = trim((string) ($d['particular'] ?? ''));
+            if (mb_strlen($particularRaw) > 1000) {
+                $rowErrors[] = 'Particular is longer than 1000 characters.';
+            }
+
+            if ($rowErrors) {
+                $errors[$line] = $rowErrors;
+                continue;
+            }
+
+            $inserts[] = [
+                'agency_id'    => $agencyId,
+                'user_id'      => auth()->id(),
+                'agent_id'     => $agentId,
+                'applicant_id' => $applicantId,
+                'date'         => $date,
+                'currency'     => $currency,
+                'amount'       => $amount,
+                'particular'   => $particularRaw === '' ? null : $particularRaw,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors(['csv_file' => 'No previous payments were saved — ' . count($errors) . ' row(s) need fixing.'])
+                ->with('bulk_errors', $errors)
+                ->withInput();
+        }
+
+        if (empty($inserts)) {
+            return redirect()->route('agent_report.index', ['tab' => 'previous-payments'])
+                ->with('error', 'The file had no data rows to upload.');
+        }
+
+        DB::transaction(function () use ($inserts) {
+            foreach (array_chunk($inserts, 200) as $chunk) {
+                AgentPreviousPayment::insert($chunk);
+            }
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'previous-payments'])
+            ->with('success', count($inserts) . ' previous payment row(s) added.');
+    }
+
+    /**
+     * Admin-only delete with a reason. These rows exist nowhere else, so the
+     * row is removed outright (the delete reason is written to the audit trail
+     * by AuditsChanges).
+     */
+    public function previousPaymentDestroy(Request $request, AgentPreviousPayment $previousPayment): RedirectResponse
+    {
+        $this->authorizeAgency((int) $previousPayment->agency_id);
+        abort_unless(ModuleAccess::gulfOnly((int) $previousPayment->agency_id), 403);
+        $this->authorizeTransactionDelete();
+        $this->authorizeAgentBranch($previousPayment->agent);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($previousPayment, $validated) {
+            $previousPayment->forceFill([
+                'deleted_by'    => auth()->id(),
+                'delete_reason' => $validated['reason'],
+            ]);
+            $previousPayment->delete();
+        });
+
+        return redirect()->route('agent_report.index', ['tab' => 'previous-payments'])
+            ->with('success', 'Previous payment deleted.');
+    }
+
     /**
      * Normalise the Date cell of the payment CSV to Y-m-d (null when invalid).
      * Accepts Excel serials, ISO, MM/DD/YYYY, DD-MM-YYYY and "M d, Y".
@@ -2000,7 +2250,31 @@ class AgentReportController extends Controller
                 'particular' => 'Expense #' . ($i->expenseRequest?->reference_no ?? '—')
                     . ($i->particular ? ': ' . $i->particular : ''),
                 'source'     => 'expense_payment',
-            ]))
+            ]));
+
+        // Previous Payment (Gulf only, card 6b056b38): pre-go-live history rows,
+        // listed in the same Payment table and counted in Total Payment, so this
+        // page matches the Agents table (buildReportRows()).
+        if (ModuleAccess::gulfOnly($agencyId)) {
+            $payments = $payments->concat(
+                AgentPreviousPayment::query()
+                    ->where('agency_id', $agencyId)
+                    ->where('agent_id', $agent->id)
+                    ->with(['applicant'])
+                    ->get()
+                    ->map(fn (AgentPreviousPayment $p) => [
+                        'date'       => $p->date,
+                        'account'    => 'Previous Payment',
+                        'agent'      => $agent->name,
+                        'applicant'  => $p->applicant?->full_name,
+                        'amount'     => $converter->toPhp((float) $p->amount, $p->currency),
+                        'particular' => $p->particular,
+                        'source'     => 'previous_payment',
+                    ])
+            );
+        }
+
+        $payments = $payments
             ->sortByDesc(fn (array $p) => $p['date']?->timestamp ?? 0)
             ->values();
 
@@ -2143,15 +2417,35 @@ class AgentReportController extends Controller
             ->get()
             ->keyBy('agent_id');
 
+        // Previous Payment (Gulf only, card 6b056b38): history rows are money
+        // already paid to the agent, so they add to Payments — and therefore
+        // reduce the Balance — exactly like a recorded payment on a transaction.
+        $previousPaymentsByAgent = [];
+        if (ModuleAccess::gulfOnly($agencyId)) {
+            $prevAgg = $this->scopeQueryAgentsByBranch(AgentPreviousPayment::query())
+                ->where('agency_id', $agencyId)
+                ->whereNotNull('agent_id')
+                ->select('agent_id', 'currency')
+                ->selectRaw('COALESCE(SUM(amount),0) as total')
+                ->groupBy('agent_id', 'currency')
+                ->get();
+
+            foreach ($prevAgg as $p) {
+                $key = (int) $p->agent_id;
+                $previousPaymentsByAgent[$key] = ($previousPaymentsByAgent[$key] ?? 0.0)
+                    + $converter->toPhp((float) $p->total, (string) $p->currency);
+            }
+        }
+
         return $agents
             ->filter(fn (Agent $a) => $agentId === null || (int) $a->id === (int) $agentId)
-            ->map(function (Agent $agent) use ($commission, $cashAdvance, $returnPayment, $backoutByAgent, $paidByAgent, $recAgg) {
+            ->map(function (Agent $agent) use ($commission, $cashAdvance, $returnPayment, $backoutByAgent, $paidByAgent, $recAgg, $previousPaymentsByAgent) {
                 $key = (int) $agent->id;
                 $comm    = (float) ($commission[$key] ?? 0);
                 $ca      = (float) ($cashAdvance[$key] ?? 0);
                 $ret     = (float) ($returnPayment[$key] ?? 0);
                 $backout = (float) ($backoutByAgent[$key] ?? 0);
-                $paid    = (float) ($paidByAgent[$key] ?? 0);
+                $paid    = (float) ($paidByAgent[$key] ?? 0) + (float) ($previousPaymentsByAgent[$key] ?? 0);
                 $recv    = (float) ($recAgg->get($agent->id)->total ?? 0);
 
                 return [

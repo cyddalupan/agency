@@ -491,6 +491,15 @@ class ModuleAccess
     }
 
     /**
+     * Gulf only (card 6b056b38). The Previous Payment tab and its bulk upload
+     * exist on the Agents Report for Gulf alone — FINAS and CSDI never see it.
+     */
+    public static function gulfOnly(?int $agencyId): bool
+    {
+        return self::isAnyAgency($agencyId, ['gulf']);
+    }
+
+    /**
      * Whether this agency has the QMS feature switched on.
      *
      * The agency's own switch in Agency Settings wins; when it has never been

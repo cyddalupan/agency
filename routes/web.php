@@ -707,6 +707,18 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
         Route::delete('/deductions/{agent_deduction}', [AgentReportController::class, 'deductionDestroy'])->name('deduction.destroy')
             ;
 
+        // Gulf only (card 6b056b38): Previous Payment — append-only history.
+        // Bulk routes must precede the {previous_payment} wildcard.
+        Route::get('/previous-payments/bulk', [AgentReportController::class, 'previousPaymentBulkUpload'])->name('previous_payment.bulk')
+            ;
+        Route::get('/previous-payments/bulk/template', [AgentReportController::class, 'previousPaymentBulkTemplate'])->name('previous_payment.bulk.template')
+            ;
+        Route::post('/previous-payments/bulk/import', [AgentReportController::class, 'previousPaymentBulkImport'])->name('previous_payment.bulk.import')
+            ;
+        // Admin-only delete with a reason (card 6b056b38).
+        Route::delete('/previous-payments/{previous_payment}', [AgentReportController::class, 'previousPaymentDestroy'])->name('previous_payment.destroy')
+            ;
+
         // Tab 2: Payments — bulk upload (Cyd 2026-11-01)
         Route::get('/payments/bulk', [AgentReportController::class, 'paymentBulkUpload'])->name('payment.bulk')
             ;
