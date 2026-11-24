@@ -58,19 +58,26 @@
 
 {{-- Filters. `from` > `to` is swapped server-side, never a 422. --}}
 <form method="GET" action="{{ route('godmode.payments.index') }}" class="card bg-base-100 shadow" id="payments-filters">
-    <div class="card-body p-4 flex flex-wrap items-end gap-3">
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">From</span>
+    {{-- Card 6b055e5e36204c86a704b2be. Every control group is a flex column
+         (`label.flex.flex-col.gap-1`) with the caption as a direct flex child,
+         which is the one thing the old markup was missing: daisyUI 4's
+         `.form-control` / `.label-text` do not exist in daisyUI 5, so each
+         label stayed `display: block` and the row had no real width to place
+         (it packed into the right edge of the card). Captions are `text-sm`
+         (14px, ~20px line box) not `text-xs`, per the legibility criterion. --}}
+    <div class="card-body p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">From</span>
             <input type="month" name="from" value="{{ $filters['from'] }}" class="input input-bordered input-sm" id="payments-from">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">To</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">To</span>
             <input type="month" name="to" value="{{ $filters['to'] }}" class="input input-bordered input-sm" id="payments-to">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Agency</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Agency</span>
             <select name="agency" class="select select-bordered select-sm" id="payments-agency">
                 <option value="all" @selected(! $filters['agency'])>All agencies</option>
                 @foreach ($agencies as $id => $name)
@@ -79,8 +86,8 @@
             </select>
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Account</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Account</span>
             <select name="account" class="select select-bordered select-sm" id="payments-account">
                 <option value="all" @selected(! $filters['account'])>All accounts</option>
                 @foreach ($accounts as $account)
@@ -90,8 +97,8 @@
             </select>
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Status</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Status</span>
             {{-- data-status-option is the rendered state, so a test can read
                  which filter the page believes it is showing. --}}
             <select name="status" class="select select-bordered select-sm" id="payments-status" data-status-selected="{{ $filters['status'] }}">
@@ -101,14 +108,14 @@
             </select>
         </label>
 
-        <label class="form-control flex-1 min-w-[12rem]">
-            <span class="label-text text-xs font-semibold mb-1">Search</span>
+        <label class="flex flex-col gap-1 flex-1 min-w-[12rem]">
+            <span class="text-sm font-semibold">Search</span>
             <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Reference, particular, code or applicant"
                    class="input input-bordered input-sm" autocomplete="off" id="payments-q">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Per page</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Per page</span>
             <select name="per" class="select select-bordered select-sm" onchange="this.form.submit()">
                 @foreach ($perOptions as $option)
                     <option value="{{ $option }}" @selected((int) ($filters['per'] ?: 25) === $option)>{{ $option }}</option>

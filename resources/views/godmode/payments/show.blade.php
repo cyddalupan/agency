@@ -54,17 +54,17 @@
 </div>
 
 <form method="GET" action="{{ route('godmode.payments.show', $agency) }}" class="card bg-base-100 shadow" id="payments-filters">
-    <div class="card-body p-4 flex flex-wrap items-end gap-3">
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">From</span>
+    <div class="card-body p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">From</span>
             <input type="month" name="from" value="{{ $filters['from'] }}" class="input input-bordered input-sm">
         </label>
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">To</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">To</span>
             <input type="month" name="to" value="{{ $filters['to'] }}" class="input input-bordered input-sm">
         </label>
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Account</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Account</span>
             <select name="account" class="select select-bordered select-sm">
                 <option value="all" @selected(! $filters['account'])>All accounts</option>
                 @foreach ($accounts as $account)
@@ -73,21 +73,21 @@
                 <option value="{{ $unspecified }}" @selected($filters['account'] === $unspecified)>{{ $unspecified }}</option>
             </select>
         </label>
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Status</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Status</span>
             <select name="status" class="select select-bordered select-sm" data-status-selected="{{ $filters['status'] }}">
                 <option value="received" @selected($filters['status'] === 'received') data-status-option="received">Collected</option>
                 <option value="pending" @selected($filters['status'] === 'pending') data-status-option="pending">Outstanding</option>
                 <option value="all" @selected($filters['status'] === 'all') data-status-option="all">All</option>
             </select>
         </label>
-        <label class="form-control flex-1 min-w-[12rem]">
-            <span class="label-text text-xs font-semibold mb-1">Search</span>
+        <label class="flex flex-col gap-1 flex-1 min-w-[12rem]">
+            <span class="text-sm font-semibold">Search</span>
             <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Reference, particular, code or applicant"
                    class="input input-bordered input-sm" autocomplete="off">
         </label>
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Per page</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Per page</span>
             <select name="per" class="select select-bordered select-sm" onchange="this.form.submit()">
                 @foreach ($perOptions as $option)
                     <option value="{{ $option }}" @selected((int) ($filters['per'] ?: 25) === $option)>{{ $option }}</option>
