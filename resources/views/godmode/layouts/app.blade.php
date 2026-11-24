@@ -20,10 +20,10 @@
 --}}
 <body class="min-h-screen bg-base-200 text-base-content">
     <header class="bg-neutral text-neutral-content">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-1 min-w-0">
                 <a href="{{ route('godmode.dashboard') }}" class="font-extrabold tracking-tight">God Mode</a>
-                <nav class="flex items-center gap-1 text-sm">
+                <nav class="flex flex-wrap items-center gap-1 text-sm">
                     {{-- Active mark: the same hand-written pattern as the Agencies
                          link, per section. No nav refactor (§3.4). --}}
                     <a href="{{ route('godmode.dashboard') }}"
@@ -36,6 +36,10 @@
                          trail. Read-only, no badge count — the screen shows it. --}}
                     <a href="{{ route('godmode.audit.index') }}"
                        class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.audit.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Audit</a>
+                    {{-- Card 6b055a7a36a4a0bd098bdd29: platform-wide footer
+                         logo. Same hand-written active-mark pattern as above. --}}
+                    <a href="{{ route('godmode.branding.edit') }}"
+                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.branding.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Branding</a>
                 </nav>
             </div>
             <div class="flex items-center gap-3">

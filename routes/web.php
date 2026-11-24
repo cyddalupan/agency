@@ -57,6 +57,7 @@ use App\Http\Controllers\GodModeAuthController;
 use App\Http\Controllers\GodMode\GodAgencyController;
 use App\Http\Controllers\GodMode\GodAgencySettingsController;
 use App\Http\Controllers\GodMode\GodAuditController;
+use App\Http\Controllers\GodMode\GodBrandingController;
 use App\Http\Controllers\GodMode\GodPaymentsController;
 use Illuminate\Support\Facades\Route;
 
@@ -129,6 +130,16 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::get('/audit', [GodAuditController::class, 'index'])->name('audit.index');
         Route::get('/audit/sensitive', [GodAuditController::class, 'sensitive'])->name('audit.sensitive');
         Route::get('/audit/export', [GodAuditController::class, 'export'])->name('audit.export');
+
+        // Card 6b055a7a36a4a0bd098bdd29 — the platform-wide "Powered by
+        // Landas" footer logo. One GET, two POSTs with CSRF. Same sole gate as
+        // every other route in this group: no policy, no role check in the
+        // controller. Reset is a POST because it is a write (it deletes the
+        // settings row); there is no DELETE verb, matching the rest of the
+        // console.
+        Route::get('/branding', [GodBrandingController::class, 'edit'])->name('branding.edit');
+        Route::post('/branding', [GodBrandingController::class, 'update'])->name('branding.update');
+        Route::post('/branding/reset', [GodBrandingController::class, 'reset'])->name('branding.reset');
     });
 });
 
