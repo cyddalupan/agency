@@ -49,6 +49,8 @@
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="landas_ci"/>
         <env name="DB_URL" value=""/>
+        <!-- Card 6b043d33af3017bf577329a5: same as phpunit.xml, verbatim. -->
+        <env name="FILESYSTEM_DISK" value="testing"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

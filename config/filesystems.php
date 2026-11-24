@@ -60,6 +60,28 @@ return [
             'report' => false,
         ],
 
+        /*
+        |----------------------------------------------------------------------
+        | Testing Disk (card 6b043d33af3017bf577329a5)
+        |----------------------------------------------------------------------
+        | phpunit.xml pins FILESYSTEM_DISK to this. Same driver and visibility
+        | defaults as `local`, but rooted in the system temp dir
+        | (/tmp/landas-fixit-tests/storage) instead of storage/app/, which on
+        | this host is production data. `serve` stays false: nothing should
+        | ever be served from it. It exists so an un-faked Storage::write has
+        | somewhere harmless to go, and the suite's default disk cannot outlive
+        | a run in the deploy tree. Keep the key INSIDE `disks` — declared
+        | beside it, `config('filesystems.testing')` resolves fine but the
+        | FilesystemManager reads `filesystems.disks.testing`, finds nothing,
+        | and throws "Disk [testing] does not have a configured driver".
+        */
+        'testing' => [
+            'driver' => 'local',
+            'root' => sys_get_temp_dir().'/landas-fixit-tests/storage',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

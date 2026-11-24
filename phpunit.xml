@@ -35,6 +35,15 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
+        <!-- Card 6b043d33af3017bf577329a5: do not inherit FILESYSTEM_DISK.
+             Production is `local` -> storage/app/, which holds 4,858 live
+             files. One test writing without Storage::fake() would land there,
+             and that file would then be committed by whoever ran `git add -A`.
+             Point the default disk at the scratch `testing` disk declared in
+             config/filesystems.php: same local driver, root outside the app's
+             storage tree. A Storage::put() with no fake then writes to a
+             directory no deploy, backup or review ever looks at. -->
+        <env name="FILESYSTEM_DISK" value="testing"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
