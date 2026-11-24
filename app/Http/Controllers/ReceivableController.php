@@ -7,6 +7,7 @@ use App\Models\Applicant;
 use App\Models\Receivable;
 use App\Models\ReceivableHistory;
 use App\Models\User;
+use App\Services\TransactionEditLog;
 use App\Support\ModuleAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -342,16 +343,27 @@ class ReceivableController extends Controller
             }
         }
 
+        // Card 6b056e02: capture before/after so the History panel can show
+        // "Amount: 54,000.00 -> 5,400.00" instead of a value-less stub.
+        $original = $receivable->getAttributes();
         $receivable->update($validated);
 
-        ReceivableHistory::create([
-            'receivable_id' => $receivable->id,
-            'agency_id'     => $receivable->agency_id,
-            'user_id'       => auth()->id(),
-            'from_status'   => $receivable->status,
-            'to_status'     => $receivable->status,
-            'note'          => 'Transaction details edited by ' . ($user->name ?? 'user'),
-        ]);
+        $changes = app(TransactionEditLog::class)
+            ->receivableChanges($receivable, $original);
+
+        // A save that changed nothing adds no row (acceptance criterion 8).
+        if ($changes !== null) {
+            app(TransactionEditLog::class)->write(ReceivableHistory::class, [
+                'receivable_id' => $receivable->id,
+                'agency_id'     => $receivable->agency_id,
+                'user_id'       => auth()->id(),
+                // No fake transition: status has its own path and its own row.
+                'from_status'   => $receivable->status,
+                'to_status'     => $receivable->status,
+                'note'          => app(TransactionEditLog::class)
+                    ->editedNote($user->name ?? 'user', $changes),
+            ]);
+        }
 
         $this->saveAttachments($request, $receivable);
 

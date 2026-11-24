@@ -104,8 +104,14 @@
                             @foreach($history as $h)
                             <tr>
                                 <td>
-                                    <span class="badge badge-ghost badge-sm">{{ $h->from_status ?? '—' }}</span>
-                                    → <span class="badge badge-primary badge-sm">{{ $h->to_status }}</span>
+                                    {{-- Same status before and after = an edit, not a
+                                         transition (card 6b056e02). --}}
+                                    @if($h->from_status && $h->from_status === $h->to_status)
+                                        <span class="badge badge-warning badge-sm">Edited</span>
+                                    @else
+                                        <span class="badge badge-ghost badge-sm">{{ $h->from_status ?? '—' }}</span>
+                                        → <span class="badge badge-primary badge-sm">{{ $h->to_status }}</span>
+                                    @endif
                                 </td>
                                 <td>{{ $h->actor->name ?? '—' }}</td>
                                 <td>{{ $h->note ?? '—' }}</td>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\Payment;
+use App\Services\TransactionEditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -78,7 +79,27 @@ class PaymentController extends Controller
             'notes'        => 'nullable|string|max:1000',
         ]);
 
+        // Card 6b056e02: payments are a real third edit surface
+        // (Route::resource('payments')) and this write was silent.
+        $original = $payment->getAttributes();
         $payment->update($validated);
+
+        $log = app(TransactionEditLog::class);
+        $changes = $log->paymentChanges($payment, $original);
+
+        if ($changes !== null) {
+            // Keep the edit visible on the Payments screen's own log; the
+            // audit trail (audit_events) records the same diff separately.
+            try {
+                \App\Services\SensitiveActionLogger::log(
+                    'payment.updated',
+                    subject: $payment,
+                    description: $log->editedNote(auth()->user()->name ?? 'user', $changes),
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return redirect()->route('payments.index')
             ->with('success', 'Payment updated successfully.');

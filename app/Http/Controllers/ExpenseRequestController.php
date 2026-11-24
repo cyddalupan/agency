@@ -14,6 +14,7 @@ use App\Models\ExpenseRequestItem;
 use App\Models\ExpenseRequestStatusHistory;
 use App\Models\User;
 use App\Services\CurrencyConverter;
+use App\Services\TransactionEditLog;
 use App\Support\ModuleAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -680,6 +681,14 @@ class ExpenseRequestController extends Controller
 
         try {
             DB::transaction(function () use ($request, $validated, $agencyId, $branchId, $expenseRequest) {
+                // Card 6b056e02: every edit must land in Status / Transaction
+                // History. Snapshot before/after (getChanges() is gone once
+                // the next save runs) and write one grouped row at the end.
+                $originalHeader = $expenseRequest->getAttributes();
+                $originalItems = $expenseRequest->items()->get()
+                    ->mapWithKeys(fn ($i) => [$i->id => $i->getAttributes()])
+                    ->all();
+
                 $expenseRequest->update([
                     'date'      => $validated['date'] ?? $expenseRequest->date,
                     'branch_id' => $branchId,
@@ -804,7 +813,14 @@ class ExpenseRequestController extends Controller
                 }
 
                 // Lines dropped from the form are deleted from the request.
+                // Capture the amounts first: this is a HARD delete, and a
+                // removed line still has to be named in the history row.
+                $beforeItems = $expenseRequest->items()->get()
+                    ->mapWithKeys(fn ($i) => [$i->id => $i->getAttributes()])
+                    ->all();
                 $expenseRequest->items()->whereNotIn('id', $keptIds)->delete();
+
+                $this->writeEditHistory($expenseRequest, $originalHeader, $originalItems);
             });
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()->withErrors($e->errors())->withInput();
@@ -816,6 +832,53 @@ class ExpenseRequestController extends Controller
 
         return redirect()->route('expense_request.show', $expenseRequest)
             ->with('success', "Expense request {$expenseRequest->reference_no} updated.");
+    }
+
+    /**
+     * Card 6b056e02: one grouped Status / Transaction History row per edit,
+     * naming every changed field with its old and new value (ids as names).
+     * No row when the save changed nothing.
+     */
+    private function writeEditHistory(
+        ExpenseRequest $expenseRequest,
+        array $originalHeader,
+        array $originalItems
+    ): void {
+        $log = app(TransactionEditLog::class);
+
+        $itemsAfter = $expenseRequest->items()->orderBy('id')->get()
+            ->values()
+            ->mapWithKeys(fn ($item, $index) => [
+                $item->id => $item->getAttributes() + ['__position' => $index + 1],
+            ])
+            ->all();
+
+        $changes = $log->expenseRequestChanges(
+            (int) $expenseRequest->agency_id,
+            $originalHeader,
+            $expenseRequest->getAttributes(),
+            $originalItems,
+            $itemsAfter,
+        );
+
+        if ($changes === null) {
+            return;
+        }
+
+        $actor = auth()->user();
+
+        $log->write(ExpenseRequestStatusHistory::class, [
+            'expense_request_id' => $expenseRequest->id,
+            'agency_id'          => $expenseRequest->agency_id,
+            'user_id'            => auth()->id(),
+            // No fake transition: an edit is not a status change.
+            'from_status'        => $expenseRequest->status,
+            'to_status'          => $expenseRequest->status,
+            'note'               => $log->editedNote(
+                $actor->name ?? $actor->username ?? 'user',
+                $changes,
+            ),
+        ]);
     }
 
     /**

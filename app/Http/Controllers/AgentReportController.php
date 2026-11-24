@@ -13,6 +13,7 @@ use App\Models\ExpenseRequestItem;
 use App\Models\Receivable;
 use App\Models\StartingBalance;
 use App\Services\CurrencyConverter;
+use App\Services\TransactionEditLog;
 use App\Support\ModuleAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1170,16 +1171,41 @@ class AgentReportController extends Controller
 
         $changed = 0;
         DB::transaction(function () use ($updates, &$changed) {
+            // Card 6b056e02 AC12: an uploaded payment must appear in the
+            // request's Status / Transaction History. Grouped per request.
+            $log = app(TransactionEditLog::class);
+            $history = [];
+            $actorName = auth()->user()->name ?? auth()->user()->username ?? 'user';
+
             foreach ($updates as $itemId => $payload) {
                 $item = ExpenseRequestItem::whereKey($itemId)->first();
                 if (! $item) {
                     continue;
                 }
+                $old = (float) $item->payment;
+                $new = (float) $payload['payment'];
+
                 if ((string) $item->payment !== (string) $payload['payment']) {
                     $changed++;
                 }
+
+                if (abs($old - $new) >= 0.005) {
+                    $request = $item->expenseRequest;
+                    if ($request) {
+                        $history[$request->id] ??= ['model' => $request, 'segments' => []];
+                        $lineItem = $item->particular ?: ($item->applicant?->last_name
+                            ? trim(($item->applicant->last_name ?? '') . ', ' . ($item->applicant->first_name ?? ''), ', ')
+                            : ($item->agent?->name ?: ('#' . $item->id)));
+
+                        $history[$request->id]['segments'][] = 'Line "' . $lineItem . '" Payment: '
+                            . number_format($old, 2) . ' -> ' . number_format($new, 2);
+                    }
+                }
+
                 $item->update(['payment' => $payload['payment']]);
             }
+
+            $log->writePaymentHistory($history, $actorName);
         });
 
         return redirect()->route('agent_report.index', ['tab' => 'payments'])

@@ -132,16 +132,31 @@
                         <li>
                             <div class="timeline-middle">●</div>
                             <div class="timeline-end">
-                                <p class="text-sm">
-                                    @if($h->from_status)
-                                        <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->from_status] ?? $h->from_status }}</strong> →
+                                {{-- A row whose status did not move is an EDIT, not a
+                                     transition (card 6b056e02). Do not render it as
+                                     "Pending -> Pending". --}}
+                                @if($h->from_status && $h->from_status === $h->to_status)
+                                    <p class="text-sm">
+                                        <strong>Edited</strong>
+                                        <span class="opacity-60">{{ $h->created_at?->format('M d, H:i') }}</span>
+                                    </p>
+                                @else
+                                    <p class="text-sm">
+                                        @if($h->from_status)
+                                            <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->from_status] ?? $h->from_status }}</strong> →
+                                        @endif
+                                        <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->to_status] ?? $h->to_status }}</strong>
+                                        <span class="opacity-60">{{ $h->created_at?->format('M d, H:i') }}</span>
+                                    </p>
+                                @endif
+                                <p class="text-xs opacity-70">Encoded by {{ $h->actor?->name ?? $h->actor?->username ?? '—' }}</p>
+                                @if($h->note)
+                                    @if($h->from_status && $h->from_status === $h->to_status)
+                                        <p class="text-xs mt-0.5 break-words">{{ $h->note }}</p>
+                                    @else
+                                        <p class="text-xs opacity-70">— "{{ $h->note }}"</p>
                                     @endif
-                                    <strong>{{ App\Models\ExpenseRequest::STATUS_LABELS[$h->to_status] ?? $h->to_status }}</strong>
-                                    <span class="opacity-60">{{ $h->created_at?->format('M d, H:i') }}</span>
-                                </p>
-                                <p class="text-xs opacity-70">Encoded by {{ $h->actor?->name ?? $h->actor?->username ?? '—' }}
-                                    @if($h->note) — "{{ $h->note }}" @endif
-                                </p>
+                                @endif
                             </div>
                         </li>
                     @endforeach
