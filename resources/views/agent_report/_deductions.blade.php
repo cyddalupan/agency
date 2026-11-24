@@ -12,6 +12,9 @@
         </div>
         <p class="text-xs opacity-60 mb-2">Deductions only. Payments from Expenses &amp; Payments are listed on the Payments tab.</p>
         @if($deductions->count())
+            {{-- Card 6b056f91: tab total under the title, above the headers.
+                 The tfoot below reads the same $tabTotals key — no sum in this view. --}}
+            <x-agent-report-total :amount="$tabTotals['deductions']" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>
@@ -60,7 +63,7 @@
                     <tfoot>
                         <tr class="bg-base-200/70 font-bold">
                             <td colspan="4" class="text-right">Total Deductions</td>
-                            <td class="text-right">₱{{ number_format((float) $deductions->sum('amount'), 2) }}</td>
+                            <td class="text-right">₱{{ number_format((float) $tabTotals['deductions'], 2) }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>

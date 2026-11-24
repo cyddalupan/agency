@@ -16,6 +16,8 @@
             </span>
         </h3>
         @if($receivableItems->count())
+            {{-- Card 6b056f91: tab total under the title, above the headers. --}}
+            <x-agent-report-total :amount="$tabTotals['receivables']" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>

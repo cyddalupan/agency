@@ -3,9 +3,12 @@
     <div class="card-body">
         <div class="flex items-center justify-between mb-3">
             <h3 class="font-bold">↩️ Return Payment <span class="badge badge-sm badge-ghost">{{ $returnPaymentItems->count() }}</span></h3>
-            <span class="badge badge-primary badge-sm">Total: ₱{{ number_format($returnPaymentTotal, 2) }}</span>
+            {{-- Card 6b056f91: the header badge is gone; the sticky total line below
+                 (and the tfoot) both read $tabTotals['return_payment'] so all three
+                 numbers that used to sit on this card are one number in two places. --}}
         </div>
         @if($returnPaymentItems->count())
+            <x-agent-report-total :amount="$tabTotals['return_payment']" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>
@@ -42,7 +45,7 @@
                     <tfoot>
                         <tr class="bg-base-200/70 font-bold">
                             <td colspan="4" class="text-right">Total Return Payment</td>
-                            <td class="text-right">₱{{ number_format($returnPaymentTotal, 2) }}</td>
+                            <td class="text-right">₱{{ number_format($tabTotals['return_payment'], 2) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

@@ -9,6 +9,9 @@
         </div>
         <p class="text-xs opacity-60 mb-2">Payment amounts recorded on transactions in Expenses &amp; Payments. Receivables from the Receivable module are not listed here.</p>
         @if($payments->count())
+            {{-- Card 6b056f91: tab total under the title, above the headers.
+                 Labelled "Total Payment" because the money column is Payment. --}}
+            <x-agent-report-total :amount="$tabTotals['payments']" label="Total Payment (all rows in this tab)" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>

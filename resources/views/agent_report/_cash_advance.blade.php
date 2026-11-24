@@ -3,6 +3,8 @@
     <div class="card-body">
         <h3 class="font-bold mb-3">💰 Cash Advance <span class="badge badge-sm badge-ghost">{{ $cashAdvanceItems->count() }}</span></h3>
         @if($cashAdvanceItems->count())
+            {{-- Card 6b056f91: tab total under the title, above the headers. --}}
+            <x-agent-report-total :amount="$tabTotals['cash_advance']" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>

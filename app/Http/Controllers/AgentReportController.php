@@ -298,6 +298,35 @@ class AgentReportController extends Controller
             'balance'        => $reportRows->sum('balance'),
         ];
 
+        // ---- Tab totals (card 6b056f91, Cyd 2026-11-24) ----
+        // Cyd wants the total amount visible on each data tab without scrolling
+        // to the footer of a long table. One source of truth: every tab total is
+        // the sum of the rows that tab actually shows, converted to PHP with the
+        // same CurrencyConverter the rows use. No view may sum money — the two
+        // sums that used to live in blades (_deductions tfoot, and the Return
+        // Payment badge/footer which already read a controller variable) read
+        // from here now.
+        //
+        // The totals follow the Agent filter because they sum the already-filtered
+        // collections. Commission/released/return/payments sums mirror exactly
+        // what the existing footers did (gross `amount`, not netAmount()).
+        $phpTotal = fn ($collection, string $column = 'amount') => $collection->sum(
+            fn ($row) => $converter->toPhp((float) $row->{$column}, (string) ($row->currency ?: 'PHP'))
+        );
+
+        $tabTotals = [
+            'commission'          => $phpTotal($commissionItems),
+            'released_commission' => $releasedCommissionTotal,
+            'cash_advance'        => $phpTotal($cashAdvanceItems),
+            // Receivable module amounts are PHP only (no currency column).
+            'receivables'         => (float) $receivableItems->sum(fn ($r) => (float) $r->amount),
+            'return_payment'      => $returnPaymentTotal,
+            // AgentDeduction amounts are PHP only.
+            'deductions'          => (float) $deductions->sum(fn ($d) => (float) $d->amount),
+            'payments'            => $phpTotal($payments, 'payment'),
+            'previous_payments'   => $previousPaymentsTotal,
+        ];
+
         return view('agent_report.index', compact(
             'tab',
             'agents',
@@ -324,6 +353,8 @@ class AgentReportController extends Controller
             // attempt used a variable index() never passed, which 500'd
             // /agents-report for a logged-in Gulf admin).
             'agencyId' => $agencyId,
+            // Card 6b056f91: per-tab totals for the sticky summary lines.
+            'tabTotals' => $tabTotals,
             'canManageDeductions' => $this->canManageDeductions(),
             'canManagePayments'   => $this->canManagePayments(),
             // Cyd 2026-11-01 (card 124): only Admin may delete Deduction/Payment rows.

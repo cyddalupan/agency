@@ -3,6 +3,8 @@
     <div class="card-body">
         <h3 class="font-bold mb-3">💼 Commission <span class="badge badge-sm badge-ghost">{{ $commissionItems->count() }}</span></h3>
         @if($commissionItems->count())
+            {{-- Card 6b056f91: tab total under the title, above the headers. --}}
+            <x-agent-report-total :amount="$tabTotals['commission']" />
             <div class="overflow-x-auto">
                 <table class="table table-sm">
                     <thead>
