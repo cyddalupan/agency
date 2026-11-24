@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExpenseRequestItem extends Model
 {
-    use HasFactory, AuditsChanges;
+    use HasFactory, AuditsChanges {
+        // See ExpenseRequestItem::resolveAuditAgencyId() — `parent::` skips the
+        // trait, so an overriding class calls this alias instead.
+        resolveAuditAgencyId as protected resolveAuditAgencyIdFromTrait;
+    }
 
     /**
      * Card 6b008b8e7c2a220f1cd6d2e1: the inheritance below is ENFORCED, not
@@ -28,10 +32,17 @@ class ExpenseRequestItem extends Model
     /**
      * QMS-02: expense_request_items carries no agency_id of its own — it
      * inherits the tenant from its parent request.
+     *
+     * NB: `parent::resolveAuditAgencyId()` does NOT reach the trait. A trait
+     * method is flattened into the using class, so `parent::` resolves against
+     * Illuminate\Database\Eloquent\Model, which has no such method, and every
+     * call threw BadMethodCallException (caught by writeAuditEvent, so it only
+     * logged — 1,682 throws in a 200 MB tail, and one per real production
+     * item write). Alias the trait method and call that.
      */
     protected function resolveAuditAgencyId(): ?int
     {
-        $own = parent::resolveAuditAgencyId();
+        $own = $this->resolveAuditAgencyIdFromTrait();
 
         if ($own !== null) {
             return $own;
