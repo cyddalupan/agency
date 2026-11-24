@@ -52,6 +52,10 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Card 6b042ed87e2121a0890fce7c: same as phpunit.xml, verbatim. The
+             CI container has no production log to corrupt, but a file that
+             differs from phpunit.xml is a trap for the next person. -->
+        <env name="LOG_CHANNEL" value="null"/>
         <env name="BRANCH_RESTRICTIONS" value="true"/>
     </php>
 </phpunit>

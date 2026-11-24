@@ -38,6 +38,16 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Card 6b042ed87e2121a0890fce7c: do not inherit LOG_CHANNEL from
+             .env. It is unset there, so the suite fell through to stack ->
+             single -> storage/logs/laravel.log, the LIVE production log: 2423
+             of 2431 entries in a 200 MB window were testing.* writes, and one
+             recursion bug emitted 650 MB in 52 seconds. `null` discards, so a
+             run cannot touch the file no matter who runs it. Failure output
+             still reaches the console (PHPUnit's own reporter), which AC4 of
+             that card checks. Exception output for a test you are actively
+             debugging: run with LOG_CHANNEL=stderr in the environment. -->
+        <env name="LOG_CHANNEL" value="null"/>
         <!-- Branch feature: tests default to restrictions ON (normal behaviour).
              Disabled-state tests set config('mjolnir.branch_restrictions', false). -->
         <env name="BRANCH_RESTRICTIONS" value="true"/>
