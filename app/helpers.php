@@ -80,6 +80,55 @@ if (!function_exists('app_brand_logo_url')) {
     }
 }
 
+if (!function_exists('app_brand_landas_logo')) {
+    /**
+     * The "Powered by Landas" footer wordmark.
+     *
+     * Resolution order:
+     *   1. A platform-level override chosen in God Mode — stored in the
+     *      `settings` table under key `brand.landas_footer_logo`. That key may
+     *      hold either a storage path (uploaded file, resolved through
+     *      Storage::url) or an absolute/relative URL (pasted address).
+     *   2. The shipped default asset at public/images/landas-logo.png.
+     *
+     * The override is read through a try/catch and a schema existence check
+     * because this helper renders on EVERY page, including the God Mode login
+     * and any error page — it must never be the reason a page 500s. If the
+     * settings table does not exist yet (fresh install, mid-migration) the
+     * default asset is used.
+     */
+    function app_brand_landas_logo(): string
+    {
+        $default = asset('images/landas-logo.png');
+
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                return $default;
+            }
+
+            $value = \Illuminate\Support\Facades\DB::table('settings')
+                ->where('key', 'brand.landas_footer_logo')
+                ->value('value');
+
+            if (! is_string($value) || trim($value) === '') {
+                return $default;
+            }
+
+            $value = trim($value);
+
+            // Absolute URL (http/https) or a root-relative path: use verbatim.
+            if (preg_match('#^(https?:)?//#i', $value) === 1 || str_starts_with($value, '/')) {
+                return $value;
+            }
+
+            // Otherwise treat it as a storage path on the public disk.
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($value);
+        } catch (\Throwable $e) {
+            return $default;
+        }
+    }
+}
+
 if (!function_exists('app_applicant_form_defaults')) {
     /**
      * Resolve the per-agency applicant-form defaults (no hardcoded lists).

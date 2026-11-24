@@ -213,7 +213,23 @@
 
             {{-- Footer --}}
             <footer class="px-4 lg:px-6 py-3 text-center text-xs opacity-40 border-t border-base-300">
-                {{ app_brand_icon() }} {{ app_brand_name() }} &bull; Powered by TOYBITS
+                <span class="inline-flex items-center justify-center gap-2 align-middle">
+                    <span>{{ app_brand_icon() }} {{ app_brand_name() }}</span>
+                    <span aria-hidden="true">&bull;</span>
+                    <span class="inline-flex items-center gap-1.5 align-middle">
+                        <span>Powered by</span>
+                        {{-- Landas wordmark. Decorative: the footer text already names the platform, so
+                             the image is aria-hidden to avoid a duplicate reading. Sourced from
+                             app_brand_landas_logo() so God Mode can override it without a code change. --}}
+                        <img src="{{ app_brand_landas_logo() }}"
+                             alt=""
+                             aria-hidden="true"
+                             height="18"
+                             style="height:1.15em;width:auto;display:inline-block;vertical-align:-0.2em;"
+                             class="landas-footer-logo">
+                        <span class="sr-only">LANDAS</span>
+                    </span>
+                </span>
             </footer>
         </div>
 
