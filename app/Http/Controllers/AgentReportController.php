@@ -317,6 +317,12 @@ class AgentReportController extends Controller
             'totals',
             'converter'
         ) + [
+            // Card 6b056b38: the Previous Payment tab is gulf-gated IN THE VIEW,
+            // so the view needs the id. Passing it explicitly rather than reading
+            // auth() inside the template (Bitoy fix, 2026-11-24 12:32 — the first
+            // attempt used a variable index() never passed, which 500'd
+            // /agents-report for a logged-in Gulf admin).
+            'agencyId' => $agencyId,
             'canManageDeductions' => $this->canManageDeductions(),
             'canManagePayments'   => $this->canManagePayments(),
             // Cyd 2026-11-01 (card 124): only Admin may delete Deduction/Payment rows.
