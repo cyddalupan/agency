@@ -15,19 +15,19 @@
 @endphp
 
 <form method="GET" action="{{ $target }}" class="card bg-base-100 shadow" id="audit-filters">
-    <div class="card-body p-4 flex flex-wrap items-end gap-3">
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">From</span>
+    <div class="card-body p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">From</span>
             <input type="date" name="from" value="{{ $filters['from'] }}" class="input input-bordered input-sm" id="audit-from">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">To</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">To</span>
             <input type="date" name="to" value="{{ $filters['to'] }}" class="input input-bordered input-sm" id="audit-to">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Actor</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Actor</span>
             <select name="actor" class="select select-bordered select-sm" id="audit-actor">
                 <option value="" @selected(! $actorValue)>All actors</option>
                 <option value="{{ $actorNoneValue }}" @selected($actorValue === $actorNoneValue)>{{ $systemLabel }} (no actor)</option>
@@ -37,8 +37,8 @@
             </select>
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Agency</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Agency</span>
             <select name="agency" class="select select-bordered select-sm" id="audit-agency">
                 <option value="" @selected(! $agencyValue)>All agencies</option>
                 <option value="{{ $agencyNoneValue }}" @selected($agencyValue === $agencyNoneValue)>{{ $noAgencyLabel }}</option>
@@ -48,8 +48,8 @@
             </select>
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Action</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Action</span>
             <select name="action" class="select select-bordered select-sm" id="audit-action">
                 <option value="" @selected(! ($filters['action'] ?? null))>All actions</option>
                 @foreach ($actions as $value => $label)
@@ -61,8 +61,8 @@
         @if (! $sensitive)
         {{-- subject_type is an audit-events vocabulary; the sensitive tab's
              record types are free-form slugs, so it offers no type filter. --}}
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Record type</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Record type</span>
             <select name="subject_type" class="select select-bordered select-sm" id="audit-subject-type">
                 <option value="" @selected(! ($filters['subject_type'] ?? null))>All types</option>
                 @foreach ($subjectTypes as $type)
@@ -72,14 +72,14 @@
         </label>
         @endif
 
-        <label class="form-control flex-1 min-w-[12rem]">
-            <span class="label-text text-xs font-semibold mb-1">Search</span>
+        <label class="flex flex-col gap-1 flex-1 min-w-[12rem]">
+            <span class="text-sm font-semibold">Search</span>
             <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Reference"
                    class="input input-bordered input-sm" autocomplete="off" id="audit-q">
         </label>
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Per page</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Per page</span>
             <select name="per" class="select select-bordered select-sm" onchange="this.form.submit()" id="audit-per">
                 @foreach ($perOptions as $option)
                     <option value="{{ $option }}" @selected((int) ($filters['per'] ?? 25) === $option)>{{ $option }}</option>

@@ -40,9 +40,9 @@
 {{-- Search + filters. All state lives in the URL so a copied link reproduces
      the screen (criterion 23). --}}
 <form method="GET" action="{{ route('godmode.agencies.index') }}" class="card bg-base-100 shadow" id="agencies-filters">
-    <div class="card-body p-4 flex flex-col sm:flex-row sm:items-end gap-3">
-        <label class="form-control flex-1">
-            <span class="label-text text-xs font-semibold mb-1">Search</span>
+    <div class="card-body p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <label class="flex flex-col gap-1 flex-1 min-w-[12rem]">
+            <span class="text-sm font-semibold">Search</span>
             <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Name, subdomain, email or contact person"
                    class="input input-bordered input-sm" minlength="2" autocomplete="off" id="agencies-q">
         </label>
@@ -55,8 +55,8 @@
             <input type="hidden" name="dir" value="{{ $filters['dir'] }}">
         @endif
 
-        <label class="form-control">
-            <span class="label-text text-xs font-semibold mb-1">Per page</span>
+        <label class="flex flex-col gap-1 min-w-36 max-w-40">
+            <span class="text-sm font-semibold">Per page</span>
             <select name="per" class="select select-bordered select-sm" onchange="this.form.submit()">
                 @foreach ($perOptions as $option)
                     <option value="{{ $option }}" @selected((int) ($filters['per'] ?: 25) === $option)>{{ $option }}</option>
@@ -66,7 +66,7 @@
 
         <label class="label cursor-pointer gap-2 normal-case">
             <input type="checkbox" name="empty" value="1" class="checkbox checkbox-sm" @checked($filters['empty']) onchange="this.form.submit()">
-            <span class="label-text text-sm">Only empty agencies</span>
+            <span class="text-sm">Only empty agencies</span>
         </label>
 
         <button type="submit" class="btn btn-sm btn-neutral">Search</button>

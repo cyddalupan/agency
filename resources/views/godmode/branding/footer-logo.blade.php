@@ -132,9 +132,7 @@
                 <div class="divider text-xs opacity-50 my-0">or</div>
 
                 <div>
-                    <label class="label pb-1" for="url">
-                        <span class="label-text font-medium">Paste an image URL</span>
-                    </label>
+                    <label class="block pb-1 text-sm font-medium" for="url">Paste an image URL</label>
                     <input type="url" id="url" name="url" value="{{ old('url') }}"
                            placeholder="https://..." maxlength="500"
                            class="input input-bordered input-sm w-full max-w-xl">
