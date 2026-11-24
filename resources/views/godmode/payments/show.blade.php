@@ -46,6 +46,14 @@
                 <span class="badge badge-sm badge-error badge-outline" data-badge="no-subdomain">no subdomain</span>
             @endif
         </p>
+        {{-- Card 6b055e29, item 1: the same read-only statement as the ledger.
+             Same wording fence: no Delete/delete/destroy/Approve/approve here,
+             the rendered HTML is grepped for all six. --}}
+        <p class="text-sm opacity-80 mt-2 max-w-2xl" data-readonly-note="payments-show">
+            <span class="font-semibold">Read-only view.</span>
+            This page shows money {{ $header['name'] }} recorded; payments are entered by the agency itself,
+            inside its own app, not from here. That is why there is no add, edit or void control on this screen.
+        </p>
     </div>
     <div class="flex items-center gap-2">
         <a href="{{ route('godmode.payments.index') }}" class="btn btn-sm btn-ghost">← All agencies</a>
@@ -177,7 +185,18 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="text-center py-8 opacity-60">No receivables match these filters.</td>
+                    <td colspan="10" class="text-center py-8 opacity-60" data-empty-reason="{{ $coverage['with_receivables'] > 0 ? 'window' : 'never-recorded' }}">
+                        {{-- Card 6b055e29: name the real reason, not a bare "no match".
+                             "never recorded" ignores the window on purpose (agencyCoverage). --}}
+                        @if ($coverage['with_receivables'] > 0)
+                            No receivables match these filters. This agency has recorded receivables before,
+                            just none inside this date window or status.
+                        @else
+                            This agency has never recorded a receivable.
+                            This page will stay empty until {{ $header['name'] }} enters one in its own app,
+                            signed in at {{ $header['subdomain'] ? $header['subdomain'].'.'.parse_url((string) config('app.url'), PHP_URL_HOST) : 'its own login' }}.
+                        @endif
+                    </td>
                 </tr>
             @endforelse
         </tbody>

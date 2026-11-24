@@ -271,6 +271,78 @@ class GodModePaymentsTest extends TestCase
         $this->assertSame(2, Receivable::withTrashed()->count());
     }
 
+    // ── read-only stated, and an empty view explained (card 6b055e29) ─
+
+    #[Test]
+    public function both_screens_state_the_view_is_read_only_and_where_payments_are_recorded(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $this->receivable($gulf);
+
+        $this->actAsGod();
+
+        $this->get(route('godmode.payments.index'))
+            ->assertOk()
+            ->assertSee('data-readonly-note="payments-index"', false)
+            ->assertSee('read-only view of money the agencies recorded', false)
+            ->assertSee('inside its own app', false);
+
+        $this->get(route('godmode.payments.show', $gulf))
+            ->assertOk()
+            ->assertSee('data-readonly-note="payments-show"', false)
+            ->assertSee('Read-only view.', false)
+            ->assertSee('inside its own app', false);
+    }
+
+    #[Test]
+    public function the_ledger_says_how_many_agencies_have_never_recorded_a_receivable(): void
+    {
+        $gulf = $this->agency('Gulf Horizon');
+        $this->agency('Toy-Schimmel');
+        $this->receivable($gulf);
+
+        $this->actAsGod();
+
+        // All agencies: a true ratio, not a hardcoded string.
+        $this->get(route('godmode.payments.index'))
+            ->assertOk()
+            ->assertSee('data-coverage-note="payments-index"', false)
+            ->assertSee('1 of 2 agencies have never recorded a receivable; 1 have.', false);
+
+        // One agency that has rows: a statement about that agency, not "1 of 1".
+        $this->get(route('godmode.payments.index', ['agency' => $gulf->id]))
+            ->assertOk()
+            ->assertSee('This agency has recorded at least one receivable.', false)
+            ->assertDontSee('1 of 1 agencies', false);
+
+        // An id that does not exist is a sentence, not a 500 and not a ratio.
+        $this->get(route('godmode.payments.index', ['agency' => 999999]))
+            ->assertOk()
+            ->assertDontSee('agencies have never recorded', false);
+    }
+
+    #[Test]
+    public function a_zero_receivable_agency_drill_in_names_the_actual_reason_it_is_empty(): void
+    {
+        $empty = $this->agency('Toy-Schimmel');
+        $gulf = $this->agency('Gulf Horizon');
+        $this->receivable($gulf);
+
+        $this->actAsGod();
+
+        $this->get(route('godmode.payments.show', $empty))
+            ->assertOk()
+            ->assertSee('data-empty-reason="never-recorded"', false)
+            ->assertSee('This agency has never recorded a receivable.', false);
+
+        // An agency WITH rows but none in the window says so instead, and must
+        // not claim it has never recorded one.
+        $this->get(route('godmode.payments.show', [$gulf, 'from' => '2023-01', 'to' => '2023-05']))
+            ->assertOk()
+            ->assertSee('data-empty-reason="window"', false)
+            ->assertDontSee('This agency has never recorded a receivable.', false);
+    }
+
     // ── one computation ──────────────────────────────────────────────
 
     #[Test]

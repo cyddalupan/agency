@@ -46,6 +46,7 @@ class GodPaymentsController extends Controller
             'perAgency'    => $this->ledger->perAgency($filters),
             'ageing'       => $this->ledger->ageing($filters),
             'agencies'     => $this->ledger->agencies(),
+            'coverage'     => $this->ledger->agencyCoverage($filters),
             'accounts'     => Receivable::ACCOUNTS,
             'perOptions'   => GodReceivableService::PER_PAGE_OPTIONS,
             'unspecified'  => GodReceivableService::UNSPECIFIED_ACCOUNT,
@@ -71,11 +72,16 @@ class GodPaymentsController extends Controller
 
         abort_if($rows->currentPage() < 1 || $rows->currentPage() > $rows->lastPage(), 404);
 
+        // Card 6b055e29: the drill-in's coverage is this agency's own history
+        // (all-time, every status), never the fleet-wide ratio.
+        $coverage = $this->ledger->agencyCoverage(['agency' => $agency->id] + $filters);
+
         return view('godmode.payments.show', [
             'filters'   => $filters,
             'bounds'    => $this->ledger->monthBounds($filters),
             'agency'    => $agency,
             'header'    => $this->ledger->agencyHeader($agency),
+            'coverage'  => $coverage,
             'summary'   => $this->ledger->summary($filters),
             'series'    => $this->ledger->monthlySeries($filters),
             'byAccount' => $this->ledger->byAccount($filters),

@@ -570,6 +570,55 @@ class GodReceivableService
     }
 
     /**
+     * Card 6b055e29 — "why is this table mostly empty?".
+     *
+     * Answers "how many agencies in scope have NEVER recorded a receivable",
+     * which `perAgency()` structurally cannot: its INNER JOIN starts from the
+     * filtered row set, so the agencies with no rows are exactly the ones it
+     * drops. The date window is ignored ON PURPOSE — the question is whether
+     * an agency has ever used the feature, not whether it has money this
+     * month, and a windowed answer would read as "this agency is broken".
+     *
+     * `withTrashed()`: a soft-deleted (voided) row still means the agency has
+     * recorded a receivable at some point, which is the literal claim.
+     *
+     * $filters['agency'] may name an agency that does not exist
+     * (`?agency=999999`): then in_scope is 0 and `Agency::find()` is null,
+     * so the caller renders the generic sentence, never a 500.
+     *
+     * NOT part of `summary()`: `summary()` is the windowed money contract
+     * shared by three screens and cached on `serialize($filters)`; an
+     * all-time count inside it would make that cache answer a windowed
+     * question with an unwindowed number.
+     *
+     * @return array{in_scope: int, with_receivables: int, without_receivables: int, agency: ?Agency}
+     */
+    public function agencyCoverage(array $filters): array
+    {
+        $agencyId = $filters['agency'] ?? null;
+
+        $inScope = (int) Agency::query()
+            ->when($agencyId, fn (Builder $q) => $q->where('agencies.id', (int) $agencyId))
+            ->count();
+
+        $withRows = (int) Receivable::withTrashed()
+            ->when($agencyId, fn (Builder $q) => $q->where('receivables.agency_id', (int) $agencyId))
+            ->toBase()
+            ->selectRaw('COUNT(DISTINCT receivables.agency_id) as n')
+            ->value('n');
+
+        // A named agency that does not exist is not a provider with no rows.
+        $withRows = min($withRows, $inScope);
+
+        return [
+            'in_scope'            => $inScope,
+            'with_receivables'    => $withRows,
+            'without_receivables' => max(0, $inScope - $withRows),
+            'agency'              => $agencyId ? ($this->agency((int) $agencyId)) : null,
+        ];
+    }
+
+    /**
      * Outstanding (pending, not deleted) money by age of the row's `date`:
      * 0-30, 31-60, 61-90, 90+ days, plus a "future" bucket for a dated-ahead
      * due, which is not aged and must not be hidden.

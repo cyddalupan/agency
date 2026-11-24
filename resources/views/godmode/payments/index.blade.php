@@ -43,6 +43,28 @@
         ['key' => 'agencies', 'label' => 'Agencies with collections', 'value' => $summary['agency_count'] === null ? '—' : number_format($summary['agency_count']), 'hint' => $summary['agency_count'] !== null ? 'At least one row in this window' : ($filters['status'] === 'pending' ? 'No agency has pending rows in this filter' : 'Nothing measured in this window')],
         ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
     ];
+
+    // Card 6b055e29. "Why is this list short?" — an all-time fact about the
+    // agencies in scope, not a windowed one, so a thin month never looks like
+    // a broken screen. `coverage` comes from the controller (service method
+    // agencyCoverage); it is deliberately NOT derived from $perAgency, whose
+    // inner join drops exactly the agencies with no rows.
+    if ($filters['agency']) {
+        $namedAgency = $coverage['agency']; // null when ?agency= does not exist
+        if ($namedAgency === null) {
+            $coverageLine = 'No agency matches that filter, so this view measures nothing.';
+        } elseif ($coverage['with_receivables'] > 0) {
+            $coverageLine = 'This agency has recorded at least one receivable. Only what falls inside the window above is listed.';
+        } else {
+            $coverageLine = 'This agency has never recorded a receivable. Table below stays empty until it enters its own money.';
+        }
+    } elseif ($coverage['in_scope'] === 0) {
+        $coverageLine = 'No agencies exist yet.';
+    } else {
+        $coverageLine = number_format($coverage['without_receivables']).' of '.number_format($coverage['in_scope'])
+            .' agencies have never recorded a receivable; '.number_format($coverage['with_receivables'])
+            .' have. Only agencies that have recorded payments appear in the table below.';
+    }
 @endphp
 
 @section('content')
@@ -52,6 +74,22 @@
         <p class="text-sm opacity-70">
             Every agency's receivables, read-only. Collected is money an agency has received;
             outstanding is money it has billed and not been paid.
+        </p>
+    </div>
+</div>
+
+{{-- Card 6b055e29, item 1: say the read-only nature out loud, without a click.
+     Wording is fenced: the rendered HTML of this page is grepped by
+     `no_screen_offers_an_edit_or_approve_control_on_a_receivable` for the
+     strings Delete/delete/destroy/forceDelete/Approve/approve, so this note
+     must never promise or deny those actions by name. --}}
+<div class="alert mt-3" data-readonly-note="payments-index">
+    <div class="text-sm">
+        <p class="font-semibold">This screen is a read-only view of money the agencies recorded.</p>
+        <p class="opacity-80">
+            Payments are entered by the agency itself, inside its own app, not from here. That is why
+            this page has no add, edit or void control: the agency's entry is the record, and an
+            operator change would break the trail that explains every amount.
         </p>
     </div>
 </div>
@@ -134,6 +172,12 @@
 </form>
 
 @include('godmode.payments._kpis', ['tiles' => $tiles, 'kpiId' => 'payments-kpis'])
+
+{{-- Item 2: the reason a short table is short, directly above the table it explains. --}}
+<div class="mt-4 mb-2" data-coverage-note="payments-index">
+    <p class="text-sm"><span class="font-semibold">Coverage:</span> {{ $coverageLine }}</p>
+    <p class="text-xs opacity-60">All-time, across every date: the date window above does not change this count.</p>
+</div>
 
 @include('godmode.payments._chart', ['months' => $bounds['months'], 'series' => $series, 'service' => $service])
 
