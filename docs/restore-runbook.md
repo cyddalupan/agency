@@ -355,3 +355,41 @@ A single incident file is preserved under
 `/var/backups/landas_logs/laravel_incident_20261123.log` (`root:root 0600`,
 sha256 in the adjacent `.sha256`). Do not delete it to free space without
 checking whether it is still the evidence for an open incident.
+
+## The 15-minute canary: what it does and does not prove
+
+Card `6b04de7aef92f29370b3ad9a`. `scripts/prod_canary.sh` in
+`/root/.openclaw/workspace` runs every 15 minutes and posts to `#admin`
+(`C0ASLLPV0AZ`) only on a change of state.
+
+**It reuses this document's parity rule; it does not define a second one.**
+The tolerance classes in § "Parity rule" (`5000` default, `2000` for
+`activity_logs`/`audit_events`, `2000` either way for short-lived tables,
+"more rows than prod is a FAIL for any other table") are evaluated by
+`scripts/restore_rehearsal.sh` (`e0e63388`), and only there — a two-sided count
+comparison needs a restore target and the dump's own `Dump completed on` time,
+which the canary does not have on hand every 15 minutes.
+
+What the canary evaluates is the **production half**: the row counts of
+`users`, `agencies` and `expense_requests`, against a stored floor and against
+the last accepted reading. Two rules:
+
+- a hard minimum per table (`users` 50, `agencies` 5, `expense_requests` 1000)
+  — these going toward zero is the 01:21 wipe signature;
+- a drop of more than 25 rows vs the last accepted count.
+
+The floor **ratchets up only**, and only after a run in which every leg
+reported OK. A low reading never lowers it, so a wipe cannot teach the floor
+that the wipe is normal.
+
+How this stays consistent with the monthly drill: the canary alarms on
+production *losing* rows, which is a subset of what the drill's count parity
+already rejects (`restore` shorter than `prod` beyond the cap). If the two ever
+disagree, the drill is authoritative and this section is wrong.
+
+**Known expiry risk, deliberately handled.** `laravel.log` rotates hourly with
+`dateformat -%Y%m%d-%H%M%S` and `copytruncate`. The canary reads a bounded
+`tail -c` from a stored `(size, timestamp, inode)` offset and treats both a
+shorter file and a changed inode as "start at 0, not an error". It never reads
+the whole file. It alerts on an error-line **rate**, not on size — the 13:37
+incident wrote 1,795 errors in 60 s and looked like nothing by size.
