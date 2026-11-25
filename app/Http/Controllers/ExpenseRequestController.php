@@ -585,7 +585,18 @@ class ExpenseRequestController extends Controller
             }
         }
 
-        $existingLines = $expenseRequest->items->map(function (ExpenseRequestItem $item) {
+        // Card 6b05a95b: a row may hold a top-level account the option list
+        // does not offer. Give the partial its label so the saved account is
+        // displayed instead of silently blanked.
+        $accountLabels = Account::where('agency_id', $agencyId)
+            ->whereIn('id', $expenseRequest->items->pluck('account_id')->filter()->unique()->all())
+            ->with('parent')
+            ->get()
+            ->keyBy('id');
+
+        $existingLines = $expenseRequest->items->map(function (ExpenseRequestItem $item) use ($accountLabels) {
+            $itemAccount = $accountLabels->get($item->account_id);
+
             return [
                 'id'           => $item->id,
                 'charge'       => $item->charge,
@@ -601,6 +612,11 @@ class ExpenseRequestController extends Controller
                 // Account Type picker (and the Payments visibility) now preselects
                 // correctly when editing an existing transaction.
                 'sub_account_id' => $item->account_id,
+                // Label for an account the option list omits (top-level rows).
+                'account_name'        => $itemAccount
+                    ? ($itemAccount->parent ? $itemAccount->parent->name . ' → ' . $itemAccount->name : $itemAccount->name)
+                    : null,
+                'account_charge_type' => $itemAccount?->charge_type,
                 'branch_id'    => $item->branch_id,
                 'has_file'     => (bool) $item->file_path,
             ];
@@ -705,55 +721,12 @@ class ExpenseRequestController extends Controller
                         ? 'agent'
                         : (! empty($line['applicant_id']) ? 'applicant' : 'office');
 
-                    $main = null;
-                    if (! empty($line['main_account_id'])) {
-                        $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
-                    } else {
-                        // No explicit main in the payload: derive it from the
-                        // sub-account (or the group's main) so edits that only
-                        // touch the sub-account still resolve.
-                        if (! empty($line['sub_account_id'])) {
-                            $sub = Account::where('agency_id', $agencyId)->find($line['sub_account_id']);
-                            $main = $sub?->parent_id
-                                ? Account::where('agency_id', $agencyId)->find($sub->parent_id)
-                                : null;
-                        }
-                        $main = $main ?: Account::mains()
-                            ->where('agency_id', $agencyId)
-                            ->where('charge_type', $group)
-                            ->orderBy('name')
-                            ->first();
-                    }
-
-                    if (! $main || ! $main->isMain()) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            "lines.$index.main_account_id" => 'Selected Main Account is invalid.',
-                        ]);
-                    }
-
-                    if ($main->charge_type !== $group) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            "lines.$index.main_account_id" => 'Account type must match the charge (office/agent).',
-                        ]);
-                    }
-
-                    $account = $main;
-                    if (! empty($line['sub_account_id'])) {
-                        $sub = Account::where('agency_id', $agencyId)
-                            ->where('parent_id', $main->id)
-                            ->find($line['sub_account_id']);
-                        if (! $sub) {
-                            throw \Illuminate\Validation\ValidationException::withMessages([
-                                "lines.$index.sub_account_id" => 'Selected Sub Account is invalid.',
-                            ]);
-                        }
-                        if ($sub->charge_type !== $group) {
-                            throw \Illuminate\Validation\ValidationException::withMessages([
-                                "lines.$index.sub_account_id" => 'Sub Account type must match the charge (office/agent).',
-                            ]);
-                        }
-                        $account = $sub;
-                    }
+                    // Card 6b05a95b: one resolver for both paths so a top-level
+                    // account (no parent) stays itself instead of being looked
+                    // up as a child and rejected -- or silently re-booked.
+                    $resolved = $this->resolveLineAccount($line, $group, $agencyId, $index);
+                    $account = $resolved['account'];
+                    $main = $resolved['main'];
 
                     if (! empty($line['agent_id'])) {
                         $agentQuery = Agent::where('agency_id', $agencyId);
@@ -981,51 +954,11 @@ class ExpenseRequestController extends Controller
                         ? 'agent'
                         : (! empty($line['applicant_id']) ? 'applicant' : 'office');
 
-                    // Main account is auto-resolved from the group (office -> office
-                    // main, agent -> agent main, applicant -> applicant main). An
-                    // explicit main_account_id is still accepted for backwards compatibility.
-                    if (! empty($line['main_account_id'])) {
-                        $main = Account::where('agency_id', $agencyId)->find($line['main_account_id']);
-                    } else {
-                        $main = Account::mains()
-                            ->where('agency_id', $agencyId)
-                            ->where('charge_type', $group)
-                            ->orderBy('name')
-                            ->first();
-                    }
-                    if (! $main || ! $main->isMain()) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            "lines.$index.main_account_id" => 'Selected Main Account is invalid.',
-                        ]);
-                    }
-
-                    // CoA gating: the main must match the group.
-                    if ($main->charge_type !== $group) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            "lines.$index.main_account_id" => 'Account type must match the charge (office/agent).',
-                        ]);
-                    }
-
-                    // Sub-account picker (restored): the item's account is the chosen
-                    // sub-account (child of the group's main). Falls back to the main
-                    // when omitted.
-                    $account = $main;
-                    if (! empty($line['sub_account_id'])) {
-                        $sub = Account::where('agency_id', $agencyId)
-                            ->where('parent_id', $main->id)
-                            ->find($line['sub_account_id']);
-                        if (! $sub) {
-                            throw \Illuminate\Validation\ValidationException::withMessages([
-                                "lines.$index.sub_account_id" => 'Selected Sub Account is invalid.',
-                            ]);
-                        }
-                        if ($sub->charge_type !== $group) {
-                            throw \Illuminate\Validation\ValidationException::withMessages([
-                                "lines.$index.sub_account_id" => 'Sub Account type must match the charge (office/agent).',
-                            ]);
-                        }
-                        $account = $sub;
-                    }
+                    // Shared with update(): a top-level account is a complete
+                    // choice and keeps its own id (card 6b05a95b).
+                    $resolved = $this->resolveLineAccount($line, $group, $agencyId, $index);
+                    $account = $resolved['account'];
+                    $main = $resolved['main'];
 
                     // Branch-scoped agent: agent must belong to selected branch + this agency.
                     if (! empty($line['agent_id'])) {
@@ -2458,6 +2391,77 @@ class ExpenseRequestController extends Controller
      * Main Office (head-office) users are NOT locked — they may pick any
      * branch. Everyone else assigned to a branch stays locked to their own.
      */
+    /**
+     * Resolve a payload line's ledger account.
+     *
+     * A top-level (main) account is a complete choice by itself: the account
+     * list offers childless mains, and older rows store a main with children
+     * directly (e.g. expense_request_items 40822 -> APPLICANT). Such an id must
+     * never be looked up as a child of the derived main -- that lookup fails
+     * and, if loosened, would re-book the line to an arbitrary child.
+     *
+     * @return array{account: Account, main: Account}
+     */
+    private function resolveLineAccount(array $line, string $group, int $agencyId, int $index): array
+    {
+        $fail = function (string $field, string $message) use ($index) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                "lines.$index.$field" => $message,
+            ]);
+        };
+
+        $sub = null;
+        if (! empty($line['sub_account_id'])) {
+            $sub = Account::where('agency_id', $agencyId)->find((int) $line['sub_account_id']);
+            if (! $sub) {
+                $fail('sub_account_id', 'Selected Sub Account is invalid.');
+            }
+        }
+
+        $main = null;
+        if (! empty($line['main_account_id'])) {
+            $main = Account::where('agency_id', $agencyId)->find((int) $line['main_account_id']);
+        } elseif ($sub && $sub->parent_id) {
+            $main = Account::where('agency_id', $agencyId)->find($sub->parent_id);
+        }
+
+        // Top-level account: it is the main and it is the account, unchanged.
+        if (! $main && $sub && $sub->isMain()) {
+            $main = $sub;
+        }
+
+        if (! $main) {
+            $main = Account::mains()
+                ->where('agency_id', $agencyId)
+                ->where('charge_type', $group)
+                ->orderBy('name')
+                ->first();
+        }
+
+        if (! $main || ! $main->isMain()) {
+            $fail('main_account_id', 'Selected Main Account is invalid.');
+        }
+
+        if ($main->charge_type !== $group) {
+            $fail('main_account_id', 'Account type must match the charge (office/agent).');
+        }
+
+        if (! $sub) {
+            // Blank choice still books, to the group's main (as before).
+            $sub = $main;
+        } elseif ((int) $sub->id !== (int) $main->id) {
+            // A chosen child must belong to the resolved main.
+            if ((int) $sub->parent_id !== (int) $main->id) {
+                $fail('sub_account_id', 'Selected Sub Account is invalid.');
+            }
+            if ($sub->charge_type !== $group) {
+                $fail('sub_account_id', 'Sub Account type must match the charge (office/agent).');
+            }
+        }
+
+        return ['account' => $sub, 'main' => $main];
+    }
+
     private function branchLocked(?\App\Models\User $user = null): bool
     {
         $user = $user ?? auth()->user();

@@ -170,14 +170,23 @@
         });
     }
 
-    function updateAccountType(line) {
+    // Card 6b05a95b: run the rebuild but never erase a stored account. Used
+    // for the initial render only; a real user change still re-groups.
+    function updateAccountTypeKeep(line) {
+        return updateAccountType(line, true);
+    }
+
+    function updateAccountType(line, keepStored) {
         const charge = line.querySelector('select[name*="[charge]"]')?.value;
         const applicantSel = line.querySelector('select[name*="[applicant_id]"]');
         const subSel = line.querySelector('select[name*="[sub_account_id]"]');
         if (!subSel) return;
 
         // Cache the full option list once (placeholder + all accounts).
-        if (!subSel.dataset.fullOptions) {
+        // NOTE: reindex() renames inputs, which makes the result of the observer
+        // callback below .html()-identical, so MutationObserver does NOT fire on
+        // a rename. Hence the explicit re-cache here.
+        if (!subSel.dataset.fullOptions || keepStored) {
             const opts = [];
             subSel.querySelectorAll('option').forEach(function (o) {
                 opts.push({ value: o.value, text: o.textContent, offset: o.dataset.offset || '' });
@@ -208,10 +217,23 @@
             }
         });
 
-        // Restore the previous selection if it still belongs to the group.
-        if (selected && Array.from(subSel.options).some(function (o) { return o.value === selected; })) {
-            subSel.value = selected;
-        } else {
+        // Card 6b05a95b: keep the stored account when its group no longer
+        // matches. The server owns the group check, and a hidden 1px select
+        // must never erase an account a human already chose (e.g. a row booked
+        // to a top-level account such as APPLICANT, which the list omits).
+        // Only on the initial render: a value the user just picked in a real
+        // change event is already in the correct group, so this never fights it.
+        if (keepStored && selected && selected !== '' && !Array.from(subSel.options).some(function (o) { return o.value === selected; })) {
+            const opt = document.createElement('option');
+            opt.value = selected;
+            const src = all.find(function (o) { return o.value === selected; });
+            opt.textContent = src ? src.text : 'Current account';
+            if (src && src.offset) opt.dataset.offset = src.offset;
+            subSel.appendChild(opt);
+        }
+        if (keepStored) {
+            subSel.value = selected || '';
+        } else if (!Array.from(subSel.options).some(function (o) { return o.value === selected; })) {
             subSel.value = '';
         }
     }
@@ -256,8 +278,10 @@
         linesBox.appendChild(node);
         reindex(linesBox);
         // Re-apply visibility on all lines after reindex
+        // Card 6b05a95b: existing lines keep any account they already have;
+        // the newly added line gets a plain re-group (it has nothing stored).
         linesBox.querySelectorAll('.expense-line').forEach(function (el) {
-            updateAccountType(el);
+            updateAccountTypeKeep(el);
             updatePaymentField(el, false);
         });
         const last = linesBox.lastElementChild;
@@ -303,6 +327,9 @@
         // Payments visibility depends on Charge + Account Type
         if (e.target.name && e.target.name.includes('[sub_account_id]')) {
             updatePaymentField(e.target.closest('.expense-line'), true);
+            // A corrected line clears its own visible "choose an Account Type" note.
+            const err = e.target.closest('.expense-line')?.querySelector('.line-error');
+            if (err && e.target.value) { err.textContent = ''; err.classList.add('hidden'); }
         }
     });
 
@@ -320,7 +347,7 @@
     // re-render keeps applicants of the unselected agents hidden)
     linesBox.querySelectorAll('.expense-line').forEach(function (line) {
         filterApplicantsByAgent(line);
-        updateAccountType(line);
+        updateAccountTypeKeep(line);
         // Keep any stored payment on an existing line (no clearing on initial render)
         updatePaymentField(line, false);
     });
@@ -349,7 +376,39 @@
         return lines;
     }
 
+    // Card 6b05a95b: Account Type is validated here, visibly, per line. The
+    // native control is 1px wide, so a browser `required` block was invisible.
+    function firstMissingAccountLine() {
+        const all = linesBox.querySelectorAll('.expense-line');
+        for (let i = 0; i < all.length; i++) {
+            const subSel = all[i].querySelector('select[name*="[sub_account_id]"]');
+            if (subSel && !subSel.value) return { line: all[i], index: i };
+        }
+        return null;
+    }
+
+    function showAccountTypeErrors() {
+        linesBox.querySelectorAll('.expense-line').forEach(function (line) {
+            const err = line.querySelector('.line-error');
+            if (err) { err.textContent = ''; err.classList.add('hidden'); }
+        });
+        const missing = firstMissingAccountLine();
+        if (!missing) return false;
+        const err = missing.line.querySelector('.line-error');
+        if (err) {
+            err.textContent = 'Line #' + (missing.index + 1) + ': choose an Account Type.';
+            err.classList.remove('hidden');
+        }
+        const box = missing.line.querySelector('.ss-input');
+        if (box) box.focus();
+        return true;
+    }
+
     form.addEventListener('submit', function (e) {
+        if (showAccountTypeErrors()) {
+            e.preventDefault();
+            return;
+        }
         if (IS_EDIT) return; // editing keeps the original transaction; skip the duplicate check
         if (checking) {
             e.preventDefault();

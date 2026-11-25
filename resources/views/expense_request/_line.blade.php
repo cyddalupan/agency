@@ -138,15 +138,30 @@
                        placeholder="Search account type…" autocomplete="off" autocapitalize="off" spellcheck="false"
                        role="combobox" aria-expanded="false" aria-autocomplete="list">
                 <div class="ss-menu hidden" role="listbox" hidden></div>
-                <select name="lines[{{ $index }}][sub_account_id]" class="ss-native select select-bordered select-sm" required>
+                {{-- Card 6b05a95b: no bare `required` on a visually hidden (1px) control.
+                     Account Type is enforced by the form's submit check, which names
+                     the line in a visible message. --}}
+                <select name="lines[{{ $index }}][sub_account_id]" class="ss-native select select-bordered select-sm">
                     <option value="">- select -</option>
+                    @php $storedListed = false; @endphp
                     @foreach($allAccounts as $acct)
+                        @php if (($line['sub_account_id'] ?? '') == $acct->id) { $storedListed = true; } @endphp
                         <option value="{{ $acct->id }}" data-offset="{{ $acct->charge_type }}" {{ ($line['sub_account_id'] ?? '') == $acct->id ? 'selected' : '' }}>
                             {{ $acct->name }}
                         </option>
                     @endforeach
+                    {{-- Card 6b05a95b: an existing row may be booked to a top-level
+                         account (e.g. 40822 -> APPLICANT), which the option list omits.
+                         Show it so the saved value is visible and resubmitted, not blanked. --}}
+                    @if(!empty($line['sub_account_id']) && ! $storedListed && !empty($line['account_name']))
+                        <option value="{{ $line['sub_account_id'] }}" data-offset="{{ $line['account_charge_type'] ?? '' }}" selected>
+                            {{ $line['account_name'] }}
+                        </option>
+                    @endif
                 </select>
             </div>
+            {{-- Card 6b05a95b: visible home for the "Line #N: choose an Account Type" message. --}}
+            <p class="line-error text-error text-xs mt-1 hidden"></p>
         </div>
 
         {{-- Upload --}}
