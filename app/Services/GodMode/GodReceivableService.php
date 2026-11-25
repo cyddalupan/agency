@@ -556,17 +556,45 @@ class GodReceivableService
             default       => $query->orderBy('collected', $dir),
         };
 
+        // Card 6b057533 — a money column the ACTIVE status excludes is a
+        // structural zero, not a measured one: `outstandingSql()` only matches
+        // pending rows, so under `status=received` every agency sums 0 and the
+        // sort looks dead (two identical zeros cannot be ordered). Print `—`
+        // through the existing sentinel, and the view drops that column's sort
+        // link. The SQL and the ORDER BY are untouched: under `all` every
+        // column is measured, and a live 0.00 stays a measured fact.
+        $status = $filters['status'] ?? 'received';
+
         return $query->orderBy('agencies.name')->get()->map(fn ($row) => (object) [
             'id'                => (int) $row->id,
             'name'              => (string) $row->name,
             'status'            => (string) $row->status,
             'subdomain'         => $row->subdomain,
-            'collected'         => $this->decimal($row->collected),
-            'outstanding'       => $this->decimal($row->outstanding),
+            'collected'         => $this->structuralZero($status, 'collected')
+                ? self::MEASURED_NOTHING
+                : $this->decimal($row->collected),
+            'outstanding'       => $this->structuralZero($status, 'outstanding')
+                ? self::MEASURED_NOTHING
+                : $this->decimal($row->outstanding),
             'last_payment_date' => $row->last_payment_date,
             'received_count'    => (int) $row->received_count,
             'row_count'         => (int) $row->row_count,
         ]);
+    }
+
+    /**
+     * Card 6b057533 — is this column zero BY DEFINITION under this status?
+     *
+     * `collectedSql()` sums received rows and `outstandingSql()` sums pending
+     * rows, while `applyStatus()` narrows the row set to ONE status. Under
+     * `received` there is no pending row left, so outstanding is structurally
+     * 0 for everyone; symmetrically collected under `pending`. `all` excludes
+     * nothing. Same rule `summary()` encodes at :371-378, named once here.
+     */
+    private function structuralZero(string $status, string $column): bool
+    {
+        return ($status === 'received' && $column === 'outstanding')
+            || ($status === 'pending' && $column === 'collected');
     }
 
     /**

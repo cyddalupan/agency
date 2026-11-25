@@ -18,6 +18,13 @@
         'dir'     => $filters['dir'] !== 'desc' ? $filters['dir'] : null,
     ], fn ($v) => $v !== null && $v !== '');
 
+    // Card 6b057533: a money column the status filter excludes is zero by
+    // definition, so it is not sortable. Rendering it as a dimmed label with
+    // a tooltip (no anchor, no arrow) keeps the column width and stops the
+    // click that changes nothing. Mirrors GodReceivableService::structuralZero().
+    $structuralCollected   = $filters['status'] === 'pending';
+    $structuralOutstanding = $filters['status'] === 'received';
+
     $sortLink = function (string $column) use ($base, $filters) {
         $dir = ($filters['sort'] === $column && $filters['dir'] !== 'desc') ? 'desc' : 'asc';
 
@@ -238,8 +245,20 @@
         <thead>
             <tr>
                 <th>Agency</th>
-                <th class="text-right"><a href="{{ $sortLink('collected') }}" class="link link-hover">Collected{{ $arrow('collected') }}</a></th>
-                <th class="text-right"><a href="{{ $sortLink('outstanding') }}" class="link link-hover">Outstanding{{ $arrow('outstanding') }}</a></th>
+                <th class="text-right">
+                    @if ($structuralCollected)
+                        <span class="opacity-50" title="Collected is zero under the Outstanding filter. Set Status to Collected or All to sort it.">Collected</span>
+                    @else
+                        <a href="{{ $sortLink('collected') }}" class="link link-hover">Collected{{ $arrow('collected') }}</a>
+                    @endif
+                </th>
+                <th class="text-right">
+                    @if ($structuralOutstanding)
+                        <span class="opacity-50" title="Outstanding is zero under the Collected filter. Set Status to Outstanding or All to sort it.">Outstanding</span>
+                    @else
+                        <a href="{{ $sortLink('outstanding') }}" class="link link-hover">Outstanding{{ $arrow('outstanding') }}</a>
+                    @endif
+                </th>
                 <th class="text-right">Rows</th>
                 <th><a href="{{ $sortLink('last') }}" class="link link-hover">Last payment{{ $arrow('last') }}</a></th>
                 <th></th>
