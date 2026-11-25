@@ -13,7 +13,13 @@
 #   /etc/cron.d/landas-thread-map             every minute
 #   /etc/logrotate.d/landas-ddl-audit         size 50M, rotate 8, compress
 #   ops.thread_map                            table for the snapshots
-#   /var/log/mysql/ddl-audit.log              created if missing
+#   /var/log/landas/ddl-audit.log             created if missing
+#
+# The trail is under /var/log/landas/, NOT /var/log/mysql/: the stock
+# mysql-server rule globs /var/log/mysql/*log, and a second claim on that path
+# makes logrotate skip the whole mysql-server stanza (so error.log stops
+# rotating). An older install wrote to /var/log/mysql/ddl-audit.log; it is
+# moved, not deleted.
 #
 # Idempotent. Safe to re-run. Does NOT delete binlogs and does NOT touch
 # super_landas.
@@ -64,13 +70,31 @@ CREATE TABLE IF NOT EXISTS ops.thread_map (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 SQL
 
-[ -e /var/log/mysql/ddl-audit.log ] || : > /var/log/mysql/ddl-audit.log
-chown root:adm /var/log/mysql/ddl-audit.log
-chmod 0640 /var/log/mysql/ddl-audit.log
+# Cron opens the file for append itself, so the directory must exist first.
+install -d -m 0750 -o root -g adm /var/log/landas
+
+# Migrate a pre-move trail from /var/log/mysql/ddl-audit.log (where an earlier
+# install put it). Append rather than replace so no line is lost; the old file
+# is then emptied in place rather than removed. Doing it unconditionally also
+# clears any stale leftover that would re-trigger the mysql-server duplicate.
+if [ -s /var/log/mysql/ddl-audit.log ]; then
+    cat /var/log/mysql/ddl-audit.log >> /var/log/landas/ddl-audit.log
+    : > /var/log/mysql/ddl-audit.log
+    echo "migrated /var/log/mysql/ddl-audit.log -> /var/log/landas/ddl-audit.log"
+fi
+if [ -e /var/log/mysql/ddl-audit.log ] && [ ! -s /var/log/mysql/ddl-audit.log ]; then
+    echo "WARNING: empty /var/log/mysql/ddl-audit.log still present; it matches the" >&2
+    echo "         mysql-server *log glob and will break that rule. Remove it once" >&2
+    echo "         you have confirmed nothing writes there:" >&2
+    echo "           sudo rm /var/log/mysql/ddl-audit.log" >&2
+fi
+
+[ -e /var/log/landas/ddl-audit.log ] || : > /var/log/landas/ddl-audit.log
+chown root:adm /var/log/landas/ddl-audit.log
+chmod 0640 /var/log/landas/ddl-audit.log
 
 # One immediate snapshot so attribution works before the first cron tick.
 /usr/local/bin/landas-thread-map || true
-
 echo "installed. verify with:"
 echo "  sudo /usr/local/bin/landas-ddl-audit --since \"\$(date -u -d '-2 hours' '+%F %T')\""
 echo "  sudo mysql -N -e \"SELECT COUNT(*) FROM ops.thread_map WHERE snap_ts > NOW() - INTERVAL 5 MINUTE\""

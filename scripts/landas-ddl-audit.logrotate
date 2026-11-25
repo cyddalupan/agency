@@ -14,7 +14,14 @@
 # that is the behaviour we want -- keep the file small, rotate when big -- and
 # `rotate 8` keeps roughly the last 400 MB worst case. The box is at 91% so the
 # bound matters more than the date.
-/var/log/mysql/ddl-audit.log {
+#
+# Path is /var/log/landas/, deliberately NOT /var/log/mysql/: the stock
+# /etc/logrotate.d/mysql-server has the glob `/var/log/mysql/*log`, which would
+# match `ddl-audit.log` too. logrotate then reports "duplicate log entry" and
+# SKIPS the whole mysql-server file, silently stopping error.log rotation.
+# /var/log/landas/* matches no stock glob -- verify with
+# `sudo logrotate -d /etc/logrotate.conf` after any future move.
+/var/log/landas/ddl-audit.log {
     size 50M
     rotate 8
     compress

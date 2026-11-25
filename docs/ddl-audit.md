@@ -38,7 +38,7 @@ anything it replaces to `/root/ops-backups/`).
 ```bash
 sudo /usr/local/bin/landas-ddl-audit --since "2026-11-23 01:00:00" --until "2026-11-23 01:30:00"
 sudo /usr/local/bin/landas-ddl-audit --db zz_my_probe --since "2026-11-25 10:00:00"
-sudo grep "DDL-AUDIT ALERT" /var/log/mysql/ddl-audit.log
+sudo grep "DDL-AUDIT ALERT" /var/log/landas/ddl-audit.log
 ```
 
 Output columns, tab-separated:
@@ -77,6 +77,29 @@ lines hide the event instead of reporting it.
   a warning if it truncates.
 * `ops.thread_map` is our own schema. Nothing in `super_landas` is touched, and
   the watcher is read-only against the tables.
+
+## Deliberate noise: `zz_` probe names are NOT suppressed
+
+Decision, 2026-11-25 (card 6b03ebf0d602a48e11939bbe, QA round 2): a DDL
+statement *inside* `super_landas` is alerted on regardless of what the object is
+called. The 04:15:49 `DROP TABLE zz_partc` alert was raised by a rehearsal probe
+and reads like noise — it is kept on purpose.
+
+Why:
+
+* The binlog truthfully records a session that ran `use super_landas` and then
+dropped a table. A `zz_`-prefixed name in production is not evidence the query
+was harmless; it is evidence somebody pointed a test harness at live data. That
+is the exact failure this watcher exists to catch — silencing it would hide it.
+* Suppressing by name is a rule an attacker, or a careless script, can satisfy.
+  Detection stays a property of *where* the DDL ran, not of what it was called.
+* The volume cost is one alert line per minute-window. There is no case where
+  suppressing it is worth the blind spot.
+
+Consequence for testers: **a `zz_` DDL probe run against `super_landas` will
+appear in the trail and trip exit 2. That is the intended behaviour.** Run
+probes against a scratch database (`--db zz_...`) instead and the alert will be
+about the scratch name.
 
 ## Disable
 

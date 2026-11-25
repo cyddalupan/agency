@@ -7,6 +7,12 @@
 #
 # 00:10 UTC daily -- after the binlog rotates at midnight, before the nightly
 # backup at 19:00 UTC is disturbed. Output is appended, capped by logrotate.
+#
+# The trail lives in /var/log/landas/, NOT /var/log/mysql/, because the stock
+# /etc/logrotate.d/mysql-server globs /var/log/mysql/*log. A file there is
+# claimed by two stanzas, logrotate raises "duplicate log entry" and SKIPS the
+# whole mysql-server file -- which is what rotates error.log. Keeping our log
+# out of that glob keeps that rule alive (card 6b03ebf0d602a48e11939bbe, QA #7).
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-10 0 * * * root /usr/local/bin/landas-ddl-audit --lookback 26 >> /var/log/mysql/ddl-audit.log 2>&1
+10 0 * * * root /usr/local/bin/landas-ddl-audit --lookback 26 >> /var/log/landas/ddl-audit.log 2>&1
