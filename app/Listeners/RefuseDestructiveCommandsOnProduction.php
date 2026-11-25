@@ -12,24 +12,42 @@ use Throwable;
  * Card 6b03ee17b53899c76e313ab0 (Part A) — production schema guard.
  *
  * Background: on 2026-11-23 01:21:19 a single DROP TABLE destroyed all 91
- * tables of `super_landas`. The app's DB user still holds DROP, so the
- * database itself would permit a repeat. This listener is the independent
- * safeguard that cannot be bypassed by a flag.
+ * tables of `super_landas`.
+ *
+ * ⚠️  KNOWN LIMITATION — this listener is NOT sufficient on its own, and on
+ * 2026-11-25 a wipe got past it twice. Laravel 13's
+ * Foundation\Console\Kernel registers its Symfony command-event bridge inside
+ * `$this->app->booted(fn () => ... if (! $this->app->runningUnitTests()) ...)`.
+ * When `APP_ENV=testing`, `runningUnitTests()` is true, so the bridge is never
+ * registered, `CommandStarting` is NEVER DISPATCHED, and no listener of any
+ * kind runs. `APP_ENV=testing php artisan migrate:fresh --force` therefore
+ * walked straight through this class and emptied production.
+ *
+ * THE LOAD-BEARING GUARD IS THE DATABASE GRANT, not this listener:
+ *   REVOKE DROP ON `super_landas`.* FROM 'super_landas'@'localhost';
+ * That is enforced by MySQL for every client and cannot be bypassed by any
+ * environment variable, artisan flag, or framework code path. Verified
+ * 2026-11-25: migrate:fresh / migrate:refresh / migrate:reset / db:wipe all
+ * fail with "1142 DROP command denied" and 95 tables survive.
+ *
+ * This listener remains as a first line for the paths where the event DOES
+ * fire (APP_ENV=local, production, staging), where it produces a clear refusal
+ * message and exit code instead of a raw SQL error. Do not remove it, and do
+ * not treat it as the guarantee.
  *
  * Behaviour:
  *  - Fires only for migrate:fresh, migrate:refresh, migrate:reset, db:wipe
  *    and db:seed.
  *  - Reads the *actual connection database name* (getDatabaseName()) from the
  *    connection the command will use (--database option, else the default
- *    connection). APP_ENV is never consulted: a staging .env pointing at prod
- *    is exactly the case that matters.
- *  - Refuses unconditionally when that name starts with `super_landas`.
+ *    connection). APP_ENV is never consulted to *decide* a refusal: a staging
+ *    .env pointing at prod is exactly the case that matters.
+ *  - Refuses when that name starts with `super_landas`.
  *    `--force` answers a confirmation prompt; it does not answer a hard-coded
  *    refusal.
- *  - Writes the refusal to STDERR, logs it, and terminates the process with
- *    exit 3. The throw is there only to stop the command before handle();
+ *  - Writes the refusal to STDERR and logs it. The throw stops the command;
  *    Laravel's Kernel::handle() catches every Throwable and returns 1, so the
- *    exit code is set by an explicit terminate. No table is touched.
+ *    exit code is best-effort, not reliable.
  *
  * Registered in AppServiceProvider::boot() on CommandStarting.
  */
@@ -50,6 +68,18 @@ class RefuseDestructiveCommandsOnProduction
     /** Exit code when the guard fires (distinct from 1 = failed command). */
     public const EXIT_CODE = RefusedCommandException::EXIT_CODE;
 
+    /**
+     * Is this target obviously not production, for test-run exemption purposes?
+     * Only sqlite databases qualify (phpunit.xml uses :memory:).
+     */
+    private function isHarmlessTestTarget(?string $connectionName, string $database): bool
+    {
+        return $connectionName === 'sqlite'
+            || $database === ':memory:'
+            || str_ends_with($database, '.sqlite')
+            || str_starts_with($database, '/tmp/');
+    }
+
     public function handle(CommandStarting $event): void
     {
         $command = $this->normalize($event->command);
@@ -58,21 +88,27 @@ class RefuseDestructiveCommandsOnProduction
             return;
         }
 
-        // phpunit.xml forces sqlite :memory:, which can never be
-        // `super_landas`. Skipping keeps the suite able to call migrate:fresh
-        // on sqlite; anything that could still resolve to prod is caught by
-        // the database-name check below.
-        if ($this->runningUnitTests()) {
-            return;
-        }
-
+        // Resolve the ACTUAL target database first, unconditionally. This must
+        // never be skipped: `APP_ENV=testing` makes runningUnitTests() true for
+        // a hand-run artisan command against MySQL just as it does inside the
+        // test suite, and on 2026-11-25 that ordering let
+        // `APP_ENV=testing php artisan migrate:fresh --force` wipe production.
         $database = $this->targetDatabase($event);
 
         if ($database === null) {
             return;
         }
 
-        if (! str_starts_with(strtolower(trim($database)), self::PROTECTED)) {
+        $database = strtolower(trim($database));
+
+        // Only now may tests be exempted, and only for a database that cannot
+        // possibly be production: phpunit.xml forces sqlite :memory:. A test
+        // run that somehow resolves to a real database is still guarded.
+        if ($this->runningUnitTests() && $this->isHarmlessTestTarget($this->connectionName($event), $database)) {
+            return;
+        }
+
+        if (! str_starts_with($database, self::PROTECTED)) {
             return;
         }
 
@@ -129,6 +165,27 @@ class RefuseDestructiveCommandsOnProduction
      */
     private function targetDatabase(CommandStarting $event): ?string
     {
+        $connectionName = $this->connectionName($event);
+
+        if ($connectionName === null) {
+            return null;
+        }
+
+        try {
+            return DB::connection($connectionName)->getDatabaseName();
+        } catch (Throwable) {
+            $configured = config('database.connections.'.$connectionName.'.database');
+
+            return is_string($configured) && $configured !== '' ? $configured : null;
+        }
+    }
+
+    /**
+     * The connection name the command would act on: --database option, else
+     * config('database.default').
+     */
+    private function connectionName(CommandStarting $event): ?string
+    {
         $connectionName = null;
 
         try {
@@ -143,17 +200,7 @@ class RefuseDestructiveCommandsOnProduction
 
         $connectionName = $connectionName ?: (string) config('database.default');
 
-        if ($connectionName === '') {
-            return null;
-        }
-
-        try {
-            return DB::connection($connectionName)->getDatabaseName();
-        } catch (Throwable) {
-            $configured = config('database.connections.'.$connectionName.'.database');
-
-            return is_string($configured) && $configured !== '' ? $configured : null;
-        }
+        return $connectionName === '' ? null : $connectionName;
     }
 
     private function writeError(CommandStarting $event, string $message): void
