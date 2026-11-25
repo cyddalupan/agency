@@ -14,6 +14,64 @@
 # This script never touches my.cnf, never restarts mysqld, never deletes a
 # binlog, and writes no database state at all -- it only SELECTs ops.thread_map.
 #
+# CHANGED 2026-11-25 (card 6b06c9e7662b096b50e37470) -- nothing is dropped on
+# the floor any more. Until today a DDL event the extractor could not place was
+# discarded BEFORE it was counted (`if (!touches) next`), so `done:` silently
+# under-reported with no warning. Every candidate DDL is now emitted, in one of
+# three buckets:
+#   placed       the schema is known            -> reported on that schema
+#   other        the statement names a schema that is not the protected one
+#                -> recognised and counted, not reported (not our signal)
+#   restore-replay a recognised pattern, not an unknown: a fresh thread with
+#                no `use` that opens with foreign_key_checks=0 and rebuilds the
+#                schema (unqualified DROP TABLE / CREATE TABLE after a wipe).
+#                This is a restore replaying a dump, which cannot name a schema
+#                by construction. REPORTED and COUNTED, never alerted.
+#   unattributed nothing placed it, nothing in the statement names a schema,
+#                and it does not match the restore pattern
+#                -> REPORTED with the schema column `unattributed`, never guessed
+#
+# CHANGED 2026-11-25 (same card, Bitoy decision after the first WIP stopped):
+# the first cut left 191 destructive rows as `unattributed` on the one window
+# with a real wipe -- honest arithmetic, unreadable output, and a wall of
+# unknowns is how a watcher gets ignored. The restore replays are now labelled
+# `restore-replay` (rule 3, is_replay()) and alerting stays on the genuinely
+# unexplained destructive DDL only.
+#
+# `done:` reconciles visibly, all three numbers plus the raw count:
+#   placed + restore-replay + unattributed + other = raw
+# A mismatch prints a WARNING and exits 3 -- that is a bug in this script, not
+# in the server.
+#
+# Alerting is unchanged in spirit, capped in volume: any destructive DDL on the
+# protected schema alerts and exits 2 (bucketed by minute+thread, as before),
+# and SO DOES any destructive DDL that could not be placed at all. `restore-replay`
+# is expected behaviour after a wipe and does not alert, by decision. Unattributed
+# NON-destructive DDL (`migrate` traffic against a scratch database) is
+# counted and printed, never alerted -- measured 29/day, and an alert on those
+# is what teaches people to ignore this watcher.
+#
+# HONEST LIMITATIONS, so nobody reads more into a clean run than there is:
+#   - A `use` line is written by the server only at the start of a session's
+#     schema context (and after a change of it). A statement that follows in
+#     the same connection carries no `use` of its own. This script therefore
+#     keeps the last-seen `use` per thread, and an observation older than
+#     LANDAS_DDL_STALE_SECS (default 900s) is no longer treated as proof that
+#     the statement ran on that schema. A migration legitimately holds one
+#     connection for minutes; 15 minutes of silence is not evidence.
+#   - With statement-carried schema (fallback A) and live performance_schema
+#     thread state (fallback B) both unable to place a statement, we say so:
+#     `unattributed`. We do not infer the protected schema.
+#   - Fallback B reads performance_schema.events_statements_history_long, whose
+#     retention on this box is SECONDS (measured ~33s). It covers a session
+#     that is still open when this script runs. It does not and cannot recover
+#     a migration that finished an hour ago. It is a corner, not a fix.
+#   - The thread-context LEAK (thread_db never resetting when the server's own
+#     context is reset by DROP DATABASE, so a later statement on that thread can
+#     still look like the protected schema) is NOT fixed here. It is card
+#     6b06d3990da5eb38ed21e725. This card makes a dropped statement impossible
+#     to hide; that one makes attribution less wrong.
+#
 set -uo pipefail
 export LC_ALL=C
 
@@ -23,6 +81,8 @@ BINLOG_DIR="${LANDAS_DDL_BINLOG_DIR:-/var/lib/mysql}"
 BINLOG_GLOB="${LANDAS_DDL_BINLOG_GLOB:-binlog.[0-9]*}"
 LOOKBACK_HOURS="${LANDAS_DDL_LOOKBACK_HOURS:-26}"
 MAX_BYTES="${LANDAS_DDL_MAX_BYTES:-536870912}"   # 512 MB of decoded binlog/run
+STALE_SECS="${LANDAS_DDL_STALE_SECS:-900}"       # age at which a `use` is history
+LIVE_SECS="${LANDAS_DDL_LIVE_SECS:-900}"         # age at which perf_schema helps
 SINCE=""
 UNTIL=""
 ATTRIB=1
@@ -41,8 +101,23 @@ Output, tab-separated:
   <UTC timestamp>  <thread_id>  <user_host or unknown>  <DESTRUCTIVE|NORMAL>  <statement>
 (columns 3 and 4 are counted by position, so the statement keeps its tabs)
 
+A statement the script cannot place on a schema is printed with the schema
+column set to \`unattributed\`. It is never silently dropped and never guessed.
+
+A statement that matches the restore-replay pattern is printed with the schema
+column set to \`restore-replay\` (followed by the evidence). That is a dump being
+replayed into a database the dump never names -- the shape left behind after a
+wipe and a restore. It is counted and kept visible but does NOT alert: it is
+expected behaviour, not an incident. Only genuine \`unattributed\` destructive
+DDL alerts.
+
 Destructive DDL (DROP / TRUNCATE / database RENAME) is also announced on stderr
-as "DDL-AUDIT ALERT". Exit 2 if any destructive DDL was seen, 0 otherwise.
+as "DDL-AUDIT ALERT", including destructive DDL that could not be placed.
+
+Exit: 0 clean. 1 bad usage / unreadable binlog. 2 something destructive ran on
+'${PROTECTED_DB}', or a destructive statement could not be placed -- a subset of
+the 2s may therefore be unattributed. 3 reconciliation failed: the report does
+not add up against the raw dump, which is a bug in this script.
 EOF
     exit "\${1:-0}"
 }
@@ -68,13 +143,17 @@ die() { log "error: $*"; exit 1; }
 # --- input validation: nothing from a caller reaches a query ----------------
 [[ "$PROTECTED_DB" =~ ^[A-Za-z0-9_]+$ ]] \
     || die "--db must match ^[A-Za-z0-9_]+$ (got '$PROTECTED_DB')"
-TS_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$'
+TS_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$'  # binlog is UTC
 { [ -z "$SINCE" ] || [[ "$SINCE" =~ $TS_RE ]]; } \
     || die "--since must be 'YYYY-MM-DD HH:MM:SS' (got '$SINCE')"
 { [ -z "$UNTIL" ] || [[ "$UNTIL" =~ $TS_RE ]]; } \
     || die "--until must be 'YYYY-MM-DD HH:MM:SS' (got '$UNTIL')"
 [[ "$LOOKBACK_HOURS" =~ ^[0-9]+$ ]] \
     || die "--lookback must be an integer number of hours (got '$LOOKBACK_HOURS')"
+[[ "$STALE_SECS" =~ ^[0-9]+$ ]] \
+    || die "LANDAS_DDL_STALE_SECS must be an integer (got '$STALE_SECS')"
+[[ "$LIVE_SECS" =~ ^[0-9]+$ ]] \
+    || die "LANDAS_DDL_LIVE_SECS must be an integer (got '$LIVE_SECS')"
 
 command -v mysqlbinlog >/dev/null || die "mysqlbinlog not found"
 command -v awk        >/dev/null || die "awk not found"
@@ -120,7 +199,9 @@ log "scanning ${#BINLOGS[@]} binlog file(s) for DDL in '$PROTECTED_DB'"
 # time. That is a heuristic and the report labels it as such -- an exact hit
 # prints the user plainly, a nearest match says "approx:".
 THREAD_USER_FILE="$(mktemp /tmp/landas-thread-user.XXXXXX)"
-trap 'rm -f "$DECODED" "$THREAD_USER_FILE"' EXIT
+DECODED=""
+LIVE_SCHEMA_FILE=""
+trap 'rm -f "$DECODED" "$THREAD_USER_FILE" "$LIVE_SCHEMA_FILE"' EXIT
 if [ "$ATTRIB" = "1" ]; then
     mysql -N -B -e "SELECT snap_ts, thread_id, user_host, COALESCE(db_used,'') FROM ops.thread_map
                     WHERE snap_ts > NOW() - INTERVAL 30 DAY
@@ -128,7 +209,6 @@ if [ "$ATTRIB" = "1" ]; then
     log "thread_map: $(wc -l < "$THREAD_USER_FILE") snapshot row(s) loaded"
 fi
 
-# user_for TS THREAD -> prints user_host, "approx:<user>" or "unknown"
 # user_for TS THREAD [DB] -> user_host | approx:<user> (weaker) | unknown
 #
 # The exact thread id is the only real evidence. Failing that, fall back to a
@@ -168,6 +248,25 @@ if [ "$(wc -c < "$DECODED")" -ge "$MAX_BYTES" ]; then
     log "WARNING: decode stopped at ${MAX_BYTES} bytes; narrow --since for a complete answer"
 fi
 
+# --- live thread state (fallback B), read once, used only for recent events --
+# performance_schema keeps the schema of a statement in
+# events_statements_history_long; PROCESSLIST_DB alone is NULL after a `use`.
+# Retention here is seconds (measured ~33s), so this can only help a thread that
+# is still connected when WE run. It is a bounded extra, never a repair.
+# Columns: processlist_id <TAB> schema <TAB> thread_id (perf_schema's own).
+# Never fatal: a missing grant or a locked-down perf_schema just means no help.
+LIVE_SCHEMA_FILE="$(mktemp /tmp/landas-live-schema.XXXXXX)"
+if [ "$ATTRIB" = "1" ]; then
+    mysql -N -B -e "SELECT t.PROCESSLIST_ID, COALESCE(t.PROCESSLIST_DB, ''), t.THREAD_ID,
+                           COALESCE((SELECT MAX(h.CURRENT_SCHEMA)
+                                     FROM performance_schema.events_statements_history_long h
+                                     WHERE h.THREAD_ID = t.THREAD_ID
+                                       AND h.CURRENT_SCHEMA IS NOT NULL), '')
+                    FROM performance_schema.threads t
+                    WHERE t.PROCESSLIST_ID IS NOT NULL" 2>/dev/null > "$LIVE_SCHEMA_FILE" \
+        || : > "$LIVE_SCHEMA_FILE"
+fi
+
 # --- extract ----------------------------------------------------------------
 # mysqlbinlog prints, per DDL Query event:
 #   #261125  0:37:23 server id 1  end_log_pos ... Query thread_id=178771 ...
@@ -179,15 +278,59 @@ fi
 #
 # The current database is carried by `use `db`/*!*/;` lines, and the statements
 # that follow do NOT repeat the database name (`DROP TABLE `a`,`b`). So context
-# tracking is mandatory -- matching only on the statement text misses every
-# table-level wipe. That is the whole point of this script.
+# tracking is mandatory. But the `use` is the START of an attribution, not the
+# answer: the server writes it when the connection's schema context begins, so
+# everything after it in that connection is silent about the schema, and an old
+# observation is not evidence for a statement issued much later. Hence every row
+# carries the AGE of the `use` it was attributed by, and the classifier refuses
+# to trust one older than LANDAS_DDL_STALE_SECS.
 #
 # Session-variable statements (SET GLOBAL ...) look like DDL to a naive regex
 # and are excluded first.
-OUT="$(
-    awk -v prot="$PROTECTED_DB" '
-        BEGIN { lprot = tolower(prot) }
+#
+# Record layout on stdout (tab separated, five fields plus two trailing fields):
+#   ts  thread_id  bucket  kind  db_origin  db_age  stmt
+#     bucket     placed | other | restore-replay | unattributed
+#     db_origin  the schema when bucket=placed/other; empty otherwise
+#     db_age     seconds since the `use` that named it; -1 when unknown/none
+# The statement is last so it may contain anything. Consumers that want the old
+# shape are handled in the report block below, not by parsing this text.
+RAW_FILE="$(mktemp /tmp/landas-raw.XXXXXX)"
+trap 'rm -f "$DECODED" "$THREAD_USER_FILE" "$LIVE_SCHEMA_FILE" "$RAW_FILE"' EXIT
 
+OUT="$(
+    awk -v prot="$PROTECTED_DB" -v stale="$STALE_SECS" -v rawf="$RAW_FILE" -v attr="$ATTRIB" '
+        BEGIN { lprot = tolower(prot); raw = 0; ATTRIB = attr + 0; qual = ATTRIB }
+
+        # RESTORE-REPLAY recognition (card 6b06c9e7662b096b50e37470, Bitoy
+        # decision 2026-11-25). A restore replays a dump into a database it
+        # never names, and a dump cannot use qualified table names, so the
+        # schema is unrecoverable from the statement text by construction.
+        #
+        # Measured signature, threads 178775/178853/178875/178885 on 25 Nov
+        # 00:35-00:45 and the 12:16-14:00 replays of zz_landas_test:
+        #   - opens with `SET @@session.foreign_key_checks=0` (mysqldump)
+        #   - a one-line `DROP TABLE IF EXISTS `t`` per table (server generated)
+        #   - followed by unqualified `create table` statements
+        #   - no `use` observed for the thread, or one that is minutes stale
+        #   - may end with a bare `CREATE DATABASE` naming nothing
+        #
+        # The signature is fkc0 AND an unqualified single-table `DROP TABLE
+        # IF EXISTS`, on one thread. CREATE TABLE is deliberately NOT part of
+        # it: measured on the zz_landas_test replays, DDL and row events are
+        # split across threads and the CREATE statements commonly carry a
+        # different thread id than the DROP, so requiring a CREATE in the same
+        # thread would have missed those replays entirely. The DROP list is
+        # the discriminating half, and its unqualified, single-table,
+        # IF-EXISTS, server-generated form is exactly a dump -- `migrate:fresh`
+        # issues a comma-joined multi-table DROP and no fkc0.
+        #
+        # The bucket prints this evidence in the schema column so a reader can
+        # check the claim instead of trusting it.
+        function is_replay(th,   k) {
+            k = th SUBSEP
+            return (replay_fkc[k] && replay_drop[k])
+        }
         function norm_ts(d, tm,   yy, mm, dd, hh, mi, ss, n, p) {
             sub(/^#/, "", d)
             yy = substr(d, 1, 2); mm = substr(d, 3, 2); dd = substr(d, 5, 2)
@@ -196,25 +339,79 @@ OUT="$(
             return "20" yy "-" mm "-" dd " " sprintf("%02d:%02d:%02d", hh, mi, ss)
         }
 
+        function epoch(t,   p) {
+            gsub(/[-:]/, " ", t); split(t, p, " ")
+            return mktime(p[1]" "p[2]" "p[3]" "p[4]" "p[5]" "p[6])
+        }
+
+        # Split off the leading DDL keyword phrase so the rest is a table name
+        # (possibly qualified). Shared by every schema lookup below.
+        function strip_kw(s,   r) {
+            r = s
+            sub(/^[[:space:]]*(DROP|TRUNCATE|ALTER|RENAME|CREATE)[[:space:]]+/, "", r)
+            sub(/^TABLE[[:space:]]+/, "", r)
+            sub(/^IF[[:space:]]+EXISTS[[:space:]]+/, "", r)
+            sub(/^IF[[:space:]]+NOT[[:space:]]+EXISTS[[:space:]]+/, "", r)
+            return r
+        }
+
+        # THE STATEMENT ITSELF, when it names a schema (fallback A). The form
+        # the server generates for a qualified source statement is
+        #   DROP TABLE IF EXISTS `super_landas`.`zz_work_probe`
+        # and that is recoverable without implying anything. Both the backticked
+        # pair and the bare db.table form are accepted; a name inside a string
+        # literal is not schema DDL and is not matched because only these two
+        # shapes are looked for right after the DDL keyword.
+        function schema_in_stmt(s,   r, m) {
+            r = strip_kw(s)
+            # `db`.`table` anywhere the name opens the remainder
+            if (match(r, /^`[A-Za-z0-9_]+`\./)) {
+                m = substr(r, RSTART, RLENGTH)
+                sub(/\..*/, "", m); gsub(/`/, "", m); return m
+            }
+            # bare form: db.table -- first identifier only (ALTER TABLE a.b ...)
+            if (match(r, /^[A-Za-z0-9_]+\./)) {
+                m = substr(r, RSTART, RLENGTH)
+                sub(/\..*/, "", m); return m
+            }
+            return ""
+        }
+
         # 1. event header: timestamp + thread id. The db is NOT reset here:
         #    only some events carry a `use` line (CREATE TABLE does, the
         #    server-generated DROP TABLE that follows does not). Clearing it
         #    per event loses exactly the destructive statement we are hunting.
-        #    Keep the last `use` seen for this thread instead.
+        #    Keep the last `use` seen for this thread and remember WHEN it was.
         /^#2[0-9]{5} / && /Query[ \t]+thread_id=/ {
             ts = norm_ts($1, $2)
             match($0, /thread_id=[0-9]+/)
             th = substr($0, RSTART + 10, RLENGTH - 10)
             db = thread_db[th]
+            db_ts = thread_db_ts[th]
             next
         }
 
-        # 2. current database for this connection, remembered per thread
+        # 2a. restore-replay evidence, per thread. These patterns do NOT
+        #     consume the line (`next` is only on the SET, which rule 3 would
+        #     skip anyway): the statement still goes through rule 3 and is
+        #     counted/chased normally. The decision needs the whole stream, so
+        #     it is made in END (rule 4). Deciding per statement here would
+        #     relabel the first rows of an ordinary session too, which is
+        #     exactly the false reassurance this bucket must not create.
+        # Explicit $0 tests: a bare /pattern/ form here was matching the event
+        # header still in $0 from rule 1, so the flags never fired and the
+        # replay never got labelled. Caught in the first live run.
+        tolower($0) ~ /^set @@session\.foreign_key_checks[ ]*=[ ]*0([^0-9]|$)/ { replay_fkc[th SUBSEP] = 1; next }
+        tolower($0) ~ /^drop table if exists `[a-z0-9_]+`( \/\*.*\*\/)?$/ { replay_drop[th SUBSEP] = 1 }
+
+        # 2. current database for this connection, remembered per thread, with
+        #    the binlog timestamp of the event that carried it.
         /^use `[A-Za-z0-9_]+`\/\*!\*\/;/ {
             d = $0
             sub(/^use `/, "", d); sub(/`.*/, "", d)
             db = d
             thread_db[th] = d
+            thread_db_ts[th] = ts
             next
         }
 
@@ -229,61 +426,182 @@ OUT="$(
             if (s ~ /^(SET|CREATE[[:space:]]+(USER|ROLE|TABLESPACE|SPATIAL))/) next
             if (s ~ / (GLOBAL|SESSION|PERSIST)[[:space:]]/) next
 
-            touches = 0
-            if (db != "" && db == prot) {
-                touches = 1
-            } else if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
-                rest = s
-                sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", rest)
-                nm = rest
-                sub(/[^A-Za-z0-9_`].*/, "", nm)
-                gsub(/`/, "", nm)
-                if (tolower(nm) == lprot) touches = 1
-            } else if (db != "" && index(tolower(s), "`" lprot "`")) {
-                touches = 1
-            } else if (db != "" && db == prot) {
-                # table-level DDL with no db qualifier, in the protected schema
-                touches = 1
+            # --no-attribution keeps the old column meaning (the schema of the
+            # thread, blank when unknown) and does not resolve the qualifier of
+            # a statement: nobody gets a schema they did not ask for.
+            qual = ATTRIB
+
+            raw++                                  # every candidate, no exceptions
+
+            # (a) a statement that names a schema is placed by the statement.
+            stmt_db = ""
+            if (qual == 1) stmt_db = schema_in_stmt(s)
+
+            # (b) CREATE/DROP DATABASE|SCHEMA names its own target.
+            ddl_db = ""
+            if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
+                r = s
+                sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", r)
+                ddl_db = r; sub(/[^A-Za-z0-9_`].*/, "", ddl_db); gsub(/`/, "", ddl_db)
             }
-            if (!touches) next
+
+            # (c) the thread context, but only while it is fresh. A `use` from
+            #     before the DDL window is history, not proof: a migration that
+            #     ran for minutes on one connection is legitimate, a schema
+            #     observed 15+ minutes earlier is not evidence for this row.
+            ctx_db = db
+            ctx_age = -1
+            if (db != "" && db_ts != "") {
+                ctx_age = epoch(ts) - epoch(db_ts)
+                if (ctx_age < 0) ctx_age = 0
+                if (ctx_age > stale) ctx_db = ""       # too old to trust
+            }
+
+            if (ddl_db != "") {
+                bucket = (tolower(ddl_db) == lprot) ? "placed" : "other"
+                evdb = ddl_db; evage = -1
+            } else if (stmt_db != "") {
+                bucket = (tolower(stmt_db) == lprot) ? "placed" : "other"
+                evdb = stmt_db; evage = -1
+            } else if (ctx_db != "") {
+                bucket = (ctx_db == prot) ? "placed" : "other"
+                evdb = ctx_db; evage = ctx_age
+            } else {
+                # Nothing observed it and nothing names it. Say so. Never
+                # fall back to the protected schema by habit. Rule 4 may still
+                # recognise this thread as a restore replay once the whole
+                # stream is in; until then it is an honest unknown.
+                bucket = "unattributed"; evdb = ""; evage = ctx_age
+            }
 
             is_drop    = (s ~ /^DROP[[:space:]]/)
             is_trunc   = (s ~ /^TRUNCATE[[:space:]]/)
             is_dbren   = (s ~ /^RENAME[[:space:]]/ && s !~ /RENAME[[:space:]]+(TABLE|COLUMN)/)
             kind = (is_drop || is_trunc || is_dbren) ? "DESTRUCTIVE" : "NORMAL"
 
-            # The db this statement ran in, for attribution. A `DROP DATABASE`
-            # event often carries no `use` line, so take the name straight out
-            # of the statement in that case.
-            evdb = db
-            if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
-                r = s
-                sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", r)
-                nm2 = r; sub(/[^A-Za-z0-9_`].*/, "", nm2); gsub(/`/, "", nm2)
-                evdb = nm2
-            }
-            printf "%s\t%s\t%s\t%s\t%s\n", ts, th, evdb, kind, s
+            # A replay must be entirely unplaced: no statement naming a schema,
+            # and no row attributed by an observed `use` for this thread. 178853
+            # had `use super_landas` and its 95 drops are a real attributed
+            # wipe -- it must alert, not be relabelled.
+            if (ddl_db != "" || stmt_db != "") replay_named[th SUBSEP] = 1
+            if (bucket == "placed") replay_named[th SUBSEP] = 1
+
+            nrows++
+            row_pfx[nrows]  = ts "\t" th "\t"
+            row_th[nrows]   = th
+            row_bucket[nrows] = bucket
+            row_kind[nrows] = kind
+            row_age[nrows]  = evage
+            row_stmt[nrows] = s
+            row_evdb[nrows] = evdb
+            row[nrows] = ts "\t" th "\t" bucket "\t" kind "\t" evdb "\t" evage "\t" s
             next
         }
+        # 4. restore-replay decision, once per thread, with the whole stream in
+        #    hand. Conditions, all required:
+        #      - the thread shows fkc0 + unqualified DROP TABLE + CREATE TABLE
+        #      - NO row on that thread was placed by name (statement or
+        #        CREATE/DROP DATABASE): a replay names nothing, ever
+        #      - each row is either unplaced, or a bare `CREATE DATABASE` with
+        #        no name (the dump tail seen on 25 Nov 00:38:07)
+        #    Rows are buffered in END for the same reason a second grep was
+        #    rejected: the count must be exact, and a statement may not be
+        #    reclassified after it was printed.
+        function flush(   i, k, t, ok, tail) {
+            for (i = 1; i <= nrows; i++) {
+                t = row_th[i]
+                k = t SUBSEP
+                # Only a thread with NO row placed by name (statement or ddl_db)
+                # can be a replay. One named-schema row and the thread is a
+                # real session whose context we happened to observe; relabeling
+                # it would be the easy false reassurance.
+                if (replay_named[k]) { print row[i]; continue }
+                ok = (replay_fkc[k] && replay_drop[k])
+                tail = (row_evdb[i] == "" && row_stmt[i] ~ /^CREATE DATABASE[[:space:]]*$/)
+                if (ok && (row_bucket[i] == "unattributed" || tail)) {
+                    # A replay can land in `placed` when the thread inherited
+                    # another connection db guess from thread_db. The evidence
+                    # beats the inherited label: this statement was not seen
+                    # carrying this schema, it was assumed.
+                    print row_pfx[i] "restore-replay\t" row_kind[i] "\treplay:fkc0+unqualified-rebuild\t" row_age[i] "\t" row_stmt[i]
+                } else {
+                    print row[i]
+                }
+            }
+        }
+
+        END { flush(); printf "%d\n", raw > rawf; close(rawf) }
     ' "$DECODED"
 )" || true
 
+RAW_COUNT=0
+[ -s "$RAW_FILE" ] && read -r RAW_COUNT < "$RAW_FILE"
+[[ "$RAW_COUNT" =~ ^[0-9]+$ ]] || RAW_COUNT=0
+
 # --- attribute + report ------------------------------------------------------
-# The statement itself can contain anything, so split on the FIRST three tabs
-# only and treat the remainder as the statement. `read` with IFS=$'\t' would
-# also eat a leading empty field, which is why the extractor emits no blanks.
+# Layout from the extractor: ts, th, bucket, kind, evdb, evage, stmt. The
+# statement is last, so split on the FIRST FIVE tabs only.
+#
+# Buckets:
+#   placed          the schema is the protected one -> per-statement line
+#   other           placed on another schema        -> counted only (not our signal)
+#   restore-replay  recognised restore of a dump    -> per-statement line, labelled,
+#                                                     counted, never alerted
+#   unattributed    no schema observed or named and not a restore
+#                                                   -> per-statement line, labelled,
+#                                                      alerts when destructive
+#
+# Nothing is discarded. `restore-replay` and `unattributed` rows are printed
+# with the literal label in the schema column so a reader can grep them and a
+# consumer cannot mistake them for a named schema.
 COUNT=0
 DESTRUCTIVE=0
+OTHER=0
+UNATTR=0
+REPLAY=0
+UNATTR_DESTRUCTIVE=0
+UNATTR_FIRST=""
+UNATTR_FIRST_TS=""
+UNATTR_FIRST_TH=""
 declare -A SEEN_ALERT FIRST_STMT NSTMT USER_OF
 ORDER_ALERT=()
 while IFS= read -r line; do
     [ -z "$line" ] && continue
     ts="${line%%$'\t'*}"; rest="${line#*$'\t'}"
     th="${rest%%$'\t'*}";  rest="${rest#*$'\t'}"
+    bucket="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
+    kind="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
     evdb="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
-    kind="${rest%%$'\t'*}"; stmt="${rest#*$'\t'}"
-    user="$(user_for "$ts" "$th" "$evdb")"
-    printf '%s\t%s\t%s\t%s\t%s\n' "$ts" "$th" "$user" "$kind" "$stmt"
+    evage="${rest%%$'\t'*}"; stmt="${rest#*$'\t'}"
+    user="$(user_for "$ts" "$th" "${evdb:-}")"
+
+    if [ "$bucket" = "other" ]; then
+        OTHER=$((OTHER + 1))
+        continue
+    fi
+
+    if [ "$bucket" = "restore-replay" ]; then
+        REPLAY=$((REPLAY + 1))
+        echo "$ts	$th	$user	$kind	$evdb $stmt"
+        COUNT=$((COUNT + 1))
+        continue
+    fi
+
+    if [ "$bucket" = "unattributed" ]; then
+        UNATTR=$((UNATTR + 1))
+        echo "$ts	$th	$user	$kind	unattributed $stmt"
+        if [ "$kind" = "DESTRUCTIVE" ]; then
+            UNATTR_DESTRUCTIVE=$((UNATTR_DESTRUCTIVE + 1))
+            if [ -z "$UNATTR_FIRST" ]; then
+                UNATTR_FIRST="$stmt"; UNATTR_FIRST_TS="$ts"; UNATTR_FIRST_TH="$th"
+            fi
+        fi
+        COUNT=$((COUNT + 1))
+        continue
+    fi
+
+    # placed on the protected schema
+    echo "$ts	$th	$user	$kind	$stmt"
     COUNT=$((COUNT + 1))
     if [ "$kind" = "DESTRUCTIVE" ]; then
         DESTRUCTIVE=$((DESTRUCTIVE + 1))
@@ -293,16 +611,16 @@ while IFS= read -r line; do
         # in the log above.
         # bucket by thread and MINUTE: a migrate:fresh is one connection doing
         # ~90 drops over ~30s. Per second gives 30 alerts for one incident.
-        bucket="${ts%:*} || $th"
-        if [ -z "${SEEN_ALERT[$bucket]:-}" ]; then
-            SEEN_ALERT["$bucket"]=1
-            ORDER_ALERT+=("$bucket")
-            FIRST_STMT["$bucket"]="$stmt"
-            NSTMT["$bucket"]=1
+        bucketkey="${ts%:*} || $th"
+        if [ -z "${SEEN_ALERT[$bucketkey]:-}" ]; then
+            SEEN_ALERT["$bucketkey"]=1
+            ORDER_ALERT+=("$bucketkey")
+            FIRST_STMT["$bucketkey"]="$stmt"
+            NSTMT["$bucketkey"]=1
         else
-            NSTMT["$bucket"]=$(( ${NSTMT[$bucket]} + 1 ))
+            NSTMT["$bucketkey"]=$(( ${NSTMT[$bucketkey]} + 1 ))
         fi
-        USER_OF["$bucket"]="$user"
+        USER_OF["$bucketkey"]="$user"
     fi
 done <<< "$OUT"
 
@@ -310,11 +628,47 @@ done <<< "$OUT"
 # alerts are grouped together at the end of the log and easy to grep.
 for b in "${ORDER_ALERT[@]:-}"; do
     [ -z "$b" ] && continue
-    win="${b%% || *}"; th="${b#* || }"
-    log "DDL-AUDIT ALERT: ${NSTMT[$b]} destructive DDL statement(s) on '$PROTECTED_DB' in the minute starting $win by ${USER_OF[$b]} (thread $th); first: ${FIRST_STMT[$b]}"
+    win="${b%% || *}"; bth="${b#* || }"
+    log "DDL-AUDIT ALERT: ${NSTMT[$b]} destructive DDL statement(s) on '$PROTECTED_DB' in the minute starting $win by ${USER_OF[$b]} (thread $bth); first: ${FIRST_STMT[$b]}"
 done
 
-log "done: $COUNT DDL statement(s) on '$PROTECTED_DB', $DESTRUCTIVE destructive"
+# Restore replays are counted per stream, once each, so the log shows what the
+# 191 labelled rows collapse to. One line per (thread, minute), not per table.
+REPLAY_NOTE=""
+if [ "$REPLAY" -gt 0 ]; then
+    REPLAY_NOTE="$(printf '%s\n' "$OUT" | awk -F'\t' '$3 == "restore-replay" { if (!(($2) in f)) f[$2] = $1; l[$2] = $1; c[$2]++ } END { for (th in c) { n++; s = s (n>1 ? ", " : "") c[th] " statement(s) on thread " th " (" f[th] " to " l[th] "); " } sub(/; $/, "", s); print s }')"
+    log "NOTE: $REPLAY DDL statement(s) match the restore-replay pattern (unqualified schema rebuild after a DROP DATABASE); expected after a wipe, not alerted; by stream: $REPLAY_NOTE"
+fi
 
-[ "$DESTRUCTIVE" -gt 0 ] && exit 2
+# The blind spot that the old `if (!touches) next` used to hide. A destructive
+# statement we cannot place is exactly the case that must never be quiet, so it
+# alerts however rare it is. Non-destructive unattributed DDL (migrate traffic
+# on a scratch schema) is counted above and does not: measured at 29/day, an
+# alert on that is noise, and noise is how a watcher gets ignored.
+#
+# `restore-replay` is deliberately NOT in here: it is a recognised post-wipe
+# restore, not an unexplained event. Alerting on it would train the reader to
+# ignore the alert that matters.
+if [ "$UNATTR_DESTRUCTIVE" -gt 0 ]; then
+    log "DDL-AUDIT ALERT: $UNATTR_DESTRUCTIVE destructive DDL statement(s) could not be placed on any schema (thread $UNATTR_FIRST_TH, $UNATTR_FIRST_TS); first: $UNATTR_FIRST"
+fi
+
+# --- reconciliation ---------------------------------------------------------
+# R is every candidate DDL in the dump, counted by the extractor itself (not by
+# a second grep over the file: grep and awk disagree on this input, 209 vs 210,
+# and the total has to be exact). placed + replay + unattributed + other must
+# equal R. A non-zero difference means a statement fell out of the classifier,
+# which is this script's bug.
+ACCOUNTED=$((COUNT + OTHER))
+if [ "$ACCOUNTED" -ne "$RAW_COUNT" ]; then
+    log "WARNING: reconciliation: $RAW_COUNT raw DDL, $COUNT reported for '$PROTECTED_DB' ($((COUNT - REPLAY - UNATTR)) placed, $REPLAY restore-replay, $UNATTR unattributed), $OTHER placed on other schemas; $((RAW_COUNT - ACCOUNTED)) unaccounted"
+    RECONCILED=0
+else
+    RECONCILED=1
+fi
+
+log "done: $((COUNT - REPLAY - UNATTR)) DDL statement(s) on '$PROTECTED_DB', $DESTRUCTIVE destructive, $REPLAY restore-replay, $UNATTR unattributed, $RAW_COUNT raw ($OTHER on other schemas)"
+
+[ "$RECONCILED" = "1" ] || exit 3
+{ [ "$DESTRUCTIVE" -gt 0 ] || [ "$UNATTR_DESTRUCTIVE" -gt 0 ]; } && exit 2
 exit 0
