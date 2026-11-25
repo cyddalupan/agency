@@ -54,8 +54,14 @@
     {{-- (Card 6af8296b, 2026-11-14) Status tabs: Pending / Received / Cancelled.
          "Create a tab for Pending, Received, Cancelled and separate the
          transaction with these status." ALL keeps the previous combined list.
-         Admin + Accounting only, per the card. --}}
-    @if(auth()->user()->canSeeFinancialTotals())
+
+         Originally Admin + Accounting only (canSeeFinancialTotals). Changed
+         2026-11-25 on Cyd's instruction: a plain `operation` user (e.g. Ynna,
+         Gulf) saw NO tabs and therefore no Pending tab, so a newly saved
+         transaction was invisible unless it happened to sort near the top.
+         These tabs carry row COUNTS, not peso totals, so widening them leaks
+         no money figures; the peso cards above stay behind the
+         canSeeFinancialTotals check. --}}
     @php
         $statusTabs = [
             'all' => ['label' => '📄 All', 'count' => $statusCounts['all'] ?? 0, 'class' => 'bg-neutral text-neutral-content'],
@@ -73,7 +79,6 @@
         </a>
         @endforeach
     </div>
-    @endif
 
     {{-- Receivables table --}}
     <div class="card bg-base-100 shadow-md">

@@ -82,9 +82,17 @@ class ReceivableController extends Controller
             Receivable::STATUS_CANCELLED => (int) ($counts[Receivable::STATUS_CANCELLED] ?? 0),
         ];
 
+        // (Cyd 2026-11-25) Newest first. The previous sort was
+        // orderByDesc('date') — the *transaction* date typed on the form — so a
+        // backdated entry landed mid-list and looked like it had vanished.
+        // created_at is when the row was actually saved, which is what "newest"
+        // means to the person who just saved it. `date` stays the tiebreaker so
+        // a batch entered in one second is still ordered logically, and id
+        // breaks any remaining tie.
         $receivables = (clone $scoped)
             ->with(['agent', 'applicant', 'encoder'])
             ->when($activeStatus !== 'all', fn ($q) => $q->where('status', $activeStatus))
+            ->orderByDesc('created_at')
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
