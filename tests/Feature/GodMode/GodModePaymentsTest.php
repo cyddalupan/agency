@@ -237,6 +237,13 @@ class GodModePaymentsTest extends TestCase
         $row = $this->receivable($gulf, ['status' => 'pending']);
         $this->receivable($gulf);
 
+        // The branch that renders "cancelled or deleted": production has voided
+        // rows, the old fixture did not, so the guard never ran against real
+        // data. Both reasons, so both the index paragraph and the drill-in's
+        // voided table are actually rendered when the assertions below run.
+        $this->receivable($gulf)->delete();
+        $this->receivable($gulf, ['status' => 'cancelled']);
+
         $this->actAsGod();
 
         $pages = [
@@ -245,9 +252,44 @@ class GodModePaymentsTest extends TestCase
             'the dashboard' => $this->get(route('godmode.dashboard'))->getContent(),
         ];
 
+        $verbs = 'forceDelete|destroy|delete|Delete|approve|Approve';
+
         foreach ($pages as $context => $html) {
-            foreach (['Delete', 'delete', 'destroy', 'forceDelete', 'Approve', 'approve'] as $needle) {
-                $this->assertStringNotContainsString($needle, $html, "{$context} must not offer a {$needle} control");
+            // Rendered controls, not vocabulary (same rule as GodModeAuditTest):
+            // the voided paragraph legitimately says "(cancelled or deleted)" on
+            // the ledger and "cancelled and deleted rows stay visible" on the
+            // drill-in. That copy is operator-facing and must not be reworded to
+            // dodge a test keyword. What must never exist is an actionable
+            // affordance whose tag names a write — an <a>, <button>, <form> or
+            // <input> carrying Delete/delete/destroy/forceDelete/Approve/approve.
+            // Two passes, because a naive `[^>]*` stops at the first `>`:
+            //  A) the whole tag, quote-aware — attribute values may legally
+            //     contain `>` and a tag may span lines, so `[^>]*` truncates
+            //     before the `>` that opens the label.
+            //  B) the label text, `<a>`..`</a>` and `<button>`..`</button>`.
+            //     This is what catches `<a href="#" class="btn">Delete</a>`,
+            //     whose attribute list contains no verb at all: an inert anchor
+            //     is still an affordance an operator can click, and the point of
+            //     the screen is that no such affordance exists. Proved the hard
+            //     way — pass A alone stayed green with exactly that anchor
+            //     rendered on the page.
+            $quoteAware = '~<(a|button|form|input)((?:[^>"\']|"[^"]*"|\'[^\']*\')*)>~i';
+            preg_match_all($quoteAware, $html, $tags, PREG_SET_ORDER);
+            preg_match_all('~<(a|button)\b[^>]*>([^<]*)</\1>~i', $html, $labelled, PREG_SET_ORDER);
+
+            $verb = '/(?:^|[\s"\'\/=])'.$verbs.'/';
+
+            foreach ($tags as $m) {
+                $control = preg_replace('/\s+/', ' ', $m[0]);
+                $this->assertDoesNotMatchRegularExpression($verb, $control,
+                    "{$context} exposes a control naming a write verb: {$control}");
+            }
+
+            foreach ($labelled as $m) {
+                $control = preg_replace('/\s+/', ' ', $m[0]);
+                $label = trim((string) $m[2]);
+                $this->assertDoesNotMatchRegularExpression($verb, $label,
+                    "{$context} exposes a control labelled with a write verb: {$control}");
             }
 
             // No write verb on a receivable: every <form> present is a GET
@@ -257,6 +299,15 @@ class GodModePaymentsTest extends TestCase
                 $this->assertContains(strtoupper($method), ['GET', 'POST'], "{$context}: unexpected form method {$method}");
             }
             $this->assertStringNotContainsString('receivables/'.$row->id, $html, "{$context} links to a receivable write path");
+
+            // Anti-vacuity, per page: the dashboard carries no voided branch, so
+            // this binds only where the guard claims to cover voided money.
+            if ($context !== 'the dashboard') {
+                $this->assertTrue(
+                    $context === 'the ledger' ? str_contains($html, 'id="payments-voided"') : str_contains($html, 'id="payments-voided-table"'),
+                    "{$context} did not render its voided listing, so the guard proved nothing about it"
+                );
+            }
         }
 
         // The router: nothing mutating exists under the ledger.
@@ -266,9 +317,9 @@ class GodModePaymentsTest extends TestCase
         $this->post('/godmode/payments/'.$gulf->id)->assertStatus(405);
         $this->post('/godmode/payments')->assertStatus(405);
 
-        // And no data moved.
+        // And no data moved: 2 live rows + 1 soft-deleted + 1 cancelled = 4.
         $this->assertSame('pending', $row->fresh()->status);
-        $this->assertSame(2, Receivable::withTrashed()->count());
+        $this->assertSame(4, Receivable::withTrashed()->count());
     }
 
     // ── read-only stated, and an empty view explained (card 6b055e29) ─
