@@ -1,0 +1,25 @@
+# Card 6b03ebf0d602a48e11939bbe -- LANDAS DDL audit trail.
+#
+# The watcher appends one line per DDL statement against super_landas and an
+# ALERT line per destructive one. Measured volume is a few MB/day; the cap
+# here is a fuse, not the expected size.
+#
+# Use `create`, not copytruncate: the only writer is cron opening the file
+# fresh for each append (`>>`), so there is no held fd and no reason to lose
+# lines. That is the opposite of the laravel.log case, where php-fpm holds the
+# descriptor.
+#
+# hourly + maxsize 50M ... but see the note in /etc/logrotate.d/landas: with
+# both a time and a size condition logrotate 3.21 rotates on size ONLY. Here
+# that is the behaviour we want -- keep the file small, rotate when big -- and
+# `rotate 8` keeps roughly the last 400 MB worst case. The box is at 91% so the
+# bound matters more than the date.
+/var/log/mysql/ddl-audit.log {
+    size 50M
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root adm
+}

@@ -1,0 +1,8 @@
+# Card 6b03ebf0d602a48e11939bbe -- LANDAS thread_id -> user snapshot.
+#
+# The binlog only names a thread_id. performance_schema forgets a thread when
+# its connection closes, so a snapshot every minute is what keeps a thread_id
+# from a binlog event attributable to a user. Writes only to ops.thread_map.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+* * * * * root /usr/local/bin/landas-thread-map >/dev/null 2>&1

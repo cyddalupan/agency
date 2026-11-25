@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# landas-thread-map -- snapshot the live MySQL sessions into ops.thread_map.
+#
+# The binlog records DDL with a thread_id, but performance_schema only knows
+# live threads: once the connection closes, thread 178771 is an integer with no
+# name. A snapshot every minute keeps the user behind a thread recoverable for
+# as long as the row is retained, which is what turns "a DROP happened" into
+# "this user did it".
+#
+# Read-only against performance_schema, one INSERT into our own ops schema.
+# Never touches super_landas or any tenant database. Never restarts mysqld.
+#
+# ~5-10 connections x 1440 snaps/day = a few thousand rows/day, well under 1 MB.
+#
+set -uo pipefail
+export LC_ALL=C
+
+RETENTION_DAYS="${LANDAS_THREAD_MAP_RETENTION_DAYS:-30}"
+[[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] || { echo "landas-thread-map: bad retention '$RETENTION_DAYS'" >&2; exit 1; }
+
+if ! err="$(mysql -e "
+INSERT INTO ops.thread_map (snap_ts, thread_id, user_host, db_used, cmd)
+SELECT NOW(), t.PROCESSLIST_ID,
+       CONCAT(t.PROCESSLIST_USER, '@', COALESCE(t.PROCESSLIST_HOST, '')),
+       COALESCE(t.PROCESSLIST_DB, recent.current_schema) AS db_used,
+       NULLIF(t.PROCESSLIST_COMMAND, '')
+FROM performance_schema.threads t
+LEFT JOIN (
+    -- The schema a thread was ACTUALLY working in, even if it is now idle or
+    -- the connection has already gone. PROCESSLIST_DB is NULL for a sleeping
+    -- session that did a USE; statements_history_long keeps CURRENT_SCHEMA.
+    -- It is a small ring, so this is best-effort and never blocks the insert.
+    SELECT ht.PROCESSLIST_ID AS pid, MAX(h.CURRENT_SCHEMA) AS current_schema
+    FROM performance_schema.events_statements_history_long h
+    JOIN performance_schema.threads ht ON ht.THREAD_ID = h.THREAD_ID
+    GROUP BY ht.PROCESSLIST_ID
+) recent ON recent.pid = t.PROCESSLIST_ID
+WHERE t.PROCESSLIST_ID IS NOT NULL
+  AND t.PROCESSLIST_USER IS NOT NULL
+  AND t.PROCESSLIST_USER <> 'event_scheduler';
+" 2>&1)"; then
+    echo "landas-thread-map: snapshot failed: $err" >&2
+    exit 1
+fi
+
+# Trim on the same pass; a DELETE by primary-key prefix is cheap.
+mysql -e "DELETE FROM ops.thread_map WHERE snap_ts < NOW() - INTERVAL ${RETENTION_DAYS} DAY" >/dev/null 2>&1
+
+exit 0

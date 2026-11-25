@@ -1,0 +1,320 @@
+#!/usr/bin/env bash
+#
+# landas-ddl-audit -- extract DDL events for a protected database from the
+# MySQL binary log, flag the destructive ones, and resolve the thread_id to a
+# user via ops.thread_map.
+#
+# Why this and not audit_log / general_log (card 6b03ebf0d602a48e11939bbe,
+# corrected 2026-11-25 by Bitoy after Grady's findings):
+#   - audit_log is MySQL Enterprise only. Not installable here.
+#   - general_log is ~0.23 GB/day and writes tenant PII in plaintext.
+#   - The binlog already records every DDL as a statement-logged Query event
+#     with a timestamp and a thread_id. Nothing to install, nothing restarted.
+#
+# This script never touches my.cnf, never restarts mysqld, never deletes a
+# binlog, and writes no database state at all -- it only SELECTs ops.thread_map.
+#
+set -uo pipefail
+export LC_ALL=C
+
+# --- configuration (all overridable; nothing secret is hard-coded) -----------
+PROTECTED_DB="${LANDAS_DDL_PROTECTED_DB:-super_landas}"
+BINLOG_DIR="${LANDAS_DDL_BINLOG_DIR:-/var/lib/mysql}"
+BINLOG_GLOB="${LANDAS_DDL_BINLOG_GLOB:-binlog.[0-9]*}"
+LOOKBACK_HOURS="${LANDAS_DDL_LOOKBACK_HOURS:-26}"
+MAX_BYTES="${LANDAS_DDL_MAX_BYTES:-536870912}"   # 512 MB of decoded binlog/run
+SINCE=""
+UNTIL=""
+ATTRIB=1
+LIST_ONLY=0
+
+usage() {
+    cat >&2 <<EOF
+usage: $(basename "\$0") [--since "YYYY-MM-DD HH:MM:SS"] [--until "YYYY-MM-DD HH:MM:SS"]
+                        [--lookback HOURS] [--db NAME] [--binlog-dir DIR]
+                        [--no-attribution] [--list-binlogs]
+
+Without --since it scans the binlog files modified in the last --lookback hours
+(default ${LOOKBACK_HOURS}). Times are UTC, matching the binlog.
+
+Output, tab-separated:
+  <UTC timestamp>  <thread_id>  <user_host or unknown>  <DESTRUCTIVE|NORMAL>  <statement>
+(columns 3 and 4 are counted by position, so the statement keeps its tabs)
+
+Destructive DDL (DROP / TRUNCATE / database RENAME) is also announced on stderr
+as "DDL-AUDIT ALERT". Exit 2 if any destructive DDL was seen, 0 otherwise.
+EOF
+    exit "\${1:-0}"
+}
+
+# --- argument parsing --------------------------------------------------------
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --since)          SINCE="${2:-}"; shift 2 ;;
+        --until)          UNTIL="${2:-}"; shift 2 ;;
+        --lookback)       LOOKBACK_HOURS="${2:-}"; shift 2 ;;
+        --db)             PROTECTED_DB="${2:-}"; shift 2 ;;
+        --binlog-dir)     BINLOG_DIR="${2:-}"; shift 2 ;;
+        --no-attribution) ATTRIB=0; shift ;;
+        --list-binlogs)   LIST_ONLY=1; shift ;;
+        -h|--help)        usage 0 ;;
+        *) echo "error: unknown argument '$1'" >&2; usage 1 ;;
+    esac
+done
+
+log() { echo "landas-ddl-audit: $*" >&2; }
+die() { log "error: $*"; exit 1; }
+
+# --- input validation: nothing from a caller reaches a query ----------------
+[[ "$PROTECTED_DB" =~ ^[A-Za-z0-9_]+$ ]] \
+    || die "--db must match ^[A-Za-z0-9_]+$ (got '$PROTECTED_DB')"
+TS_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$'
+{ [ -z "$SINCE" ] || [[ "$SINCE" =~ $TS_RE ]]; } \
+    || die "--since must be 'YYYY-MM-DD HH:MM:SS' (got '$SINCE')"
+{ [ -z "$UNTIL" ] || [[ "$UNTIL" =~ $TS_RE ]]; } \
+    || die "--until must be 'YYYY-MM-DD HH:MM:SS' (got '$UNTIL')"
+[[ "$LOOKBACK_HOURS" =~ ^[0-9]+$ ]] \
+    || die "--lookback must be an integer number of hours (got '$LOOKBACK_HOURS')"
+
+command -v mysqlbinlog >/dev/null || die "mysqlbinlog not found"
+command -v awk        >/dev/null || die "awk not found"
+[ -d "$BINLOG_DIR" ]  || die "binlog dir $BINLOG_DIR does not exist"
+
+# --- which binlogs to read ---------------------------------------------------
+# Binlogs are 0640 root:mysql, so this runs as root from cron. Files are never
+# deleted from here; retention is Cyd's decision, not a script's.
+# With an explicit --since the caller may be asking about any day, so consider
+# every binlog and let mysqlbinlog apply the --start-datetime / --stop-datetime
+# filter. Only the "what happened lately?" default is bounded by mtime, so the
+# daily cron never decodes a month of archives.
+mapfile -t BINLOGS < <(
+    find "$BINLOG_DIR" -maxdepth 1 -type f -name "$BINLOG_GLOB" \
+        -printf '%p %T@\n' 2>/dev/null \
+    | sort -k2,2n \
+    | awk -v cut="$(date -u -d "-${LOOKBACK_HOURS} hours" +%s)" \
+          '$2 >= cut { print $1 }'
+)
+if [ "${#BINLOGS[@]}" -eq 0 ] && [ -z "$SINCE" ]; then
+    log "no binlog modified in the last ${LOOKBACK_HOURS}h under $BINLOG_DIR; nothing to scan"
+    exit 0
+fi
+if [ -n "$SINCE" ]; then
+    mapfile -t BINLOGS < <(find "$BINLOG_DIR" -maxdepth 1 -type f -name "$BINLOG_GLOB" | sort)
+fi
+
+if [ "$LIST_ONLY" = "1" ]; then
+    printf '%s\n' "${BINLOGS[@]}"
+    exit 0
+fi
+
+log "scanning ${#BINLOGS[@]} binlog file(s) for DDL in '$PROTECTED_DB'"
+
+# --- thread_id -> user, from ops.thread_map ---------------------------------
+# Read-only. Missing table degrades attribution to 'unknown'; it never fails
+# the audit run.
+#
+# The 1-minute snapshot can be beaten by a short-lived connection (a one-off
+# mysql -e that connects and dies inside the same minute). So resolve by
+# NEAREST snapshot in time, not by exact thread id only: if thread 192472 is
+# not in any snapshot, take the user from the snapshot closest to the event
+# time. That is a heuristic and the report labels it as such -- an exact hit
+# prints the user plainly, a nearest match says "approx:".
+THREAD_USER_FILE="$(mktemp /tmp/landas-thread-user.XXXXXX)"
+trap 'rm -f "$DECODED" "$THREAD_USER_FILE"' EXIT
+if [ "$ATTRIB" = "1" ]; then
+    mysql -N -B -e "SELECT snap_ts, thread_id, user_host, COALESCE(db_used,'') FROM ops.thread_map
+                    WHERE snap_ts > NOW() - INTERVAL 30 DAY
+                    ORDER BY snap_ts" 2>/dev/null > "$THREAD_USER_FILE" || : > "$THREAD_USER_FILE"
+    log "thread_map: $(wc -l < "$THREAD_USER_FILE") snapshot row(s) loaded"
+fi
+
+# user_for TS THREAD -> prints user_host, "approx:<user>" or "unknown"
+# user_for TS THREAD [DB] -> user_host | approx:<user> (weaker) | unknown
+#
+# The exact thread id is the only real evidence. Failing that, fall back to a
+# snapshot close in time -- but ONLY when the database that snapshot saw for
+# that thread is the one the DDL actually ran in. Without that guard the "nearest
+# row" is whatever busy tenant happened to be logged in, which is worse than
+# admitting we do not know.
+user_for() {
+    local want_ts="$1" want_th="$2" want_db="${3:-}" exact
+    [ -s "$THREAD_USER_FILE" ] || { echo unknown; return; }
+    exact="$(awk -F'\t' -v t="$want_th" '$2 == t { print $3 }' "$THREAD_USER_FILE" | tail -1)"
+    if [ -n "$exact" ]; then printf '%s\n' "$exact"; return; fi
+    awk -F'\t' -v ts="$want_ts" -v db="$want_db" -v win=90 '
+        function epoch(t,   p) {
+            gsub(/[-:]/, " ", t); split(t, p, " ")
+            return mktime(p[1]" "p[2]" "p[3]" "p[4]" "p[5]" "p[6])
+        }
+        NR == 1 { want = epoch(ts) }
+        {
+            if (db != "" && $4 != db) next        # wrong database: not evidence
+            e = epoch($1); d = e - want; if (d < 0) d = -d
+            if (d <= win && (best == "" || d < bd)) { bd = d; best = $3 }
+        }
+        END { if (best != "") printf "approx:%s\n", best; else print "unknown" }
+    ' "$THREAD_USER_FILE"
+}
+
+# --- decode once, bounded ----------------------------------------------------
+DECODED="$(mktemp /tmp/landas-ddl-audit.XXXXXX)"
+
+mysqlbinlog ${SINCE:+--start-datetime="$SINCE"} \
+            ${UNTIL:+--stop-datetime="$UNTIL"} \
+            "${BINLOGS[@]}" 2>/dev/null \
+    | head -c "$MAX_BYTES" > "$DECODED"
+
+if [ "$(wc -c < "$DECODED")" -ge "$MAX_BYTES" ]; then
+    log "WARNING: decode stopped at ${MAX_BYTES} bytes; narrow --since for a complete answer"
+fi
+
+# --- extract ----------------------------------------------------------------
+# mysqlbinlog prints, per DDL Query event:
+#   #261125  0:37:23 server id 1  end_log_pos ... Query thread_id=178771 ...
+#   use `super_landas`/*!*/;
+#   SET TIMESTAMP=...
+#   ...
+#   DROP DATABASE IF EXISTS super_landas
+#   /*!*/;
+#
+# The current database is carried by `use `db`/*!*/;` lines, and the statements
+# that follow do NOT repeat the database name (`DROP TABLE `a`,`b`). So context
+# tracking is mandatory -- matching only on the statement text misses every
+# table-level wipe. That is the whole point of this script.
+#
+# Session-variable statements (SET GLOBAL ...) look like DDL to a naive regex
+# and are excluded first.
+OUT="$(
+    awk -v prot="$PROTECTED_DB" '
+        BEGIN { lprot = tolower(prot) }
+
+        function norm_ts(d, tm,   yy, mm, dd, hh, mi, ss, n, p) {
+            sub(/^#/, "", d)
+            yy = substr(d, 1, 2); mm = substr(d, 3, 2); dd = substr(d, 5, 2)
+            n = split(tm, p, ":")
+            hh = p[1] + 0; mi = (n > 1 ? p[2] + 0 : 0); ss = (n > 2 ? p[3] + 0 : 0)
+            return "20" yy "-" mm "-" dd " " sprintf("%02d:%02d:%02d", hh, mi, ss)
+        }
+
+        # 1. event header: timestamp + thread id. The db is NOT reset here:
+        #    only some events carry a `use` line (CREATE TABLE does, the
+        #    server-generated DROP TABLE that follows does not). Clearing it
+        #    per event loses exactly the destructive statement we are hunting.
+        #    Keep the last `use` seen for this thread instead.
+        /^#2[0-9]{5} / && /Query[ \t]+thread_id=/ {
+            ts = norm_ts($1, $2)
+            match($0, /thread_id=[0-9]+/)
+            th = substr($0, RSTART + 10, RLENGTH - 10)
+            db = thread_db[th]
+            next
+        }
+
+        # 2. current database for this connection, remembered per thread
+        /^use `[A-Za-z0-9_]+`\/\*!\*\/;/ {
+            d = $0
+            sub(/^use `/, "", d); sub(/`.*/, "", d)
+            db = d
+            thread_db[th] = d
+            next
+        }
+
+        # 3. candidate statement
+        /^[[:space:]]*(DROP|TRUNCATE|ALTER|RENAME|CREATE)[[:space:]]/ {
+            s = $0
+            sub(/[[:space:]]*\/\*.*$/, "", s)     # drop the trailing /*!*/;
+            sub(/[[:space:]]+$/, "", s)
+            if (s == "") next
+
+            # session/variable statements are not DDL on any schema
+            if (s ~ /^(SET|CREATE[[:space:]]+(USER|ROLE|TABLESPACE|SPATIAL))/) next
+            if (s ~ / (GLOBAL|SESSION|PERSIST)[[:space:]]/) next
+
+            touches = 0
+            if (db != "" && db == prot) {
+                touches = 1
+            } else if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
+                rest = s
+                sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", rest)
+                nm = rest
+                sub(/[^A-Za-z0-9_`].*/, "", nm)
+                gsub(/`/, "", nm)
+                if (tolower(nm) == lprot) touches = 1
+            } else if (db != "" && index(tolower(s), "`" lprot "`")) {
+                touches = 1
+            } else if (db != "" && db == prot) {
+                # table-level DDL with no db qualifier, in the protected schema
+                touches = 1
+            }
+            if (!touches) next
+
+            is_drop    = (s ~ /^DROP[[:space:]]/)
+            is_trunc   = (s ~ /^TRUNCATE[[:space:]]/)
+            is_dbren   = (s ~ /^RENAME[[:space:]]/ && s !~ /RENAME[[:space:]]+(TABLE|COLUMN)/)
+            kind = (is_drop || is_trunc || is_dbren) ? "DESTRUCTIVE" : "NORMAL"
+
+            # The db this statement ran in, for attribution. A `DROP DATABASE`
+            # event often carries no `use` line, so take the name straight out
+            # of the statement in that case.
+            evdb = db
+            if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
+                r = s
+                sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", r)
+                nm2 = r; sub(/[^A-Za-z0-9_`].*/, "", nm2); gsub(/`/, "", nm2)
+                evdb = nm2
+            }
+            printf "%s\t%s\t%s\t%s\t%s\n", ts, th, evdb, kind, s
+            next
+        }
+    ' "$DECODED"
+)" || true
+
+# --- attribute + report ------------------------------------------------------
+# The statement itself can contain anything, so split on the FIRST three tabs
+# only and treat the remainder as the statement. `read` with IFS=$'\t' would
+# also eat a leading empty field, which is why the extractor emits no blanks.
+COUNT=0
+DESTRUCTIVE=0
+declare -A SEEN_ALERT FIRST_STMT NSTMT USER_OF
+ORDER_ALERT=()
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    ts="${line%%$'\t'*}"; rest="${line#*$'\t'}"
+    th="${rest%%$'\t'*}";  rest="${rest#*$'\t'}"
+    evdb="${rest%%$'\t'*}"; rest="${rest#*$'\t'}"
+    kind="${rest%%$'\t'*}"; stmt="${rest#*$'\t'}"
+    user="$(user_for "$ts" "$th" "$evdb")"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$ts" "$th" "$user" "$kind" "$stmt"
+    COUNT=$((COUNT + 1))
+    if [ "$kind" = "DESTRUCTIVE" ]; then
+        DESTRUCTIVE=$((DESTRUCTIVE + 1))
+        # A migrate:fresh is ONE incident and ~90 statements. Alert per
+        # (second, thread) bucket, not per table, or the alert is unreadable
+        # and the real event hides in it. The per-statement lines are still
+        # in the log above.
+        # bucket by thread and MINUTE: a migrate:fresh is one connection doing
+        # ~90 drops over ~30s. Per second gives 30 alerts for one incident.
+        bucket="${ts%:*} || $th"
+        if [ -z "${SEEN_ALERT[$bucket]:-}" ]; then
+            SEEN_ALERT["$bucket"]=1
+            ORDER_ALERT+=("$bucket")
+            FIRST_STMT["$bucket"]="$stmt"
+            NSTMT["$bucket"]=1
+        else
+            NSTMT["$bucket"]=$(( ${NSTMT[$bucket]} + 1 ))
+        fi
+        USER_OF["$bucket"]="$user"
+    fi
+done <<< "$OUT"
+
+# One ALERT line per incident, emitted after the per-statement trail so the
+# alerts are grouped together at the end of the log and easy to grep.
+for b in "${ORDER_ALERT[@]:-}"; do
+    [ -z "$b" ] && continue
+    win="${b%% || *}"; th="${b#* || }"
+    log "DDL-AUDIT ALERT: ${NSTMT[$b]} destructive DDL statement(s) on '$PROTECTED_DB' in the minute starting $win by ${USER_OF[$b]} (thread $th); first: ${FIRST_STMT[$b]}"
+done
+
+log "done: $COUNT DDL statement(s) on '$PROTECTED_DB', $DESTRUCTIVE destructive"
+
+[ "$DESTRUCTIVE" -gt 0 ] && exit 2
+exit 0
