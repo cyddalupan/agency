@@ -109,9 +109,16 @@ class AppServiceProvider extends ServiceProvider
             return $guard;
         });
 
-        // 🔒 Block destructive artisan commands in non-production when .env is 'local' but
-        // this is a production server. Only allow them when APP_ENV is explicitly 'testing'.
-        $this->blockDestructiveCommands();
+        // 🔒 Card 6b03ee17b53899c76e313ab0 (Part A): refuse schema-destroying
+        // artisan commands when the connection's database is `super_landas`,
+        // regardless of --force. Keys on the database name, never on APP_ENV,
+        // so a staging .env that points at prod is still caught. Registered as
+        // a CommandStarting listener (not a command override) so it cannot be
+        // bypassed by --database= and so scratch/test databases stay usable.
+        //
+        // This replaces blockDestructiveCommands(), which matched on APP_ENV,
+        // exited 0, and was bypassable with --database=<other connection>.
+        $this->blockDestructiveCommandsOnProduction();
 
         // Ensure middleware aliases are registered in both HTTP and Console/testing contexts.
         // bootstrap/app.php aliases are synced to the HTTP kernel, but the test framework
@@ -123,21 +130,16 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Prevent destructive artisan commands from running on this server.
-     * Overrides them with custom command classes that block execution.
-     * Skips in testing so CI/tests can run normally.
+     * Refuse migrate:fresh / migrate:refresh / migrate:reset / db:wipe /
+     * db:seed when the target database is `super_landas` (production).
+     *
+     * Exit code 3, written to STDERR. `--force` does not bypass it.
      */
-    private function blockDestructiveCommands(): void
+    private function blockDestructiveCommandsOnProduction(): void
     {
-        if ($this->app->environment('testing')) {
-            return;
-        }
-
-        $this->commands([
-            \App\Console\SafeCommands\_SafeMigrateFresh::class,
-            \App\Console\SafeCommands\_SafeMigrateRefresh::class,
-            \App\Console\SafeCommands\_SafeMigrateReset::class,
-            \App\Console\SafeCommands\_SafeDbWipe::class,
-        ]);
+        $this->app['events']->listen(
+            \Illuminate\Console\Events\CommandStarting::class,
+            \App\Listeners\RefuseDestructiveCommandsOnProduction::class
+        );
     }
 }
