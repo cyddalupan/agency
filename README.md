@@ -185,7 +185,7 @@ cd /var/www/landas-test
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
 DB_DATABASE=zz_landas_test DB_USERNAME=landas_suite DB_PASSWORD='<from Bitoy>' \
 LOG_CHANNEL=stderr \
-  php artisan test --configuration=phpunit.mysql.xml
+  vendor/bin/phpunit --configuration phpunit.mysql.xml
 ```
 
 **Rule: a MySQL test run is only legal on a database whose name starts with `zz_`.**
@@ -522,7 +522,7 @@ The project has extensive feature and unit tests. Run them with:
 php artisan test
 
 # Run the same suite against MySQL 8 (only from /var/www/landas-test, only a zz_ DB)
-php artisan test --configuration=phpunit.mysql.xml
+vendor/bin/phpunit --configuration phpunit.mysql.xml
 
 # Or directly with PHPUnit
 ./vendor/bin/phpunit

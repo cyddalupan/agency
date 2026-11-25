@@ -46,7 +46,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: landas_ci
+          MYSQL_DATABASE: zz_landas_ci
         ports:
           - 3306:3306
         options: >-
@@ -60,7 +60,7 @@ jobs:
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
-      DB_DATABASE: landas_ci
+      DB_DATABASE: zz_landas_ci
       DB_USERNAME: root
       DB_PASSWORD: root
 
@@ -95,7 +95,7 @@ jobs:
             $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
             echo config("database.connections.mysql.database");')
           echo "Resolved MySQL database: $DB"
-          test "$DB" = "landas_ci" || { echo "::error::Refusing to run against '$DB'"; exit 1; }
+          test "$DB" = "zz_landas_ci" || { echo "::error::Refusing to run against '$DB'"; exit 1; }
 
       - name: Migrate from an empty database
         # A clean clone must be able to build the schema. If this fails, the
@@ -108,4 +108,8 @@ jobs:
         run: php artisan view:clear || true
 
       - name: Run the full suite on MySQL 8
-        run: php artisan test --configuration=phpunit.mysql.xml
+        # NOT `php artisan test --configuration=...`: artisan already forwards its
+        # own --configuration to PHPUnit, so passing it again prints
+        # "Option --configuration cannot be used more than once" and exits 1
+        # even when every test passes. Call PHPUnit directly.
+        run: vendor/bin/phpunit --configuration phpunit.mysql.xml
