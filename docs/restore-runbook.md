@@ -27,6 +27,73 @@ loading a `sed`-extracted fragment whose header sat above the cut. So the fix
 is *not* to add the wrapper; it is to **cut the section correctly, keeping the
 real header**.
 
+## The 2026-11-25 wipe — why the grant matters more than any code guard
+
+Production was emptied **twice in one evening** by:
+
+```
+APP_ENV=testing php artisan migrate:fresh --force
+```
+
+The application-level guard (`App\Listeners\RefuseDestructiveCommandsOnProduction`)
+did not fire, and could not have. Laravel 13 registers its Symfony
+command-event bridge like this (`Illuminate/Foundation/Console/Kernel.php`):
+
+```php
+$this->app->booted(function () {
+    if (! $this->app->runningUnitTests()) {
+        $this->rerouteSymfonyCommandEvents();   // this is what dispatches CommandStarting
+    }
+});
+```
+
+With `APP_ENV=testing`, `runningUnitTests()` returns true, so the bridge is
+never registered, **`CommandStarting` is never dispatched at all**, and *no*
+listener — not this one, not any future one — can run. Any guard written as a
+listener is dead code under that environment variable.
+
+**The guarantee is the database grant, not the application.** The app user must
+not hold `DROP`:
+
+```sql
+REVOKE DROP ON `super_landas`.* FROM 'super_landas'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+MySQL enforces this for every client, every artisan flag, every `APP_ENV`, and
+every code path in the framework. Verified 2026-11-25 after the revoke:
+`migrate:fresh`, `migrate:refresh`, `migrate:reset` and `db:wipe` all fail with
+`1142 DROP command denied`, and 95 tables / 27,132 expense requests /
+88 users / 675 receivables survive every attempt.
+
+Normal operation is unaffected: `SELECT/INSERT/UPDATE/DELETE/CREATE/ALTER/
+INDEX/REFERENCES/...` are all still granted, `migrate --force` still exits 0,
+and both `landlord@landas.com` (God Mode) and `tester@landas.com` (tenant)
+log in and load their pages 200.
+
+**Do not re-grant `DROP` to the application user.** If a schema change
+genuinely needs to drop a table, take a fresh dump, do it deliberately as root,
+and record it on the card.
+
+### Recovering from a wipe (this procedure, used twice)
+
+1. `php artisan down --retry=60` — stop writes immediately.
+2. Newest full dump: `/var/backups/mysql/mysql_all_databases_*.sql.zip`
+   (nightly 03:00 Manila = 19:00 UTC). Unzip; it is 160 MB expanded.
+3. Extract **only** the `super_landas` section (see the trap below).
+4. Wrap the import in `SET FOREIGN_KEY_CHECKS=0; ... =1;` — the dump emits
+   tables in alphabetical order, so `agencies` is referenced before it exists
+   and the import aborts at line 33 with `ERROR 1824`. This is expected, not
+   corruption.
+5. Import, verify 95 tables and the row counts, then `php artisan up`.
+6. Check the binlog for writes after the dump:
+   `mysqlbinlog --start-datetime="<dump time>" binlog.NNN`. On 2026-11-25
+   there were **zero** business-table writes after the dump (only
+   `audit_events`, `activity_logs`, `users`, `settings` from bot cleanup), so
+   no replay was needed. Always check before assuming the same.
+
+---
+
 ## The trap that will destroy production
 
 The `super_landas` section itself contains:
