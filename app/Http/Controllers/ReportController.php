@@ -13,6 +13,7 @@ use App\Models\Bill;
 use App\Models\Commission;
 use App\Models\Country;
 use App\Models\Employer;
+use App\Models\ExpenseRequest;
 use App\Models\ExpenseRequestItem;
 use App\Models\OfficialReceipt;
 use App\Models\Payment;
@@ -170,9 +171,13 @@ class ReportController extends Controller
         // Row split (Toybits 2026-09-07): an item is either charged to the
         // office/applicant (Statement of Account) or to the agent (Agent Expenses).
         // Agent-charged rows must never appear in the applicant's statement.
+        // Only released transactions belong on the statement (card 6b06db79):
+        // cancelled rows must not appear, and neither do pending/approved/
+        // for-releasing ones under the narrow reading of "only Released".
         $statementItems = ExpenseRequestItem::with(['expenseRequest', 'account', 'agent'])
             ->where('applicant_id', $applicant->id)
             ->where('charge', '!=', 'agent')
+            ->where('status', ExpenseRequest::STATUS_RELEASED)
             ->orderBy('id')
             ->get();
 
@@ -180,6 +185,7 @@ class ReportController extends Controller
             ->where('agent_id', $applicant->agent_id)
             ->where('applicant_id', $applicant->id)
             ->where('charge', 'agent')
+            ->where('status', ExpenseRequest::STATUS_RELEASED)
             ->orderBy('id')
             ->get();
 
