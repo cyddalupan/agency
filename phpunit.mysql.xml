@@ -6,8 +6,16 @@
     CI runs this file instead (php artisan test, configuration flag pointed at
     this file) against a throwaway MySQL 8 service container.
 
-    Not for local use against the production database. If you run it by hand,
-    point DB_DATABASE at a scratch database first; the suite truncates tables.
+    Not for use against the production database. The suite drops and recreates
+    every table; only `zz_` databases are accepted (the artisan guard and
+    tests/TestCase.php both refuse anything else on this connection).
+
+    DB_DATABASE below is a fallback, not the target: PHPUnit <env> defaults to
+    force="false", so an exported shell/CI variable wins. CI sets its own
+    throwaway database from its `env:` block; a local run that forgets the
+    variable lands on the `zz_` scratch name rather than on anything real.
+    Host, user and password are deliberately absent — they come from the
+    environment so no credential is ever committed here.
 
     Do not diverge these two files. Everything except the three DB_* entries is
     copied from phpunit.xml verbatim; add new invariants to both.
@@ -47,9 +55,11 @@
              depend on it: the CI step "Assert the target database" fails the
              job unless the resolved database is the throwaway one. -->
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="landas_ci"/>
+        <env name="DB_DATABASE" value="zz_landas_test"/>
         <env name="DB_URL" value=""/>
-        <!-- Card 6b043d33af3017bf577329a5: same as phpunit.xml, verbatim. -->
+        <!-- Card 6b038a9e824ea78607d0da8d: same as phpunit.xml, verbatim. The
+             suite must not share production's storage/framework/views. -->
+        <env name="VIEW_COMPILED_PATH" value="/tmp/zz-views"/>
         <env name="FILESYSTEM_DISK" value="testing"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

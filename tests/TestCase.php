@@ -55,6 +55,13 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setUp(): void
     {
+        // FIRST, and before parent::setUp() on purpose: Laravel's setUpTraits()
+        // runs RefreshDatabase INSIDE parent::setUp(), so a check placed after
+        // it fires only once the schema has already been built. Card
+        // 6b038a9e824ea78607d0da8d: on MySQL the database name must be `zz_`
+        // BEFORE any table moves — not merely before the test body runs.
+        $this->refuseNonScratchMysqlTarget();
+
         parent::setUp();
 
         // After parent::setUp() on purpose: before it there is no application,
@@ -142,6 +149,67 @@ abstract class TestCase extends BaseTestCase
         // failure per test — the "Tests: N, Failures: N" a run of the checkout
         // must produce.
         throw new AssertionFailedError(self::refusalMessage($onProdCheckout));
+    }
+
+    /**
+     * Refuse to run a test against any MySQL database whose name is not `zz_`.
+     *
+     * Called twice: before parent::setUp() (to fire ahead of RefreshDatabase's
+     * migrate) and after the checkout check. When there is no application yet,
+     * the target is resolved from the environment the same way the connection
+     * will resolve it, so the refusal is not skipped for lack of an app.
+     *
+     * SQLite (the default suite) is untouched: `:memory:` has no name to check.
+     */
+    private function refuseNonScratchMysqlTarget(): void
+    {
+        $driver = null;
+        $database = null;
+
+        if ($this->app instanceof Application) {
+            $driver = config('database.default');
+            $database = $this->app['db']->connection()->getDatabaseName();
+        } else {
+            // No application: resolve from $_ENV/$_SERVER the same way
+            // config/database.php will. phpunit.mysql.xml sets DB_CONNECTION
+            // to mysql for this configuration, so a mysql run is recognisable
+            // here even before boot.
+            $driver = self::resolvedEnv('DB_CONNECTION');
+            $database = self::resolvedEnv('DB_DATABASE');
+        }
+
+        if ((string) $driver !== 'mysql') {
+            return;
+        }
+
+        $database = (string) $database;
+
+        if ($database === '' || $database === 'null' || preg_match('/^zz_[a-z0-9_]+$/i', $database) === 1) {
+            return;
+        }
+
+        // AssertionFailedError, not fail(): same reasoning as the checkout
+        // refusal above — one clean failure per test, no "risky" noise.
+        throw new AssertionFailedError(
+            "Refusing to run against MySQL database '{$database}': MySQL test runs are only allowed on a zz_ database. "
+            . 'Create zz_landas_test; see README Testing Environment.'
+        );
+    }
+
+    /**
+     * Read an env value the way Laravel's dotenv/env helper will see it.
+     * getenv() is checked too: a shell-exported DB_DATABASE wins over the
+     * file for <env force="false"> entries.
+     */
+    private static function resolvedEnv(string $key): ?string
+    {
+        $fromEnv = getenv($key);
+
+        if ($fromEnv !== false && $fromEnv !== '') {
+            return $fromEnv;
+        }
+
+        return $_ENV[$key] ?? $_SERVER[$key] ?? null;
     }
 
     /**

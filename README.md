@@ -177,14 +177,40 @@ To run the SQLite suite locally, nothing changes:
 php artisan test
 ```
 
-To reproduce the MySQL run, point it at a scratch database you own. **Never**
-point it at `super_landas`: the suite truncates tables.
+To reproduce the MySQL run locally, run it **from `/var/www/landas-test`**, never
+from the production checkout, and only against a `zz_` scratch database:
 
 ```bash
-DB_DATABASE=your_scratch_db DB_USERNAME=... DB_PASSWORD=... \
-  php artisan migrate --force
-DB_DATABASE=your_scratch_db DB_USERNAME=... DB_PASSWORD=... \
+cd /var/www/landas-test
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
+DB_DATABASE=zz_landas_test DB_USERNAME=landas_suite DB_PASSWORD='<from Bitoy>' \
+LOG_CHANNEL=stderr \
   php artisan test --configuration=phpunit.mysql.xml
+```
+
+**Rule: a MySQL test run is only legal on a database whose name starts with `zz_`.**
+That is enforced in three independent places:
+
+1. **Credential** — `landas_suite` holds `GRANT ALL ON zz_landas_test.*` and
+   nothing else. It cannot read or drop a table in `super_landas`; the error is
+   `Access denied` / `DROP command denied`, which is the correct answer.
+2. **Name** — `phpunit.mysql.xml` falls back to `zz_landas_test` when the
+   variable is forgotten.
+3. **Code** — `tests/TestCase.php` throws before any table moves if the resolved
+   MySQL database does not match `^zz_`, and the artisan command guard
+   refuses `migrate:fresh` / `db:wipe` / `migrate:refresh` / `migrate:reset` /
+   `db:seed` on anything that is not `mysql` + `zz_`.
+
+Never put `super_landas` in `DB_DATABASE`, and never use the `landas_admin`
+break-glass credential for a test run. `super_landas` has no `DROP` grant by
+design; do not restore it.
+
+Operator setup (once, as MySQL admin — not part of any code change):
+
+```sql
+CREATE DATABASE zz_landas_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'landas_suite'@'localhost' IDENTIFIED BY '<generated>';
+GRANT ALL PRIVILEGES ON zz_landas_test.* TO 'landas_suite'@'localhost';
 ```
 
 ---
@@ -495,7 +521,7 @@ The project has extensive feature and unit tests. Run them with:
 # Run all tests (SQLite :memory: — fast, local)
 php artisan test
 
-# Run the same suite against MySQL 8 (what CI does, 3rd step in a scratch DB)
+# Run the same suite against MySQL 8 (only from /var/www/landas-test, only a zz_ DB)
 php artisan test --configuration=phpunit.mysql.xml
 
 # Or directly with PHPUnit

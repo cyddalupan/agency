@@ -69,15 +69,21 @@ class RefuseDestructiveCommandsOnProduction
     public const EXIT_CODE = RefusedCommandException::EXIT_CODE;
 
     /**
-     * Is this target obviously not production, for test-run exemption purposes?
-     * Only sqlite databases qualify (phpunit.xml uses :memory:).
+     * Is this target a scratch database we own, for test-run exemption purposes?
+     *
+     * "Harmless" here means "a name we created for this purpose": sqlite
+     * (phpunit.xml uses :memory:) or a `zz_` database on the `mysql` connection.
+     * The `zz_` case is gated on the connection name, not on the prefix alone:
+     * `super_landas_rehearsal` and `landas_ci_local` are NOT scratch by this
+     * rule. Only a `zz_` prefix on the `mysql` connection is.
      */
     private function isHarmlessTestTarget(?string $connectionName, string $database): bool
     {
         return $connectionName === 'sqlite'
             || $database === ':memory:'
             || str_ends_with($database, '.sqlite')
-            || str_starts_with($database, '/tmp/');
+            || str_starts_with($database, '/tmp/')
+            || ($connectionName === 'mysql' && str_starts_with($database, 'zz_'));
     }
 
     public function handle(CommandStarting $event): void
@@ -102,8 +108,9 @@ class RefuseDestructiveCommandsOnProduction
         $database = strtolower(trim($database));
 
         // Only now may tests be exempted, and only for a database that cannot
-        // possibly be production: phpunit.xml forces sqlite :memory:. A test
-        // run that somehow resolves to a real database is still guarded.
+        // possibly be production: phpunit.xml forces sqlite :memory:, and
+        // phpunit.mysql.xml targets a `zz_` scratch database. A test run that
+        // somehow resolves to a real database is still guarded.
         if ($this->runningUnitTests() && $this->isHarmlessTestTarget($this->connectionName($event), $database)) {
             return;
         }

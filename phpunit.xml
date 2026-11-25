@@ -35,6 +35,13 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
+        <!-- Card 6b038a9e824ea78607d0da8d: do not inherit the view cache
+             directory. storage/framework/views is www-data-owned and holds
+             live compiled views; a run from the production checkout rewrites
+             it, and a deploy does not rebuild it. The framework base
+             config/view.php reads VIEW_COMPILED_PATH (verified honoured on
+             Laravel 13.15.0). Mirror this line into phpunit.mysql.xml. -->
+        <env name="VIEW_COMPILED_PATH" value="/tmp/zz-views"/>
         <!-- Card 6b043d33af3017bf577329a5: do not inherit FILESYSTEM_DISK.
              Production is `local` -> storage/app/, which holds 4,858 live
              files. One test writing without Storage::fake() would land there,
