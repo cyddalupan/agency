@@ -24,7 +24,7 @@
         </p>
     </div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('godmode.audit.index', request()->only(['from', 'to', 'actor', 'agency', 'action', 'per'])) }}"
+        <a href="{{ route('godmode.audit.index', request()->only(['from', 'to', 'actor', 'agency', 'action', 'q', 'per'])) }}"
            class="btn btn-sm btn-ghost" id="audit-tab-trail">Audit trail</a>
         <a href="{{ $exportUrl }}" class="btn btn-sm btn-neutral" id="audit-export">Export CSV</a>
     </div>
