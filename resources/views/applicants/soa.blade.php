@@ -18,9 +18,9 @@
                 <div class="text-right">
                     <p class="text-2xl font-bold">
                         @if($balance > 0)
-                            <span class="text-warning">₱{{ number_format($balance, 2) }}</span>
+                            <span class="text-warning">{{ peso($balance) }}</span>
                         @elseif($balance < 0)
-                            <span class="text-info">₱{{ number_format(abs($balance), 2) }} (Credit)</span>
+                            <span class="text-info">{{ peso(abs($balance)) }} (Credit)</span>
                         @else
                             <span class="text-success">₱0.00</span>
                         @endif
@@ -36,20 +36,20 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Cost</p>
-                <p class="text-2xl font-bold">₱{{ number_format($totalCost, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($totalCost) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Paid</p>
-                <p class="text-2xl font-bold text-success">₱{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-2xl font-bold text-success">{{ peso($totalPaid) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Balance</p>
                 <p class="text-2xl font-bold @if($balance > 0) text-warning @elseif($balance < 0) text-info @else text-success @endif">
-                    ₱{{ number_format($balance, 2) }}
+                    {{ peso($balance) }}
                 </p>
             </div>
         </div>
@@ -83,17 +83,17 @@
                                     <td class="text-sm">{{ $bill->created_at->format('M d, Y') }}</td>
                                     <td class="text-sm font-mono">#{{ $bill->id }}</td>
                                     <td>{{ $bill->notes ?? '—' }}</td>
-                                    <td class="text-right">₱{{ number_format($bill->applicant_cost, 2) }}</td>
+                                    <td class="text-right">{{ peso($bill->applicant_cost) }}</td>
                                     <td class="text-right">
                                         @if($bill->applicant_deposit > 0)
-                                            ₱{{ number_format($bill->applicant_deposit, 2) }}
+                                            {{ peso($bill->applicant_deposit) }}
                                         @else
                                             <span class="opacity-40">—</span>
                                         @endif
                                     </td>
                                     <td class="text-right">
                                         @if($billPayments > 0)
-                                            ₱{{ number_format($billPayments, 2) }}
+                                            {{ peso($billPayments) }}
                                         @else
                                             <span class="opacity-40">—</span>
                                         @endif
@@ -116,7 +116,7 @@
                                         <td></td>
                                         <td></td>
                                         <td></td>
-                                        <td class="text-right text-success text-sm">+₱{{ number_format($payment->amount, 2) }}</td>
+                                        <td class="text-right text-success text-sm">+{{ peso($payment->amount) }}</td>
                                         <td>
                                             <span class="badge badge-{{ $payment->status === 'received' ? 'success' : 'ghost' }} badge-sm">
                                                 {{ ucfirst($payment->status) }}
@@ -129,11 +129,11 @@
                         <tfoot>
                             <tr class="font-bold">
                                 <td colspan="3" class="text-right">Totals</td>
-                                <td class="text-right">₱{{ number_format($totalCost, 2) }}</td>
+                                <td class="text-right">{{ peso($totalCost) }}</td>
                                 <td class="text-right">—</td>
-                                <td class="text-right text-success">₱{{ number_format($totalPaid, 2) }}</td>
+                                <td class="text-right text-success">{{ peso($totalPaid) }}</td>
                                 <td class="text-right @if($balance > 0) text-warning @elseif($balance < 0) text-info @else text-success @endif">
-                                    ₱{{ number_format($balance, 2) }}
+                                    {{ peso($balance) }}
                                 </td>
                             </tr>
                         </tfoot>
