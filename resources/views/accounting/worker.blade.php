@@ -18,9 +18,9 @@
                 <div class="text-right">
                     <p class="text-2xl font-bold">
                         @if($balance > 0)
-                            <span class="text-warning">₱{{ number_format($balance, 2) }}</span>
+                            <span class="text-warning">{{ peso($balance) }}</span>
                         @elseif($balance < 0)
-                            <span class="text-info">₱{{ number_format(abs($balance), 2) }} (Credit)</span>
+                            <span class="text-info">{{ peso(abs($balance)) }} (Credit)</span>
                         @else
                             <span class="text-success">₱0.00</span>
                         @endif
@@ -36,20 +36,20 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Cost</p>
-                <p class="text-2xl font-bold">₱{{ number_format($totalCost, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($totalCost) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Paid</p>
-                <p class="text-2xl font-bold text-success">₱{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-2xl font-bold text-success">{{ peso($totalPaid) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Balance</p>
                 <p class="text-2xl font-bold @if($balance > 0) text-warning @elseif($balance < 0) text-info @else text-success @endif">
-                    ₱{{ number_format($balance, 2) }}
+                    {{ peso($balance) }}
                 </p>
             </div>
         </div>
@@ -80,9 +80,9 @@
                                 <tr>
                                     <td class="text-sm">{{ $bill->created_at->format('M d, Y') }}</td>
                                     <td>{{ $bill->notes ?? '—' }}</td>
-                                    <td class="text-right">₱{{ number_format($bill->applicant_cost, 2) }}</td>
-                                    <td class="text-right">@if($bill->applicant_deposit)₱{{ number_format($bill->applicant_deposit, 2) }}@else<span class="opacity-40">—</span>@endif</td>
-                                    <td class="text-right text-success">₱{{ number_format($billPayments, 2) }}</td>
+                                    <td class="text-right">{{ peso($bill->applicant_cost) }}</td>
+                                    <td class="text-right">@if($bill->applicant_deposit){{ peso($bill->applicant_deposit) }}@else<span class="opacity-40">—</span>@endif</td>
+                                    <td class="text-right text-success">{{ peso($billPayments) }}</td>
                                     <td><span class="badge badge-sm badge-{{ $bill->status === 'paid' ? 'success' : 'ghost' }}">{{ ucfirst($bill->status) }}</span></td>
                                 </tr>
                             @endforeach

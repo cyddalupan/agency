@@ -22,16 +22,16 @@
     </div>
 
     <table class="summary">
-        <tr><td>Money In</td><td class="r">₱{{ number_format($moneyIn, 2) }}</td></tr>
-        <tr><td>Money Out</td><td class="r">₱{{ number_format($moneyOut, 2) }} (expenses ₱{{ number_format($totalExpenses,2) }} + commissions ₱{{ number_format($totalCommissionsPaid,2) }})</td></tr>
-        <tr><td>Balance</td><td class="r">₱{{ number_format($balance, 2) }}</td></tr>
+        <tr><td>Money In</td><td class="r">{{ peso($moneyIn) }}</td></tr>
+        <tr><td>Money Out</td><td class="r">{{ peso($moneyOut) }} (expenses {{ peso($totalExpenses) }} + commissions {{ peso($totalCommissionsPaid) }})</td></tr>
+        <tr><td>Balance</td><td class="r">{{ peso($balance) }}</td></tr>
     </table>
 
     <h2>Income by Category</h2>
     <table>
         <tr><th>Category</th><th class="r">Amount</th></tr>
         @forelse($incomeByAccount as $row)
-            <tr><td>{{ $row['account_name'] }}</td><td class="r">₱{{ number_format($row['total'], 2) }}</td></tr>
+            <tr><td>{{ $row['account_name'] }}</td><td class="r">{{ peso($row['total']) }}</td></tr>
         @empty
             <tr><td colspan="2">No income.</td></tr>
         @endforelse
@@ -41,7 +41,7 @@
     <table>
         <tr><th>Account</th><th class="r">Amount</th></tr>
         @forelse($expensesByAccount as $row)
-            <tr><td>{{ $row['account_name'] }}</td><td class="r">₱{{ number_format($row['total'], 2) }}</td></tr>
+            <tr><td>{{ $row['account_name'] }}</td><td class="r">{{ peso($row['total']) }}</td></tr>
         @empty
             <tr><td colspan="2">No expenses.</td></tr>
         @endforelse
@@ -51,7 +51,7 @@
     <table>
         <tr><th>Employer</th><th class="r">Money In</th></tr>
         @forelse($byEntity as $row)
-            <tr><td>{{ $row['employer_name'] }}</td><td class="r">₱{{ number_format($row['in'], 2) }}</td></tr>
+            <tr><td>{{ $row['employer_name'] }}</td><td class="r">{{ peso($row['in']) }}</td></tr>
         @empty
             <tr><td colspan="2">No entity data.</td></tr>
         @endforelse

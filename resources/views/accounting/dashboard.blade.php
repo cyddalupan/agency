@@ -37,21 +37,21 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60 flex items-center gap-1">💰 Money In</p>
-                <p class="text-2xl font-bold text-success">₱{{ number_format($moneyIn, 2) }}</p>
+                <p class="text-2xl font-bold text-success">{{ peso($moneyIn) }}</p>
                 <p class="text-xs opacity-50 mt-1">Payments received</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60 flex items-center gap-1">💸 Money Out</p>
-                <p class="text-2xl font-bold text-error">₱{{ number_format($moneyOut, 2) }}</p>
+                <p class="text-2xl font-bold text-error">{{ peso($moneyOut) }}</p>
                 <p class="text-xs opacity-50 mt-1">Expenses + commissions paid</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60 flex items-center gap-1">⚖️ Balance</p>
-                <p class="text-2xl font-bold {{ $balance >= 0 ? 'text-primary' : 'text-error' }}">₱{{ number_format($balance, 2) }}</p>
+                <p class="text-2xl font-bold {{ $balance >= 0 ? 'text-primary' : 'text-error' }}">{{ peso($balance) }}</p>
                 <p class="text-xs opacity-50 mt-1">Net cash position</p>
             </div>
         </div>
@@ -69,7 +69,7 @@
                             @foreach($incomeByAccount as $row)
                             <tr>
                                 <td>{{ $row['account_name'] }}</td>
-                                <td class="text-right font-semibold text-success">₱{{ number_format($row['total'], 2) }}</td>
+                                <td class="text-right font-semibold text-success">{{ peso($row['total']) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -91,7 +91,7 @@
                             <tr>
                                 <td class="font-medium">{{ $row['account_name'] }}</td>
                                 <td class="opacity-50">{{ $row['parent_name'] ?? '—' }}</td>
-                                <td class="text-right font-semibold text-error">₱{{ number_format($row['total'], 2) }}</td>
+                                <td class="text-right font-semibold text-error">{{ peso($row['total']) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -115,7 +115,7 @@
                             @foreach($moneyInByEntity as $row)
                             <tr>
                                 <td class="font-medium">{{ $row['employer_name'] }}</td>
-                                <td class="text-right font-semibold text-success">₱{{ number_format($row['in'], 2) }}</td>
+                                <td class="text-right font-semibold text-success">{{ peso($row['in']) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -136,9 +136,9 @@
                     @foreach($monthlyTrend as $m)
                     <div class="rounded-xl border border-base-300 p-3 text-center">
                         <p class="text-xs font-semibold opacity-60">{{ \Carbon\Carbon::parse($m['month'] . '-01')->format('M Y') }}</p>
-                        <p class="text-success text-sm font-semibold mt-2">₱{{ number_format($m['in'], 0) }}</p>
-                        <p class="text-error text-sm font-semibold">-₱{{ number_format($m['out'], 0) }}</p>
-                        <p class="text-sm font-bold mt-1 {{ $m['net'] >= 0 ? 'text-primary' : 'text-error' }}">₱{{ number_format($m['net'], 0) }}</p>
+                        <p class="text-success text-sm font-semibold mt-2">{{ peso($m['in'], true, 0) }}</p>
+                        <p class="text-error text-sm font-semibold">{{ peso(-abs($m['out']), true, 0) }}</p>
+                        <p class="text-sm font-bold mt-1 {{ $m['net'] >= 0 ? 'text-primary' : 'text-error' }}">{{ peso($m['net'], true, 0) }}</p>
                         <p class="text-[10px] opacity-40">net</p>
                     </div>
                     @endforeach

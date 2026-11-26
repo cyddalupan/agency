@@ -13,7 +13,7 @@
         </div>
         <div class="text-right">
             <span class="text-lg font-semibold {{ $balance >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                Balance: &#8369;{{ number_format($balance, 2) }}
+                Balance: {{ peso($balance) }}
             </span>
         </div>
     </div>
@@ -21,15 +21,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p class="text-sm text-gray-500">Total Commissions</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($totalCommissions, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($totalCommissions) }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <p class="text-sm text-gray-500">Total Paid</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($totalPaid, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($totalPaid) }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-{{ $balance > 0 ? 'yellow' : 'green' }}-500">
             <p class="text-sm text-gray-500">Balance</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($balance, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($balance) }}</p>
         </div>
     </div>
 
@@ -54,9 +54,9 @@
                         <tr>
                             <td class="px-4 py-3 text-sm">{{ $commission->created_at->format('M d, Y') }}</td>
                             <td class="px-4 py-3 text-sm">{{ $commission->employer->name ?? 'N/A' }}</td>
-                            <td class="px-4 py-3 text-sm text-right">&#8369;{{ number_format($commission->amount, 2) }}</td>
-                            <td class="px-4 py-3 text-sm text-right">&#8369;{{ number_format($commission->paid_amount, 2) }}</td>
-                            <td class="px-4 py-3 text-sm text-right">&#8369;{{ number_format($commission->balance, 2) }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ peso($commission->amount) }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ peso($commission->paid_amount) }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ peso($commission->balance) }}</td>
                             <td class="px-4 py-3 text-sm text-center">
                                 <span class="px-2 py-1 text-xs rounded-full
                                     @if($commission->status === 'paid') bg-green-100 text-green-700

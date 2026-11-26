@@ -18,7 +18,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body">
                 <p class="text-sm opacity-60">🧾 Outstanding</p>
-                <p class="text-2xl font-bold text-error">₱{{ number_format($totalOutstanding, 2) }}</p>
+                <p class="text-2xl font-bold text-error">{{ peso($totalOutstanding) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
@@ -70,9 +70,9 @@
                                     @else —
                                     @endif
                                 </td>
-                                <td class="text-right">₱{{ number_format($r['billed'], 2) }}</td>
-                                <td class="text-right text-success">₱{{ number_format($r['paid'], 2) }}</td>
-                                <td class="text-right font-semibold text-error">₱{{ number_format($r['outstanding'], 2) }}</td>
+                                <td class="text-right">{{ peso($r['billed']) }}</td>
+                                <td class="text-right text-success">{{ peso($r['paid']) }}</td>
+                                <td class="text-right font-semibold text-error">{{ peso($r['outstanding']) }}</td>
                                 <td>{{ $r['due_date'] ? \Illuminate\Support\Carbon::parse($r['due_date'])->format('M d, Y') : '—' }}</td>
                                 <td>
                                     @if($r['status'] === 'overdue')

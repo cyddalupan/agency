@@ -18,9 +18,9 @@
                 <div class="text-right">
                     <p class="text-2xl font-bold">
                         @if($balance > 0)
-                            <span class="text-warning">₱{{ number_format($balance, 2) }}</span>
+                            <span class="text-warning">{{ peso($balance) }}</span>
                         @elseif($balance < 0)
-                            <span class="text-info">₱{{ number_format(abs($balance), 2) }} (Credit)</span>
+                            <span class="text-info">{{ peso(abs($balance)) }} (Credit)</span>
                         @else
                             <span class="text-success">₱0.00</span>
                         @endif
@@ -36,26 +36,26 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Billed</p>
-                <p class="text-2xl font-bold">₱{{ number_format($totalBilled, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($totalBilled) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Paid</p>
-                <p class="text-2xl font-bold text-success">₱{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-2xl font-bold text-success">{{ peso($totalPaid) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Commissions Paid</p>
-                <p class="text-2xl font-bold text-info">₱{{ number_format($totalCommissions, 2) }}</p>
+                <p class="text-2xl font-bold text-info">{{ peso($totalCommissions) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Net Balance</p>
                 <p class="text-2xl font-bold @if($balance > 0) text-warning @elseif($balance < 0) text-info @else text-success @endif">
-                    ₱{{ number_format($balance, 2) }}
+                    {{ peso($balance) }}
                 </p>
             </div>
         </div>
@@ -88,9 +88,9 @@
                                 @endphp
                                 <tr>
                                     <td class="text-sm">{{ $bill->created_at->format('M d, Y') }}</td>
-                                    <td class="text-right">₱{{ number_format($bill->employer_cost, 2) }}</td>
-                                    <td class="text-right text-success">₱{{ number_format($billPayments, 2) }}</td>
-                                    <td class="text-right font-medium">₱{{ number_format($runningBal, 2) }}</td>
+                                    <td class="text-right">{{ peso($bill->employer_cost) }}</td>
+                                    <td class="text-right text-success">{{ peso($billPayments) }}</td>
+                                    <td class="text-right font-medium">{{ peso($runningBal) }}</td>
                                     <td><span class="badge badge-sm badge-{{ $bill->status === 'paid' ? 'success' : 'ghost' }}">{{ ucfirst($bill->status) }}</span></td>
                                 </tr>
                             @endforeach
@@ -123,7 +123,7 @@
                                 <tr>
                                     <td class="text-sm">{{ $commission->created_at->format('M d, Y') }}</td>
                                     <td>{{ $commission->commissionable_type }} #{{ $commission->commissionable_id }}</td>
-                                    <td class="text-right">₱{{ number_format($commission->amount, 2) }}</td>
+                                    <td class="text-right">{{ peso($commission->amount) }}</td>
                                     <td><span class="badge badge-sm badge-{{ $commission->status === 'paid' ? 'success' : 'ghost' }}">{{ ucfirst($commission->status) }}</span></td>
                                 </tr>
                             @endforeach
