@@ -35,10 +35,10 @@
             <div class="card-body">
                 {{-- (Josh 2026-11-11, card 6af3ea66) Headline shows RECEIVED only. --}}
                 <p class="text-sm opacity-60">💰 Total Amount <span class="opacity-60">(Received)</span></p>
-                <p class="text-2xl font-bold">₱{{ number_format($totalAmount, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($totalAmount) }}</p>
                 <div class="mt-2 pt-2 border-t border-base-200 text-xs opacity-70 space-y-0.5">
-                    <p>⏳ Pending: ₱{{ number_format($pendingTotal, 2) }}</p>
-                    <p>✅ Received: ₱{{ number_format($receivedTotal, 2) }}</p>
+                    <p>⏳ Pending: {{ peso($pendingTotal) }}</p>
+                    <p>✅ Received: {{ peso($receivedTotal) }}</p>
                 </div>
             </div>
         </div>
@@ -180,7 +180,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $r->agent->name ?? '—' }}</td>
-                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format($r->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ peso($r->amount) }}</td>
                                 <td>{{ $r->account ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
                                 <td>{{ $r->mode ?? '—' }}</td>

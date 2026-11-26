@@ -38,7 +38,7 @@
                 <div><span class="opacity-60">Applicant:</span> {{-- Card 6af82fef: full name (First Middle Last Suffix). --}}{{ $receivable->applicant ? $receivable->applicant->full_name : '—' }}</div>
                 <div><span class="opacity-60">Encoded by:</span> {{ $receivable->encoder->name ?? '—' }}</div>
                 <div><span class="opacity-60">Ref# / AR#:</span> {{ $receivable->ref_ar ?? '—' }}</div>
-                <div><span class="opacity-60">Amount:</span> <strong class="text-primary text-lg">₱{{ number_format($receivable->amount, 2) }}</strong></div>
+                <div><span class="opacity-60">Amount:</span> <strong class="text-primary text-lg">{{ peso($receivable->amount) }}</strong></div>
                 <div><span class="opacity-60">Account:</span> {{ $receivable->account ?? '—' }}</div>
                 <div><span class="opacity-60">Deposit / Debit Acct:</span> {{ $receivable->debit_account ?? '—' }}</div>
                 <div><span class="opacity-60">Type:</span> {{ $receivable->type ?? '—' }}</div>
