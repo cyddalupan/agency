@@ -457,10 +457,20 @@ OUT="$(
 
             # (b) CREATE/DROP DATABASE|SCHEMA names its own target.
             ddl_db = ""
+            void_ctx = 0
             if (s ~ /^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]/) {
                 r = s
                 sub(/^(DROP|CREATE)[[:space:]]+(DATABASE|SCHEMA)[[:space:]]+(IF[[:space:]]+(NOT[[:space:]]+)?EXISTS[[:space:]]+)?/, "", r)
                 ddl_db = r; sub(/[^A-Za-z0-9_`].*/, "", ddl_db); gsub(/`/, "", ddl_db)
+                # Card 6b06d399: the server voids the session default on DROP/CREATE
+                # DATABASE, so the map must agree. Clearing here, after ddl_db is
+                # read, means this statement still buckets by its own named target
+                # while the NEXT unqualified statement on this thread becomes
+                # `unattributed` instead of inheriting a schema the thread left.
+                # Deliberately NOT done for DROP TABLE: dropping a table does not
+                # void the default, and clearing there would blind the watcher to
+                # the destructive run it exists to catch.
+                void_ctx = 1
             }
 
             # (c) the thread context, but only while it is fresh. A `use` from
@@ -490,6 +500,15 @@ OUT="$(
                 # recognise this thread as a restore replay once the whole
                 # stream is in; until then it is an honest unknown.
                 bucket = "unattributed"; evdb = ""; evage = ctx_age
+            }
+
+            # Card 6b06d399: DROP/CREATE DATABASE|SCHEMA voided the session
+            # default on the server. Clear the remembered schema now that this
+            # statement has been bucketed, so no later unqualified statement on
+            # this thread inherits it.
+            if (void_ctx) {
+                delete thread_db[th]
+                delete thread_db_ts[th]
             }
 
             is_drop    = (s ~ /^DROP[[:space:]]/)
