@@ -347,7 +347,22 @@
                                         <td>{{ $item->agent?->name ?? '—' }}</td>
                                         <td>{{ $item->currency }}</td>
                                         <td class="text-right font-semibold">
-                                            {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) ($item->amount - ($item->payment ?? 0)), 2) }}
+                                            @php($net = (float) ($item->amount - ($item->payment ?? 0)))
+                                            @if((float) $item->amount === 0.0 && (float) ($item->payment ?? 0) === 0.0)
+                                                {{-- Card 6b06ddc2: a zero-amount line is NOT a blank cell
+                                                     and NOT the same thing as a 0.00 currency amount.
+                                                     Measured live: 109 items carry amount 0.00. 78 are
+                                                     explicit REPLACEMENT / Repat entries where nothing was
+                                                     disbursed; 31 are "OFFSET" lines that describe a peso
+                                                     amount in their particular while the column is zero.
+                                                     Rendering "₱0.00" for those reads as a zero expense.
+                                                     The dash says "no value recorded here", and the title
+                                                     points at the particular, which is where the real
+                                                     information is for both shapes. --}}
+                                                <span class="opacity-50" title="No amount recorded on this line. See Particular.">—</span>
+                                            @else
+                                                {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($net, 2) }}
+                                            @endif
                                             @if((float) ($item->payment ?? 0) > 0)
                                                 <span class="block text-xs font-normal opacity-60" title="Original {{ number_format((float) $item->amount, 2) }} less payment {{ number_format((float) $item->payment, 2) }}">
                                                     gross {{ number_format((float) $item->amount, 2) }} − pay {{ number_format((float) $item->payment, 2) }}
