@@ -53,10 +53,10 @@
                                 {{ $bill->applicant->full_name ?? '—' }}
                             </td>
                             <td class="text-sm font-mono">
-                                ₱{{ number_format($bill->employer_cost, 2) }}
+                                {{ peso($bill->employer_cost) }}
                             </td>
                             <td class="text-sm font-mono">
-                                ₱{{ number_format($bill->applicant_cost, 2) }}
+                                {{ peso($bill->applicant_cost) }}
                             </td>
                             <td>
                                 @php

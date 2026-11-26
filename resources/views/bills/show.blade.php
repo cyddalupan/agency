@@ -79,24 +79,24 @@
                     <tbody>
                         <tr>
                             <td class="font-medium">💰 Employer Cost</td>
-                            <td class="text-right font-mono">₱{{ number_format($bill->employer_cost, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($bill->employer_cost) }}</td>
                         </tr>
                         <tr>
                             <td class="font-medium">💵 Applicant Cost</td>
-                            <td class="text-right font-mono">₱{{ number_format($bill->applicant_cost, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($bill->applicant_cost) }}</td>
                         </tr>
                         <tr>
                             <td class="font-medium">🏦 Employer Deposit</td>
-                            <td class="text-right font-mono">₱{{ number_format($bill->employer_deposit, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($bill->employer_deposit) }}</td>
                         </tr>
                         <tr>
                             <td class="font-medium">🏦 Applicant Deposit</td>
-                            <td class="text-right font-mono">₱{{ number_format($bill->applicant_deposit, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($bill->applicant_deposit) }}</td>
                         </tr>
                         <tr class="font-bold">
                             <td>Total</td>
                             <td class="text-right font-mono">
-                                ₱{{ number_format($bill->employer_cost + $bill->applicant_cost + $bill->employer_deposit + $bill->applicant_deposit, 2) }}
+                                {{ peso($bill->employer_cost + $bill->applicant_cost + $bill->employer_deposit + $bill->applicant_deposit) }}
                             </td>
                         </tr>
                     </tbody>
@@ -124,7 +124,7 @@
                     <tbody>
                         @foreach($bill->payments as $payment)
                         <tr>
-                            <td class="font-mono">₱{{ number_format($payment->amount, 2) }}</td>
+                            <td class="font-mono">{{ peso($payment->amount) }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $payment->category)) }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $payment->type)) }}</td>
                             <td>
