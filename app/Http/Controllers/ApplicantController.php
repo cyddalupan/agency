@@ -1400,10 +1400,20 @@ class ApplicantController extends Controller
         $this->applyBranchDefaults($validated);
 
         $oldStatusCode = $applicant->status_code;
+        $previousJobId = $applicant->job_id;
 
         $applicant->update($validated);
 
         $this->syncPassport($request, $applicant);
+
+        // Total Slot: the same rule as updateStatus(). The Edit Applicant form
+        // can also set status_code to 8 (Deployed), and this path did not
+        // resync the job order, so a deployment recorded here never deducted a
+        // slot. Card 6af822bc fixed the calculation and wired updateStatus and
+        // the FRA dashboard; this was the remaining door into the same field.
+        // Passing the previous job id releases the OLD job's slot when the
+        // applicant was moved, which is why it is read before the update.
+        JobSlotService::syncForApplicant($applicant->id, $previousJobId);
 
         // Status changes made via the Edit Applicant form must also appear in
         // the Status tab history (Cyd report 2026-08-09). Only record when the
