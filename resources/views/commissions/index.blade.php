@@ -72,10 +72,10 @@
                                     <span class="opacity-40">—</span>
                                 @endif
                             </td>
-                            <td class="font-mono text-sm font-semibold">₱{{ number_format($commission->amount, 2) }}</td>
-                            <td class="font-mono text-sm">₱{{ number_format($commission->paid_amount, 2) }}</td>
+                            <td class="font-mono text-sm font-semibold">{{ peso($commission->amount) }}</td>
+                            <td class="font-mono text-sm">{{ peso($commission->paid_amount) }}</td>
                             <td class="font-mono text-sm {{ $commission->balance > 0 ? 'text-warning' : 'text-success' }}">
-                                ₱{{ number_format($commission->balance, 2) }}
+                                {{ peso($commission->balance) }}
                             </td>
                             <td>
                                 @php

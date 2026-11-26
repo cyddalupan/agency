@@ -15,7 +15,7 @@
                     <div>
                         <h2 class="text-2xl lg:text-3xl font-bold">Commission #{{ $commission->id }}</h2>
                         <p class="opacity-80 text-sm mt-1">
-                            ₱{{ number_format($commission->amount, 2) }}
+                            {{ peso($commission->amount) }}
                             @if($commission->employer)
                                 · {{ $commission->employer->name }}
                             @endif
@@ -49,16 +49,16 @@
                         <tbody>
                             <tr>
                                 <td class="font-medium opacity-60">Amount</td>
-                                <td class="text-right font-mono font-bold text-lg">₱{{ number_format($commission->amount, 2) }}</td>
+                                <td class="text-right font-mono font-bold text-lg">{{ peso($commission->amount) }}</td>
                             </tr>
                             <tr>
                                 <td class="font-medium opacity-60">Paid Amount</td>
-                                <td class="text-right font-mono">₱{{ number_format($commission->paid_amount, 2) }}</td>
+                                <td class="text-right font-mono">{{ peso($commission->paid_amount) }}</td>
                             </tr>
                             <tr>
                                 <td class="font-medium opacity-60">Balance</td>
                                 <td class="text-right font-mono font-semibold {{ $commission->balance > 0 ? 'text-warning' : 'text-success' }}">
-                                    ₱{{ number_format($commission->balance, 2) }}
+                                    {{ peso($commission->balance) }}
                                 </td>
                             </tr>
                             <tr>
