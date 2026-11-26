@@ -38,7 +38,7 @@
                     <option value="">Select bill (optional)...</option>
                     @foreach($bills as $bill)
                         <option value="{{ $bill->id }}" @selected(old('bill_id') == $bill->id)>
-                            #{{ $bill->id }} · {{ $bill->employer->name ?? 'No employer' }} · ₱{{ number_format($bill->employer_cost, 2) }}
+                            #{{ $bill->id }} · {{ $bill->employer->name ?? 'No employer' }} · {{ peso($bill->employer_cost) }}
                         </option>
                     @endforeach
                 </select>

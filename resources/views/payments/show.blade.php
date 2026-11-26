@@ -15,7 +15,7 @@
                     <div>
                         <h2 class="text-2xl lg:text-3xl font-bold">Payment #{{ $payment->id }}</h2>
                         <p class="opacity-80 text-sm mt-1">
-                            ₱{{ number_format($payment->amount, 2) }}
+                            {{ peso($payment->amount) }}
                             @if($payment->bill)
                                 · Bill #{{ $payment->bill->id }}
                                 @if($payment->bill->employer)
@@ -52,7 +52,7 @@
                         <tbody>
                             <tr>
                                 <td class="font-medium opacity-60">Amount</td>
-                                <td class="text-right font-mono font-bold text-lg">₱{{ number_format($payment->amount, 2) }}</td>
+                                <td class="text-right font-mono font-bold text-lg">{{ peso($payment->amount) }}</td>
                             </tr>
                             <tr>
                                 <td class="font-medium opacity-60">Category</td>
@@ -110,7 +110,7 @@
                         </tr>
                         <tr>
                             <td class="font-medium opacity-60">Amount</td>
-                            <td class="font-mono">₱{{ number_format($payment->officialReceipt->amount, 2) }}</td>
+                            <td class="font-mono">{{ peso($payment->officialReceipt->amount) }}</td>
                         </tr>
                         <tr>
                             <td class="font-medium opacity-60">Issued To</td>

@@ -57,7 +57,7 @@
                                     <span class="opacity-40">—</span>
                                 @endif
                             </td>
-                            <td class="font-mono text-sm font-semibold">₱{{ number_format($payment->amount, 2) }}</td>
+                            <td class="font-mono text-sm font-semibold">{{ peso($payment->amount) }}</td>
                             <td>
                                 <span class="badge badge-sm badge-outline">
                                     {{ ucfirst(str_replace('_', ' ', $payment->category)) }}
