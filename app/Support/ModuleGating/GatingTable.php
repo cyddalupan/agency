@@ -129,6 +129,32 @@ final class GatingTable
 
         'encoder' => ['rule' => 'allow-list', 'allowed' => 'encoder'],
 
+        // Card 6b06d82a (Josh, 2026-11-26): "Display to users with branch
+        // Davao, Bacolod, Iloilo, Pangasinan, Cdo". Those five are exactly the
+        // Gulf branch accounts, and every one of them is user_type=operation
+        // (measured: ids 251-255). 'operation' had no entry here at all, so it
+        // fell through to DEFAULT_RULE (the STAFF_ALLOWED list, which has no
+        // agent_report) and the module was denied for the entire tier.
+        //
+        // The `branch` list is the right target rather than a new list: it is
+        // the same access a branch account gets, it already contains
+        // agent_report, and it deliberately omits settings/users/etc. Branch
+        // scoping is untouched and still enforced separately - see
+        // AgentReportController::ledgerBranchLocked() and
+        // User::isBranchLocked(), both of which return true for these users,
+        // so each sees only the agents registered under their own branch.
+        // Widening this list widens which SCREENS are reachable, not which
+        // ROWS are visible.
+        //
+        // The list is `operation`, NOT `branch`. First attempt pinned this to
+        // the `branch` list and the equivalence test caught it: `branch` has
+        // no receivable / expense_request / reports / company-profile, so
+        // operation users lost 78 existing grants across 13 agencies while
+        // gaining agent_report. `operation` previously fell through to
+        // DEFAULT_RULE => STAFF_ALLOWED, so the correct fix is that same list
+        // plus agent_report, reproduced verbatim in OPERATION_ALLOWED.
+        'operation' => ['rule' => 'allow-list', 'allowed' => 'operation'],
+
         // Card 6af81c30: DMW User exists on FINAS and CSDI only.
         'dmw_user' => [
             'rule'     => 'allow-list',
@@ -369,6 +395,28 @@ final class GatingTable
             'receivable',
             'expense_request',
             'api',
+        ],
+
+        // Card 6b06d82a: OPERATION = STAFF_ALLOWED plus agent_report, and
+        // nothing else. Kept as an explicit copy rather than "staff + " so
+        // that a future edit to STAFF_ALLOWED does not silently re-open or
+        // re-close agent_report for this tier without someone noticing. The
+        // equivalence test pins every cell of the matrix, so any drift between
+        // this list and what operation actually had goes red, not silent.
+        'operation' => [
+            'dashboard',
+            'notifications',
+            'ai',
+            'company-profile',
+            'logout',
+            'storage',
+            'applicants',
+            'employers',
+            'reports',
+            'receivable',
+            'expense_request',
+            'api',
+            'agent_report',
         ],
 
         // FRA portal accounts: app chrome only.
