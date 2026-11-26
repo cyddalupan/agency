@@ -38,6 +38,6 @@
 <div class="-mx-1 px-1 mb-2" data-tab-total>
     <div class="flex flex-wrap items-center justify-between gap-2 rounded-box bg-base-200 border border-base-300 px-3 py-2">
         <span class="text-sm font-semibold">{{ $label }}</span>
-        <span class="text-sm font-bold tabular-nums whitespace-nowrap">₱{{ number_format((float) $amount, 2) }}</span>
+        <span class="text-sm font-bold tabular-nums whitespace-nowrap">{{ peso((float) $amount) }}</span>
     </div>
 </div>
