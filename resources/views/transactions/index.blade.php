@@ -11,13 +11,13 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Bills</p>
-                <p class="text-2xl font-bold">₱{{ number_format($totalBilled, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($totalBilled) }}</p>
             </div>
         </div>
         <div class="card bg-base-100 shadow-md">
             <div class="card-body text-center">
                 <p class="text-sm opacity-60">Total Payments Received</p>
-                <p class="text-2xl font-bold text-success">₱{{ number_format($totalPaid, 2) }}</p>
+                <p class="text-2xl font-bold text-success">{{ peso($totalPaid) }}</p>
             </div>
         </div>
     </div>
@@ -49,7 +49,7 @@
                                         @if($bill->employer_id) Employer @else Worker @endif
                                     </td>
                                     <td>{{ $bill->employer->name ?? $bill->applicant?->first_name . ' ' . $bill->applicant?->last_name ?? '—' }}</td>
-                                    <td class="text-right">₱{{ number_format($bill->employer_cost ?? $bill->applicant_cost, 2) }}</td>
+                                    <td class="text-right">{{ peso($bill->employer_cost ?? $bill->applicant_cost) }}</td>
                                     <td><span class="badge badge-sm badge-{{ $bill->status === 'paid' ? 'success' : 'ghost' }}">{{ ucfirst($bill->status) }}</span></td>
                                 </tr>
                             @endforeach
@@ -87,7 +87,7 @@
                                     <td class="font-mono text-sm">{{ $payment->reference_no ?? '—' }}</td>
                                     <td>#{{ $payment->bill_id }}</td>
                                     <td>{{ $payment->bill->employer->name ?? $payment->bill->applicant?->first_name . ' ' . $payment->bill->applicant?->last_name ?? '—' }}</td>
-                                    <td class="text-right text-success">+₱{{ number_format($payment->amount, 2) }}</td>
+                                    <td class="text-right text-success">+{{ peso($payment->amount) }}</td>
                                     <td><span class="badge badge-sm badge-outline">{{ $payment->category ?? '—' }}</span></td>
                                 </tr>
                             @endforeach
