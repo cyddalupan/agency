@@ -7,7 +7,7 @@
             <h1 class="text-2xl font-bold">Commission Payments</h1>
             <p class="text-sm text-gray-500">
                 Commission #{{ $commission->id }} &mdash; 
-                &#8369;{{ number_format($commission->amount, 2) }} 
+                {{ peso($commission->amount) }} 
                 <span class="ml-2 px-2 py-0.5 text-xs rounded-full
                     @if($commission->status === 'paid') bg-green-100 text-green-700
                     @elseif($commission->status === 'partial') bg-yellow-100 text-yellow-700
@@ -25,15 +25,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p class="text-sm text-gray-500">Total Commission</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($commission->amount, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($commission->amount) }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <p class="text-sm text-gray-500">Total Paid</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($commission->paid_amount, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($commission->paid_amount) }}</p>
         </div>
         <div class="bg-white rounded-lg shadow p-4 border-l-4 border-{{ $commission->balance > 0 ? 'yellow' : 'green' }}-500">
             <p class="text-sm text-gray-500">Balance</p>
-            <p class="text-xl font-bold">&#8369;{{ number_format($commission->balance, 2) }}</p>
+            <p class="text-xl font-bold">{{ peso($commission->balance) }}</p>
         </div>
     </div>
 
@@ -56,7 +56,7 @@
                     @forelse($payments as $payment)
                         <tr>
                             <td class="px-4 py-3 text-sm">{{ $payment->payment_date->format('M d, Y') }}</td>
-                            <td class="px-4 py-3 text-sm text-right font-medium">&#8369;{{ number_format($payment->amount, 2) }}</td>
+                            <td class="px-4 py-3 text-sm text-right font-medium">{{ peso($payment->amount) }}</td>
                             <td class="px-4 py-3 text-sm">{{ $payment->reference_no ?? '—' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{{ $payment->notes ?? '—' }}</td>
                             <td class="px-4 py-3 text-sm text-center">

@@ -10,7 +10,7 @@
         <h1 class="text-xl font-bold mb-2">Record Commission Payment</h1>
         <p class="text-sm text-gray-500 mb-6">
             Commission #{{ $commission->id }} &mdash; 
-            Balance: &#8369;{{ number_format($commission->balance, 2) }}
+            Balance: {{ peso($commission->balance) }}
         </p>
 
         <form action="{{ route('commissions.commission-payments.store', $commission) }}" method="POST">
