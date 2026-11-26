@@ -94,24 +94,28 @@ class Applicant extends Model implements AuthenticatableContract
             });
         }
 
-        // Skilled: explicit skilled, or NULL-type whose position is not a
-        // household AND not a professional position (including applicants with
-        // no position at all). Professional positions must not leak into
-        // Skilled now that they have their own tab.
-        return $query->where(function ($q) use ($householdPositionIds) {
-            $professionalPositionIds = \App\Models\Position::professional()->pluck('id')->all();
-
-            $q->where('applicant_type', self::TYPE_SKILLED)                ->orWhere(function ($q2) use ($householdPositionIds, $professionalPositionIds) {
-                    $q2->whereNull('applicant_type')
-                        ->where(function ($q3) use ($householdPositionIds, $professionalPositionIds) {
-                            $q3->whereNull('position_id')
-                                ->orWhere(function ($q4) use ($householdPositionIds, $professionalPositionIds) {
-                                    $q4->whereNotIn('position_id', $householdPositionIds)
-                                        ->whereNotIn('position_id', $professionalPositionIds);
-                                });
-                        });
-                });
-        });
+        // Skilled: ONLY a position that is categorised skilled.
+        //
+        // Cyd, 2026-11-26: "SKILLED tab - display only the list of applicants
+        // with Skilled Positions", and when shown the effect she chose it
+        // explicitly.
+        //
+        // The tab now answers one question: who has a skilled position? 104.
+        //
+        // Why applicant_type is NOT trusted here. ApplicantController:404 does
+        // `$validated['applicant_type'] = $validated['applicant_type'] ?? 'skilled'`,
+        // so "skilled" is the DEFAULT for a record that never chose a type.
+        // Measured on production: 4,061 applicants carry applicant_type=
+        // 'skilled'; only 104 of them have a skilled position and 3,957 have no
+        // position at all. Filtering on that column would let those 3,957 back
+        // in through the side door and the tab would still be a lie.
+        //
+        // Nothing is deleted: those rows still exist, still appear under `all`,
+        // and get a tab the moment a position is assigned. If the intent is
+        // "who is a skilled WORKER" rather than "who holds a skilled position",
+        // that is a different card and it needs a real type field, not a
+        // creation-time default.
+        return $query->whereIn('position_id', \App\Models\Position::skilled()->pluck('id')->all());
     }
 
     /**
