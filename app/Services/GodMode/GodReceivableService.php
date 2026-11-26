@@ -935,8 +935,28 @@ class GodReceivableService
      */
     public function village(): array
     {
+        // Only agencies with something in them get a building. Verified against
+        // the live data on 2026-11-26: 15 of 20 agencies have no applicants, no
+        // agents and no receivables at all — they are test fixtures (BT2, BT3,
+        // SBX, kzuwvewwjl) and dead signups. Drawing them made a 5-client town
+        // look deserted and buried the agencies that actually matter.
+        //
+        // An empty agency is still COUNTED (see villageSummary), never silently
+        // dropped, so the screen never claims a smaller platform than exists.
         $agencies = Agency::query()
             ->select(['id', 'name', 'status', 'subdomain'])
+            ->where(function (Builder $q) {
+                $q->whereExists(fn ($sub) => $sub->selectRaw('1')
+                    ->from('receivables')
+                    ->whereColumn('receivables.agency_id', 'agencies.id')
+                    ->whereNull('receivables.deleted_at'))
+                  ->orWhereExists(fn ($sub) => $sub->selectRaw('1')
+                    ->from('applicants')
+                    ->whereColumn('applicants.agency_id', 'agencies.id'))
+                  ->orWhereExists(fn ($sub) => $sub->selectRaw('1')
+                    ->from('agents')
+                    ->whereColumn('agents.agency_id', 'agencies.id'));
+            })
             ->orderBy('name')
             ->get();
 

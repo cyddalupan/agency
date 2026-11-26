@@ -51,7 +51,10 @@
         $sprite = match ($b['state']) {
             'overdue' => 'tower_delay',
             'pending' => 'tower_initial',
-            'none'    => 'tower_notstarted',
+            // 'none' is an agency with real activity but no invoice yet —
+            // that is a town that has not been billed, not a building site.
+            // It gets the lively town sprite (lit windows), never the ruin.
+            'none'    => 'town_ok',
             default   => $shape.'_ok',
         };
 
@@ -97,8 +100,12 @@
         --v-ink:#eef3fb; --v-muted:#8b96ab; --v-gold:#ffd166;
         --v-mint:#6ee7b7; --v-rose:#fb7185; --v-line:rgba(125,211,252,.16);
         --v-panel:rgba(12,20,36,.92);
-        margin:-1.5rem -1rem 0; padding:0;
+        margin:0; padding:0; min-height:100vh;
+        display:flex; flex-direction:column;
     }
+    /* Nothing below the ground should ever be visible as bare page background. */
+    #village-page .v-ground { flex:1 1 auto; }
+    body:has(#village-page) { background:#33815d; overflow-x:hidden; }
     #village-page .v-hud {
         display:flex; align-items:center; justify-content:space-between; gap:16px;
         flex-wrap:wrap; padding:12px 20px;
@@ -128,26 +135,80 @@
 
     /* ── ground ── */
     #village-page .v-ground {
-        position:relative; min-height:calc(100vh - 150px);
-        padding:34px 22px 60px;
+        position:relative; min-height:100vh;
+        /* Village sits in the lower half of the field, not pinned to the top:
+           with only a handful of buildings a top-aligned row left two thirds
+           of the screen empty and the town looked abandoned. */
+        display:flex; flex-direction:column; justify-content:flex-end;
+        padding:120px 22px 64px; overflow:hidden;
+        /* Daytime meadow under a soft sky, not a night pit. The village was
+           reading as an abandoned graveyard because everything was dark green
+           on near-black; grass reads alive in mid-tones. */
         background:
-            radial-gradient(ellipse at 22% 16%,rgba(46,155,122,.20),transparent 44%),
-            radial-gradient(ellipse at 78% 72%,rgba(46,155,122,.15),transparent 40%),
-            linear-gradient(170deg,#173a2c 0%,#12302a 44%,#0b1f1c 100%);
+            radial-gradient(ellipse 900px 420px at 16% 2%,rgba(255,224,140,.30),transparent 60%),
+            radial-gradient(ellipse 700px 340px at 84% 6%,rgba(147,222,255,.22),transparent 62%),
+            radial-gradient(ellipse 1200px 620px at 50% 122%,rgba(24,120,84,.40),transparent 72%),
+            linear-gradient(178deg,#62b892 0%,#52ab84 20%,#46a078 50%,#3b9169 76%,#33815d 100%);
+    }
+    /* Sun + clouds: cheap, static, but they read as "daytime/sky" instantly. */
+    #village-page .v-sky {
+        position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+    }
+    #village-page .v-sun {
+        position:absolute; top:26px; right:8%; width:74px; height:74px; border-radius:50%;
+        background:radial-gradient(circle,#fff4c9,#ffd166 55%,rgba(255,209,102,0) 72%);
+        filter:blur(1px); opacity:.9;
+    }
+    #village-page .v-cloud {
+        position:absolute; height:26px; border-radius:999px;
+        background:rgba(233,242,255,.14); filter:blur(6px);
+    }
+    #village-page .v-cloud.c1 { top:60px; left:6%; width:170px; }
+    #village-page .v-cloud.c2 { top:118px; left:38%; width:130px; height:20px; }
+    #village-page .v-cloud.c3 { top:40px; left:64%; width:150px; height:22px; }
+    /* Rolling hills at the horizon, drawn behind the buildings. */
+    /* A winding path through the middle of the field: gives the eye something
+       to travel on instead of a flat void between horizon and village. */
+    #village-page .v-path {
+        position:absolute; left:-10%; right:-10%; top:56%; height:120px; z-index:0;
+        background:linear-gradient(180deg,rgba(214,190,140,.34),rgba(196,170,120,.18));
+        border-radius:50%;
+        filter:blur(14px); transform:rotate(-2.2deg);
+    }
+    /* Scattered trees. Purely decorative, placed with inline styles so they
+       are deterministic rather than randomly hopping on each render. */
+    #village-page .v-tree {
+        position:absolute; z-index:1; border-radius:50% 50% 46% 46%;
+        background:radial-gradient(circle at 35% 30%,#4fbf90,#2f8a63 70%);
+        box-shadow:0 8px 14px rgba(8,48,34,.30);
+    }
+    #village-page .v-tree::after {
+        content:""; position:absolute; left:50%; bottom:-9px; translate:-50% 0;
+        width:4px; height:11px; background:#5a4630; border-radius:2px;
+    }
+    #village-page .v-hills {
+        position:absolute; left:-5%; right:-5%; bottom:34%; height:190px; z-index:0;
+        background:
+            radial-gradient(ellipse 46% 100% at 24% 100%,#5cbf96 60%,transparent 61%),
+            radial-gradient(ellipse 40% 92% at 62% 100%,#4fb488 60%,transparent 61%),
+            radial-gradient(ellipse 34% 80% at 88% 100%,#57bb92 60%,transparent 61%);
+        opacity:.55; filter:blur(.4px);
     }
     #village-page .v-ground::before {
         content:""; position:absolute; inset:0; opacity:.55; pointer-events:none;
         background-image:
-            radial-gradient(circle at 12% 22%,rgba(126,224,192,.10) 0 60px,transparent 61px),
-            radial-gradient(circle at 88% 32%,rgba(126,224,192,.08) 0 76px,transparent 77px),
-            radial-gradient(circle at 42% 84%,rgba(126,224,192,.09) 0 66px,transparent 67px),
-            radial-gradient(circle at 66% 10%,rgba(126,224,192,.07) 0 52px,transparent 53px),
-            radial-gradient(circle at 32% 52%,rgba(126,224,192,.06) 0 48px,transparent 49px);
+            radial-gradient(circle at 12% 22%,rgba(255,255,255,.16) 0 60px,transparent 61px),
+            radial-gradient(circle at 88% 32%,rgba(20,90,64,.16) 0 76px,transparent 77px),
+            radial-gradient(circle at 42% 84%,rgba(255,255,255,.12) 0 66px,transparent 67px),
+            radial-gradient(circle at 66% 10%,rgba(20,90,64,.12) 0 52px,transparent 53px),
+            radial-gradient(circle at 32% 52%,rgba(255,255,255,.10) 0 48px,transparent 49px),
+            radial-gradient(circle at 76% 64%,rgba(20,90,64,.10) 0 58px,transparent 59px),
+            radial-gradient(circle at 8% 78%,rgba(255,255,255,.09) 0 44px,transparent 45px);
     }
     #village-page .v-grid {
         position:relative; z-index:2;
         display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
-        gap:18px 6px; align-items:end;
+        gap:56px 6px; align-items:end;
     }
     @media (max-width:1200px){ #village-page .v-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
     @media (max-width:900px) { #village-page .v-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
@@ -164,11 +225,11 @@
     #village-page .v-plot:hover .v-sprite { transform:translateY(-7px) scale(1.06); }
     #village-page .v-plot:focus-visible { outline:2px solid var(--v-gold); outline-offset:6px; border-radius:12px; }
     #village-page .v-plate {
-        position:absolute; bottom:26px; left:50%; translate:-50% 0;
-        width:86%; max-width:150px; height:44px; border-radius:50%; z-index:0;
-        background:radial-gradient(ellipse,rgba(18,48,42,.95),rgba(13,36,32,.4));
-        border:1px solid rgba(110,231,183,.14);
-        box-shadow:inset 0 5px 12px rgba(0,0,0,.6);
+        position:absolute; bottom:30px; left:50%; translate:-50% 0;
+        width:88%; max-width:204px; height:56px; border-radius:50%; z-index:0;
+        background:radial-gradient(ellipse,rgba(30,96,70,.42),rgba(30,96,70,.12));
+        border:1px solid rgba(255,255,255,.20);
+        box-shadow:inset 0 4px 10px rgba(8,48,34,.25);
         transition:box-shadow .2s, border-color .2s;
     }
     #village-page .v-plot[data-state="pending"] .v-plate {
@@ -178,7 +239,7 @@
         border-color:rgba(251,113,133,.4); box-shadow:inset 0 5px 12px rgba(0,0,0,.6),0 0 26px -6px rgba(251,113,133,.6);
     }
     #village-page .v-sprite {
-        position:relative; z-index:1; width:112px; height:134px;
+        position:relative; z-index:1; width:158px; height:190px;
         transition:transform .18s ease;
         filter:drop-shadow(0 12px 14px rgba(0,0,0,.65));
     }
@@ -189,21 +250,21 @@
 
     /* ── nameplate ── */
     #village-page .v-lbl {
-        position:relative; z-index:3; margin-top:-6px; width:100%; max-width:186px;
-        background:linear-gradient(180deg,rgba(13,24,42,.97),rgba(9,17,31,.97));
-        border:1px solid var(--v-line); border-radius:8px; padding:4px 7px;
-        box-shadow:0 4px 12px rgba(0,0,0,.5);
+        position:relative; z-index:3; margin-top:-10px; width:100%; max-width:200px;
+        background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(240,247,255,.97));
+        border:1px solid rgba(20,60,45,.22); border-radius:8px; padding:4px 7px;
+        box-shadow:0 4px 12px rgba(10,40,30,.28);
     }
     /* Agency names are long ("Gulf Horizon International Services Inc.").
        Truncating to one line hid WHO the building is, which defeats the whole
        screen. Two lines with the full name in the modal and the tooltip. */
     #village-page .v-lbl .v-n {
-        font-size:10px; font-weight:700; color:var(--v-ink); line-height:1.25;
+        font-size:10px; font-weight:700; color:#12283f; line-height:1.25;
         display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
         overflow:hidden; word-break:break-word;
     }
     #village-page .v-lbl .v-st {
-        font-size:8px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+        font-size:8.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
         margin-top:2px; display:flex; align-items:center; justify-content:center; gap:4px;
     }
     #village-page .v-dot { width:5px; height:5px; border-radius:50%; display:inline-block; }
@@ -269,14 +330,42 @@
             </div>
         </div>
         <div class="v-res">
-            <div class="v-chip" data-open="modal-payments"><i>💰</i>{{ $service->formatMoney($summaryThis['collected']) }}</div>
-            <div class="v-chip" data-open="modal-payments"><i>🏦</i>{{ $service->formatMoney($summaryRolling['collected']) }}</div>
-            <div class="v-chip" data-open="modal-agencies"><i>🏗️</i>{{ $villageSummary['billed'] }}</div>
-            <div class="v-chip" data-open="modal-payments" style="color:var(--v-rose)"><i>⚠️</i>{{ $villageSummary['attention'] }}</div>
+            <div class="v-chip" data-open="modal-payments" title="Collected this month"><i>💰</i>{{ $service->formatMoney($summaryThis['collected']) }}</div>
+            <div class="v-chip" data-open="modal-payments" title="Collected, last 12 months"><i>🏦</i>{{ $service->formatMoney($summaryRolling['collected']) }}</div>
+            <div class="v-chip" data-open="modal-agencies" title="Billed agencies"><i>🏗️</i>{{ $villageSummary['billed'] }}</div>
+            <div class="v-chip" data-open="modal-payments" title="Needs attention" style="color:var(--v-rose)"><i>⚠️</i>{{ $villageSummary['attention'] }}</div>
+            {{-- The layout header is gone on this page, so sign-out lives here
+                 or the operator has no way to leave a god session. --}}
+            <form method="POST" action="{{ route('godmode.logout') }}" style="display:inline">
+                @csrf
+                <button type="submit" class="v-chip" style="font-size:11px">Sign out</button>
+            </form>
         </div>
     </div>
 
     <div class="v-ground">
+        <div class="v-sky">
+            <div class="v-sun"></div>
+            <div class="v-cloud c1"></div>
+            <div class="v-cloud c2"></div>
+            <div class="v-cloud c3"></div>
+        </div>
+        <div class="v-hills"></div>
+        <div class="v-path"></div>
+        {{-- Scenery with depth: small far trees up top, larger near trees lower
+             down. Fixed positions, so the landscape never reshuffles. --}}
+        @foreach ([
+            ['left:3%','top:24%',34,0.55],['left:14%','top:30%',28,0.6],['left:26%','top:22%',30,0.55],
+            ['left:39%','top:29%',26,0.6],['left:52%','top:20%',32,0.55],['left:65%','top:28%',28,0.6],
+            ['left:77%','top:23%',34,0.55],['left:89%','top:31%',30,0.6],
+            ['left:6%','top:46%',52,1],['left:19%','top:56%',44,1],['left:31%','top:44%',48,1],
+            ['left:45%','top:58%',40,1],['left:57%','top:45%',54,1],['left:71%','top:57%',46,1],
+            ['left:84%','top:43%',50,1],['left:94%','top:58%',42,1],
+            ['left:11%','top:70%',62,1],['left:37%','top:73%',56,1],['left:60%','top:69%',60,1],
+            ['left:88%','top:72%',58,1],
+        ] as $tree)
+            <div class="v-tree" style="{{ $tree[0] }};{{ $tree[1] }};width:{{ $tree[2] }}px;height:{{ $tree[2] }}px;opacity:{{ $tree[3] }}"></div>
+        @endforeach
         <div class="v-grid">
             @foreach ($render as $b)
                 @php $meta = $stateMeta[$b['state']]; @endphp

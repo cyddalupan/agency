@@ -19,6 +19,11 @@
     or throw.
 --}}
 <body class="min-h-screen bg-base-200 text-base-content">
+    {{-- The village draws its own chrome, so it opts out of this header.
+         Cyd 2026-11-26: a second bar above the village defeats the point of
+         making the console the village. The sign-out it carried lives in the
+         village HUD now. --}}
+    @unless (View::hasSection('fullbleed'))
     <header class="bg-neutral text-neutral-content">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             {{-- Cyd 2026-11-26: the console IS the village. There is no
@@ -40,6 +45,7 @@
             </div>
         </div>
     </header>
+    @endunless
 
     {{-- The village dashboard is full-bleed: it is the whole page, not a card
          inside the console's 7xl container. `@yield('fullbleed')` renders
