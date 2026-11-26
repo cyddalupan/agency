@@ -239,13 +239,31 @@ user_for() {
 # --- decode once, bounded ----------------------------------------------------
 DECODED="$(mktemp /tmp/landas-ddl-audit.XXXXXX)"
 
+# Decoding is capped at MAX_BYTES of *decoded text*. `head -c` closes the pipe,
+# mysqlbinlog dies of SIGPIPE, and 2>/dev/null hides the only evidence. That is
+# a silent partial answer: the reconciliation pass below counts rows inside
+# $DECODED, so it reconciles perfectly on a truncated buffer and cannot see the
+# discarded bytes at all. So the truncation is detected here, at the cut, and
+# carried to the exit codes.
+#
+# pipefail is scoped to this one pipeline on purpose. Several other pipelines in
+# this script legitimately exit non-zero mid-stream (grep with no match, head in
+# a filter), and a global `set -o pipefail` would make those fatal.
+TRUNCATED=0
+set -o pipefail
 mysqlbinlog ${SINCE:+--start-datetime="$SINCE"} \
             ${UNTIL:+--stop-datetime="$UNTIL"} \
             "${BINLOGS[@]}" 2>/dev/null \
     | head -c "$MAX_BYTES" > "$DECODED"
+set +o pipefail
 
+# The last thing mysqlbinlog wrote before it was cut is the last event we can
+# claim to have seen. Report it, so a partial answer says where it stops.
 if [ "$(wc -c < "$DECODED")" -ge "$MAX_BYTES" ]; then
-    log "WARNING: decode stopped at ${MAX_BYTES} bytes; narrow --since for a complete answer"
+    TRUNCATED=1
+    LAST_SEEN="$(grep -a '^# at ' "$DECODED" 2>/dev/null | tail -1 | awk '{print $NF}')"
+    [ -n "$LAST_SEEN" ] || LAST_SEEN="unknown"
+    log "WARNING: decode stopped at ${MAX_BYTES} bytes (PARTIAL); last event decoded ${LAST_SEEN}; narrow --since for a complete answer"
 fi
 
 # --- live thread state (fallback B), read once, used only for recent events --
@@ -667,8 +685,23 @@ else
     RECONCILED=1
 fi
 
-log "done: $((COUNT - REPLAY - UNATTR)) DDL statement(s) on '$PROTECTED_DB', $DESTRUCTIVE destructive, $REPLAY restore-replay, $UNATTR unattributed, $RAW_COUNT raw ($OTHER on other schemas)"
+# A partial scan must never print the normal summary. The numbers below are
+# true of the truncated buffer and false of the binlog, and a line beginning
+# `done:` is read as complete coverage. That is the whole defect: the tool's
+# one integrity check (reconciliation) passes on a truncated run. So when
+# TRUNCATED=1 the summary is a PARTIAL line that names the cap and the last
+# timestamp actually reached, or the counts are prefixed as partial without
+# claiming a limit we do not know.
+if [ "$TRUNCATED" = "1" ]; then
+    log "PARTIAL: scan incomplete${LAST_SEEN:+ (last event decoded ${LAST_SEEN})} - $((COUNT - REPLAY - UNATTR)) DDL statement(s) found on '$PROTECTED_DB' so far, $DESTRUCTIVE destructive, $REPLAY restore-replay, $UNATTR unattributed, $RAW_COUNT raw ($OTHER on other schemas). These counts cover ONLY the first ${MAX_BYTES} bytes of decoded binlog; statements after that point were not examined. Do not read this as complete. Re-run with a narrower --since/--until."
+else
+    log "done: $((COUNT - REPLAY - UNATTR)) DDL statement(s) on '$PROTECTED_DB', $DESTRUCTIVE destructive, $REPLAY restore-replay, $UNATTR unattributed, $RAW_COUNT raw ($OTHER on other schemas)"
+fi
 
+# Exit precedence. A known destructive statement outranks an incomplete scan:
+# monitors key on 2, and downgrading a real wipe to "partial" would be worse
+# than reporting the wipe with a caveat. Reconciliation failure stays 3.
 [ "$RECONCILED" = "1" ] || exit 3
 { [ "$DESTRUCTIVE" -gt 0 ] || [ "$UNATTR_DESTRUCTIVE" -gt 0 ]; } && exit 2
+[ "$TRUNCATED" = "1" ] && exit 4
 exit 0
