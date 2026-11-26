@@ -86,7 +86,7 @@
         <div class="card bg-base-100 shadow-md">
             <div class="card-body py-4 px-6 flex flex-row items-center justify-between">
                 <span class="text-sm uppercase tracking-wider font-semibold opacity-60">Total Amount</span>
-                <span class="text-2xl font-extrabold font-mono">₱{{ number_format($grandTotal, 2) }}</span>
+                <span class="text-2xl font-extrabold font-mono">{{ peso($grandTotal) }}</span>
             </div>
         </div>
     @endif

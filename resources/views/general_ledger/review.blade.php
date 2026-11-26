@@ -20,7 +20,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <span class="badge badge-lg badge-primary gap-2 py-4 border-0 whitespace-nowrap">
                     <span class="font-bold">{{ number_format($total['count']) }}</span> transactions
-                    · <span class="font-mono">₱{{ number_format($total['amount'], 2) }}</span>
+                    · <span class="font-mono">{{ peso($total['amount']) }}</span>
                 </span>
                 <a href="{{ route('general_ledger.review.export', $account) }}" class="btn btn-sm btn-secondary shadow-md whitespace-nowrap">⬇️ Export CSV</a>
                 <a href="{{ route('general_ledger.index') }}" class="btn btn-sm btn-ghost bg-white/20 hover:bg-white/30 whitespace-nowrap">← Back</a>
