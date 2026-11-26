@@ -179,10 +179,18 @@
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->total() }} matching</span>
                 @endif
             </div>
-            <a href="{{ route('applicants.withdrawn.export', request()->only(['search', 'status', 'gender', 'employer', 'country', 'branch'])) }}"
-               class="btn btn-sm btn-outline btn-success gap-1">
-                <span>📥</span> Export to CSV
-            </a>
+            <div class="flex gap-2">
+                {{-- except(['page']) rather than a hand-listed subset: a
+                     subset silently dropped the Part A filters. --}}
+                <a href="{{ route('applicants.withdrawn.export', request()->except(['page'])) }}"
+                   class="btn btn-sm btn-outline btn-success gap-1">
+                    <span>📥</span> Export to CSV
+                </a>
+                <a href="{{ route('applicants.withdrawn.export.pdf', request()->except(['page', 'print'])) }}"
+                   class="btn btn-sm btn-outline btn-error gap-1">
+                    <span>📄</span> Export to PDF
+                </a>
+            </div>
         </div>
 
         @php ob_start(); @endphp

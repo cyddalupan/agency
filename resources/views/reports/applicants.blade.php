@@ -91,6 +91,12 @@
                         </svg>
                         Export CSV
                     </a>
+                    <a href="{{ route('reports.applicants.export.pdf', request()->only(['status_code', 'country_id', 'employer_id', 'date_from', 'date_to'])) }}" class="btn btn-outline btn-sm btn-error">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Export PDF
+                    </a>
                     <button onclick="window.print()" class="btn btn-outline btn-sm">🖨️ Print</button>
                 </div>
             </div>

@@ -217,7 +217,11 @@ class ReportController extends Controller
             ->header('Content-Disposition', 'inline; filename="expense-report-' . $applicant->id . '.pdf"');
     }
 
-    public function applicantsExport(Request $request): StreamedResponse
+    /**
+     * The one query behind the Reports > Applicants CSV and PDF
+     * (card 6b07df1aeec6c1056c38abad). Both must return the same rows.
+     */
+    private function applicantsReportQuery(Request $request)
     {
         $isSuperAdmin = auth()->user()->user_type === 'super_admin';
         $agencyId = auth()->user()->agency_id;
@@ -227,7 +231,7 @@ class ReportController extends Controller
         // so the columns it renders were resolved a row at a time.
         $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'branch'])->forBranchUser();
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             $query->where('agency_id', $agencyId);
         }
 
@@ -247,20 +251,41 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $applicants = $query->latest()->get();
+        return $query->latest();
+    }
 
-        // The columns are the ones the screen shows, in the same order — this
-        // export is that table, downloadable. It used to emit a different set
-        // (First/Last Name split, plus Gender and Employer) so an operator who
-        // exported what they were looking at got columns they had never seen
-        // and none of Position, Agent or Branch.
-        //
+    private function applicantsReportHeaders(): array
+    {
         // The agent heading goes through agent_term(): 'Agent' on Gulf,
         // 'Marketing Staff' on CSDI/FINAS. Same list, different word.
-        $headers = [
+        return [
             'Name', 'Position', agent_header('Agent'), 'Branch',
             'Status', 'Country', 'Contact', 'Email', 'Created At',
         ];
+    }
+
+    private function applicantsReportRow(Applicant $applicant): array
+    {
+        return [
+            trim($applicant->first_name.' '.$applicant->last_name),
+            $applicant->position?->name ?? '',
+            $applicant->agent?->name ?? '',
+            $applicant->branch?->name ?? '',
+            // ->label, not ->name: StatusCode has no `name` column, so this
+            // read returned null and the fallback printed 'N/A' on every row
+            // of every export.
+            $applicant->statusCode?->label ?? '',
+            $applicant->country?->name ?? '',
+            $applicant->contact ?? '',
+            $applicant->email ?? '',
+            $applicant->created_at?->format('Y-m-d') ?? '',
+        ];
+    }
+
+    public function applicantsExport(Request $request): StreamedResponse
+    {
+        $applicants = $this->applicantsReportQuery($request)->get();
+        $headers = $this->applicantsReportHeaders();
 
         $callback = function () use ($applicants, $headers) {
             $file = fopen('php://output', 'w');
@@ -268,21 +293,7 @@ class ReportController extends Controller
             fputcsv($file, $headers);
 
             foreach ($applicants as $applicant) {
-                fputcsv($file, [
-                    trim($applicant->first_name.' '.$applicant->last_name),
-                    $applicant->position?->name ?? '',
-                    $applicant->agent?->name ?? '',
-                    $applicant->branch?->name ?? '',
-                    // ->label, not ->name: StatusCode has no `name` column, so
-                    // this read returned null and the fallback printed 'N/A'
-                    // on every row of every export. The screen always used
-                    // ->label; this is the one place that did not.
-                    $applicant->statusCode?->label ?? '',
-                    $applicant->country?->name ?? '',
-                    $applicant->contact ?? '',
-                    $applicant->email ?? '',
-                    $applicant->created_at?->format('Y-m-d') ?? '',
-                ]);
+                fputcsv($file, $this->applicantsReportRow($applicant));
             }
 
             fclose($file);
@@ -292,6 +303,78 @@ class ReportController extends Controller
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename=applicants-report.csv',
         ]);
+    }
+
+    /**
+     * Same rows and columns as the CSV, as a landscape PDF.
+     */
+    /**
+     * Same cap as the applicant module PDFs: DomPDF holds the whole document
+     * in memory, and a 256M mod_php limit cannot render Gulf's full applicant
+     * set. CSV stays unlimited because it streams.
+     */
+    private const APPLICANTS_REPORT_PDF_LIMIT = 500;
+
+    public function applicantsExportPdf(Request $request)
+    {
+        $total = $this->applicantsReportQuery($request)->count();
+
+        if ($total > self::APPLICANTS_REPORT_PDF_LIMIT) {
+            return response()->view('applicants.pdf.too-many', [
+                'total' => $total,
+                'limit' => self::APPLICANTS_REPORT_PDF_LIMIT,
+                'csvUrl' => route('reports.applicants.export', $request->only(['status_code', 'country_id', 'employer_id', 'date_from', 'date_to'])),
+            ], 200);
+        }
+
+        $applicants = $this->applicantsReportQuery($request)->get();
+
+        $rows = $applicants->map(fn ($applicant) => $this->applicantsReportRow($applicant));
+
+        $pdf = Pdf::loadView('applicants.pdf.export', [
+            'headers' => $this->applicantsReportHeaders(),
+            'rows' => $rows,
+            'agency' => auth()->user()->agency,
+            'title' => 'Applicants Report',
+            'filters' => $this->describeApplicantsReportFilters($request),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        if (method_exists($pdf, 'set_timeout')) {
+            $pdf->set_timeout(60);
+        }
+
+        return response($pdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="applicants-report.pdf"');
+    }
+
+    /**
+     * Filters in play, printed on the PDF so the sheet says what it is.
+     */
+    private function describeApplicantsReportFilters(Request $request): array
+    {
+        $parts = [];
+        if ($request->filled('status_code')) {
+            $label = \App\Models\StatusCode::where('code', $request->status_code)->value('label');
+            $parts[] = 'Status: '.($label ?: $request->status_code);
+        }
+        if ($request->filled('country_id')) {
+            $name = \App\Models\Country::whereKey($request->country_id)->value('name');
+            if ($name) { $parts[] = 'Country: '.$name; }
+        }
+        if ($request->filled('employer_id')) {
+            $name = \App\Models\Employer::whereKey($request->employer_id)->value('name');
+            if ($name) { $parts[] = 'Employer: '.$name; }
+        }
+        if ($request->filled('date_from')) {
+            $parts[] = 'From: '.$request->date_from;
+        }
+        if ($request->filled('date_to')) {
+            $parts[] = 'To: '.$request->date_to;
+        }
+
+        return $parts;
     }
 
     public function agents(Request $request): \Illuminate\Contracts\View\View

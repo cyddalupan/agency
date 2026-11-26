@@ -189,10 +189,16 @@
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->total() }} matching</span>
                 @endif
             </div>
-            <a href="{{ route('applicants.export', request()->except(['page'])) }}"
-               class="btn btn-sm btn-outline btn-success gap-1">
-                <span>📥</span> Export to CSV
-            </a>
+            <div class="flex gap-2">
+                <a href="{{ route('applicants.export', request()->except(['page'])) }}"
+                   class="btn btn-sm btn-outline btn-success gap-1">
+                    <span>📥</span> Export to CSV
+                </a>
+                <a href="{{ route('applicants.export.pdf', request()->except(['page', 'print'])) }}"
+                   class="btn btn-sm btn-outline btn-error gap-1">
+                    <span>📄</span> Export to PDF
+                </a>
+            </div>
         </div>
 
         @if($applicants->count())

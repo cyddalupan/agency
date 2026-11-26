@@ -18,6 +18,7 @@ use App\Models\Skill;
 use App\Models\StatusCode;
 use App\Services\JobSlotService;
 use App\Services\SensitiveActionLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Support\ApplicantDuplicateChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1838,6 +1839,182 @@ class ApplicantController extends Controller
     }
 
     /**
+     * The one export query (card 6b07df1aeec6c1056c38abad).
+     *
+     * CSV and PDF must return the same rows for the same filters, so they
+     * build the query here and nowhere else. If this ever grows a second
+     * copy, the exports will drift — that already happened once on
+     * 2026-10-22 and is the reason applyApplicantFilters() exists.
+     */
+    private function applicantExportQuery(Request $request, bool $withdrawn = false)
+    {
+        // Same rule as the lists: withdrawn & repat statuses belong to their
+        // own tab and never appear in the main applicants export.
+        $withdrawnStatuses = [35, 38, 50];
+
+        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator'])
+            ->forBranchUser()
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($withdrawn) {
+            $query->whereIn('status_code', $withdrawnStatuses);
+        } else {
+            $query->whereNotIn('status_code', $withdrawnStatuses);
+        }
+
+        $this->applyApplicantFilters($query, $request, 'export');
+
+        return $query;
+    }
+
+    /**
+     * Applicant tables as PDF (card 6b07df1aeec6c1056c38abad).
+     *
+     * Rows and columns come from applicantExportQuery(),
+     * applicantCsvHeaders() and applicantCsvRow() — the same three used by
+     * the CSV — so a PDF can never disagree with the CSV it sits beside.
+     */
+    /**
+     * Row ceiling for a single PDF.
+     *
+     * DomPDF builds the whole document in memory before it emits a byte, so
+     * a wide applicant table costs roughly 220MB per 1,000 rows. Production
+     * runs mod_php at a 256M memory_limit, which means an unrestricted export
+     * of Gulf's full applicant set (about 4,800 rows) cannot complete — it
+     * dies with a 500 rather than returning anything. Measured 2026-11-26 at
+     * a 256M limit: 300 rows = 88MB, 500 = 142MB, 700 = 194MB, and 900 rows
+     * already fails. The cap is 500 to keep real headroom under concurrent
+     * workers rather than sitting right at the wall.
+     *
+     * So PDF is capped and says so. CSV remains the unlimited export: it
+     * streams row by row and has no such ceiling. A PDF that silently omits
+     * rows would be worse than one that tells you to narrow the filters.
+     */
+    private const PDF_ROW_LIMIT = 500;
+
+    public function exportPdf(Request $request)
+    {
+        return $this->renderApplicantPdf($request, false);
+    }
+
+    public function withdrawnExportPdf(Request $request)
+    {
+        abort_unless(auth()->user()->canViewBackoutRepat(), 403, 'This folder is restricted to Admin and Accounting.');
+
+        return $this->renderApplicantPdf($request, true);
+    }
+
+    private function renderApplicantPdf(Request $request, bool $withdrawn)
+    {
+        $total = $this->applicantExportQuery($request, $withdrawn)->count();
+
+        if ($total > self::PDF_ROW_LIMIT) {
+            return response()->view('applicants.pdf.too-many', [
+                'total' => $total,
+                'limit' => self::PDF_ROW_LIMIT,
+                'csvUrl' => route($withdrawn ? 'applicants.withdrawn.export' : 'applicants.export', $request->except(['page', 'print'])),
+            ], 200);
+        }
+
+        $applicants = $this->applicantExportQuery($request, $withdrawn)->get();
+
+        SensitiveActionLogger::dataExport(
+            'applicant',
+            auth()->user()->name.' exported applicant data as PDF.'
+        );
+
+        $rows = $applicants->map(fn ($applicant) => $this->applicantCsvRow($applicant));
+
+        $pdf = Pdf::loadView('applicants.pdf.export', [
+            'headers' => $this->applicantCsvHeaders(),
+            'rows' => $rows,
+            'agency' => auth()->user()->agency,
+            'title' => $withdrawn ? 'Backout, Cancelled & Repat' : 'Applicants',
+            'filters' => $this->describeApplicantFilters($request),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        // A large filtered set can take a while; give it room rather than
+        // shipping a request that dies at the default timeout.
+        if (method_exists($pdf, 'set_timeout')) {
+            $pdf->set_timeout(60);
+        }
+
+        $filename = ($withdrawn ? 'withdrawn-repat-applicants' : 'applicants').'.pdf';
+
+        return response($pdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
+    }
+
+    /**
+     * Human-readable list of the filters in play, printed on the PDF so an
+     * exported sheet always says what subset it represents.
+     */
+    private function describeApplicantFilters(Request $request): array
+    {
+        $parts = [];
+
+        if ($request->filled('search')) {
+            $parts[] = 'Search: "'.$request->input('search').'"';
+        }
+        $statuses = $this->filterStatusCodes($request);
+        if ($statuses !== []) {
+            $labels = StatusCode::whereIn('code', $statuses)->pluck('label')->all();
+            $parts[] = 'Status: '.(count($labels) ? implode(', ', $labels) : implode(', ', $statuses));
+        }
+        if ($request->filled('gender')) {
+            $parts[] = 'Gender: '.ucfirst($request->input('gender'));
+        }
+        if ($request->filled('employer')) {
+            $name = Employer::whereKey($request->integer('employer'))->value('name');
+            if ($name) {
+                $parts[] = 'Employer: '.$name;
+            }
+        }
+        if ($request->filled('country')) {
+            $name = Country::whereKey($request->integer('country'))->value('name');
+            if ($name) {
+                $parts[] = 'Country: '.$name;
+            }
+        }
+        if ($request->filled('position')) {
+            $name = Position::whereKey($request->integer('position'))->value('name');
+            if ($name) {
+                $parts[] = 'Position: '.$name;
+            }
+        }
+        if ($request->filled('branch')) {
+            $name = Branch::whereKey($request->integer('branch'))->value('name');
+            if ($name) {
+                $parts[] = 'Branch: '.$name;
+            }
+        }
+        if ($request->filled('applicant_no')) {
+            $parts[] = 'Applicant No: '.$request->input('applicant_no');
+        }
+        if ($request->integer('age_min') > 0) {
+            $parts[] = 'Age from: '.$request->integer('age_min');
+        }
+        if ($request->integer('age_max') > 0) {
+            $parts[] = 'Age to: '.$request->integer('age_max');
+        }
+        if ($request->filled('created_from')) {
+            $parts[] = 'Registered from: '.$request->input('created_from');
+        }
+        if ($request->filled('created_to')) {
+            $parts[] = 'Registered to: '.$request->input('created_to');
+        }
+        $missing = (array) $request->input('missing_docs', []);
+        if ($missing !== []) {
+            $parts[] = 'Missing documents: '.implode(', ', $missing);
+        }
+
+        return $parts;
+    }
+
+    /**
      * Canonical Applicant Module CSV layout (CYD card 2026-11-06):
      * Name, Contact#, Gender, Age, Branch, Agent, Position, Country, FRA,
      * Status, Created At, Encoder.
@@ -1872,21 +2049,7 @@ class ApplicantController extends Controller
 
     public function export(Request $request)
     {
-        // Same rule as index(): withdrawn & repat statuses are excluded from
-        // the main applicants export — they have their own Withdrawn & Repat tab.
-        $withdrawnStatuses = [35, 38, 50];
-
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator'])
-            ->forBranchUser()
-            ->whereNotIn('status_code', $withdrawnStatuses)
-            ->orderBy('created_at', 'desc');
-
-        // Same filter stack as the list — literally the same method, so the
-        // export can never return a different set of rows than the screen
-        // it was launched from. (Toybits filtering fix, 2026-10-22.)
-        $this->applyApplicantFilters($query, $request, 'export');
-
-        $applicants = $query->get();
+        $applicants = $this->applicantExportQuery($request)->get();
 
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported applicant data.');
@@ -1921,17 +2084,7 @@ class ApplicantController extends Controller
     {
         abort_unless(auth()->user()->canViewBackoutRepat(), 403, 'This folder is restricted to Admin and Accounting.');
 
-        $withdrawnStatuses = [35, 38, 50]; // Repatriated, Cancel, Backout
-
-        $query = Applicant::with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator'])
-            ->forBranchUser()
-            ->whereIn('status_code', $withdrawnStatuses)
-            ->orderBy('created_at', 'desc');
-
-        // Same filter stack as the withdrawn list.
-        $this->applyApplicantFilters($query, $request, 'export');
-
-        $applicants = $query->get();
+        $applicants = $this->applicantExportQuery($request, true)->get();
 
         // Log the export
         SensitiveActionLogger::dataExport('applicant', auth()->user()->name.' exported withdrawn & repat applicant data.');

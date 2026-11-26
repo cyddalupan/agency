@@ -475,6 +475,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Applicant routes - recruiter and other agency roles
     Route::group([], function () {
         Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
+        Route::get('applicants/export-pdf', [ApplicantController::class, 'exportPdf'])->name('applicants.export.pdf');
         // Infinite-scroll batch feed (card 6b07e35d8d2e571a7ac9ca6b). Must
         // precede the resource route, or 'feed' is captured as an applicant id.
         Route::get('applicants/feed', [ApplicantController::class, 'feed'])->name('applicants.feed');
@@ -493,6 +494,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     });
 
     Route::get('applicants/withdrawn-repat/export', [ApplicantController::class, 'withdrawnExport'])->name('applicants.withdrawn.export');
+        Route::get('applicants/withdrawn-repat/export-pdf', [ApplicantController::class, 'withdrawnExportPdf'])->name('applicants.withdrawn.export.pdf');
         Route::get('applicants/withdrawn-repat', [ApplicantController::class, 'withdrawn'])->name('applicants.withdrawn');
         // Bulk CSV upload (must precede the resource route so 'bulk' is not captured as an applicant id)
         Route::get('applicants/bulk', [ApplicantController::class, 'bulkUpload'])->name('applicants.bulk');
@@ -843,6 +845,7 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/applicants', [ReportController::class, 'applicants'])->name('applicants');
         Route::get('/applicants/export', [ReportController::class, 'applicantsExport'])->name('applicants.export');
+        Route::get('/applicants/export-pdf', [ReportController::class, 'applicantsExportPdf'])->name('applicants.export.pdf');
         Route::get('/agents', [ReportController::class, 'agents'])->name('agents');
         Route::get('/agents/export', [ReportController::class, 'agentsExport'])->name('agents.export');
         // Card 6af81c30 part 3: Welfare Report replaces Agent Report on FINAS/CSDI.
