@@ -895,6 +895,142 @@ class GodReceivableService
         return Agency::query()->orderBy('name')->pluck('name', 'id')->all();
     }
 
+    // ── village ──────────────────────────────────────────────────────
+    //
+    // The village dashboard draws one building per agency. A building's look
+    // encodes TWO independent axes, kept apart on purpose:
+    //
+    //   • the ACCOUNT state (`agencies.status`: active / inactive / pending) —
+    //     who is allowed to log in. That is the building's SHAPE and whether
+    //     it is dimmed, and it comes from the agency row, never from money.
+    //   • the MONEY state (below) — how the receivables are settling. That is
+    //     the building's COLOUR (`state`).
+    //
+    // Collapsing the two into one badge is how a screen starts lying: an
+    // inactive agency with money still coming in is not "delayed", and an
+    // active agency that has never been billed is not "paying".
+    //
+    // The money states derive from rows that already exist, no new columns:
+    //   none     — no receivables at all. Nothing has been billed yet.
+    //   settled  — bills exist and nothing is pending.
+    //   pending  — bills exist, some still pending, none overdue.
+    //   overdue  — at least one pending bill is more than OVERDUE_DAYS old.
+    //
+    // Cancelled/soft-deleted rows are excluded exactly as `narrowedQuery()`
+    // excludes them, so the village and the ledger cannot disagree about
+    // which rows count.
+
+    /** A pending bill older than this many days is overdue. */
+    public const OVERDUE_DAYS = 30;
+
+    /**
+     * Every agency, with the shape and colour the village renders.
+     *
+     * One query for the agencies, one aggregate for the money — not a query
+     * per building.
+     *
+     * @return array<int, array{id:int,name:string,status:string,subdomain:?string,
+     *                          state:string,collected:string,outstanding:string,
+     *                          pending_count:int,overdue_count:int,last_date:?string}>
+     */
+    public function village(): array
+    {
+        $agencies = Agency::query()
+            ->select(['id', 'name', 'status', 'subdomain'])
+            ->orderBy('name')
+            ->get();
+
+        // One pass over the live rows, grouped by agency. The overdue flag is
+        // computed in SQL so the age is not judged by PHP's clock against a
+        // date the database wrote.
+        $overdueDays = $this->ageDaysExpression();
+
+        $money = Receivable::query()
+            ->whereNull('receivables.deleted_at')
+            ->where('receivables.status', '!=', Receivable::STATUS_CANCELLED)
+            ->toBase()
+            ->selectRaw('receivables.agency_id as agency_id')
+            ->selectRaw(
+                "SUM(CASE WHEN receivables.status = 'received' THEN receivables.amount ELSE 0 END) as collected"
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN receivables.status = 'pending' THEN receivables.amount ELSE 0 END) as outstanding"
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN receivables.status = 'pending' THEN 1 ELSE 0 END) as pending_count"
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN receivables.status = 'pending' AND {$overdueDays} > ".self::OVERDUE_DAYS
+                .' THEN 1 ELSE 0 END) as overdue_count'
+            )
+            ->selectRaw('COUNT(*) as row_count')
+            ->selectRaw('MAX(receivables.date) as last_date')
+            ->groupBy('receivables.agency_id')
+            ->get()
+            ->keyBy('agency_id');
+
+        $out = [];
+
+        foreach ($agencies as $agency) {
+            $row = $money->get($agency->id);
+
+            $rowCount = (int) ($row?->row_count ?? 0);
+            $pending  = (int) ($row?->pending_count ?? 0);
+            $overdue  = (int) ($row?->overdue_count ?? 0);
+
+            $state = match (true) {
+                $rowCount === 0 => 'none',
+                $overdue > 0    => 'overdue',
+                $pending > 0    => 'pending',
+                default         => 'settled',
+            };
+
+            $out[] = [
+                'id'            => (int) $agency->id,
+                'name'          => (string) $agency->name,
+                'status'        => (string) $agency->status,
+                'subdomain'     => $agency->subdomain,
+                'state'         => $state,
+                // `decimal()` keeps the database's string money. A row exists
+                // only when there are live rows, so these are measured values,
+                // never `MEASURED_NOTHING`.
+                'collected'     => $this->decimal($row?->collected),
+                'outstanding'   => $this->decimal($row?->outstanding),
+                'pending_count' => $pending,
+                'overdue_count' => $overdue,
+                'last_date'     => $row?->last_date,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The village counts for the HUD, derived from `village()` so the numbers
+     * in the header and the buildings underneath are never two computations.
+     *
+     * @return array{total:int,thriving:int,settling:int,attention:int,billed:int}
+     */
+    public function villageSummary(array $village): array
+    {
+        $out = ['total' => count($village), 'thriving' => 0, 'settling' => 0, 'attention' => 0, 'billed' => 0];
+
+        foreach ($village as $b) {
+            if ($b['state'] !== 'none') {
+                $out['billed']++;
+            }
+
+            match ($b['state']) {
+                'settled' => $out['thriving']++,
+                'pending' => $out['settling']++,
+                'overdue' => $out['attention']++,
+                default   => null,
+            };
+        }
+
+        return $out;
+    }
+
     public function agency(int $id): ?Agency
     {
         return $this->agencyCache[$id] ??= Agency::query()->find($id);

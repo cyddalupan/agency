@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <defs><linearGradient id="kw" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#8fa3c4"/><stop offset="1" stop-color="#5d6f8f"/></linearGradient>
+    <linearGradient id="kr" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#c99a1e"/></linearGradient></defs>
+  <ellipse cx="100" cy="226" rx="76" ry="13" fill="#000" opacity=".45"/>
+  <!-- squat wide keep -->
+  <path d="M48 132 L100 116 L152 132 L152 208 L48 208 Z" fill="url(#kw)"/>
+  <path d="M152 132 L176 144 L176 212 L152 208 Z" fill="#465570"/>
+  <!-- stepped battlements -->
+  <g fill="#a8b8d2">
+    <rect x="44" y="120" width="16" height="14"/><rect x="70" y="114" width="16" height="14"/>
+    <rect x="96" y="110" width="16" height="14"/><rect x="122" y="114" width="16" height="14"/>
+    <rect x="148" y="120" width="16" height="14"/>
+  </g>
+  <!-- gold roof pennants -->
+  <path d="M100 52 L124 110 L76 110 Z" fill="url(#kr)"/>
+  <!-- gate arch -->
+  <path d="M82 208 L82 172 Q100 158 118 172 L118 208 Z" fill="#16202f"/>
+  <rect x="96" y="182" width="8" height="12" rx="1" fill="#ffe9a8" opacity=".85"/>
+  <!-- arrow slits -->
+  <rect x="64" y="150" width="6" height="16" rx="3" fill="#ffe9a8" opacity=".8"/>
+  <rect x="130" y="150" width="6" height="16" rx="3" fill="#ffe9a8" opacity=".6"/>
+  <rect x="96" y="136" width="8" height="16" rx="3" fill="#ffe9a8" opacity=".9"/>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <defs>
+    <linearGradient id="w3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9a35e"/><stop offset="1" stop-color="#8a6a2f"/>
+    </linearGradient>
+    <linearGradient id="r3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#d9a520"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="100" cy="222" rx="74" ry="14" fill="#000" opacity=".45"/>
+  <!-- unfinished: body stops short, scaffolding on top -->
+  <path d="M42 118 L100 96 L158 118 L158 200 L42 200 Z" fill="url(#w3)"/>
+  <path d="M158 118 L182 130 L182 208 L158 200 Z" fill="#6b4f1e"/>
+  <!-- scaffold poles -->
+  <g stroke="#8a6a2f" stroke-width="3">
+    <line x1="44" y1="118" x2="44" y2="70"/><line x1="158" y1="118" x2="158" y2="70"/>
+    <line x1="100" y1="96" x2="100" y2="58"/>
+    <line x1="44" y1="80" x2="158" y2="80"/><line x1="44" y1="100" x2="158" y2="100"/>
+    <line x1="44" y1="70" x2="100" y2="58"/><line x1="158" y1="70" x2="100" y2="58"/>
+  </g>
+  <!-- partial roof -->
+  <path d="M100 62 L140 88 L100 100 Z" fill="url(#r3)" opacity=".9"/>
+  <!-- windows partly lit = paying in -->
+  <rect x="60" y="136" width="22" height="24" rx="3" fill="#ffe9a8" opacity=".85"/>
+  <rect x="94" y="136" width="22" height="24" rx="3" fill="#ffe9a8" opacity=".5"/>
+  <rect x="128" y="136" width="20" height="24" rx="3" fill="#2c2210"/>
+  <rect x="60" y="174" width="22" height="22" rx="3" fill="#2c2210"/>
+  <rect x="94" y="174" width="22" height="22" rx="3" fill="#ffe9a8" opacity=".35"/>
+  <rect x="86" y="188" width="28" height="12" rx="2" fill="#1a1308"/>
+  <!-- crane hook -->
+  <line x1="100" y1="58" x2="100" y2="44" stroke="#ffd166" stroke-width="2.5"/>
+  <rect x="94" y="38" width="12" height="7" rx="2" fill="#ffd166"/>
+</svg>

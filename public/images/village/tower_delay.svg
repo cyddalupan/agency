@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <defs>
+    <linearGradient id="w2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a5568"/><stop offset="1" stop-color="#2d3748"/>
+    </linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9c6d78"/><stop offset="1" stop-color="#6b414d"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="100" cy="222" rx="76" ry="15" fill="#000" opacity=".5"/>
+  <!-- cracked, slumping body -->
+  <path d="M40 100 L100 78 L160 100 L158 200 L42 200 Z" fill="url(#w2)"/>
+  <path d="M160 100 L186 112 L184 208 L158 200 Z" fill="#1f2734"/>
+  <!-- broken roof -->
+  <path d="M100 44 L162 90 L128 100 L112 88 L92 104 L40 90 Z" fill="url(#r2)"/>
+  <!-- cracks -->
+  <path d="M70 108 L84 150 L74 168 L92 200" stroke="#141a24" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M132 116 L120 148 L134 166" stroke="#141a24" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- dark windows, one shattered -->
+  <rect x="58" y="124" width="22" height="26" rx="3" fill="#2b3444"/>
+  <rect x="92" y="124" width="22" height="26" rx="3" fill="#0d131c"/>
+  <path d="M92 124 L114 150 M114 124 L92 150" stroke="#4a5568" stroke-width="1.5"/>
+  <rect x="126" y="124" width="22" height="26" rx="3" fill="#2b3444"/>
+  <rect x="58" y="168" width="22" height="26" rx="3" fill="#0d131c"/>
+  <rect x="92" y="168" width="22" height="26" rx="3" fill="#2b3444"/>
+  <!-- sagging door -->
+  <path d="M84 200 L88 186 L114 188 L116 200 Z" fill="#10161f"/>
+  <!-- rubble -->
+  <circle cx="40" cy="204" r="5" fill="#374151"/><circle cx="52" cy="210" r="4" fill="#2d3748"/>
+  <circle cx="156" cy="206" r="5" fill="#374151"/>
+</svg>

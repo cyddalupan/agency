@@ -163,8 +163,16 @@ class GodModeAuthController extends Controller
      */
     public function index(Request $request, GodReceivableService $ledger): View
     {
+        // The village is the console. One building per agency, coloured by how
+        // it is paying; every other God Mode screen hangs off a modal on it.
+        // The numbers still come from `GodReceivableService`, so the HUD and
+        // the payments ledger remain one computation.
+        $village = $ledger->village();
+
         return view('godmode.dashboard', [
             'user' => $request->user('godmode'),
+            'village' => $village,
+            'villageSummary' => $ledger->villageSummary($village),
         ] + $ledger->dashboard());
     }
 

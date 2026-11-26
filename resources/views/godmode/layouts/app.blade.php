@@ -21,26 +21,15 @@
 <body class="min-h-screen bg-base-200 text-base-content">
     <header class="bg-neutral text-neutral-content">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-1 min-w-0">
-                <a href="{{ route('godmode.dashboard') }}" class="font-extrabold tracking-tight">God Mode</a>
-                <nav class="flex flex-wrap items-center gap-1 text-sm">
-                    {{-- Active mark: the same hand-written pattern as the Agencies
-                         link, per section. No nav refactor (§3.4). --}}
-                    <a href="{{ route('godmode.dashboard') }}"
-                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.dashboard') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Dashboard</a>
-                    <a href="{{ route('godmode.agencies.index') }}"
-                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.agencies.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Agencies</a>
-                    <a href="{{ route('godmode.payments.index') }}"
-                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.payments.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Payments</a>
-                    {{-- Card 6b0383d516e52b9c418a9136: the control-plane audit
-                         trail. Read-only, no badge count — the screen shows it. --}}
-                    <a href="{{ route('godmode.audit.index') }}"
-                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.audit.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Audit</a>
-                    {{-- Card 6b055a7a36a4a0bd098bdd29: platform-wide footer
-                         logo. Same hand-written active-mark pattern as above. --}}
-                    <a href="{{ route('godmode.branding.edit') }}"
-                       class="px-3 py-1.5 rounded-lg {{ request()->routeIs('godmode.branding.*') ? 'bg-neutral-content/15 font-semibold' : 'hover:bg-neutral-content/10' }}">Branding</a>
-                </nav>
+            {{-- Cyd 2026-11-26: the console IS the village. There is no
+                 navigation bar — every other screen becomes a modal opened
+                 from the village. Until each one has its modal, its route
+                 still exists and still works if reached directly; it is just
+                 not advertised here. Removing the links before the modals
+                 exist would strand those screens, so the routes stay and only
+                 the chrome goes. --}}
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
+                <span class="font-extrabold tracking-tight">God Mode</span>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-xs opacity-70">{{ auth('godmode')->user()?->username ?: auth('godmode')->user()?->email }}</span>
@@ -52,6 +41,15 @@
         </div>
     </header>
 
+    {{-- The village dashboard is full-bleed: it is the whole page, not a card
+         inside the console's 7xl container. `@yield('fullbleed')` renders
+         before the padded wrapper so the page can opt out of it; every other
+         God Mode screen keeps the constraint it was designed inside. --}}
+    @hasSection('fullbleed')
+        <main>
+            @yield('fullbleed')
+        </main>
+    @else
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         @if (session('status'))
             <div class="alert alert-success py-2" role="status">{{ session('status') }}</div>
@@ -69,5 +67,6 @@
 
         @yield('content')
     </main>
+    @endif
 </body>
 </html>
