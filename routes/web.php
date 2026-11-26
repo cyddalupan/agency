@@ -76,6 +76,14 @@ Route::get('/health', function () {
 Route::get('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'entry'])->name('applicant-qr.entry');
 Route::post('/qr/apply/{token}', [\App\Http\Controllers\ApplicantQrController::class, 'store'])->name('applicant-qr.store');
 
+// Apply Now link (card 6b0798fb): a shareable per-Job-Order marketing URL.
+// Public for the same reason as the QR intake above — the applicant has no
+// login — and scoped to one token that resolves to exactly one Job Order. Its
+// position is fixed by that row, not by anything the visitor sends.
+// Cyd 2026-11-26: keep the QR path as well; it is not replaced by this.
+Route::get('/apply/{token}', [\App\Http\Controllers\JobApplyController::class, 'entry'])->name('job-apply.entry');
+Route::post('/apply/{token}', [\App\Http\Controllers\JobApplyController::class, 'store'])->name('job-apply.store');
+
 // === God mode (control plane) ===
 // Card 6b0341cf42a2071fc8b38ea5. Main host only: IdentifyAgency 404s
 // `godmode`/`godmode/*` on any tenant host before it binds a tenant, so these

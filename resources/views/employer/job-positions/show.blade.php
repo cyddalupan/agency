@@ -75,6 +75,31 @@
                 </div>
             </div>
             @endif
+
+            {{-- Card 6b0798fb: the same shareable Apply Now link the staff-side
+                 Job Order page shows. Cyd's decision (2026-11-26) was to put it
+                 on both surfaces rather than pick one, so an employer contact
+                 can also hand the link to their own marketing.
+
+                 Both pages call the same JobPosition::applyUrl(), so the link is
+                 identical on both — there is no second token to keep in sync. --}}
+            <div class="mt-6 pt-6 border-t border-base-200">
+                <span class="opacity-60 text-sm">🔗 Apply Now Link</span>
+                <p class="text-sm opacity-70 mt-1">
+                    Share this link to collect applications for this position.
+                    The position is fixed on the form.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-2 mt-3">
+                    <input type="text" readonly id="emp-apply-url-{{ $jobPosition->id }}"
+                           value="{{ $jobPosition->applyUrl() }}"
+                           onclick="this.select()"
+                           class="input input-bordered input-sm w-full font-mono text-xs">
+                    <button type="button" class="btn btn-sm btn-primary whitespace-nowrap"
+                            onclick="(function(b){var f=document.getElementById('emp-apply-url-{{ $jobPosition->id }}');var done=function(){b.innerText='✓ Copied';setTimeout(function(){b.innerText='Copy';},2000);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(f.value).then(done).catch(function(){f.select();document.execCommand('copy');done();});}else{f.select();document.execCommand('copy');done();}})(this)">
+                        Copy
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

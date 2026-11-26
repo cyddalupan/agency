@@ -93,6 +93,35 @@
                 <div class="mt-3 p-4 rounded-lg bg-base-200/50 whitespace-pre-wrap text-sm leading-relaxed">{{ $jobPosition->content }}</div>
             </div>
             @endif
+
+            {{-- Card 6b0798fb: shareable "Apply Now" link for marketing.
+                 The token is issued on first view (JobPosition::applyToken()).
+                 readonly + select-on-click rather than a copy button alone,
+                 because a copy button needs JS and clipboard permission and
+                 silently fails on non-HTTPS or in some embedded browsers. --}}
+            <div class="pt-4 border-t border-base-200">
+                <h3 class="card-title flex items-center gap-2">🔗 Apply Now Link</h3>
+                <p class="text-sm opacity-70 mt-1">
+                    Share this on social media or anywhere else. Anyone who opens it gets an
+                    application form with <strong>{{ $jobPosition->name ?: ($jobPosition->position->name ?? 'this position') }}</strong> already filled in.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-2 mt-3">
+                    <input type="text" readonly id="apply-url-{{ $jobPosition->id }}"
+                           value="{{ $jobPosition->applyUrl() }}"
+                           onclick="this.select()"
+                           class="input input-bordered input-sm w-full font-mono text-xs">
+                    <div class="flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary whitespace-nowrap"
+                                onclick="(function(b){var f=document.getElementById('apply-url-{{ $jobPosition->id }}');var done=function(){b.innerText='✓ Copied';setTimeout(function(){b.innerText='Copy';},2000);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(f.value).then(done).catch(function(){f.select();document.execCommand('copy');done();});}else{f.select();document.execCommand('copy');done();}})(this)">
+                            Copy
+                        </button>
+                        <a href="{{ $jobPosition->applyUrl() }}" target="_blank" rel="noopener" class="btn btn-sm btn-ghost whitespace-nowrap">Open ↗</a>
+                    </div>
+                </div>
+                <p class="text-xs opacity-50 mt-2">
+                    Anyone with this link can submit an application. To revoke it, ask for a new token — the old link then stops working.
+                </p>
+            </div>
         </div>
     </div>
 
