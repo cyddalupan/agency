@@ -2117,10 +2117,38 @@ class ExpenseRequestController extends Controller
 
                 $from = $expenseRequest->status;
 
-                // Request already in the target status: nothing to do. Repair any
-                // drifted line-item statuses silently (no history, no counter).
+                // Request already in the target status. Previously this branch
+                // repaired drifted line items and `continue`d without any history
+                // or counter, so the drift was invisible: the items only moved on
+                // a later attempt, and if that attempt never came the request sat
+                // one status ahead of its own transactions forever (21 such items
+                // measured 2026-11-26, card 6b07b9c8). A repair is a user-visible
+                // event now: it updates the items, is counted, and is recorded.
                 if ($from === $to) {
-                    $expenseRequest->items()->where('status', '!=', $to)->update(['status' => $to]);
+                    $drifted = $expenseRequest->items()->where('status', '!=', $to)->get();
+
+                    if ($drifted->isEmpty()) {
+                        continue; // genuinely nothing to do
+                    }
+
+                    foreach ($drifted as $item) {
+                        $item->update(['status' => $to]);
+                        $this->syncPaidEntryForItem($expenseRequest, $item, $to);
+                    }
+
+                    $changed += $drifted->count();
+                    $this->rollupRequestStatus($expenseRequest);
+
+                    ExpenseRequestStatusHistory::create([
+                        'expense_request_id' => $expenseRequest->id,
+                        'agency_id'          => $expenseRequest->agency_id,
+                        'user_id'            => auth()->id(),
+                        'from_status'        => $from,
+                        'to_status'          => $expenseRequest->status,
+                        'note'               => 'Repaired ' . $drifted->count()
+                            . ' drifted transaction(s) set to '
+                            . ExpenseRequest::STATUS_LABELS[$to],
+                    ]);
 
                     continue;
                 }
