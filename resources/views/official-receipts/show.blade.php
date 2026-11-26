@@ -15,7 +15,7 @@
                     <div>
                         <h2 class="text-2xl lg:text-3xl font-bold">{{ $officialReceipt->or_no }}</h2>
                         <p class="opacity-80 text-sm mt-1">
-                            ₱{{ number_format($officialReceipt->amount, 2) }}
+                            {{ peso($officialReceipt->amount) }}
                             · Issued to {{ $officialReceipt->issued_to_name }}
                         </p>
                     </div>
@@ -54,7 +54,7 @@
                             </tr>
                             <tr>
                                 <td class="font-medium opacity-60">Amount</td>
-                                <td class="text-right font-mono font-bold text-lg">₱{{ number_format($officialReceipt->amount, 2) }}</td>
+                                <td class="text-right font-mono font-bold text-lg">{{ peso($officialReceipt->amount) }}</td>
                             </tr>
                             <tr>
                                 <td class="font-medium opacity-60">Issue Date</td>
@@ -113,7 +113,7 @@
                         </tr>
                         <tr>
                             <td class="font-medium opacity-60">Amount</td>
-                            <td class="font-mono">₱{{ number_format($officialReceipt->payment->amount, 2) }}</td>
+                            <td class="font-mono">{{ peso($officialReceipt->payment->amount) }}</td>
                         </tr>
                         <tr>
                             <td class="font-medium opacity-60">Status</td>

@@ -45,7 +45,7 @@
                     <option value="">Select payment (optional)...</option>
                     @foreach($payments as $payment)
                         <option value="{{ $payment->id }}" @selected(old('payment_id') == $payment->id)>
-                            Payment #{{ $payment->id }} · ₱{{ number_format($payment->amount, 2) }}
+                            Payment #{{ $payment->id }} · {{ peso($payment->amount) }}
                             @if($payment->bill && $payment->bill->employer)
                                 · {{ $payment->bill->employer->name }}
                             @endif

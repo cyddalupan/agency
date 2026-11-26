@@ -45,7 +45,7 @@
                         <tr class="hover transition-colors">
                             <td class="font-mono text-sm">#{{ $or->id }}</td>
                             <td class="font-mono font-semibold">{{ $or->or_no }}</td>
-                            <td class="font-mono text-sm font-semibold">₱{{ number_format($or->amount, 2) }}</td>
+                            <td class="font-mono text-sm font-semibold">{{ peso($or->amount) }}</td>
                             <td class="text-sm">
                                 {{ $or->issued_to_name }}
                                 <span class="badge badge-xs badge-ghost ml-1">{{ ucfirst($or->issued_to) }}</span>
