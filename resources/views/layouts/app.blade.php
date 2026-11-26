@@ -13,6 +13,10 @@
         <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     @endif
     @vite('resources/css/app.css')
+    {{-- Alpine, for the Applicants advanced-search panel (card 6b07df0b).
+         Built asset must exist before this line ships: a missing manifest
+         entry throws ViteManifestNotFoundException on every page. --}}
+    @vite('resources/js/app.js')
     @include('partials.agency-color-theme')
     @include('partials.agency-site-colors')
     @if($siteAllCaps)

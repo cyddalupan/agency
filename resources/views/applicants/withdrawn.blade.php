@@ -93,7 +93,7 @@
                         <span>🔍</span>
                         <input type="text" name="search" class="grow" placeholder="Search by name, email, or contact..."
                                value="{{ request('search') }}" />
-                        @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
+                        @if(($filtersActive ?? false))
                             <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-xs btn-square" title="Clear filters">✕</a>
                         @endif
                     </label>
@@ -162,18 +162,20 @@
                 {{-- Submit / Clear --}}
                 <div class="flex gap-2 items-end">
                     <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
-                    @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
+                    @if(($filtersActive ?? false))
                         <a href="{{ route('applicants.withdrawn', ['type' => $type]) }}" class="btn btn-ghost btn-sm">✕ Clear</a>
                     @endif
                 </div>
             </div>
+
+            @include('applicants.partials.advanced-search', ['clearUrl' => route('applicants.withdrawn', ['type' => $type])])
         </form>
 
         {{-- Stats summary + Export --}}
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm">
             <div class="flex flex-wrap gap-2">
                 <span class="badge badge-ghost badge-lg">📋 {{ $applicants->total() }} total</span>
-                @if(request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'))
+                @if(($filtersActive ?? false))
                     <span class="badge badge-warning badge-lg">🔍 {{ $applicants->total() }} matching</span>
                 @endif
             </div>
@@ -320,7 +322,7 @@
             {{ $applicants->links() }}
         </div>
     @else
-        @php $hasFilters = request('search') || request('status') || request('gender') || request('employer') || request('country') || request('branch'); @endphp
+        @php $hasFilters = ($filtersActive ?? false); @endphp
         {{-- Empty state --}}
         <div class="card bg-base-100 shadow-sm card-lift">
             <div class="card-body items-center text-center py-16">

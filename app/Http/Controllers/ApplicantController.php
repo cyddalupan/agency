@@ -40,54 +40,9 @@ class ApplicantController extends Controller
             ->forBranchUser()
             ->whereNotIn('status_code', $withdrawnStatuses);
 
-        // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD is shown first,
-        // but SKILLED stays the default landing tab (backward compatible).
-        // "all" is the combined view (no type filter) so dashboard chips can
-        // land on a list whose size equals the count they displayed.
-        // (Toybits filtering fix, 2026-10-22.)
-        $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
-            $type = Applicant::TYPE_SKILLED;
-        }
-        if ($type !== 'all') {
-            $query->ofType($type);
-        }
-
-        // Search by name — multi-word aware, so "Sofia Reyes" matches a row
-        // whose first/last names live in separate columns. (Toybits 2026-10-14.)
-        if ($request->filled('search')) {
-            $query->searchName($request->input('search'));
-        }
-
-        // Filter by status code
-        if ($request->filled('status')) {
-            $query->where('status_code', $request->integer('status'));
-        }
-
-        // Filter by employer
-        if ($request->filled('employer')) {
-            $query->where('employer_id', $request->integer('employer'));
-        }
-
-        // Filter by gender
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->input('gender'));
-        }
-
-        // Filter by employer
-        if ($request->filled('employer')) {
-            $query->where('employer_id', $request->integer('employer'));
-        }
-
-        // Filter by country
-        if ($request->filled('country')) {
-            $query->where('country_id', $request->integer('country'));
-        }
-
-        // Filter by branch
-        if ($request->filled('branch')) {
-            $query->where('branch_id', $request->integer('branch'));
-        }
+        // All filters live in applyApplicantFilters() so the list, the
+        // withdrawn tab and both CSV exports can never drift apart.
+        $type = $this->applyApplicantFilters($query, $request, 'list');
 
         // Chips/dropdown exclude withdrawn statuses too (they have their own tab).
         $statusCodes = StatusCode::whereNotIn('code', $withdrawnStatuses)
@@ -145,7 +100,14 @@ class ApplicantController extends Controller
             $typeCounts[Applicant::TYPE_PROFESSIONAL] = (clone $base)->ofType(Applicant::TYPE_PROFESSIONAL)->count();
         }
 
-        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'tableColumns', 'type', 'typeCounts'));
+        $positions = Position::orderBy('name')->get(['id', 'name']);
+
+        // Drives the "Clear" links and the "N filters" badge on the advanced
+        // panel, so both stay honest about what is actually applied.
+        $filtersActive = $this->hasActiveApplicantFilters($request);
+        $activeFilterCount = $this->countActiveApplicantFilters($request);
+
+        return view('applicants.index', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'positions', 'tableColumns', 'type', 'typeCounts', 'filtersActive', 'activeFilterCount'));
     }
 
     /**
@@ -165,45 +127,8 @@ class ApplicantController extends Controller
             ->forBranchUser()
             ->whereIn('status_code', $withdrawnStatuses);
 
-        // (Mjolnir "Skilled Applicants" 2026-10-08) HOUSEHOLD first tab,
-        // SKILLED remains the default landing tab. "all" = combined view.
-        $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
-            $type = Applicant::TYPE_SKILLED;
-        }
-        if ($type !== 'all') {
-            $query->ofType($type);
-        }
-
-        // Search by name — multi-word aware (see index()). (Toybits 2026-10-14.)
-        if ($request->filled('search')) {
-            $query->searchName($request->input('search'));
-        }
-
-        // Filter by status code (within the three)
-        if ($request->filled('status')) {
-            $query->where('status_code', $request->integer('status'));
-        }
-
-        // Filter by gender
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->input('gender'));
-        }
-
-        // Filter by employer
-        if ($request->filled('employer')) {
-            $query->where('employer_id', $request->integer('employer'));
-        }
-
-        // Filter by country
-        if ($request->filled('country')) {
-            $query->where('country_id', $request->integer('country'));
-        }
-
-        // Filter by branch (same as index()).
-        if ($request->filled('branch')) {
-            $query->where('branch_id', $request->integer('branch'));
-        }
+        // All filters live in applyApplicantFilters() (card 6b07df0b).
+        $type = $this->applyApplicantFilters($query, $request, 'list');
 
         $statusCodes = StatusCode::whereIn('code', $withdrawnStatuses)->orderBy('sort_order')->get();
 
@@ -244,7 +169,12 @@ class ApplicantController extends Controller
             $typeCounts[Applicant::TYPE_PROFESSIONAL] = (clone $base)->ofType(Applicant::TYPE_PROFESSIONAL)->count();
         }
 
-        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'type', 'typeCounts'));
+        $positions = Position::orderBy('name')->get(['id', 'name']);
+
+        $filtersActive = $this->hasActiveApplicantFilters($request);
+        $activeFilterCount = $this->countActiveApplicantFilters($request);
+
+        return view('applicants.withdrawn', compact('applicants', 'statusCodes', 'statusCounts', 'employers', 'countries', 'branches', 'positions', 'type', 'typeCounts', 'filtersActive', 'activeFilterCount'));
     }
 
     /**
@@ -1643,6 +1573,199 @@ class ApplicantController extends Controller
     }
 
     /**
+     * Shared applicant filter block (card 6b07df0b6c4bfa6d2fd57f68).
+     *
+     * Before this, the identical filter stack was hand-copied into index(),
+     * withdrawn(), export() and withdrawnExport(). On 2026-10-22 the exports
+     * had already drifted from the list once, so the copies are gone: every
+     * caller now gets the same filters from here. If you add a criterion,
+     * add it here and nowhere else.
+     *
+     * $context is 'list' or 'export'. The only difference is eager loading,
+     * because the export renders columns the list does not.
+     */
+    private function applyApplicantFilters($query, Request $request, string $context = 'list')
+    {
+        // Type tab. HOUSEHOLD is shown first but SKILLED stays the default
+        // landing tab; 'all' means no type filter at all. (Mjolnir
+        // "Skilled Applicants" 2026-10-08, Toybits filtering fix 2026-10-22.)
+        $type = $request->input('type');
+        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
+            $type = Applicant::TYPE_SKILLED;
+        }
+        if ($type !== 'all') {
+            $query->ofType($type);
+        }
+
+        // Search by name, email or contact — multi-word aware, so "Sofia
+        // Reyes" matches a row whose names live in separate columns.
+        // (Toybits 2026-10-14.)
+        if ($request->filled('search')) {
+            $query->searchName($request->input('search'));
+        }
+
+        // Status. Multi-select now: one value keeps the old behaviour, a
+        // comma-separated list means "any of these".
+        $statuses = $this->filterStatusCodes($request);
+        if ($statuses !== []) {
+            $query->whereIn('status_code', $statuses);
+        }
+
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->input('gender'));
+        }
+
+        if ($request->filled('employer')) {
+            $query->where('employer_id', $request->integer('employer'));
+        }
+
+        if ($request->filled('country')) {
+            $query->where('country_id', $request->integer('country'));
+        }
+
+        if ($request->filled('position')) {
+            $query->where('position_id', $request->integer('position'));
+        }
+
+        // Branch filter (card "LANDAS: Applicant Branch filter", 2026-10-22).
+        // This narrows within the forBranchUser() scope; it can never widen
+        // it, so a branch-locked user still cannot see another branch.
+        if ($request->filled('branch')) {
+            $query->where('branch_id', $request->integer('branch'));
+        }
+
+        // Applicant number — exact or prefix. The name search does not cover
+        // applicant_no, so this is a separate box.
+        if ($request->filled('applicant_no')) {
+            $query->where('applicant_no', 'like', $request->input('applicant_no').'%');
+        }
+
+        // Age range. There is no age column; age is derived from birthdate.
+        // Filtering on birthdate keeps it index-friendly and avoids SQL date
+        // math on every row. A 25-30 year old on 2026-11-26 was born between
+        // 1995-11-27 and 2001-11-26, so the bounds run one day inside.
+        $ageMin = $request->integer('age_min');
+        $ageMax = $request->integer('age_max');
+        if ($ageMin > 0 || $ageMax > 0) {
+            $today = now();
+            if ($ageMax > 0) {
+                // Oldest allowed age => earliest birthdate. Age <= max means
+                // born on or after (today - (max+1) years + 1 day).
+                $query->where('birthdate', '>=', $today->copy()->subYears($ageMax + 1)->addDay()->toDateString());
+            }
+            if ($ageMin > 0) {
+                // Youngest allowed age => latest birthdate. Age >= min means
+                // born on or before (today - min years).
+                $query->where('birthdate', '<=', $today->copy()->subYears($ageMin)->toDateString());
+            }
+            $query->whereNotNull('birthdate');
+        }
+
+        // Registered between. Bounds are inclusive whole days.
+        if ($request->filled('created_from')) {
+            $query->where('created_at', '>=', $request->input('created_from').' 00:00:00');
+        }
+        if ($request->filled('created_to')) {
+            $query->where('created_at', '<=', $request->input('created_to').' 23:59:59');
+        }
+
+        // Missing documents. These flags are not uniform, so each is handled
+        // by its real type:
+        //   e_reg, peos, info_sheet, birth_certificate, marriage_certificate
+        //     are tinyint(1) — 1 means present.
+        //   has_passport is a tri-state string: 'with' / 'without' / NULL.
+        //     NULL means nobody recorded it, not "no passport".
+        //   contract is a varchar that is NULL on every current row, so it is
+        //     deliberately excluded — filtering on it would either match all
+        //     4,962 rows or none, and either way it would be a lie.
+        $missing = array_values(array_intersect(
+            (array) $request->input('missing_docs', []),
+            ['passport', 'e_reg', 'peos', 'info_sheet', 'birth_certificate', 'marriage_certificate']
+        ));
+        foreach ($missing as $doc) {
+            if ($doc === 'passport') {
+                $query->where(function ($q) {
+                    $q->where('has_passport', 'without')->orWhereNull('has_passport');
+                });
+            } else {
+                $query->where(function ($q) use ($doc) {
+                    $q->where($doc, 0)->orWhereNull($doc);
+                });
+            }
+        }
+
+        if ($context === 'export') {
+            $query->with(['statusCode', 'country', 'position', 'agent', 'employer', 'branch', 'creator']);
+        }
+
+        return $type;
+    }
+
+    /**
+     * Status filter as a list of ints. Accepts the old single value and the
+     * new multi-select array / comma list.
+     */
+    private function filterStatusCodes(Request $request): array
+    {
+        $raw = $request->input('status', []);
+        if (is_string($raw)) {
+            $raw = $raw === '' ? [] : explode(',', $raw);
+        }
+        if (! is_array($raw)) {
+            return [];
+        }
+        $codes = [];
+        foreach ($raw as $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $codes[] = (int) $value;
+        }
+
+        return array_values(array_unique($codes));
+    }
+
+    /**
+     * True when any filter is active. Drives the "Clear" links and the
+     * "matching" badge, so it must list every criterion the form can set.
+     */
+    private function hasActiveApplicantFilters(Request $request): bool
+    {
+        foreach (['search', 'gender', 'employer', 'country', 'position', 'branch', 'applicant_no', 'age_min', 'age_max', 'created_from', 'created_to'] as $key) {
+            if ($request->filled($key)) {
+                return true;
+            }
+        }
+
+        return $this->filterStatusCodes($request) !== [] || (array) $request->input('missing_docs', []) !== [];
+    }
+
+    /**
+     * How many distinct filters are applied, for the badge on the panel.
+     * An age range counts once, a multi-select counts once per group.
+     */
+    private function countActiveApplicantFilters(Request $request): int
+    {
+        $count = 0;
+        foreach (['search', 'gender', 'employer', 'country', 'position', 'branch', 'applicant_no', 'created_from', 'created_to'] as $key) {
+            if ($request->filled($key)) {
+                $count++;
+            }
+        }
+        if ($request->integer('age_min') > 0 || $request->integer('age_max') > 0) {
+            $count++;
+        }
+        if ($this->filterStatusCodes($request) !== []) {
+            $count++;
+        }
+        if ((array) $request->input('missing_docs', []) !== []) {
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * Canonical Applicant Module CSV layout (CYD card 2026-11-06):
      * Name, Contact#, Gender, Age, Branch, Agent, Position, Country, FRA,
      * Status, Created At, Encoder.
@@ -1686,36 +1809,10 @@ class ApplicantController extends Controller
             ->whereNotIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
 
-        // Apply the same filters as index() — including the type tab and
-        // country, which the export link was already sending but this method
-        // ignored, and the branch scope, which kept branch users from
-        // exporting other branches. (Toybits filtering fix, 2026-10-22.)
-        $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
-            $type = Applicant::TYPE_SKILLED;
-        }
-        if ($type !== 'all') {
-            $query->ofType($type);
-        }
-        if ($request->filled('search')) {
-            $query->searchName($request->input('search'));
-        }
-        if ($request->filled('status')) {
-            $query->where('status_code', $request->integer('status'));
-        }
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->input('gender'));
-        }
-        if ($request->filled('employer')) {
-            $query->where('employer_id', $request->integer('employer'));
-        }
-        if ($request->filled('country')) {
-            $query->where('country_id', $request->integer('country'));
-        }
-        // Branch filter (card "LANDAS: Applicant Branch filter", 2026-10-22).
-        if ($request->filled('branch')) {
-            $query->where('branch_id', $request->integer('branch'));
-        }
+        // Same filter stack as the list — literally the same method, so the
+        // export can never return a different set of rows than the screen
+        // it was launched from. (Toybits filtering fix, 2026-10-22.)
+        $this->applyApplicantFilters($query, $request, 'export');
 
         $applicants = $query->get();
 
@@ -1759,32 +1856,8 @@ class ApplicantController extends Controller
             ->whereIn('status_code', $withdrawnStatuses)
             ->orderBy('created_at', 'desc');
 
-        // Apply the same filters as withdrawn() — type + country included.
-        $type = $request->input('type');
-        if (! in_array($type, [Applicant::TYPE_SKILLED, Applicant::TYPE_HOUSEHOLD, Applicant::TYPE_PROFESSIONAL, 'all'], true)) {
-            $type = Applicant::TYPE_SKILLED;
-        }
-        if ($type !== 'all') {
-            $query->ofType($type);
-        }
-        if ($request->filled('search')) {
-            $query->searchName($request->input('search'));
-        }
-        if ($request->filled('status')) {
-            $query->where('status_code', $request->integer('status'));
-        }
-        if ($request->filled('gender')) {
-            $query->where('gender', $request->input('gender'));
-        }
-        if ($request->filled('employer')) {
-            $query->where('employer_id', $request->integer('employer'));
-        }
-        if ($request->filled('country')) {
-            $query->where('country_id', $request->integer('country'));
-        }
-        if ($request->filled('branch')) {
-            $query->where('branch_id', $request->integer('branch'));
-        }
+        // Same filter stack as the withdrawn list.
+        $this->applyApplicantFilters($query, $request, 'export');
 
         $applicants = $query->get();
 
