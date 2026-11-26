@@ -817,3 +817,39 @@ if (!function_exists('agent_header')) {
         return \App\Support\AgentTerm::text($header, $agencyId);
     }
 }
+
+if (!function_exists('peso')) {
+    /**
+     * Card 6b0729b8 (2026-11-26): one money formatter for the whole app.
+     *
+     * Negative amounts used to render as "₱-14,497.00" because the symbol was
+     * concatenated in Blade *before* number_format(), so the minus landed
+     * inside the formatted string. Correct is "-₱14,497.00": the sign belongs
+     * to the number, so it goes outside the currency symbol.
+     *
+     * Display only. Every computed value is untouched; this changes the string
+     * form and nothing else. Decimals and thousands separators are the
+     * number_format() defaults everywhere, exactly as before.
+     *
+     * @param  mixed  $value  number, numeric string, or null
+     * @param  bool   $signed false suppresses the sign entirely (callers that
+     *                        print an already-known-negative as an absolute)
+     * @param  int    $decimals must match the number_format() call it replaces;
+     *                        the sweep preserves whatever each site already used
+     */
+    function peso($value, bool $signed = true, int $decimals = 2): string
+    {
+        // null is zero: an unset balance must not print an error or a blank.
+        if ($value === null || $value === '') {
+            $value = 0;
+        }
+        $number = (float) $value;
+        $formatted = number_format(abs($number), $decimals);
+        // A value that ROUNDS to zero carries no sign. -0.004 must not print
+        // "-₱0.00": the sign would imply a debt the user does not have.
+        if ($signed && $number < 0 && (float) $formatted !== 0.0) {
+            return '-₱' . $formatted;
+        }
+        return '₱' . $formatted;
+    }
+}
