@@ -252,7 +252,13 @@ class GodModePaymentsTest extends TestCase
             'the dashboard' => $this->get(route('godmode.dashboard'))->getContent(),
         ];
 
-        $verbs = 'forceDelete|destroy|delete|Delete|approve|Approve';
+        // Case-insensitive, and applied to the whole tag INCLUDING attribute
+        // values. The old pattern listed 'Delete' separately because it had no
+        // /i flag, which meant `value="DELETE"` — the exact write verb in a
+        // form-method spoof — was never matched, while `delete` was. A guard
+        // whose coverage depends on which capitalisation an attacker picked is
+        // not a guard. See card 6b06e5838608ea1aa8bce6ea.
+        $verbs = 'forceDelete|destroy|delete|approve';
 
         foreach ($pages as $context => $html) {
             // Rendered controls, not vocabulary (same rule as GodModeAuditTest):
@@ -277,17 +283,21 @@ class GodModePaymentsTest extends TestCase
             preg_match_all($quoteAware, $html, $tags, PREG_SET_ORDER);
             preg_match_all('~<(a|button)\b[^>]*>([^<]*)</\1>~i', $html, $labelled, PREG_SET_ORDER);
 
-            $verb = '/(?:^|[\s"\'\/=])'.$verbs.'/';
+            $verb = '/(?:^|[\s"\'\/=])'.$verbs.'/i';
 
             foreach ($tags as $m) {
-                $control = preg_replace('/\s+/', ' ', $m[0]);
+                // Entity-decoded before matching: `&#68;ELETE` and
+                // `D&#69;DETE` render as DELETE but contain no verb as source
+                // text. html_entity_decode is the browser's own reading of the
+                // tag, so this matches what an operator would actually see.
+                $control = preg_replace('/\s+/', ' ', html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                 $this->assertDoesNotMatchRegularExpression($verb, $control,
                     "{$context} exposes a control naming a write verb: {$control}");
             }
 
             foreach ($labelled as $m) {
-                $control = preg_replace('/\s+/', ' ', $m[0]);
-                $label = trim((string) $m[2]);
+                $control = preg_replace('/\s+/', ' ', html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                $label = trim(html_entity_decode((string) $m[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                 $this->assertDoesNotMatchRegularExpression($verb, $label,
                     "{$context} exposes a control labelled with a write verb: {$control}");
             }
@@ -298,6 +308,16 @@ class GodModePaymentsTest extends TestCase
             foreach ($methods[1] as $method) {
                 $this->assertContains(strtoupper($method), ['GET', 'POST'], "{$context}: unexpected form method {$method}");
             }
+
+            // POST was previously allowed wholesale, "for the sign-out". That
+            // allowance is exactly wide enough to admit a method spoof:
+            // <form method="POST"><input name="_method" value="DELETE"> is a
+            // POST as far as this test can see. Laravel honours _method during
+            // parsing, so the tag is only harmless because no write route
+            // exists (asserted below). Nothing on a read-only ledger has any
+            // business overriding a verb.
+            $this->assertDoesNotMatchRegularExpression('/name\s*=\s*["\']?_method/i', $html,
+                "{$context} renders a form that overrides its HTTP verb via _method");
             $this->assertStringNotContainsString('receivables/'.$row->id, $html, "{$context} links to a receivable write path");
 
             // Anti-vacuity, per page: the dashboard carries no voided branch, so
@@ -310,12 +330,41 @@ class GodModePaymentsTest extends TestCase
             }
         }
 
-        // The router: nothing mutating exists under the ledger.
+        // --- the actual guarantee -------------------------------------------
+        // Everything above is a tripwire over rendered markup, and markup can
+        // always be shaped in a way a regex does not anticipate. A JS-built
+        // control (`onclick="this.closest('form').submit()"`) carries no
+        // forbidden word at all and is indistinguishable from a benign button;
+        // no amount of widening these patterns closes that. So the assertion
+        // that actually holds the line is over the ROUTE TABLE: it is total
+        // over the route set, not a sample of one page's HTML.
+        //
+        // This was proved the hard way. The form spoof above was reported as an
+        // open hole; it is refused by the router because no write route exists
+        // under this prefix, and refused for that reason alone.
+        $mutating = ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
+        foreach (app('router')->getRoutes() as $route) {
+            $uri = $route->uri();
+            if ($uri !== 'godmode/payments' && ! str_starts_with($uri, 'godmode/payments/')) {
+                continue;
+            }
+
+            foreach ($route->methods() as $method) {
+                $this->assertContains(strtoupper($method), ['GET', 'HEAD'],
+                    "route '{$uri}' accepts {$method}: godmode/payments must be read-only");
+            }
+        }
+
+        // Behavioural proof, the real version of the reported repro: every way
+        // of asking for a write gets 405, including the _method override that
+        // Laravel would honour if a handler existed.
         foreach (['PUT', 'PATCH', 'DELETE'] as $verb) {
             $this->call($verb, '/godmode/payments/'.$gulf->id)->assertStatus(405);
         }
         $this->post('/godmode/payments/'.$gulf->id)->assertStatus(405);
         $this->post('/godmode/payments')->assertStatus(405);
+        $this->post('/godmode/payments/'.$gulf->id, ['_method' => 'DELETE'])->assertStatus(405);
+        $this->call('POST', '/godmode/payments/'.$gulf->id, ['_method' => 'PUT'])->assertStatus(405);
 
         // And no data moved: 2 live rows + 1 soft-deleted + 1 cancelled = 4.
         $this->assertSame('pending', $row->fresh()->status);
