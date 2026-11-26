@@ -420,6 +420,28 @@ class User extends Authenticatable
         return $this->user_type !== 'super_admin';
     }
 
+    /**
+     * Main Office accounts that must see only Main Office agents in the Agent
+     * Ledger (Cyd 2026-11-26).
+     *
+     * These accounts sit on a branch literally named "Main Office", which
+     * normal head-office handling treats as "never branch-restricted" — so
+     * without this they see every branch's agents. The exception is stated as
+     * an explicit id allowlist on purpose: it must not be inferred from
+     * user_type or branch name, because head office genuinely means
+     * unrestricted for every other account and every other module.
+     *
+     * yves (273) is handled by the sibling "grant yves access" card; when that
+     * lands, add his id here or fold both into one rule. Keep this list short.
+     */
+    public function isAgentLedgerMainOfficeOnly(): bool
+    {
+        return in_array((int) $this->id, self::AGENT_LEDGER_MAIN_OFFICE_ONLY_IDS, true);
+    }
+
+    /** Explicit user ids for isAgentLedgerMainOfficeOnly(). */
+    public const AGENT_LEDGER_MAIN_OFFICE_ONLY_IDS = [270, 274];
+
     public function canImpersonate(): bool
     {
         return $this->isSuperAdmin();

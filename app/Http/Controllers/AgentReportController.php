@@ -2577,7 +2577,13 @@ class AgentReportController extends Controller
     {
         $user = auth()->user();
 
-        return $user && $user->isBranchLocked() && ! $user->isMainOffice();
+        // isBranchLocked() deliberately returns false for head-office accounts,
+        // so a Main Office user is not "branch locked" by the app-wide rule.
+        // isAgentLedgerMainOfficeOnly() names the two head-office accounts that
+        // must still be scoped to their own (head-office) agent pool in this
+        // module. Both cases reduce to "only my own branch's agents" below.
+        return $user && ($user->isAgentLedgerMainOfficeOnly()
+            || ($user->isBranchLocked() && ! $user->isMainOffice()));
     }
 
     /**
