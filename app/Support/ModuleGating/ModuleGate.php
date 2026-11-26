@@ -26,8 +26,17 @@ namespace App\Support\ModuleGating;
  */
 final class ModuleGate
 {
-    public static function allows(?string $userType, string $module, ?int $agencyId = null): bool
+    public static function allows(?string $userType, string $module, ?int $agencyId = null, ?int $userId = null): bool
     {
+        // Stage 0: explicit per-user module grants (config/mjolnir.php). These
+        // sit above the tiers on purpose — the yves card grants the Agents
+        // Report to ONE processor without changing what the processor tier
+        // holds, so Marfe and jeremiah keep their current module set.
+        // (Cyd 2026-11-26.)
+        if ($userId !== null && self::userGranted($userId, $module)) {
+            return true;
+        }
+
         // Stage 1: feature gates run before any role rule, admins included.
         foreach (GatingTable::FEATURE_GATES as $gatedModule => $gate) {
             if ($gatedModule !== $module) {
@@ -46,6 +55,21 @@ final class ModuleGate
         $rule = GatingTable::ROLE_RULES[$userType] ?? GatingTable::DEFAULT_RULE;
 
         return self::apply($rule, $module, $agencyId);
+    }
+
+    /**
+     * Is this exact account granted this module outright?
+     *
+     * Only agent_report has a per-user list today; the map is written this way
+     * so a second module needs one entry, not a new branch in the gate.
+     */
+    private static function userGranted(int $userId, string $module): bool
+    {
+        $grants = [
+            'agent_report' => (array) config('mjolnir.agent_report_user_grants', []),
+        ];
+
+        return in_array($userId, array_map('intval', $grants[$module] ?? []), true);
     }
 
     /**

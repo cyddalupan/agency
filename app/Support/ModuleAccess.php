@@ -446,9 +446,9 @@ class ModuleAccess
      * string, so a null user type keeps falling through to the default rule
      * exactly as before.
      */
-    public static function allows(?string $userType, string $module, ?int $agencyId = null): bool
+    public static function allows(?string $userType, string $module, ?int $agencyId = null, ?int $userId = null): bool
     {
-        return \App\Support\ModuleGating\ModuleGate::allows($userType, $module, $agencyId);
+        return \App\Support\ModuleGating\ModuleGate::allows($userType, $module, $agencyId, $userId);
     }
 
     /** Resolve the module for a request from its route name (falls back to the URI segment). */

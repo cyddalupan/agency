@@ -93,7 +93,10 @@ class User extends Authenticatable
 
     public function canAccessModule(string $module): bool
     {
-        return \App\Support\ModuleAccess::allows($this->user_type, $module, $this->agency_id);
+        // $this->id is passed so explicit per-user grants (config
+        // mjolnir.agent_report_user_grants) can be honoured — see the yves
+        // card, Cyd 2026-11-26.
+        return \App\Support\ModuleAccess::allows($this->user_type, $module, $this->agency_id, (int) $this->id);
     }
 
     /**
@@ -431,8 +434,9 @@ class User extends Authenticatable
      * user_type or branch name, because head office genuinely means
      * unrestricted for every other account and every other module.
      *
-     * yves (273) is handled by the sibling "grant yves access" card; when that
-     * lands, add his id here or fold both into one rule. Keep this list short.
+     * yves (273) was added by the sibling "grant yves access" card (Cyd
+     * 2026-11-26) in the same release as his module grant: access without this
+     * scoping would have shown him all 429 agents. Keep this list short.
      */
     public function isAgentLedgerMainOfficeOnly(): bool
     {
@@ -440,7 +444,7 @@ class User extends Authenticatable
     }
 
     /** Explicit user ids for isAgentLedgerMainOfficeOnly(). */
-    public const AGENT_LEDGER_MAIN_OFFICE_ONLY_IDS = [270, 274];
+    public const AGENT_LEDGER_MAIN_OFFICE_ONLY_IDS = [270, 274, 273];
 
     public function canImpersonate(): bool
     {

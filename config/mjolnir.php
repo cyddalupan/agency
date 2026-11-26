@@ -43,4 +43,26 @@ return [
         env('BRANCH_RESTRICTIONS', true),
         FILTER_VALIDATE_BOOLEAN
     ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Per-user module grants
+    |--------------------------------------------------------------------------
+    |
+    | Explicit, per-account grants of a single module, consulted by
+    | ModuleGate BEFORE the role/tier rules. Deliberately NOT a role change: the
+    | point of the yves card (Cyd 2026-11-26) is that one processor gains the
+    | Agents Report while the other processors keep their current module set.
+    |
+    | Keep this list tiny. A growing per-user list means the tiers are wrong.
+    |
+    | Env-driven so the same mechanism can be exercised against a test account
+    | without editing production ids:
+    |   AGENT_REPORT_USER_GRANTS=273,999
+    | Default is yves (273) only.
+    */
+    'agent_report_user_grants' => array_values(array_filter(array_map(
+        'intval',
+        explode(',', (string) env('AGENT_REPORT_USER_GRANTS', '273'))
+    ))),
 ];
