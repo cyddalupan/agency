@@ -69,7 +69,7 @@
             </tr>
             <tr class="total-row">
                 <td><strong>Total</strong></td>
-                <td class="amount"><strong>₱{{ number_format($bill->employer_cost + $bill->applicant_cost + $bill->employer_deposit + $bill->applicant_deposit, 2) }}</strong></td>
+                <td class="amount"><strong>{{ peso($bill->employer_cost + $bill->applicant_cost + $bill->employer_deposit + $bill->applicant_deposit) }}</strong></td>
             </tr>
         </tbody>
     </table>

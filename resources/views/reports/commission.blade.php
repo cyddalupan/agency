@@ -66,12 +66,12 @@
             </tr>
             <tr class="total-row">
                 <td><strong>Balance</strong></td>
-                <td class="amount"><strong>₱{{ number_format($commission->balance, 2) }}</strong></td>
+                <td class="amount"><strong>{{ peso($commission->balance) }}</strong></td>
             </tr>
             @else
             <tr class="total-row">
                 <td><strong>Total</strong></td>
-                <td class="amount"><strong>₱{{ number_format($commission->amount, 2) }}</strong></td>
+                <td class="amount"><strong>{{ peso($commission->amount) }}</strong></td>
             </tr>
             @endif
         </tbody>

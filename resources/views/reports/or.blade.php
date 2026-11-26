@@ -61,7 +61,7 @@
             </tr>
             <tr class="total-row">
                 <td><strong>Total</strong></td>
-                <td class="amount"><strong>₱{{ number_format($or->amount, 2) }}</strong></td>
+                <td class="amount"><strong>{{ peso($or->amount) }}</strong></td>
             </tr>
         </tbody>
     </table>
