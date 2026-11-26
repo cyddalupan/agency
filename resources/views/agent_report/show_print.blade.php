@@ -260,12 +260,12 @@
             <tr><th>Total Receivable (AR)</th><td class="num">₱{{ number_format($totalReceivables, 2) }}</td></tr>
             <tr><th>Total Return Payment</th><td class="num">₱{{ number_format($totalReturnPayment, 2) }}</td></tr>
             <tr><th>Total Payment</th><td class="num">₱{{ number_format($totalPayment, 2) }}</td></tr>
-            <tr><th>Agent's Balance</th><td class="num {{ $balance < 0 ? 'neg' : 'pos' }}">₱{{ number_format($balance, 2) }}</td></tr>
+            <tr><th>Total Balance / Net Payable</th><td class="num {{ $balance < 0 ? 'neg' : 'pos' }}">₱{{ number_format($balance, 2) }}</td></tr>
         </tbody>
     </table>
 
     <div class="note">
-        Balance = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payment ·
+        Balance / Net Payable = Total Cash Advance + Total Backout and Repat − Total Receivable (AR) + Total Return Payment − Total Payment ·
         Released Commission transactions only (Return rows are displayed on the Return Payment table and excluded from the Total Commission) ·
         Generated {{ $printedAt->format('M d, Y H:i') }} · {{ $agent->name }}
     </div>

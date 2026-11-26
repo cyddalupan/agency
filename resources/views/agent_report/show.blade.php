@@ -64,11 +64,11 @@
                     <p class="text-lg font-extrabold text-info mt-1">₱{{ number_format($totalPayment, 2) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200 p-3">
-                    <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Balance</p>
+                    <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Balance / Net Payable</p>
                     <p class="text-lg font-extrabold mt-1 {{ $balance < 0 ? 'text-error' : 'text-success' }}">₱{{ number_format($balance, 2) }}</p>
                 </div>
             </div>
-            <p class="text-xs opacity-50 mt-3">Balance = Cash Advance + Backout &amp; Repat − Total Receivables + Total Return Payment − Total Payment · USD converted at {{ number_format($usdToPhp, 2) }} PHP/USD</p>
+            <p class="text-xs opacity-50 mt-3">Balance / Net Payable = Cash Advance + Backout &amp; Repat − Total Receivables + Total Return Payment − Total Payment · USD converted at {{ number_format($usdToPhp, 2) }} PHP/USD</p>
         </div>
     </div>
 
