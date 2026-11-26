@@ -33,9 +33,9 @@
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->applicant ? $item->applicant->last_name . ', ' . $item->applicant->first_name : '—' }}</td>
                                 <td class="text-right font-semibold align-top whitespace-nowrap">
-                                    {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
+                                    {{ $item->currency === 'USD' ? '$' : peso((float) $item->amount) }}
                                     @if($item->currency === 'USD')
-                                        <span class="block text-xs font-normal opacity-60">≈ ₱{{ number_format($phpEquivalent, 2) }}</span>
+                                        <span class="block text-xs font-normal opacity-60">≈ {{ peso($phpEquivalent) }}</span>
                                     @endif
                                 </td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
@@ -45,7 +45,7 @@
                     <tfoot>
                         <tr class="bg-base-200/70 font-bold">
                             <td colspan="4" class="text-right">Total Return Payment</td>
-                            <td class="text-right">₱{{ number_format($tabTotals['return_payment'], 2) }}</td>
+                            <td class="text-right">{{ peso($tabTotals['return_payment']) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

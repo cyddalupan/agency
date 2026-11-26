@@ -41,31 +41,31 @@
             <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Commission</p>
-                    <p class="text-lg font-extrabold text-primary mt-1">₱{{ number_format($totalCommission, 2) }}</p>
+                    <p class="text-lg font-extrabold text-primary mt-1">{{ peso($totalCommission) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Cash Advance</p>
-                    <p class="text-lg font-extrabold mt-1">₱{{ number_format($totalCashAdvance, 2) }}</p>
+                    <p class="text-lg font-extrabold mt-1">{{ peso($totalCashAdvance) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Backout &amp; Repat</p>
-                    <p class="text-lg font-extrabold text-warning mt-1">₱{{ number_format($totalBackoutRepat, 2) }}</p>
+                    <p class="text-lg font-extrabold text-warning mt-1">{{ peso($totalBackoutRepat) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Receivables</p>
-                    <p class="text-lg font-extrabold text-error mt-1">₱{{ number_format($totalReceivables, 2) }}</p>
+                    <p class="text-lg font-extrabold text-error mt-1">{{ peso($totalReceivables) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Return Payment</p>
-                    <p class="text-lg font-extrabold text-success mt-1">₱{{ number_format($totalReturnPayment, 2) }}</p>
+                    <p class="text-lg font-extrabold text-success mt-1">{{ peso($totalReturnPayment) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Payment</p>
-                    <p class="text-lg font-extrabold text-info mt-1">₱{{ number_format($totalPayment, 2) }}</p>
+                    <p class="text-lg font-extrabold text-info mt-1">{{ peso($totalPayment) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Total Balance / Net Payable</p>
-                    <p class="text-lg font-extrabold mt-1 {{ $balance < 0 ? 'text-error' : 'text-success' }}">₱{{ number_format($balance, 2) }}</p>
+                    <p class="text-lg font-extrabold mt-1 {{ $balance < 0 ? 'text-error' : 'text-success' }}">{{ peso($balance) }}</p>
                 </div>
             </div>
             <p class="text-xs opacity-50 mt-3">Balance / Net Payable = Cash Advance + Backout &amp; Repat − Total Receivables + Total Return Payment − Total Payment · USD converted at {{ number_format($usdToPhp, 2) }} PHP/USD</p>
@@ -77,7 +77,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">💰 Released Commission</h2>
-                <span class="badge badge-primary badge-sm">Total: ₱{{ number_format($totalCommission, 2) }}</span>
+                <span class="badge badge-primary badge-sm">Total: {{ peso($totalCommission) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -101,7 +101,7 @@
                                 <td class="opacity-40">—</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : peso($item->netAmount()) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -115,7 +115,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="6" class="py-3">Total Commission</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalCommission, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalCommission) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -128,7 +128,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">💵 Cash Advance</h2>
-                <span class="badge badge-primary badge-sm">Total: ₱{{ number_format($totalCashAdvance, 2) }}</span>
+                <span class="badge badge-primary badge-sm">Total: {{ peso($totalCashAdvance) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -152,7 +152,7 @@
                                 <td class="opacity-40">—</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $item->particular }}">{{ $item->particular ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $item->currency === 'USD' ? '$' : peso($item->amount) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -166,7 +166,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="6" class="py-3">Total Cash Advance</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalCashAdvance, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalCashAdvance) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -179,7 +179,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">↩️ Backout and Repat</h2>
-                <span class="badge badge-warning badge-sm">Total: ₱{{ number_format($totalBackoutRepat, 2) }}</span>
+                <span class="badge badge-warning badge-sm">Total: {{ peso($totalBackoutRepat) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -200,7 +200,7 @@
                                 <td>{{ $d->account ?? '—' }}</td>
                                 <td>{{ $d->agent?->name ?? '—' }}</td>
                                 <td>{{ $d->applicant?->full_name ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($d->amount, 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ peso($d->amount) }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
                             </tr>
                         @empty
@@ -215,7 +215,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="4" class="py-3">Total Backout and Repat</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalBackoutRepat, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalBackoutRepat) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -229,7 +229,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">📄 Receivables</h2>
-                <span class="badge badge-primary badge-sm">Total: ₱{{ number_format($totalReceivables, 2) }}</span>
+                <span class="badge badge-primary badge-sm">Total: {{ peso($totalReceivables) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -253,7 +253,7 @@
                                 <td>{{ $r->mode ?? '—' }}</td>
                                 <td>{{ $r->account ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $r->particular }}">{{ $r->particular ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($r->amount, 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ peso($r->amount) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -267,7 +267,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="6" class="py-3">Total Receivables</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalReceivables, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalReceivables) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -280,7 +280,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">↩️ Return Payment</h2>
-                <span class="badge badge-success badge-sm">Total: ₱{{ number_format($totalReturnPayment, 2) }}</span>
+                <span class="badge badge-success badge-sm">Total: {{ peso($totalReturnPayment) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -304,7 +304,7 @@
                                 <td>{{ $rp->agent?->name ?? $agent->name }}</td>
                                 <td>{{ $rp->applicant?->full_name ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $rp->particular }}">{{ $rp->particular ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ $rp->currency === 'USD' ? '$' : peso($rp->amount) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -318,7 +318,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="6" class="py-3">Total Return Payment</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalReturnPayment, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalReturnPayment) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -331,7 +331,7 @@
         <div class="card-body p-0">
             <div class="px-5 py-4 flex items-center justify-between border-b border-base-200">
                 <h2 class="font-bold flex items-center gap-2">💳 Payment</h2>
-                <span class="badge badge-success badge-sm">Total: ₱{{ number_format($totalPayment, 2) }}</span>
+                <span class="badge badge-success badge-sm">Total: {{ peso($totalPayment) }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="table table-sm">
@@ -352,7 +352,7 @@
                                 <td>{{ $p['account'] ?? '—' }}</td>
                                 <td>{{ $p['agent'] ?? '—' }}</td>
                                 <td>{{ $p['applicant'] ?? '—' }}</td>
-                                <td class="text-right font-mono align-top whitespace-nowrap">₱{{ number_format($p['amount'], 2) }}</td>
+                                <td class="text-right font-mono align-top whitespace-nowrap">{{ peso($p['amount']) }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $p['particular'] }}">{{ $p['particular'] ?? '—' }}</td>
                             </tr>
                         @empty
@@ -367,7 +367,7 @@
                     <tfoot class="bg-base-200/80 font-bold">
                         <tr>
                             <td colspan="4" class="py-3">Total Paid</td>
-                            <td class="text-right font-mono">₱{{ number_format($totalPayment, 2) }}</td>
+                            <td class="text-right font-mono">{{ peso($totalPayment) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

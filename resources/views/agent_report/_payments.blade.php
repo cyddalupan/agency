@@ -59,8 +59,8 @@
                                     @endif
                                 </td>
                                 <td>{{ $p->agent->name ?? '—' }}</td>
-                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ $p->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $p->payment, 2) }}</td>
-                                <td class="text-right opacity-60 align-top whitespace-nowrap">{{ $p->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $p->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ $p->currency === 'USD' ? '$' : peso((float) $p->payment) }}</td>
+                                <td class="text-right opacity-60 align-top whitespace-nowrap">{{ $p->currency === 'USD' ? '$' : peso((float) $p->amount) }}</td>
                                 <td>{{ $p->account->name ?? '—' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $p->particular }}">{{ $p->particular ?? '—' }}</td>
                                 <td class="whitespace-nowrap align-top">

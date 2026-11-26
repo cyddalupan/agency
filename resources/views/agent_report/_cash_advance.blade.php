@@ -46,11 +46,11 @@
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
                                 <td class="text-right font-semibold align-top whitespace-nowrap">
-                                    {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
+                                    {{ $item->currency === 'USD' ? '$' : peso((float) $item->amount) }}
                                 </td>
                                 <td class="text-right opacity-70 align-top whitespace-nowrap">
                                     @if($item->currency === 'USD')
-                                        ≈ ₱{{ number_format($phpEquivalent, 2) }}
+                                        ≈ {{ peso($phpEquivalent) }}
                                     @else
                                         —
                                     @endif

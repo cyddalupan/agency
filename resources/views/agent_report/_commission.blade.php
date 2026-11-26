@@ -46,11 +46,11 @@
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
                                 <td class="text-right font-semibold align-top whitespace-nowrap">
-                                    {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
+                                    {{ $item->currency === 'USD' ? '$' : peso((float) $item->amount) }}
                                 </td>
                                 <td class="text-right opacity-70 align-top whitespace-nowrap">
                                     @if($item->currency === 'USD')
-                                        ≈ ₱{{ number_format($phpEquivalent, 2) }}
+                                        ≈ {{ peso($phpEquivalent) }}
                                     @else
                                         —
                                     @endif
@@ -128,11 +128,11 @@
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
                                 <td class="text-right font-semibold align-top whitespace-nowrap">
-                                    {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}
+                                    {{ $item->currency === 'USD' ? '$' : peso((float) $item->amount) }}
                                 </td>
                                 <td class="text-right opacity-70 align-top whitespace-nowrap">
                                     @if($item->currency === 'USD')
-                                        ≈ ₱{{ number_format($phpEquivalent, 2) }}
+                                        ≈ {{ peso($phpEquivalent) }}
                                     @else
                                         —
                                     @endif
@@ -155,7 +155,7 @@
                         <tr class="bg-base-200/70 font-semibold">
                             <td colspan="8">Total ({{ $releasedCommissionItems->count() }} released)</td>
                             <td class="text-right">—</td>
-                            <td class="text-right">₱{{ number_format($releasedCommissionTotal, 2) }}</td>
+                            <td class="text-right">{{ peso($releasedCommissionTotal) }}</td>
                             <td colspan="{{ in_array(auth()->user()->user_type, ['super_admin', 'admin', 'billing']) ? 5 : 4 }}"></td>
                         </tr>
                     </tfoot>

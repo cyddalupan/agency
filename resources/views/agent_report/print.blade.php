@@ -44,26 +44,26 @@
                 <tr>
                     <td>{{ $row['agent'] }}</td>
                     <td>{{ $row['branch'] }}</td>
-                    <td>₱{{ number_format($row['commission'], 2) }}</td>
-                    <td>₱{{ number_format($row['cash_advance'], 2) }}</td>
-                    <td>₱{{ number_format($row['backout_repat'], 2) }}</td>
-                    <td>₱{{ number_format($row['receivable'], 2) }}</td>
-                    <td>₱{{ number_format($row['return_payment'], 2) }}</td>
-                    <td>₱{{ number_format($row['payments'], 2) }}</td>
-                    <td class="{{ $row['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($row['balance'], 2) }}</td>
+                    <td>{{ peso($row['commission']) }}</td>
+                    <td>{{ peso($row['cash_advance']) }}</td>
+                    <td>{{ peso($row['backout_repat']) }}</td>
+                    <td>{{ peso($row['receivable']) }}</td>
+                    <td>{{ peso($row['return_payment']) }}</td>
+                    <td>{{ peso($row['payments']) }}</td>
+                    <td class="{{ $row['balance'] >= 0 ? 'pos' : 'neg' }}">{{ peso($row['balance']) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="2">Totals</td>
-                <td>₱{{ number_format($totals['commission'], 2) }}</td>
-                <td>₱{{ number_format($totals['cash_advance'], 2) }}</td>
-                <td>₱{{ number_format($totals['backout_repat'], 2) }}</td>
-                <td>₱{{ number_format($totals['receivable'], 2) }}</td>
-                <td>₱{{ number_format($totals['return_payment'], 2) }}</td>
-                <td>₱{{ number_format($totals['payments'], 2) }}</td>
-                <td class="{{ $totals['balance'] >= 0 ? 'pos' : 'neg' }}">₱{{ number_format($totals['balance'], 2) }}</td>
+                <td>{{ peso($totals['commission']) }}</td>
+                <td>{{ peso($totals['cash_advance']) }}</td>
+                <td>{{ peso($totals['backout_repat']) }}</td>
+                <td>{{ peso($totals['receivable']) }}</td>
+                <td>{{ peso($totals['return_payment']) }}</td>
+                <td>{{ peso($totals['payments']) }}</td>
+                <td class="{{ $totals['balance'] >= 0 ? 'pos' : 'neg' }}">{{ peso($totals['balance']) }}</td>
             </tr>
         </tfoot>
     </table>

@@ -23,14 +23,14 @@
                             <tr>
                                 <td class="font-semibold"><a href="{{ route('agent_report.show', $row['id']) }}" class="link link-primary hover:underline">{{ $row['agent'] }}</a></td>
                                 <td>{{ $row['branch'] }}</td>
-                                <td class="text-right">₱{{ number_format($row['commission'], 2) }}</td>
-                                <td class="text-right">₱{{ number_format($row['cash_advance'], 2) }}</td>
-                                <td class="text-right">₱{{ number_format($row['backout_repat'], 2) }}</td>
-                                <td class="text-right">₱{{ number_format($row['receivable'], 2) }}</td>
-                                <td class="text-right">₱{{ number_format($row['return_payment'], 2) }}</td>
-                                <td class="text-right">₱{{ number_format($row['payments'], 2) }}</td>
+                                <td class="text-right">{{ peso($row['commission']) }}</td>
+                                <td class="text-right">{{ peso($row['cash_advance']) }}</td>
+                                <td class="text-right">{{ peso($row['backout_repat']) }}</td>
+                                <td class="text-right">{{ peso($row['receivable']) }}</td>
+                                <td class="text-right">{{ peso($row['return_payment']) }}</td>
+                                <td class="text-right">{{ peso($row['payments']) }}</td>
                                 <td class="text-right font-extrabold {{ $row['balance'] >= 0 ? 'text-success' : 'text-error' }}">
-                                    ₱{{ number_format($row['balance'], 2) }}
+                                    {{ peso($row['balance']) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -38,14 +38,14 @@
                     <tfoot>
                         <tr class="bg-base-200/70 font-bold">
                             <td colspan="2" class="text-right">Totals</td>
-                            <td class="text-right">₱{{ number_format($totals['commission'], 2) }}</td>
-                            <td class="text-right">₱{{ number_format($totals['cash_advance'], 2) }}</td>
-                            <td class="text-right">₱{{ number_format($totals['backout_repat'], 2) }}</td>
-                            <td class="text-right">₱{{ number_format($totals['receivable'], 2) }}</td>
-                            <td class="text-right">₱{{ number_format($totals['return_payment'], 2) }}</td>
-                            <td class="text-right">₱{{ number_format($totals['payments'], 2) }}</td>
+                            <td class="text-right">{{ peso($totals['commission']) }}</td>
+                            <td class="text-right">{{ peso($totals['cash_advance']) }}</td>
+                            <td class="text-right">{{ peso($totals['backout_repat']) }}</td>
+                            <td class="text-right">{{ peso($totals['receivable']) }}</td>
+                            <td class="text-right">{{ peso($totals['return_payment']) }}</td>
+                            <td class="text-right">{{ peso($totals['payments']) }}</td>
                             <td class="text-right {{ $totals['balance'] >= 0 ? 'text-success' : 'text-error' }}">
-                                ₱{{ number_format($totals['balance'], 2) }}
+                                {{ peso($totals['balance']) }}
                             </td>
                         </tr>
                     </tfoot>

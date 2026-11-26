@@ -3,7 +3,7 @@
     <div class="card-body">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 class="font-bold">💵 Previous Payment <span class="badge badge-sm badge-ghost">{{ $previousPayments->count() }}</span>
-                <span class="ml-2 text-sm font-semibold opacity-80">Total: ₱{{ number_format((float) $previousPaymentsTotal, 2) }}</span>
+                <span class="ml-2 text-sm font-semibold opacity-80">Total: {{ peso((float) $previousPaymentsTotal) }}</span>
             </h3>
             @if($canManagePayments ?? false)
                 <a href="{{ route('agent_report.previous_payment.bulk') }}" class="btn btn-outline btn-sm">📤 Bulk Upload</a>
@@ -37,7 +37,7 @@
                                 <td>{{ $p->agent->name ?? '—' }}</td>
                                 <td>{{ $p->currency ?: 'PHP' }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $p->particular }}">{{ $p->particular ?? '—' }}</td>
-                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ ($p->currency === 'USD') ? '$' : '₱' }}{{ number_format((float) $p->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ ($p->currency === 'USD') ? '$' : peso((float) $p->amount) }}</td>
                                 <td class="whitespace-nowrap align-top">
                                     @if($canDeleteTransactions ?? false)
                                         <button type="button" class="btn btn-xs btn-error btn-outline"

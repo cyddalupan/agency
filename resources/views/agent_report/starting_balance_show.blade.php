@@ -38,7 +38,7 @@
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Amount</p>
-                    <p class="font-bold mt-1 text-primary">₱{{ number_format((float) $startingBalance->amount, 2) }}</p>
+                    <p class="font-bold mt-1 text-primary">{{ peso((float) $startingBalance->amount) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Encoded by</p>

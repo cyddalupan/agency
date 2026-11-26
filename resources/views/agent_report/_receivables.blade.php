@@ -59,7 +59,7 @@
                                         : '—' }}
                                 </td>
                                 <td>{{ $receivable->agent?->name ?? '—' }}</td>
-                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format((float) $receivable->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ peso((float) $receivable->amount) }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $receivable->particular }}">{{ $receivable->particular ?? '—' }}</td>
                                 <td>{{ $receivable->encoder?->name ?? '—' }}</td>
                                 @if($canViewReceivable)

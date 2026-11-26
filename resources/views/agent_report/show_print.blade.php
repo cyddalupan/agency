@@ -50,7 +50,7 @@
     @endphp
 
     @if($hasCommission)
-    <h2>💰 Released Commission — <span style="text-transform:none">Total: ₱{{ number_format($totalCommission, 2) }}</span></h2>
+    <h2>💰 Released Commission — <span style="text-transform:none">Total: {{ peso($totalCommission) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -70,20 +70,20 @@
                     <td>{{ $item->applicant?->full_name ?? '—' }}</td>
                     <td>{{ $item->account?->name ?? '—' }}</td>
                     <td>{{ $item->particular ?? '—' }}</td>
-                    <td class="num">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->netAmount(), 2) }}</td>
+                    <td class="num">{{ $item->currency === 'USD' ? '$' : peso($item->netAmount()) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No released commission transactions.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="5">Total Commission (Return excluded)</td><td class="num">₱{{ number_format($totalCommission, 2) }}</td></tr>
+            <tr><td colspan="5">Total Commission (Return excluded)</td><td class="num">{{ peso($totalCommission) }}</td></tr>
         </tfoot>
     </table>
     @endif
 
     @if($hasCashAdvance)
-    <h2>💵 Cash Advance — <span style="text-transform:none">Total: ₱{{ number_format($totalCashAdvance, 2) }}</span></h2>
+    <h2>💵 Cash Advance — <span style="text-transform:none">Total: {{ peso($totalCashAdvance) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -103,20 +103,20 @@
                     <td>{{ $item->applicant?->full_name ?? '—' }}</td>
                     <td>{{ $item->account?->name ?? '—' }}</td>
                     <td>{{ $item->particular ?? '—' }}</td>
-                    <td class="num">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format($item->amount, 2) }}</td>
+                    <td class="num">{{ $item->currency === 'USD' ? '$' : peso($item->amount) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No cash advance transactions.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="5">Total Cash Advance</td><td class="num">₱{{ number_format($totalCashAdvance, 2) }}</td></tr>
+            <tr><td colspan="5">Total Cash Advance</td><td class="num">{{ peso($totalCashAdvance) }}</td></tr>
         </tfoot>
     </table>
     @endif
 
     @if($hasBackout)
-    <h2>↩️ Backout and Repat — <span style="text-transform:none">Total: ₱{{ number_format($totalBackoutRepat, 2) }}</span></h2>
+    <h2>↩️ Backout and Repat — <span style="text-transform:none">Total: {{ peso($totalBackoutRepat) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -136,20 +136,20 @@
                     <td>{{ $d->agent?->name ?? '—' }}</td>
                     <td>{{ $d->applicant?->full_name ?? '—' }}</td>
                     <td>{{ $d->particular ?? '—' }}</td>
-                    <td class="num">₱{{ number_format($d->amount, 2) }}</td>
+                    <td class="num">{{ peso($d->amount) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No backout and repat entries.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="5">Total Backout and Repat</td><td class="num">₱{{ number_format($totalBackoutRepat, 2) }}</td></tr>
+            <tr><td colspan="5">Total Backout and Repat</td><td class="num">{{ peso($totalBackoutRepat) }}</td></tr>
         </tfoot>
     </table>
     @endif
 
     @if($hasReceivables)
-    <h2>📄 Receivables — <span style="text-transform:none">Total: ₱{{ number_format($totalReceivables, 2) }}</span></h2>
+    <h2>📄 Receivables — <span style="text-transform:none">Total: {{ peso($totalReceivables) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -171,20 +171,20 @@
                     <td>{{ $r->mode ?? '—' }}</td>
                     <td>{{ $r->account ?? '—' }}</td>
                     <td>{{ $r->particular ?? '—' }}</td>
-                    <td class="num">₱{{ number_format($r->amount, 2) }}</td>
+                    <td class="num">{{ peso($r->amount) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">No receivable entries.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="6">Total Receivables</td><td class="num">₱{{ number_format($totalReceivables, 2) }}</td></tr>
+            <tr><td colspan="6">Total Receivables</td><td class="num">{{ peso($totalReceivables) }}</td></tr>
         </tfoot>
     </table>
     @endif
 
     @if($hasReturnPayments)
-    <h2>↩️ Return Payment — <span style="text-transform:none">Total: ₱{{ number_format($totalReturnPayment, 2) }}</span></h2>
+    <h2>↩️ Return Payment — <span style="text-transform:none">Total: {{ peso($totalReturnPayment) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -206,20 +206,20 @@
                     <td>{{ $rp->agent?->name ?? $agent->name }}</td>
                     <td>{{ $rp->applicant?->full_name ?? '—' }}</td>
                     <td>{{ $rp->particular ?? '—' }}</td>
-                    <td class="num">{{ $rp->currency === 'USD' ? '$' : '₱' }}{{ number_format($rp->amount, 2) }}</td>
+                    <td class="num">{{ $rp->currency === 'USD' ? '$' : peso($rp->amount) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">No return payment entries.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="6">Total Return Payment</td><td class="num">₱{{ number_format($totalReturnPayment, 2) }}</td></tr>
+            <tr><td colspan="6">Total Return Payment</td><td class="num">{{ peso($totalReturnPayment) }}</td></tr>
         </tfoot>
     </table>
     @endif
 
     @if($hasPayments)
-    <h2>💳 Payment — <span style="text-transform:none">Total: ₱{{ number_format($totalPayment, 2) }}</span></h2>
+    <h2>💳 Payment — <span style="text-transform:none">Total: {{ peso($totalPayment) }}</span></h2>
     <table>
         <thead>
             <tr>
@@ -239,14 +239,14 @@
                     <td>{{ $p['agent'] ?? '—' }}</td>
                     <td>{{ $p['applicant'] ?? '—' }}</td>
                     <td>{{ $p['particular'] ?? '—' }}</td>
-                    <td class="num">₱{{ number_format($p['amount'], 2) }}</td>
+                    <td class="num">{{ peso($p['amount']) }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No payment entries.</td></tr>
             @endforelse
         </tbody>
         <tfoot>
-            <tr><td colspan="5">Total Payment</td><td class="num">₱{{ number_format($totalPayment, 2) }}</td></tr>
+            <tr><td colspan="5">Total Payment</td><td class="num">{{ peso($totalPayment) }}</td></tr>
         </tfoot>
     </table>
     @endif
@@ -254,13 +254,13 @@
     <h2 class="page-break">📋 Summary Report</h2>
     <table class="summary">
         <tbody>
-            <tr><th>Total Commission (Return excluded)</th><td class="num">₱{{ number_format($totalCommission, 2) }}</td></tr>
-            <tr><th>Total Cash Advance</th><td class="num">₱{{ number_format($totalCashAdvance, 2) }}</td></tr>
-            <tr><th>Total Backout and Repat</th><td class="num">₱{{ number_format($totalBackoutRepat, 2) }}</td></tr>
-            <tr><th>Total Receivable (AR)</th><td class="num">₱{{ number_format($totalReceivables, 2) }}</td></tr>
-            <tr><th>Total Return Payment</th><td class="num">₱{{ number_format($totalReturnPayment, 2) }}</td></tr>
-            <tr><th>Total Payment</th><td class="num">₱{{ number_format($totalPayment, 2) }}</td></tr>
-            <tr><th>Total Balance / Net Payable</th><td class="num {{ $balance < 0 ? 'neg' : 'pos' }}">₱{{ number_format($balance, 2) }}</td></tr>
+            <tr><th>Total Commission (Return excluded)</th><td class="num">{{ peso($totalCommission) }}</td></tr>
+            <tr><th>Total Cash Advance</th><td class="num">{{ peso($totalCashAdvance) }}</td></tr>
+            <tr><th>Total Backout and Repat</th><td class="num">{{ peso($totalBackoutRepat) }}</td></tr>
+            <tr><th>Total Receivable (AR)</th><td class="num">{{ peso($totalReceivables) }}</td></tr>
+            <tr><th>Total Return Payment</th><td class="num">{{ peso($totalReturnPayment) }}</td></tr>
+            <tr><th>Total Payment</th><td class="num">{{ peso($totalPayment) }}</td></tr>
+            <tr><th>Total Balance / Net Payable</th><td class="num {{ $balance < 0 ? 'neg' : 'pos' }}">{{ peso($balance) }}</td></tr>
         </tbody>
     </table>
 

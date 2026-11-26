@@ -40,7 +40,7 @@
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Amount</p>
-                    <p class="font-bold mt-1 text-error">₱{{ number_format((float) $deduction->amount, 2) }}</p>
+                    <p class="font-bold mt-1 text-error">{{ peso((float) $deduction->amount) }}</p>
                 </div>
                 <div class="rounded-xl bg-base-200/60 p-3">
                     <p class="text-xs uppercase tracking-wide opacity-60 font-semibold">Encoded by</p>

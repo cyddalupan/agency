@@ -44,7 +44,7 @@
                                     @else —
                                     @endif
                                 </td>
-                                <td class="text-right font-semibold align-top whitespace-nowrap">₱{{ number_format((float) $d->amount, 2) }}</td>
+                                <td class="text-right font-semibold align-top whitespace-nowrap">{{ peso((float) $d->amount) }}</td>
                                 <td class="max-w-[26rem] whitespace-normal break-words align-top" title="{{ $d->particular }}">{{ $d->particular ?? '—' }}</td>
                                 <td class="whitespace-nowrap align-top">
                                     <a href="{{ route('agent_report.deduction.show', $d) }}" class="btn btn-xs btn-ghost whitespace-nowrap inline-flex items-center gap-1">Review →</a>
@@ -63,7 +63,7 @@
                     <tfoot>
                         <tr class="bg-base-200/70 font-bold">
                             <td colspan="4" class="text-right">Total Deductions</td>
-                            <td class="text-right">₱{{ number_format((float) $tabTotals['deductions'], 2) }}</td>
+                            <td class="text-right">{{ peso((float) $tabTotals['deductions']) }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
