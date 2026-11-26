@@ -475,6 +475,9 @@ Route::middleware(['auth:web', 'module.access'])->group(function () {
     // Applicant routes - recruiter and other agency roles
     Route::group([], function () {
         Route::get('applicants/export', [ApplicantController::class, 'export'])->name('applicants.export');
+        // Infinite-scroll batch feed (card 6b07e35d8d2e571a7ac9ca6b). Must
+        // precede the resource route, or 'feed' is captured as an applicant id.
+        Route::get('applicants/feed', [ApplicantController::class, 'feed'])->name('applicants.feed');
         // WELFARE module — lives under BACKOUT, CANCELLED & REPAT (card 6af81f6a).
     // CSDI and FINAS only, enforced in WelfareController::agencyId().
     Route::prefix('welfare')->name('welfare.')->group(function () {

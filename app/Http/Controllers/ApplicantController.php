@@ -85,7 +85,12 @@ class ApplicantController extends Controller
         //
         // 50/page (was 15) per Cyd request on the APPLICANTS MODULE card
         // (2026-10-13) — the pipeline is long, 15 rows forced too much paging.
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(print_per_page(50))->withQueryString();
+        // id is the tiebreaker, and it has to be here, not just in the feed:
+        // offset pagination over rows that share a created_at can otherwise
+        // repeat or skip a row at a page boundary (caught in QA 2026-11-26 —
+        // one applicant appeared on both page 1 and page 2).
+        $applicants = $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')
+            ->paginate(print_per_page(50))->withQueryString();
 
         // Tab counters (ignoring the funnel filters, but never the withdrawn ones).
         $base = Applicant::query()->forBranchUser()->whereNotIn('status_code', $withdrawnStatuses);
@@ -155,7 +160,12 @@ class ApplicantController extends Controller
         // withQueryString(): see index() — keep the active tab/filters when
         // changing page (Toybits report 2026-10-09). 50/page per the
         // APPLICANTS MODULE card (2026-10-13).
-        $applicants = $query->orderBy('created_at', 'desc')->paginate(print_per_page(50))->withQueryString();
+        // id is the tiebreaker, and it has to be here, not just in the feed:
+        // offset pagination over rows that share a created_at can otherwise
+        // repeat or skip a row at a page boundary (caught in QA 2026-11-26 —
+        // one applicant appeared on both page 1 and page 2).
+        $applicants = $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')
+            ->paginate(print_per_page(50))->withQueryString();
 
         $base = Applicant::query()->forBranchUser()->whereIn('status_code', $withdrawnStatuses);
         $typeCounts = [
@@ -1570,6 +1580,68 @@ class ApplicantController extends Controller
 
         return redirect()->route('applicants.index')
             ->with('success', 'Applicant deleted successfully.');
+    }
+
+    /**
+     * Batched JSON feed for the infinite-scroll applicant lists
+     * (card 6b07e35d8d2e571a7ac9ca6b, Part B).
+     *
+     * Deliberately thin: it applies exactly the same filter method the
+     * server-rendered list uses, so batch 2 onwards can never disagree with
+     * the first page. The row markup comes from the same Blade partials too,
+     * which is what makes appended rows identical to rendered ones.
+     *
+     * $context is 'list' or 'withdrawn', matching the two tabs.
+     */
+    public function feed(Request $request): JsonResponse
+    {
+        $context = $request->input('context') === 'withdrawn' ? 'withdrawn' : 'list';
+
+        if ($context === 'withdrawn') {
+            abort_unless(auth()->user()->canViewBackoutRepat(), 403, 'This folder is restricted to Admin and Accounting.');
+        }
+
+        // Batch size is decided here and nowhere else. A client-supplied
+        // per_page is ignored outright rather than clamped, so nobody can
+        // walk a large slice out of the endpoint by guessing a big number.
+        $perPage = 50;
+        $page = max(1, (int) $request->input('page', 1));
+
+        $withdrawnStatuses = [35, 38, 50];
+
+        $query = Applicant::with(['statusCode', 'position', 'agent', 'branch', 'country', 'contractRecords'])
+            ->forBranchUser()
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($context === 'withdrawn') {
+            $query->whereIn('status_code', $withdrawnStatuses);
+        } else {
+            $query->whereNotIn('status_code', $withdrawnStatuses);
+        }
+
+        // Same filters as the list. This is the only query path.
+        $this->applyApplicantFilters($query, $request, 'list');
+
+        $rows = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $partial = $context === 'withdrawn'
+            ? 'applicants.partials.withdrawn-rows'
+            : 'applicants.partials.rows';
+
+        $html = view($partial, [
+            'applicants' => $rows->getCollection(),
+            'tableColumns' => $context === 'withdrawn' ? null : app_applicant_table_columns(),
+        ])->render();
+
+        return response()->json([
+            'html' => $html,
+            'page' => $rows->currentPage(),
+            'per_page' => $perPage,
+            'total' => $rows->total(),
+            'has_more' => $rows->hasMorePages(),
+            'count' => $rows->count(),
+        ]);
     }
 
     /**
