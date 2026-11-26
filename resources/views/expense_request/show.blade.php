@@ -75,7 +75,7 @@
                                 <td>{{-- Card 6af82fef: full name (First Middle Last Suffix). --}}{{ $item->applicant ? $item->applicant->full_name : '—' }}</td>
                                 <td>{{ $item->agent?->name ?? '—' }}</td>
                                 <td>{{ $item->currency }}</td>
-                                <td class="text-right font-semibold">{{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) $item->amount, 2) }}</td>
+                                <td class="text-right font-semibold">{{ $item->currency === 'USD' ? '$' : peso((float) $item->amount) }}</td>
                                 <td>{{ $item->account?->name ?? '—' }}</td>
                                 <td>{{ $item->country?->name ?? '—' }}</td>
                                 <td>{{ $item->particular ?? '—' }}</td>

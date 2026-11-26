@@ -161,8 +161,8 @@
                 {{-- (Josh 2026-11-11, card 6af3ea66) Headline shows RELEASED only.
                      The per-status lines below still break down the full set. --}}
                 <p class="text-sm opacity-60">💰 PHP Total <span class="opacity-60">(Released)</span></p>
-                <p class="text-2xl font-bold">₱{{ number_format($releasedPhpTotal, 2) }}</p>
-                <p class="text-xs opacity-60">USD: ${{ number_format($releasedUsdTotal, 2) }} ≈ ₱{{ number_format($releasedTotalAmount, 2) }}</p>
+                <p class="text-2xl font-bold">{{ peso($releasedPhpTotal) }}</p>
+                <p class="text-xs opacity-60">USD: ${{ number_format($releasedUsdTotal, 2) }} ≈ {{ peso($releasedTotalAmount) }}</p>
                 @php
                     $statusIcons = [
                         'pending'       => '⏳',
@@ -178,12 +178,12 @@
                     @foreach($statusTotals as $statusKey => $st)
                         <p class="status-summary" data-status-summary="{{ $statusKey }}">
                             {{ $statusIcons[$statusKey] }} {{ \App\Models\ExpenseRequest::STATUS_LABELS[$statusKey] }}:
-                            ₱{{ number_format($st['PHP'], 2) }}
+                            {{ peso($st['PHP']) }}
                             <span class="opacity-50">(USD ${{ number_format($st['USD'], 2) }})</span>
                             <span class="badge badge-xs badge-ghost">{{ $st['count'] }}</span>
                         </p>
                     @endforeach
-                    <p class="pt-1">🏢 Office: ₱{{ number_format($chargeTotals['office'] ?? 0, 2) }} · 🧑 Agent: ₱{{ number_format($chargeTotals['agent'] ?? 0, 2) }}</p>
+                    <p class="pt-1">🏢 Office: {{ peso($chargeTotals['office'] ?? 0) }} · 🧑 Agent: {{ peso($chargeTotals['agent'] ?? 0) }}</p>
                 </div>
             </div>
         </div>
@@ -358,7 +358,7 @@
                                             @if((float) $item->amount === 0.0 && (float) ($item->payment ?? 0) === 0.0)
                                                 <span class="opacity-50" title="No amount recorded on this line. See Particular.">—</span>
                                             @else
-                                                {{ $item->currency === 'USD' ? '$' : '₱' }}{{ number_format((float) ($item->amount - ($item->payment ?? 0)), 2) }}
+                                                {{ $item->currency === 'USD' ? '$' : peso((float) ($item->amount - ($item->payment ?? 0))) }}
                                             @endif
                                             @if((float) ($item->payment ?? 0) > 0)
                                                 <span class="block text-xs font-normal opacity-60" title="Original {{ number_format((float) $item->amount, 2) }} less payment {{ number_format((float) $item->payment, 2) }}">
@@ -478,7 +478,7 @@
                                             <td>{{ $member['applicant'] ?? '—' }}</td>
                                             <td>{{ $member['agent'] ?? '—' }}</td>
                                             <td class="text-right font-semibold whitespace-nowrap">
-                                                {{ $member['currency'] === 'USD' ? '$' : '₱' }}{{ number_format($member['amount'] - $member['payment'], 2) }}
+                                                {{ $member['currency'] === 'USD' ? '$' : peso($member['amount'] - $member['payment']) }}
                                             </td>
                                             <td>{{ $member['account'] ?? '—' }}</td>
                                             <td class="col-particular"><span class="particular-text">{{ $member['particular'] ?? '—' }}</span></td>
