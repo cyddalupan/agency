@@ -40,3 +40,11 @@ Schedule::command('app:check-queue-health')
 Schedule::command('queue:monitor')
     ->hourly()
     ->appendOutputTo(storage_path('logs/queue-monitor.log'));
+
+// USD->PHP rate refresh — daily, 03:00 Manila time (card 6b05c0bc).
+// The only place the app talks to the FX feed; rendering reads the stored rate.
+Schedule::command('fx:refresh-rate')
+    ->dailyAt('03:00')
+    ->timezone('Asia/Manila')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/fx-refresh.log'));
