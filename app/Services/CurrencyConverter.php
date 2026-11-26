@@ -3,45 +3,71 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 
 /**
- * Currency conversion for reports (Toybits 2026-08-16).
+ * Currency conversion for reports.
  *
- * Uses the free open.er-api.com endpoint (no API key, daily updates).
- * Rates are cached for 6 hours. If the API is unreachable, falls back to a
- * 1.0 rate (i.e. amounts are shown unconverted) so reports never break.
+ * Card 6b05c0bc (Bitoy decision 2026-11-25, "Option A"): there is exactly
+ * ONE USD->PHP rate, config('expense.usd_to_php'), admin-editable, default
+ * 63.769743. Every screen reads it. NO code path fetches a rate from the
+ * internet while rendering: a number in a ledger has to be reproducible, and
+ * a third-party API deciding the rate at render time is not.
+ *
+ * The free open.er-api.com feed still has a job, but not at render time:
+ * `php artisan fx:refresh-rate` (routes/console.php, daily) fetches it, writes
+ * the number into this config's storage and logs old -> new.
+ *
+ * Rate resolution order, and why:
+ *   1. Cache `fx_usd_to_php`  — the daily refresh writes here, and the test
+ *      suite seeds it (`Cache::put('fx_usd_to_php', 56.0)`). Cache-first keeps
+ *      those fixtures deterministic.
+ *   2. config('expense.usd_to_php') — the live, on-screen rate.
+ * Never 1.0: a rate <= 1.0 is rejected as an error, not used as a value. The
+ * old code fell back to 1.0, which rendered $470 as P470 with no warning.
  */
 class CurrencyConverter
 {
-    private const CACHE_KEY = 'fx_usd_to_php';
+    public const CACHE_KEY = 'fx_usd_to_php';
 
-    private const CACHE_TTL = 21600; // 6 hours
+    /** Below this, a "rate" is a bug, not a conversion factor. */
+    public const MIN_RATE = 1.0;
 
-    public function toPhp(float $amount, string $currency): float
+    public function toPhp(float $amount, string $currency, ?float $rate = null): float
     {
         if (strtoupper($currency) === 'PHP') {
             return $amount;
         }
 
-        return $amount * $this->usdToPhpRate();
+        return $amount * ($rate ?? $this->usdToPhpRate());
     }
 
     public function usdToPhpRate(): float
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            try {
-                $response = Http::timeout(3)->get('https://open.er-api.com/v6/latest/USD');
-                $data = $response->json();
+        $cached = Cache::get(self::CACHE_KEY);
+        if ($cached !== null && (float) $cached > self::MIN_RATE) {
+            return (float) $cached;
+        }
 
-                if (($data['result'] ?? '') === 'success' && isset($data['rates']['PHP'])) {
-                    return (float) $data['rates']['PHP'];
-                }
-            } catch (\Throwable $e) {
-                // API unreachable — fall through to the 1.0 fallback.
-            }
+        return $this->configuredRate();
+    }
 
-            return 1.0;
-        });
+    /**
+     * The configured rate, guarded. Used by the daily refresh to read the
+     * current value before overwriting it, and as the final fallback.
+     */
+    public function configuredRate(): float
+    {
+        $rate = (float) config('expense.usd_to_php');
+
+        if ($rate <= self::MIN_RATE) {
+            // A misconfigured rate is an error to surface, not a value to use.
+            // The config default is valid, so this only trips on a bad override.
+            throw new \RuntimeException(
+                'config(expense.usd_to_php) resolved to '.$rate
+                .'; a USD->PHP rate must be > 1. Fix config/expense.php or EXPENSE_USD_TO_PHP.'
+            );
+        }
+
+        return $rate;
     }
 }
