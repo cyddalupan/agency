@@ -37,14 +37,20 @@
                                 <td class="font-mono font-semibold">{{ $er->reference_no ?? '—' }}</td>
                                 <td>{{ $er->user->name ?? '—' }}</td>
                                 <td>
+                                    {{-- Card 6b07b9fb: this row IS one transaction, so the badge must
+                                         be that transaction's own status. It previously read the
+                                         parent request's status ($er->status), so a transaction
+                                         whose status lagged its request displayed the request's
+                                         status instead of its own. --}}
+                                    @php($pStatus = $p->status ?? $er->status ?? '')
                                     <span class="badge badge-sm
-                                        @switch($er->status ?? '')
+                                        @switch($pStatus)
                                             @case('approved') badge-info @break
                                             @case('for_releasing') badge-primary @break
                                             @case('released') badge-success @break
                                             @case('cancelled') badge-error @break
                                             @default badge-warning
-                                        @endswitch">{{ \App\Models\ExpenseRequest::STATUS_LABELS[$er->status ?? 'pending'] ?? ($er->status ?? '—') }}</span>
+                                        @endswitch">{{ \App\Models\ExpenseRequest::STATUS_LABELS[$pStatus] ?? ($pStatus ?: '—') }}</span>
                                 </td>
                                 <td>
                                     @if($p->applicant)
