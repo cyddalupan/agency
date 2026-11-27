@@ -7,7 +7,9 @@ namespace App\Http\Controllers\GodMode;
 use App\Http\Controllers\Controller;
 use App\Models\Agency;
 use App\Models\Receivable;
+use App\Services\GodMode\GodBillingService;
 use App\Services\GodMode\GodReceivableService;
+use App\Services\GodMode\PaymentLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -29,8 +31,11 @@ use Illuminate\View\View;
  */
 class GodPaymentsController extends Controller
 {
-    public function __construct(private readonly GodReceivableService $ledger)
-    {
+    public function __construct(
+        private readonly GodReceivableService $ledger,
+        private readonly PaymentLedgerService $paymentLedger,
+        private readonly GodBillingService $billingService,
+    ) {
     }
 
     public function index(Request $request): View
@@ -62,34 +67,48 @@ class GodPaymentsController extends Controller
      * a 404 here instead of a 500 in the header (and `page=0`/junk clamps to 1,
      * not to an empty page).
      */
+    /**
+     * Agency drill-in.
+     *
+     * Card 6b07f3667e9a74a10e2fe55f re-points this screen at
+     * `agency_billing_payments` — what the agency paid LANDAS — instead of
+     * `receivables`, which is applicant/agent money inside the agency's own
+     * books. The old page answered "what has this agency collected"; the
+     * operator asking it actually meant "what has this agency paid us".
+     *
+     * READ-ONLY (AC8): there is no store/update/void route for this screen.
+     * Recording and voiding live in the village modal, on the record-payment
+     * card — money entry belongs there, next to the agreement it pays against.
+     *
+     * `{agency}` binds unscoped on the god plane; an unknown id is a 404 from
+     * the implicit binding, never a 500. A `?page=` past the last page is a
+     * page that does not exist, so it is a 404 here rather than an empty table
+     * under a populated header.
+     */
     public function show(Request $request, Agency $agency): View
     {
-        $query = $request->query();
-        $query['agency'] = $agency->id;
-        $filters = $this->ledger->filters($query);
+        $filters = $this->paymentLedger->filters($request->query());
 
-        $rows = $this->ledger->agencyPage($filters, $agency->id);
+        $payments = $this->paymentLedger->page($agency, $filters);
 
-        abort_if($rows->currentPage() < 1 || $rows->currentPage() > $rows->lastPage(), 404);
+        abort_if($payments->currentPage() < 1 || $payments->currentPage() > max(1, $payments->lastPage()), 404);
 
-        // Card 6b055e29: the drill-in's coverage is this agency's own history
-        // (all-time, every status), never the fleet-wide ratio.
-        $coverage = $this->ledger->agencyCoverage(['agency' => $agency->id] + $filters);
+        $totals   = $this->paymentLedger->totals($agency, $filters);
+        $summary  = $this->billingService->summary($agency);
+        $voidAudit = $this->paymentLedger->voidAudit($agency, $payments->items());
 
         return view('godmode.payments.show', [
-            'filters'   => $filters,
-            'bounds'    => $this->ledger->monthBounds($filters),
-            'agency'    => $agency,
-            'header'    => $this->ledger->agencyHeader($agency),
-            'coverage'  => $coverage,
-            'summary'   => $this->ledger->summary($filters),
-            'series'    => $this->ledger->monthlySeries($filters),
-            'byAccount' => $this->ledger->byAccount($filters),
-            'rows'      => $rows,
-            'voided'    => $this->ledger->voidedPage($filters, $agency->id),
-            'perOptions' => GodReceivableService::PER_PAGE_OPTIONS,
-            'accounts'  => Receivable::ACCOUNTS,
-            'unspecified' => GodReceivableService::UNSPECIFIED_ACCOUNT,
+            'agency'      => $agency,
+            'filters'     => $filters,
+            'payments'    => $payments,
+            'totals'      => $totals,
+            'summary'     => $summary,
+            'plan'        => $summary['plan'],
+            'voidAudit'   => $voidAudit,
+            'modes'       => Receivable::MODES,
+            'perOptions'  => PaymentLedgerService::PER_PAGE_OPTIONS,
+            'typeFilters' => PaymentLedgerService::TYPE_FILTERS,
+            'hasAny'      => $this->paymentLedger->hasAnyPayment($agency),
         ]);
     }
 }

@@ -1,257 +1,245 @@
 @extends('godmode.layouts.app')
 
-@section('title', 'Payments · '.$agency->name)
+@section('title', 'Payment ledger · '.$agency->name)
 
 @php
-    $service = app(\App\Services\GodMode\GodReceivableService::class);
+    use App\Models\AgencyBillingPayment;
 
+    // Card 6b07f3667e9a74a10e2fe55f — the COMPLETE payment record for one
+    // agency. The village modal's billing summary shows the last rows and a
+    // total; that is the right size for a modal, but reconciling a bank
+    // statement needs everything. This screen is read-only by design: money is
+    // recorded and voided in the village modal, never here.
+    $typeLabel = fn (string $t) => $t === AgencyBillingPayment::TYPE_INITIAL ? 'Initial' : 'Monthly';
+
+    // One service instance for the whole render: resolving it inside the row
+    // loop would rebuild it per payment for a single badge class.
+    $ledgerService = app(\App\Services\GodMode\PaymentLedgerService::class);
+
+    $money = fn (float|string $v) => number_format((float) $v, 2);
+
+    // Filter state carried into every link so sorting/paging never drops it.
     $base = array_filter([
-        'from'    => $filters['from'],
-        'to'      => $filters['to'],
-        'account' => $filters['account'] ?: null,
-        'status'  => $filters['status'] !== 'received' ? $filters['status'] : null,
-        'q'       => $filters['q'] ?: null,
-        'per'     => $filters['per'] !== 25 ? $filters['per'] : null,
+        'type'   => $filters['type'] !== 'all' ? $filters['type'] : null,
+        'voided' => $filters['voided'] ? 1 : null,
+        'from'   => $filters['from'],
+        'to'     => $filters['to'],
+        'per'    => $filters['per'] !== 25 ? $filters['per'] : null,
     ], fn ($v) => $v !== null && $v !== '');
 
-    // The KPIs follow the status filter, like the table below them (B2). The
-    // dashboard never filters by status, so its tiles are unchanged.
-    // The money and row numbers come from summary(), the same row set as the
-    // table below (F3); the Rows tile is the number of rows listed.
-    $rowsValue = $summary['row_count'] === null ? '—' : number_format($summary['row_count']);
-
-    // A page past the last one is refused in the controller (404), so this
-    // page always has at least one row or is genuinely empty.
-    $firstRow = $rows->first();
-
-    $tiles = [
-        ['key' => 'collected', 'label' => 'Collected', 'value' => $service->formatMoney($summary['collected']), 'hint' => $bounds['from'].' to '.$bounds['to']],
-        ['key' => 'outstanding', 'label' => 'Outstanding', 'value' => $service->formatMoney($summary['outstanding']), 'hint' => 'Pending, not yet received'],
-        ['key' => 'rows', 'label' => 'Rows', 'value' => $rowsValue, 'hint' => number_format($summary['voided_count']).' voided'],
-        ['key' => 'last', 'label' => 'Last payment', 'value' => $firstRow && $firstRow->date ? $firstRow->date->format('d/m/Y') : '—', 'hint' => 'Most recent row shown'],
-    ];
+    $isFiltered = $base !== [];
 @endphp
 
 @section('content')
+{{-- ── header ─────────────────────────────────────────────────────── --}}
 <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
         <div class="flex items-center gap-3">
-            <h1 class="text-2xl font-extrabold">{{ $header['name'] }}</h1>
-            @include('godmode.agencies._status', ['status' => $header['status']])
+            <h1 class="text-2xl font-extrabold">{{ $agency->name }}</h1>
+            <span class="badge badge-outline badge-sm">Payment ledger</span>
         </div>
-        <p class="text-sm opacity-70">
-            @if (filled($header['subdomain']))
-                <code class="text-xs">{{ $header['subdomain'] }}.landas.fixitautoservices.com</code>
-            @else
-                <span class="badge badge-sm badge-error badge-outline" data-badge="no-subdomain">no subdomain</span>
+        <p class="text-sm opacity-70 mt-1">
+            Everything this agency has paid Landas, oldest agreement to now.
+            @if (filled($agency->subdomain))
+                <code class="text-xs">{{ $agency->subdomain }}.landas.fixitautoservices.com</code>
             @endif
         </p>
-        {{-- Card 6b055e29, item 1: the same read-only statement as the ledger.
-             Same wording fence: no Delete/delete/destroy/Approve/approve here,
-             the rendered HTML is grepped for all six. --}}
-        <p class="text-sm opacity-80 mt-2 max-w-2xl" data-readonly-note="payments-show">
+        <p class="text-sm opacity-80 mt-2 max-w-2xl" data-readonly-note="payment-ledger">
             <span class="font-semibold">Read-only view.</span>
-            This page shows money {{ $header['name'] }} recorded; payments are entered by the agency itself,
-            inside its own app, not from here. That is why there is no add, edit or void control on this screen.
+            Payments are recorded and voided from the village, next to the agency's
+            agreement. This screen only reads the ledger — it has no add, edit or void control.
         </p>
     </div>
     <div class="flex items-center gap-2">
         <a href="{{ route('godmode.payments.index') }}" class="btn btn-sm btn-ghost">← All agencies</a>
-        <a href="{{ route('godmode.agencies.show', $agency) }}" class="btn btn-sm btn-ghost">Agency console</a>
+        <a href="{{ route('godmode.dashboard') }}" class="btn btn-sm btn-ghost">Village</a>
     </div>
 </div>
 
-<form method="GET" action="{{ route('godmode.payments.show', $agency) }}" class="card bg-base-100 shadow" id="payments-filters">
-    <div class="card-body p-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
-        <label class="flex flex-col gap-1 min-w-36 max-w-40">
-            <span class="text-sm font-semibold">From</span>
-            <input type="month" name="from" value="{{ $filters['from'] }}" class="input input-bordered input-sm">
-        </label>
-        <label class="flex flex-col gap-1 min-w-36 max-w-40">
-            <span class="text-sm font-semibold">To</span>
-            <input type="month" name="to" value="{{ $filters['to'] }}" class="input input-bordered input-sm">
-        </label>
-        <label class="flex flex-col gap-1 min-w-36 max-w-40">
-            <span class="text-sm font-semibold">Account</span>
-            <select name="account" class="select select-bordered select-sm">
-                <option value="all" @selected(! $filters['account'])>All accounts</option>
-                @foreach ($accounts as $account)
-                    <option value="{{ $account }}" @selected($filters['account'] === $account)>{{ $account }}</option>
-                @endforeach
-                <option value="{{ $unspecified }}" @selected($filters['account'] === $unspecified)>{{ $unspecified }}</option>
-            </select>
-        </label>
-        <label class="flex flex-col gap-1 min-w-36 max-w-40">
-            <span class="text-sm font-semibold">Status</span>
-            <select name="status" class="select select-bordered select-sm" data-status-selected="{{ $filters['status'] }}">
-                <option value="received" @selected($filters['status'] === 'received') data-status-option="received">Collected</option>
-                <option value="pending" @selected($filters['status'] === 'pending') data-status-option="pending">Outstanding</option>
-                <option value="all" @selected($filters['status'] === 'all') data-status-option="all">All</option>
-            </select>
-        </label>
-        <label class="flex flex-col gap-1 flex-1 min-w-[12rem]">
-            <span class="text-sm font-semibold">Search</span>
-            <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Reference, particular, code or applicant"
-                   class="input input-bordered input-sm" autocomplete="off">
-        </label>
-        <label class="flex flex-col gap-1 min-w-36 max-w-40">
-            <span class="text-sm font-semibold">Per page</span>
-            <select name="per" class="select select-bordered select-sm" onchange="this.form.submit()">
-                @foreach ($perOptions as $option)
-                    <option value="{{ $option }}" @selected((int) ($filters['per'] ?: 25) === $option)>{{ $option }}</option>
-                @endforeach
-            </select>
-        </label>
-        <button type="submit" class="btn btn-sm btn-neutral">Apply</button>
-        <a href="{{ route('godmode.payments.show', $agency) }}" class="btn btn-sm btn-ghost">Clear</a>
+{{-- ── agreement context ──────────────────────────────────────────── --}}
+<div class="mt-5 card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+        @if ($plan)
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <span class="opacity-60">Current agreement</span>
+                <span>Initial <strong class="tabular-nums">₱{{ $money($plan->initial_payment) }}</strong>
+                    <span class="opacity-60">× {{ $plan->initial_terms }}</span></span>
+                <span>Monthly <strong class="tabular-nums">₱{{ $money($plan->monthly_amount) }}</strong>
+                    <span class="opacity-60">× {{ $plan->terms }}</span></span>
+                <span class="opacity-60">Contract
+                    <strong class="tabular-nums">₱{{ $money($summary['total_contract']) }}</strong></span>
+                @if ($plan->starts_on)
+                    <span class="opacity-60">Starts {{ $plan->starts_on->format('d/m/Y') }}</span>
+                @endif
+            </div>
+        @else
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                <span class="badge badge-warning badge-sm">No billing plan</span>
+                <span class="opacity-70">This agency has no agreement set up yet, so there is nothing to pay against.</span>
+            </div>
+        @endif
     </div>
+</div>
+
+{{-- ── filters ────────────────────────────────────────────────────── --}}
+<form method="GET" action="{{ route('godmode.payments.show', $agency) }}"
+      class="mt-4 flex flex-wrap items-end gap-3" data-filter-form="payment-ledger">
+    <label class="form-control">
+        <span class="label-text text-xs opacity-70">Type</span>
+        <select name="type" class="select select-bordered select-sm">
+            @foreach ($typeFilters as $t)
+                <option value="{{ $t }}" @selected($filters['type'] === $t)>
+                    {{ $t === 'all' ? 'All types' : $typeLabel($t) }}
+                </option>
+            @endforeach
+        </select>
+    </label>
+
+    <label class="form-control">
+        <span class="label-text text-xs opacity-70">From</span>
+        <input type="date" name="from" value="{{ $filters['from'] }}" class="input input-bordered input-sm">
+    </label>
+
+    <label class="form-control">
+        <span class="label-text text-xs opacity-70">To</span>
+        <input type="date" name="to" value="{{ $filters['to'] }}" class="input input-bordered input-sm">
+    </label>
+
+    <label class="form-control">
+        <span class="label-text text-xs opacity-70">Rows</span>
+        <select name="per" class="select select-bordered select-sm">
+            @foreach ($perOptions as $per)
+                <option value="{{ $per }}" @selected($filters['per'] === $per)>{{ $per }}</option>
+            @endforeach
+        </select>
+    </label>
+
+    <label class="label cursor-pointer gap-2 py-2">
+        <input type="checkbox" name="voided" value="1" class="checkbox checkbox-sm"
+               @checked($filters['voided']) data-filter="include-voided">
+        <span class="label-text">Include voided</span>
+    </label>
+
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+
+    @if ($isFiltered)
+        <a href="{{ route('godmode.payments.show', $agency) }}" class="btn btn-sm btn-ghost">Reset</a>
+    @endif
 </form>
 
-@include('godmode.payments._kpis', ['tiles' => $tiles, 'kpiId' => 'payments-kpis'])
-
-@include('godmode.payments._chart', ['months' => $bounds['months'], 'series' => $series, 'service' => $service, 'chartId' => 'payments-chart-agency'])
-
-<div class="card bg-base-100 shadow">
-    <div class="card-body p-4">
-        <h2 class="font-semibold">Account mix</h2>
-        <table class="table table-xs" id="payments-accounts">
-            <thead>
-                <tr>
-                    <th>Account</th>
-                    <th class="text-right">Collected</th>
-                    <th class="text-right">Outstanding</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($byAccount as $row)
-                    <tr data-account="{{ $row['account'] }}">
-                        <td>{{ $row['account'] }}</td>
-                        <td class="text-right" data-collected="{{ $row['collected'] }}">{{ $service->formatMoney($row['collected']) }}</td>
-                        <td class="text-right">{{ $service->formatMoney($row['outstanding']) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card bg-base-100 shadow overflow-x-auto">
-    <div class="px-4 pt-4">
-        {{-- The heading names exactly the rows below it (B2): `pending` is
-             outstanding money only, `received` is collected money only. --}}
-        <h2 class="font-semibold" data-rows-heading="{{ $filters['status'] }}">
-            {{ $filters['status'] === 'pending' ? 'Outstanding rows' : ($filters['status'] === 'received' ? 'Collected rows' : 'All receivables') }}
-        </h2>
-        <p class="text-xs opacity-60">
-            {{ number_format($rows->total()) }} of {{ $summary['row_count'] === null ? '—' : number_format($summary['row_count']) }} row(s) in this window.
-            Money: {{ $service->formatMoney($filters['status'] === 'pending' ? $summary['outstanding'] : $summary['collected']) }}.
-        </p>
-    </div>
-    <table class="table table-sm" id="payments-receivables">
-        <thead>
-            <tr>
-                <th>Code</th>
-                <th>Date</th>
-                <th>Account</th>
-                <th>Type</th>
-                <th>Mode</th>
-                <th>Ref / AR</th>
-                <th>Applicant</th>
-                <th>Particular</th>
-                <th class="text-right">Amount</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($rows as $row)
-                <tr data-receivable-id="{{ $row->id }}" data-receivable-page="live">
-                    <td><code class="text-xs">{{ $row->code }}</code></td>
-                    <td>{{ $row->date?->format('d/m/Y') }}</td>
-                    <td>{{ $row->account ?? $unspecified }}</td>
-                    <td>{{ $row->type ?? $unspecified }}</td>
-                    <td>{{ $row->mode ?? $unspecified }}</td>
-                    <td>{{ $row->ref_ar ?: '—' }}</td>
-                    {{-- Applicant name is shown HERE only, never on the aggregates (§4.5). --}}
-                    <td>{{ trim(implode(' ', array_filter([$row->first_name, $row->middle_name, $row->last_name]))) ?: '—' }}</td>
-                    <td class="max-w-[16rem] truncate" title="{{ $row->particular }}">{{ $row->particular ?: '—' }}</td>
-                    <td class="text-right" data-amount="{{ $row->amount }}">{{ $service->formatMoney($row->amount) }}</td>
-                    <td>
-                        {{-- This table is live money only, so the badge is the
-                             reason it is live: Collected or Outstanding. --}}
-                        <span class="badge badge-sm {{ $row->status === 'received' ? 'badge-success' : 'badge-warning' }}" data-receivable-status="{{ $row->status }}">
-                            {{ $row->status === 'received' ? 'Collected' : 'Outstanding' }}
-                        </span>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="10" class="text-center py-8 opacity-60" data-empty-reason="{{ $coverage['with_receivables'] > 0 ? 'window' : 'never-recorded' }}">
-                        {{-- Card 6b055e29: name the real reason, not a bare "no match".
-                             "never recorded" ignores the window on purpose (agencyCoverage). --}}
-                        @if ($coverage['with_receivables'] > 0)
-                            No receivables match these filters. This agency has recorded receivables before,
-                            just none inside this date window or status.
-                        @else
-                            This agency has never recorded a receivable.
-                            This page will stay empty until {{ $header['name'] }} enters one in its own app,
-                            signed in at {{ $header['subdomain'] ? $header['subdomain'].'.'.parse_url((string) config('app.url'), PHP_URL_HOST) : 'its own login' }}.
-                        @endif
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <div class="flex items-center justify-between gap-4 p-4">
-        <span class="text-xs opacity-60">
-            @if ($rows->total() > 0)
-                Showing {{ $rows->firstItem() }}–{{ $rows->lastItem() }} of {{ $rows->total() }}
+{{-- ── table ──────────────────────────────────────────────────────── --}}
+<div class="mt-4 card bg-base-100 shadow-sm overflow-x-auto">
+    @if ($payments->isEmpty())
+        {{-- AC7: an empty ledger is a normal state, never an error. --}}
+        <div class="p-10 text-center" data-empty-state="payment-ledger">
+            @if ($isFiltered)
+                <p class="font-semibold">No payments match these filters.</p>
+                <p class="text-sm opacity-70 mt-1">
+                    The agency does have payment history — widen the date range or clear the type filter.
+                </p>
+                <a href="{{ route('godmode.payments.show', $agency) }}" class="btn btn-sm btn-ghost mt-3">Clear filters</a>
+            @elseif (! $hasAny)
+                <p class="font-semibold">No payments recorded yet.</p>
+                <p class="text-sm opacity-70 mt-1">
+                    This agency has never paid Landas. Record one from the village modal to start the ledger.
+                </p>
             @else
-                No rows
+                <p class="font-semibold">No active payments.</p>
+                <p class="text-sm opacity-70 mt-1">
+                    Every payment on this account has been voided. Tick "Include voided" to see them.
+                </p>
             @endif
-        </span>
-        {{ $rows->links() }}
-    </div>
-</div>
-
-@if ($voided->isNotEmpty() || $summary['voided_count'] > 0)
-    <div class="card bg-base-100 shadow overflow-x-auto" id="payments-voided">
-        <div class="px-4 pt-4">
-            <h2 class="font-semibold">Voided money</h2>
-            <p class="text-xs opacity-60">
-                {{ number_format($summary['voided_count']) }} voided row(s), excluded from every total above.
-                Excluded from totals: cancelled and deleted rows stay visible so a voucher never silently disappears.
-            </p>
         </div>
-        <table class="table table-sm" id="payments-voided-table">
+    @else
+        <table class="table table-sm" data-table="payment-ledger">
             <thead>
                 <tr>
-                    <th>Code</th>
                     <th>Date</th>
-                    <th>Account</th>
-                    <th>Ref / AR</th>
+                    <th>Type</th>
                     <th class="text-right">Amount</th>
-                    <th>Reason</th>
+                    <th>Mode</th>
+                    <th>Reference</th>
+                    <th>Particular</th>
+                    <th>Recorded by</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($voided as $row)
-                    {{-- One badge, lowercase, the word an operator reads and
-                         QA can match: `cancelled` or `deleted` (B3). --}}
-                    @php $reason = $row->deleted_at ? 'deleted' : (string) $row->status; @endphp
-                    <tr data-voided-id="{{ $row->id }}" data-voided-reason="{{ $reason }}">
-                        <td><code class="text-xs">{{ $row->code }}</code></td>
-                        <td>{{ $row->date?->format('d/m/Y') }}</td>
-                        <td>{{ $row->account ?? $unspecified }}</td>
-                        <td>{{ $row->ref_ar ?: '—' }}</td>
-                        <td class="text-right">{{ $service->formatMoney($row->amount) }}</td>
+                @foreach ($payments as $p)
+                    @php
+                        $isVoid = $p->deleted_at !== null;
+                        $audit = $voidAudit[$p->id] ?? null;
+                    @endphp
+                    <tr class="{{ $isVoid ? 'opacity-50' : '' }}" data-payment-row="{{ $p->id }}"
+                        data-voided="{{ $isVoid ? '1' : '0' }}">
+                        <td class="whitespace-nowrap tabular-nums">
+                            {{ $p->paid_on?->format('d/m/Y') }}
+                        </td>
                         <td>
-                            <span class="badge badge-sm {{ $reason === 'deleted' ? 'badge-error' : 'badge-ghost' }}" data-badge="{{ $reason }}">{{ ucfirst($reason) }}</span>
+                            <span class="badge badge-sm {{ $p->payment_type === 'initial' ? 'badge-primary' : 'badge-ghost' }}">
+                                {{ $typeLabel($p->payment_type) }}
+                            </span>
+                        </td>
+                        <td class="text-right tabular-nums whitespace-nowrap {{ $isVoid ? 'line-through' : '' }}">
+                            ₱{{ $money($p->amount) }}
+                        </td>
+                        <td>
+                            <span class="badge badge-sm {{ $ledgerService->modeBadge($p->mode) }}">
+                                {{ $p->mode }}
+                            </span>
+                        </td>
+                        <td class="text-xs">{{ $p->reference ?: '—' }}</td>
+                        <td class="text-xs max-w-[16rem] truncate" title="{{ $p->particular }}">
+                            {{ $p->particular ?: '—' }}
+                        </td>
+                        <td class="text-xs">{{ $p->recorder?->name ?? '—' }}</td>
+                        <td class="text-xs">
+                            @if ($isVoid)
+                                <span class="badge badge-sm badge-error badge-outline">Voided</span>
+                                {{-- Attribution does not live on the payment row; it
+                                     is read from the void's audit event. Labelled so
+                                     nobody assumes the column came from the row. --}}
+                                <div class="opacity-70 mt-1">
+                                    @if ($audit)
+                                        by {{ $audit['by'] ?? 'unknown' }}<br>
+                                        <span class="opacity-70">{{ $audit['at'] }}</span>
+                                    @else
+                                        <span title="The void audit event was not found">attribution unavailable</span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="badge badge-sm badge-success badge-outline">Active</span>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
             </tbody>
+            <tfoot>
+                {{-- AC4: these totals come from the same filtered rows the table
+                     renders, so they can never disagree with the page above. --}}
+                <tr class="font-semibold">
+                    <td colspan="2">Total active ({{ number_format($totals['active_count']) }})</td>
+                    <td class="text-right tabular-nums">₱{{ $money($totals['active']) }}</td>
+                    <td colspan="5"></td>
+                </tr>
+                @if ($filters['voided'])
+                    <tr class="font-semibold opacity-60">
+                        <td colspan="2">Total voided ({{ number_format($totals['voided_count']) }})</td>
+                        <td class="text-right tabular-nums line-through">₱{{ $money($totals['voided']) }}</td>
+                        <td colspan="5"></td>
+                    </tr>
+                    <tr class="font-semibold">
+                        <td colspan="2">Net</td>
+                        <td class="text-right tabular-nums" data-total="net">₱{{ $money($totals['net']) }}</td>
+                        <td colspan="5"></td>
+                    </tr>
+                @endif
+            </tfoot>
         </table>
-    </div>
+    @endif
+</div>
+
+@if ($payments->hasPages())
+    <div class="mt-4">{{ $payments->links() }}</div>
 @endif
 @endsection
