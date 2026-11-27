@@ -32,6 +32,28 @@ class GodAgencySettingsRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Card 6b07f36226255ccf628c992d AC6: validation runs BEFORE the controller,
+     * so the default failure response sends the operator back to the referring
+     * URL — which, from the modal, is the village WITHOUT the ?open= marker.
+     * The modal then cannot reopen and the error is invisible. Route the failure
+     * back to the village with the agency marked, so the same building reopens
+     * with the message in it.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        if ($this->input('from') !== 'village') {
+            parent::failedValidation($validator);
+            return;
+        }
+
+        $agency = $this->route('agency');
+        $id = is_object($agency) ? $agency->id : $agency;
+
+        throw (new \Illuminate\Validation\ValidationException($validator))
+            ->redirectTo(route('godmode.dashboard', ['open' => $id]));
+    }
+
     protected function prepareForValidation(): void
     {
         $this->merge([

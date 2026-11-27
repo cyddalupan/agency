@@ -45,6 +45,21 @@ class GodAgencySettingsController extends Controller
 
     public function update(GodAgencySettingsRequest $request, Agency $agency): RedirectResponse
     {
+        // Card 6b07f36226255ccf628c992d — the same form is posted from two
+        // places: the standalone page and the stacked modal in the village.
+        // The modal sends `from=village` so the operator lands back on the
+        // building they were editing instead of being thrown out to a separate
+        // page. One response format (a redirect), per the card's preference.
+        $fromVillage = $request->input('from') === 'village';
+
+        $fail = function (array $errors) use ($agency, $fromVillage) {
+            $r = $fromVillage
+                ? redirect()->route('godmode.dashboard', ['open' => $agency->id])
+                : redirect()->route('godmode.agencies.settings', $agency);
+
+            return $r->withErrors($errors)->withInput();
+        };
+
         try {
             $changed = $this->settings->save(
                 $agency,
@@ -54,13 +69,12 @@ class GodAgencySettingsController extends Controller
                 $this->agencies,
             );
         } catch (VersionMismatchException $e) {
-            return redirect()
-                ->route('godmode.agencies.settings', $agency)
-                ->withErrors(['settings_version' => $e->getMessage()])
-                ->withInput();
+            return $fail(['settings_version' => $e->getMessage()]);
         }
 
-        $back = redirect()->route('godmode.agencies.settings', $agency);
+        $back = $fromVillage
+            ? redirect()->route('godmode.dashboard', ['open' => $agency->id, 'saved' => 1])
+            : redirect()->route('godmode.agencies.settings', $agency);
 
         // A no-op submit says so instead of claiming a save it did not make.
         if ($changed === null) {

@@ -344,6 +344,33 @@
         background:rgba(4,8,16,.78); backdrop-filter:blur(6px);
     }
     #v-modal[data-open="1"] { display:flex; }
+
+    /* Stacked settings modal (card 6b07f362). Higher z-index and its own
+       backdrop so the agency modal remains visible but inert behind it. */
+    #v-settings {
+        position:fixed; inset:0; z-index:200; display:none;
+        align-items:center; justify-content:center; padding:20px;
+        background:rgba(4,8,16,.86); backdrop-filter:blur(8px);
+    }
+    #v-settings[data-open="1"] { display:flex; }
+    #v-settings[hidden] { display:none !important; }
+    #v-settings .v-card { max-width:720px; max-height:86vh; overflow:auto; }
+    /* The settings form is Tailwind/DaisyUI inside a dark card; the cards
+       inside it need to sit on the modal background, not punch holes. */
+    #v-settings .v-card .card { background:rgba(8,15,26,.55); border:1px solid rgba(148,163,184,.16); }
+    #v-settings .v-card .card-title { font-size:13px; font-weight:800; }
+    #v-settings .v-card .fieldset-legend { font-size:11px; text-transform:uppercase;
+        letter-spacing:.07em; opacity:.7; font-weight:700; }
+    #v-settings .v-modal-note { font-size:11.5px; padding:7px 10px; margin-bottom:10px;
+        border-radius:8px; background:rgba(125,211,252,.10);
+        border:1px solid rgba(125,211,252,.28); color:#bae6fd; }
+    /* Single column under 640px so both modals stay usable on a phone. */
+    @media (max-width:640px) {
+        #v-settings { padding:8px; }
+        #v-settings .v-card { max-width:100%; max-height:94vh; padding:14px 14px; }
+        #v-settings .v-card .flex.justify-end { flex-direction:column-reverse; }
+        #v-settings .v-card .btn { width:100%; }
+    }
     #v-modal .v-card {
         width:100%; max-width:560px; max-height:82vh; overflow:auto;
         background:linear-gradient(180deg,#101c30,#0b1424);
@@ -634,6 +661,20 @@
                 @if (isset($billingByAgency[$b['id']]))
                     <script type="application/json" id="v-bill-{{ $b['id'] }}" class="v-bill-src">{!! json_encode($billingByAgency[$b['id']], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
                 @endif
+                {{-- Card 6b07f36226255ccf628c992d AC7: the settings form ships
+                     with the page. Same form partial as the standalone page,
+                     so the two can never disagree about which fields exist.
+                     A <template> is inert: nothing in it is submitted or
+                     focused until it is cloned into the stacked modal. --}}
+                @if (isset($settingsByAgency[$b['id']]))
+                    <template id="v-settings-{{ $b['id'] }}" data-agency-name="{{ $b['name'] }}">
+                        @include('godmode.agencies._form', [
+                            'agency' => (object) ['id' => $b['id'], 'name' => $b['name']],
+                            'state'  => $settingsByAgency[$b['id']],
+                            'themes' => $settingsThemes,
+                        ])
+                    </template>
+                @endif
             @endforeach
         </div>
 
@@ -648,6 +689,20 @@
     </div>
 </div>
 
+{{-- Card 6b07f362: validation errors from a modal save arrive in the session
+     after the redirect. Rendered here, hidden, so the village JS can lift them
+     into the modal instead of them appearing above a page nobody is looking at. --}}
+<div id="v-server-errors" hidden>
+    @if ($errors->any())
+        <div style="font-weight:800;margin-bottom:4px">Could not save settings</div>
+        <ul style="margin:0;padding-left:16px">
+            @foreach ($errors->all() as $msg)
+                <li>{{ $msg }}</li>
+            @endforeach
+        </ul>
+    @endif
+</div>
+
 {{-- ── Modal: agency detail ── --}}
 <div id="v-modal" data-open="0" role="dialog" aria-modal="true" aria-labelledby="v-modal-title">
     <div class="v-card">
@@ -656,6 +711,20 @@
         <h2 id="v-modal-title">—</h2>
         <div id="v-modal-body" style="margin-top:12px"></div>
         <div class="v-actions" id="v-modal-actions"></div>
+    </div>
+</div>
+
+{{-- ── Modal: agency settings, STACKED above the agency modal ──
+     Card 6b07f36226255ccf628c992d. Sits at a higher z-index with its own
+     backdrop so the agency modal stays visible behind it; Escape closes this
+     one first. The form is cloned in from a per-agency <template> below, so
+     opening it makes no request. --}}
+<div id="v-settings" data-open="0" role="dialog" aria-modal="true" aria-labelledby="v-settings-title" hidden>
+    <div class="v-card v-card-wide">
+        <button type="button" class="v-close" data-settings-close aria-label="Close settings">×</button>
+        <div class="v-kicker" id="v-settings-kicker">Agency settings</div>
+        <h2 id="v-settings-title">—</h2>
+        <div id="v-settings-body" style="margin-top:12px"></div>
     </div>
 </div>
 
@@ -805,8 +874,9 @@
         body.innerHTML = '<div id="v-bill" data-agency="' + esc(d.agency) + '">' +
                          '<div class="v-bill-load">Loading billing…</div></div>';
         actions.innerHTML =
+            '<button type="button" class="v-a" data-open-settings="' + esc(d.agency) + '">Settings</button>' +
             '<a class="v-a" href="/godmode/payments/' + encodeURIComponent(d.agency) + '">View full ledger →</a>' +
-            '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(d.agency) + '/settings">Agency settings →</a>';
+            '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(d.agency) + '">Agency page →</a>';
         openModal();
         loadBilling(d.agency);
     }
@@ -1221,14 +1291,51 @@
 
     // Reopen the building named in ?open= — set by replayBilling() after a
     // recorded or voided payment so the modal returns with fresh numbers.
+    // Also carries ?saved=1 from the settings redirect (AC5): the standalone
+    // controller redirects back, and the village is the page it redirects TO,
+    // so the operator lands on the same building with a short confirmation
+    // rather than at the top of the town.
     (function () {
-        var want = new URLSearchParams(window.location.search).get('open');
+        var params = new URLSearchParams(window.location.search);
+        var want = params.get('open');
+        var saved = params.get('saved');
         if (!want) { return; }
         var el = document.querySelector('.v-plot[data-agency="' + want.replace(/[^0-9]/g, '') + '"]');
-        if (el) { agencyModal(el); }
+        if (!el) { return; }
+        agencyModal(el);
+        if (saved) {
+            var note = document.createElement('div');
+            note.className = 'v-modal-note';
+            note.setAttribute('role', 'status');
+            note.textContent = 'Settings saved.';
+            body.insertBefore(note, body.firstChild);
+        }
+        // AC6: a failed save redirects back here with the errors in the session.
+        // They are rendered server-side into this element; we surface them in
+        // the modal instead of leaving them above a page the operator cannot see.
+        var serverErrors = document.getElementById('v-server-errors');
+        if (!serverErrors) { return; }
+        // The div is `hidden` on purpose (it is a data carrier, not UI), so
+        // checking `.hidden` would always skip it. Test for actual content.
+        var errText = (serverErrors.innerText || '').trim();
+        if (errText) {
+            var box = document.createElement('div');
+            box.className = 'v-modal-note';
+            box.style.borderColor = 'rgba(251,113,133,.45)';
+            box.style.background = 'rgba(251,113,133,.10)';
+            box.style.color = '#fecdd3';
+            box.setAttribute('role', 'alert');
+            box.innerHTML = serverErrors.innerHTML;
+            body.insertBefore(box, body.firstChild);
+        }
     })();
 
     document.addEventListener('click', function (e) {
+        // Settings button lives in the agency modal's action bar. Handled
+        // first so it never falls through to the plot/panel branches.
+        var setBtn = e.target.closest('[data-open-settings]');
+        if (setBtn) { openSettings(setBtn.getAttribute('data-open-settings'), setBtn); return; }
+
         var plot = e.target.closest('.v-plot');
         if (plot) { agencyModal(plot); return; }
 
@@ -1240,8 +1347,102 @@
     });
 
     document.addEventListener('keydown', function (e) {
+        // AC3: Escape closes only the TOP modal. The settings modal is checked
+        // first and stops the event, so one press leaves the agency modal open
+        // and a second closes it.
+        if (e.key === 'Escape' && setOpen) { closeSettings(); e.stopPropagation(); return; }
         if (e.key === 'Escape' && modal.getAttribute('data-open') === '1') { closeModal(); }
     });
+
+    /* ── Stacked settings modal (card 6b07f36226255ccf628c992d) ────────
+       The form is cloned from a per-agency <template>, so opening this is
+       not a request (AC7). Focus is trapped while it is open and returns to
+       the Settings button on close (AC4). */
+    var setModal  = document.getElementById('v-settings');
+    var setTitle  = document.getElementById('v-settings-title');
+    var setKicker = document.getElementById('v-settings-kicker');
+    var setBody   = document.getElementById('v-settings-body');
+    var setOpen   = false;
+    var setReturn = null;
+
+    function openSettings(agencyId, returnFocus) {
+        var tpl = document.getElementById('v-settings-' + agencyId);
+        if (!tpl) {
+            setKicker.textContent = 'Agency settings';
+            setTitle.textContent = 'Settings unavailable';
+            setBody.innerHTML = '<div class="v-bill-load">No settings form was shipped for this agency.</div>';
+        } else {
+            setKicker.textContent = 'Agency settings';
+            setTitle.textContent = tpl.getAttribute('data-agency-name') || '';
+            setBody.innerHTML = '';
+            setBody.appendChild(tpl.content.cloneNode(true));
+            wireSettingsForm(agencyId);
+        }
+        setReturn = returnFocus || document.activeElement;
+        setModal.hidden = false;
+        setModal.setAttribute('data-open', '1');
+        setOpen = true;
+        // AC4: focus must land INSIDE the stacked modal. The element has to be
+        // laid out first (hence the requestAnimationFrame), otherwise focusing
+        // a hidden/display:none node is a no-op and focus stays on the Settings
+        // button behind the backdrop.
+        requestAnimationFrame(function () {
+            var focusable = setBody.querySelector('input:not([type="hidden"]), select, button, textarea, a[href]')
+                         || setModal.querySelector('.v-close');
+            if (focusable) { focusable.focus(); }
+        });
+    }
+
+    function closeSettings() {
+        setModal.setAttribute('data-open', '0');
+        setModal.hidden = true;
+        setOpen = false;
+        // Restore BEFORE clearing, so returning focus lands on the button.
+        if (setReturn && setReturn.focus) { setReturn.focus(); }
+        setReturn = null;
+        setBody.innerHTML = '';
+    }
+
+    // AC4: keep Tab inside the settings modal while it is open.
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab' || !setOpen) { return; }
+        var items = setModal.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+        if (!items.length) { return; }
+        var first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-settings-close]')) { closeSettings(); return; }
+        if (e.target.closest('[data-settings-cancel]')) { closeSettings(); return; }
+        if (e.target === setModal) { closeSettings(); }
+    });
+
+    /* The settings form posts to the EXISTING route (AC5/AC8). Per the card we
+       accept the redirect rather than inventing a JSON format: the controller
+       keeps one response shape. The redirect comes back with ?saved=1, and the
+       village reopens this agency with a short inline confirmation. */
+    function wireSettingsForm(agencyId) {
+        var form = setBody.querySelector('[data-settings-form]');
+        if (!form) { return; }
+
+        // Tell the controller where this was posted from, so it redirects back
+        // to the village modal rather than the standalone page.
+        var marker = document.createElement('input');
+        marker.type = 'hidden';
+        marker.name = 'from';
+        marker.value = 'village';
+        form.appendChild(marker);
+
+        var btn = form.querySelector('[data-action="save-settings"]');
+        form.addEventListener('submit', function () {
+            if (!btn) { return; }
+            btn.disabled = true;
+            btn.textContent = 'Saving…';
+        });
+    }
 
     /* ── New agency modal (card 6b07eb521243cfef572cd549) ─────────────────
        Three rows are written in one transaction server-side; here we only

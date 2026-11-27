@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditEvent;
 use App\Models\User;
 use App\Services\GodMode\GodBillingService;
+use App\Services\GodMode\GodAgencySettingsService;
 use App\Services\GodMode\GodReceivableService;
 use App\Services\SensitiveActionLogger;
 use App\Support\Tenant;
@@ -162,8 +163,12 @@ class GodModeAuthController extends Controller
      * methods as `/godmode/payments`, so a number on the index and a number on
      * the ledger are one computation, not two that agree today.
      */
-    public function index(Request $request, GodReceivableService $ledger, GodBillingService $billing): View
-    {
+    public function index(
+        Request $request,
+        GodReceivableService $ledger,
+        GodBillingService $billing,
+        GodAgencySettingsService $settings
+    ): View {
         // The village is the console. One building per agency, coloured by how
         // it is paying; every other God Mode screen hangs off a modal on it.
         // The numbers still come from `GodReceivableService`, so the HUD and
@@ -187,11 +192,26 @@ class GodModeAuthController extends Controller
             }
         }
 
+        // Card 6b07f36226255ccf628c992d: the settings form ships with the page
+        // too, so opening it is not a request (AC7). Same trade as the billing
+        // payload: one template per agency now, a fragment endpoint once the
+        // tenant count passes ~50. At 21 agencies this is a few hundred KB of
+        // HTML at most, and most of it is the two text inputs.
+        $settingsByAgency = [];
+        foreach ($village as $b) {
+            $agency = \App\Models\Agency::find($b['id']);
+            if ($agency !== null) {
+                $settingsByAgency[$b['id']] = $settings->formState($agency);
+            }
+        }
+
         return view('godmode.dashboard', [
             'user' => $request->user('godmode'),
             'village' => $village,
             'villageSummary' => $ledger->villageSummary($village),
             'billingByAgency' => $billingByAgency,
+            'settingsByAgency' => $settingsByAgency,
+            'settingsThemes' => app_color_themes(),
         ] + $ledger->dashboard());
     }
 
