@@ -57,6 +57,7 @@ use App\Http\Controllers\GodModeAuthController;
 use App\Http\Controllers\GodMode\GodAgencyController;
 use App\Http\Controllers\GodMode\GodAgencySettingsController;
 use App\Http\Controllers\GodMode\GodAuditController;
+use App\Http\Controllers\GodMode\GodBillingController;
 use App\Http\Controllers\GodMode\GodBrandingController;
 use App\Http\Controllers\GodMode\GodPaymentsController;
 use Illuminate\Support\Facades\Route;
@@ -126,12 +127,36 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::post('/agencies/{agency}/settings', [GodAgencySettingsController::class, 'update'])->name('agencies.settings.update');
 
         // Card 6b0342ac4cf7cfdc3e26d6a9 — Payments (cross-tenant receivables
-        // ledger). READ ONLY: two GET routes, no POST/PUT/DELETE, ever. Money is
-        // the agency's record; the operator may look, not touch (§0). The list
-        // `{agency}` is `whereNumber` so `/godmode/payments/anything` is a 404
-        // from the route, not a 200 with a string injected into a filter.
+        // ledger). READ ONLY: two GET routes, no POST/PUT/DELETE.
+        //
+        // The rule changed with card 6b07eb557762396b008a7080, and it is now
+        // narrower and more precise than "no writes on this plane":
+        //
+        //   writes ARE allowed against Landas's own billing tables
+        //   (`agency_billing_plans`, `agency_billing_payments`) — that is what
+        //   an agency paid LANDAS, and the operator records it;
+        //   agency `receivables` remain READ-ONLY FOREVER — that is
+        //   agency-internal money (applicant/agent -> agency), and the
+        //   console may look but never touch.
+        //
+        // So no POST route below may ever target `receivables`. If one appears
+        // in a diff, it is a mistake.
+        //
+        // The list `{agency}` is `whereNumber` so `/godmode/payments/anything`
+        // is a 404 from the route, not a 200 with a string injected into a filter.
         Route::get('/payments', [GodPaymentsController::class, 'index'])->name('payments.index');
         Route::get('/payments/{agency}', [GodPaymentsController::class, 'show'])->whereNumber('agency')->name('payments.show');
+
+        // Card 6b07eb557762396b008a7080 — record / void a payment against
+        // Landas's billing ledger, from the village agency modal. POST only,
+        // CSRF, same sole gate. Void is a POST to a distinct path because
+        // soft-delete is the correction mechanism: no PUT, no PATCH, no DELETE.
+        Route::get('/village/agencies/{agency}/billing', [GodBillingController::class, 'summary'])
+            ->whereNumber('agency')->name('village.billing.summary');
+        Route::post('/village/agencies/{agency}/payments', [GodBillingController::class, 'store'])
+            ->whereNumber('agency')->name('village.payments.store');
+        Route::post('/village/agencies/{agency}/payments/{payment}/void', [GodBillingController::class, 'void'])
+            ->whereNumber('agency')->whereNumber('payment')->name('village.payments.void');
 
         // Card 6b0383d516e52b9c418a9136 — Audit trail (control-plane plane
         // events + sensitive actions). READ ONLY: three GETs, no POST/PUT/

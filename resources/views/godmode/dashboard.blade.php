@@ -316,6 +316,53 @@
     }
     #v-modal .v-close:hover { color:var(--v-ink); }
 
+    /* ── Landas billing block in the agency modal (card 6b07eb55) ── */
+    #v-bill { margin-top:14px; border-top:1px solid rgba(148,163,184,.22); padding-top:12px; }
+    #v-bill .v-bill-head {
+        font-size:10px; text-transform:uppercase; letter-spacing:.09em;
+        color:var(--v-muted); font-weight:800; margin-bottom:8px;
+    }
+    #v-bill .v-bill-load { font-size:12px; color:var(--v-muted); }
+    #v-bill .v-bill-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+    #v-bill .v-bill-grid > div {
+        background:rgba(8,15,26,.42); border:1px solid rgba(148,163,184,.2);
+        border-radius:8px; padding:7px 9px; display:flex; flex-direction:column; gap:1px;
+    }
+    #v-bill .v-bill-grid span { font-size:10px; color:var(--v-muted); text-transform:uppercase; letter-spacing:.06em; }
+    #v-bill .v-bill-grid b { font-size:13px; font-variant-numeric:tabular-nums; }
+    #v-bill .v-bill-grid em { font-style:normal; font-size:10.5px; color:var(--v-muted); }
+    #v-bill .v-bill-types { display:flex; gap:14px; margin-bottom:8px; }
+    #v-bill .v-bill-types label { display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; }
+    #v-bill .v-bill-types input { accent-color:#38bdf8; }
+    #v-bill .v-bill-fields { display:grid; grid-template-columns:1fr 1fr; gap:7px 10px; }
+    #v-bill .v-bill-fields label { display:flex; flex-direction:column; gap:3px; font-size:11px; }
+    #v-bill .v-bill-fields label > span { color:var(--v-muted); }
+    #v-bill .v-bill-fields label > span i { font-style:normal; opacity:.65; }
+    #v-bill input, #v-bill select {
+        background:rgba(8,15,26,.72); border:1px solid rgba(148,163,184,.34); border-radius:6px;
+        padding:6px 8px; color:var(--v-ink); font-size:12px; font-family:inherit; width:100%;
+    }
+    #v-bill .v-bill-fields label[data-bad="1"] input,
+    #v-bill .v-bill-fields label[data-bad="1"] select { border-color:rgba(244,63,94,.85); }
+    #v-bill .v-bill-msg { font-style:normal; color:#fda4af; font-size:10.5px; }
+    #v-bill .v-bill-err {
+        margin:8px 0 0; padding:7px 10px; border-radius:7px; font-size:11.5px;
+        background:rgba(244,63,94,.14); border:1px solid rgba(244,63,94,.42); color:#fecdd3;
+    }
+    #v-bill .v-na-submit { margin-top:10px; }
+    #v-bill .v-bill-list { display:flex; flex-direction:column; gap:4px; }
+    #v-bill .v-bill-row {
+        display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:8px;
+        font-size:11.5px; padding:5px 7px; background:rgba(8,15,26,.32); border-radius:6px;
+    }
+    #v-bill .v-bill-row b { font-variant-numeric:tabular-nums; }
+    #v-bill .v-bill-row em { font-style:normal; color:var(--v-muted); font-size:10.5px; }
+    #v-bill .v-bill-void {
+        background:transparent; border:1px solid rgba(244,63,94,.45); color:#fda4af;
+        border-radius:5px; font-size:10px; padding:2px 7px; cursor:pointer; font-family:inherit;
+    }
+    #v-bill .v-bill-void:hover { background:rgba(244,63,94,.16); }
+
     /* ── modal: new agency (card 6b07eb521243cfef572cd549) ── */
     #v-na {
         position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center;
@@ -565,6 +612,14 @@
     var actions = document.getElementById('v-modal-actions');
     var lastFocus = null;
 
+    // One CSRF token for the whole page: every write in the village modal
+    // (create agency, record payment, void) reuses it from a hidden field the
+    // create-agency form already carries.
+    var CSRF = (function () {
+        var el = document.querySelector('#v-na-form input[name="_token"]');
+        return el ? el.value : '';
+    })();
+
     var PESO = function (v) {
         var n = parseFloat(v || 0);
         var s = Math.abs(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -609,12 +664,181 @@
             html += row('Overdue bills', '<span class="v-bad">' + esc(d.overdue) + '</span>');
         }
         if (d.subdomain) { html += row('Subdomain', esc(d.subdomain)); }
+
+        // Card 6b07eb557762396b008a7080 — the Landas billing block. Filled
+        // from the summary endpoint after the shell renders, so opening a
+        // building still feels instant.
+        html += '<div id="v-bill" data-agency="' + esc(d.agency) + '">' +
+                '<div class="v-bill-load">Loading billing…</div></div>';
+
         body.innerHTML = html;
 
         actions.innerHTML =
             '<a class="v-a" href="/godmode/payments/' + encodeURIComponent(d.agency) + '">Open payments →</a>' +
             '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(d.agency) + '">Agency details →</a>';
         openModal();
+        loadBilling(d.agency);
+    }
+
+    /* ── Landas billing (card 6b07eb557762396b008a7080) ───────────────────
+       Record what an agency paid LANDAS. Distinct from the "Collected" rows
+       above, which are agency-internal receivables. Two payment types, and
+       the amount pre-fills from the outstanding for whichever is picked. */
+    var BILL_STATE = null;
+
+    function loadBilling(agencyId) {
+        var host = document.getElementById('v-bill');
+        if (!host) { return; }
+        fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/billing', {
+            headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+        }).then(function (r) { return r.json(); }).then(function (s) {
+            BILL_STATE = s;
+            host.innerHTML = billingHtml(s, agencyId);
+            wireBilling(host, agencyId);
+        }).catch(function () {
+            host.innerHTML = '<div class="v-bill-load">Billing could not be loaded.</div>';
+        });
+    }
+
+    function billingHtml(s, agencyId) {
+        if (!s.has_plan) {
+            return '<div class="v-bill-head">Landas billing</div>' +
+                   '<div class="v-bill-load">No billing plan yet. ' +
+                   '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(agencyId) +
+                   '/settings">Set one</a></div>';
+        }
+
+        var h = '<div class="v-bill-head">Landas billing</div>';
+        h += '<div class="v-bill-grid">' +
+             '<div><span>Initial</span><b>' + PESO(s.initial_paid) + ' of ' + PESO(s.initial_due) + '</b>' +
+             '<em>' + (parseFloat(s.initial_outstanding) > 0 ? PESO(s.initial_outstanding) + ' left' : 'cleared') + '</em></div>' +
+             '<div><span>Monthly</span><b>' + PESO(s.monthly_paid) + ' of ' + PESO(s.monthly_due) + '</b>' +
+             '<em>' + (parseFloat(s.monthly_outstanding) > 0 ? PESO(s.monthly_outstanding) + ' left' : 'cleared') + '</em></div>' +
+             '<div><span>Total paid</span><b>' + PESO(s.total_paid) + '</b><em>' + esc(s.payment_count) + ' payment' + (s.payment_count === 1 ? '' : 's') + '</em></div>' +
+             '</div>';
+
+        h += '<form class="v-bill-form" data-agency="' + esc(agencyId) + '">' +
+             '<div class="v-bill-types">' +
+             '<label><input type="radio" name="payment_type" value="initial" required><span>Initial payment</span></label>' +
+             '<label><input type="radio" name="payment_type" value="monthly" required><span>Monthly payment</span></label>' +
+             '</div>' +
+             '<div class="v-bill-fields">' +
+             '<label data-f="amount"><span>Amount</span><input name="amount" type="number" step="0.01" min="0.01" required><em class="v-bill-msg"></em></label>' +
+             '<label data-f="paid_on"><span>Paid on</span><input name="paid_on" type="date" required value="' + today() + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="mode"><span>Mode</span><select name="mode">' +
+             ['Cash','Cheque','Fund Transfer','Credit','GCash'].map(function (m) { return '<option>' + m + '</option>'; }).join('') +
+             '</select><em class="v-bill-msg"></em></label>' +
+             '<label data-f="reference"><span>Reference <i>(optional)</i></span><input name="reference" maxlength="255"><em class="v-bill-msg"></em></label>' +
+             '</div>' +
+             '<div class="v-bill-err" hidden></div>' +
+             '<button type="submit" class="v-na-submit">Record payment</button>' +
+             '</form>';
+
+        if (s.payments && s.payments.length) {
+            h += '<div class="v-bill-head" style="margin-top:14px">Payments</div><div class="v-bill-list">';
+            s.payments.forEach(function (p) {
+                h += '<div class="v-bill-row"><span>' + esc(fmtDate(p.paid_on)) + ' · ' + esc(p.payment_type) + '</span>' +
+                     '<b>' + PESO(p.amount) + '</b>' +
+                     '<em>' + esc(p.mode || '') + (p.recorder ? ' · ' + esc(p.recorder.name) : '') + '</em>' +
+                     '<button type="button" class="v-bill-void" data-void="' + esc(p.id) + '">Void</button></div>';
+            });
+            h += '</div>';
+        }
+        return h;
+    }
+
+    function today() {
+        var d = new Date();
+        var m = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    function fmtDate(s) {
+        if (!s) { return ''; }
+        return String(s).slice(0, 10);
+    }
+
+    function wireBilling(host, agencyId) {
+        var form = host.querySelector('.v-bill-form');
+        if (!form) { return; }
+        var amount = form.elements['amount'];
+        var radios = form.querySelectorAll('input[name="payment_type"]');
+
+        // Pre-fill from what is still owed for the chosen type. Choosing a
+        // type is required, so nothing is pre-filled until one is picked.
+        for (var i = 0; i < radios.length; i++) {
+            radios[i].addEventListener('change', function () {
+                var type = this.value;
+                var owed = type === 'initial' ? BILL_STATE.initial_outstanding : BILL_STATE.monthly_amount;
+                amount.value = parseFloat(owed) > 0 ? parseFloat(owed).toFixed(2) : '';
+                amount.placeholder = parseFloat(owed) > 0 ? owed : 'nothing outstanding';
+            });
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var errBox = form.querySelector('.v-bill-err');
+            errBox.hidden = true;
+            form.querySelectorAll('.v-bill-fields label').forEach(function (l) {
+                l.removeAttribute('data-bad');
+                var m = l.querySelector('.v-bill-msg'); if (m) { m.textContent = ''; }
+            });
+            var btn = form.querySelector('.v-na-submit');
+            btn.disabled = true; btn.textContent = 'Recording…';
+
+            fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/payments', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new FormData(form),
+                credentials: 'same-origin'
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (data) { return { status: r.status, data: data }; });
+            }).then(function (res) {
+                if (res.status === 201 || (res.data && res.data.ok)) {
+                    loadBilling(agencyId);
+                    return;
+                }
+                btn.disabled = false; btn.textContent = 'Record payment';
+                var errs = (res.data && res.data.errors) || {};
+                var general = [];
+                Object.keys(errs).forEach(function (k) {
+                    var el = form.querySelector('[data-f="' + k + '"]');
+                    var msg = Array.isArray(errs[k]) ? errs[k][0] : errs[k];
+                    if (el) { el.setAttribute('data-bad', '1'); el.querySelector('.v-bill-msg').textContent = msg; }
+                    else { general.push(msg); }
+                });
+                if (general.length) { errBox.textContent = general.join(' '); errBox.hidden = false; }
+            }).catch(function () {
+                btn.disabled = false; btn.textContent = 'Record payment';
+                errBox.textContent = 'Network error. Nothing was recorded.';
+                errBox.hidden = false;
+            });
+        });
+
+        // Void is the only correction. No edit, by design.
+        host.querySelectorAll('[data-void]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                if (!window.confirm('Void this payment? It leaves every total but stays in the audit trail.')) { return; }
+                b.disabled = true;
+                fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/payments/' + encodeURIComponent(b.dataset.void) + '/void', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': CSRF,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: '_token=' + encodeURIComponent(CSRF),
+                    credentials: 'same-origin'
+                }).then(function () { loadBilling(agencyId); })
+                  .catch(function () { b.disabled = false; });
+            });
+        });
     }
 
     function stateCls(state) {
