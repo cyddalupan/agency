@@ -332,6 +332,9 @@
         margin:12px 0 0; padding:9px 12px; border-radius:8px; font-size:12.5px; line-height:1.45;
         background:rgba(244,63,94,.14); border:1px solid rgba(244,63,94,.42); color:#fecdd3;
     }
+    #v-na .v-na-ok {
+        background:rgba(52,211,153,.14); border-color:rgba(52,211,153,.45); color:#a7f3d0;
+    }
     #v-na .v-na-fs { border:0; margin:16px 0 0; padding:0; }
     #v-na .v-na-fs legend {
         font-size:10px; text-transform:uppercase; letter-spacing:.09em;
@@ -504,6 +507,7 @@
         </div>
 
         <div class="v-na-err" id="v-na-err" hidden></div>
+        <div class="v-na-err v-na-ok" id="v-na-done" hidden></div>
 
         <fieldset class="v-na-fs">
             <legend>A · Tenant</legend>
@@ -780,9 +784,16 @@
                 });
             }).then(function (res) {
                 if (res.status === 201 || (res.data && res.data.ok)) {
-                    // Full reload: the new building has to appear, and the
-                    // village is laid out server-side.
-                    window.location.reload();
+                    // The tenant exists at this point, and so does its admin.
+                    // Show the note that survives the reload (the subdomain URL
+                    // is still a manual step — card 6b099ed8), then reload so
+                    // the new building is laid out server-side.
+                    var note = document.getElementById('v-na-done');
+                    if (note && res.data && res.data.message) {
+                        note.textContent = res.data.message;
+                        note.hidden = false;
+                    }
+                    setTimeout(function () { window.location.reload(); }, 2600);
                     return;
                 }
                 naSubmit.disabled = false;

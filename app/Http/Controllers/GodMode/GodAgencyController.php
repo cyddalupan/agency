@@ -89,8 +89,7 @@ class GodAgencyController extends Controller
 
         return redirect()
             ->route('godmode.agencies.show', $agency)
-            ->with('status', "Agency {$agency->name} created.");
-    }
+            ->with('status', "Agency {$agency->name} created.");    }
 
     /**
      * Card 6b07eb521243cfef572cd549 — create a tenant from the village modal.
@@ -160,7 +159,8 @@ class GodAgencyController extends Controller
             'agency_id' => $agency->id,
             'name'      => $agency->name,
             'subdomain' => $agency->subdomain,
-            'message'   => "Agency {$agency->name} created.",
+            'message'   => "Agency {$agency->name} created. Its admin can log in now; the subdomain URL "
+                .'needs DNS and an Apache vhost, which is still a manual step (card 6b099ed8).',
         ], 201);
     }
 
