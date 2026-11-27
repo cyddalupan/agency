@@ -107,6 +107,11 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::get('/agencies', [GodAgencyController::class, 'index'])->name('agencies.index');
         Route::get('/agencies/create', [GodAgencyController::class, 'create'])->name('agencies.create');
         Route::post('/agencies', [GodAgencyController::class, 'store'])->name('agencies.store');
+        // Card 6b07eb521243cfef572cd549 — the village modal's submit. Separate
+        // route and separate request class: it writes three rows in one
+        // transaction and answers JSON, so it cannot share `agencies.store`.
+        Route::post('/village/agencies', [GodAgencyController::class, 'storeFromVillage'])
+            ->name('village.agencies.store');
         Route::get('/agencies/{agency}', [GodAgencyController::class, 'show'])->name('agencies.show');
         Route::get('/agencies/{agency}/edit', [GodAgencyController::class, 'edit'])->name('agencies.edit');
         Route::put('/agencies/{agency}', [GodAgencyController::class, 'update'])->name('agencies.update');

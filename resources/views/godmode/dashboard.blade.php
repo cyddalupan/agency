@@ -315,6 +315,52 @@
         cursor:pointer; line-height:1; padding:2px 6px;
     }
     #v-modal .v-close:hover { color:var(--v-ink); }
+
+    /* ── modal: new agency (card 6b07eb521243cfef572cd549) ── */
+    #v-na {
+        position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center;
+        background:rgba(6,12,22,.62); z-index:70; padding:28px 16px; overflow:auto;
+    }
+    #v-na[data-open="1"] { display:flex; }
+    #v-na .v-na-card {
+        background:var(--v-panel,#16233a); border:1px solid rgba(125,211,252,.28); border-radius:14px;
+        width:min(760px,100%); padding:20px 22px 18px; color:var(--v-ink); box-shadow:0 24px 60px rgba(0,0,0,.45);
+    }
+    #v-na .v-na-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    #v-na .v-na-head h2 { font-size:17px; font-weight:800; margin:2px 0 0; }
+    #v-na .v-na-err {
+        margin:12px 0 0; padding:9px 12px; border-radius:8px; font-size:12.5px; line-height:1.45;
+        background:rgba(244,63,94,.14); border:1px solid rgba(244,63,94,.42); color:#fecdd3;
+    }
+    #v-na .v-na-fs { border:0; margin:16px 0 0; padding:0; }
+    #v-na .v-na-fs legend {
+        font-size:10px; text-transform:uppercase; letter-spacing:.09em;
+        color:var(--v-muted); font-weight:800; padding:0 0 7px;
+    }
+    #v-na .v-na-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px 12px; }
+    #v-na .v-na-wide { grid-column:1 / -1; }
+    #v-na .v-na-f { display:flex; flex-direction:column; gap:4px; font-size:11.5px; }
+    #v-na .v-na-f > span { color:var(--v-muted); }
+    #v-na .v-na-f > span i { font-style:normal; opacity:.65; }
+    #v-na input, #v-na select {
+        background:rgba(8,15,26,.72); border:1px solid rgba(148,163,184,.34); border-radius:7px;
+        padding:7px 9px; color:var(--v-ink); font-size:12.5px; font-family:inherit; width:100%;
+    }
+    #v-na input:focus, #v-na select:focus { outline:none; border-color:rgba(125,211,252,.75); }
+    #v-na .v-na-f[data-bad="1"] input, #v-na .v-na-f[data-bad="1"] select { border-color:rgba(244,63,94,.85); }
+    #v-na .v-na-msg { font-style:normal; color:#fda4af; font-size:11px; min-height:0; }
+    #v-na .v-na-pw { display:flex; gap:7px; }
+    #v-na .v-na-gen {
+        flex:0 0 auto; background:rgba(125,211,252,.16); border:1px solid rgba(125,211,252,.4);
+        color:var(--v-ink); border-radius:7px; padding:0 11px; font-size:11.5px; cursor:pointer; font-family:inherit;
+    }
+    #v-na .v-na-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
+    #v-na .v-na-submit {
+        background:#38bdf8; border:0; color:#062033; font-weight:800; font-size:12.5px;
+        padding:9px 18px; border-radius:8px; cursor:pointer; font-family:inherit;
+    }
+    #v-na .v-na-submit[disabled] { opacity:.6; cursor:default; }
+    @media (max-width:620px) { #v-na .v-na-grid { grid-template-columns:1fr; } }
 </style>
 
 <div id="village-page">
@@ -334,6 +380,9 @@
             <div class="v-chip" data-open="modal-payments" title="Collected, last 12 months"><i>🏦</i>{{ $service->formatMoney($summaryRolling['collected']) }}</div>
             <div class="v-chip" data-open="modal-agencies" title="Billed agencies"><i>🏗️</i>{{ $villageSummary['billed'] }}</div>
             <div class="v-chip" data-open="modal-payments" title="Needs attention" style="color:var(--v-rose)"><i>⚠️</i>{{ $villageSummary['attention'] }}</div>
+            {{-- Card 6b07eb521243cfef572cd549 — the primary way to stand up a
+                 new tenant. Opens the modal; never navigates to a page. --}}
+            <button type="button" class="v-chip" id="v-new-agency" title="Create a new agency" style="font-size:11px;font-weight:700"><i>＋</i>New agency</button>
             {{-- The layout header is gone on this page, so sign-out lives here
                  or the operator has no way to leave a god session. --}}
             <form method="POST" action="{{ route('godmode.logout') }}" style="display:inline">
@@ -439,6 +488,70 @@
     <div class="v-row"><span>Delayed</span><b>{{ $villageSummary['attention'] }}</b></div>
 </div>
 
+{{-- ── Modal: new agency (card 6b07eb521243cfef572cd549) ────────────────
+     Three sections in one submit: identity, the commercial agreement, and the
+     first admin account. Plain form inside the existing modal shell, submitted
+     with fetch() so validation errors land here instead of wiping the form. --}}
+<div id="v-na" data-open="0" role="dialog" aria-modal="true" aria-labelledby="v-na-title">
+    <form class="v-na-card" id="v-na-form" method="POST" action="{{ route('godmode.village.agencies.store') }}" novalidate>
+        @csrf
+        <div class="v-na-head">
+            <div>
+                <div class="v-kicker">Landas · New tenant</div>
+                <h2 id="v-na-title">New agency</h2>
+            </div>
+            <button type="button" class="v-close" data-na-close aria-label="Close">✕</button>
+        </div>
+
+        <div class="v-na-err" id="v-na-err" hidden></div>
+
+        <fieldset class="v-na-fs">
+            <legend>A · Tenant</legend>
+            <div class="v-na-grid">
+                <label class="v-na-f" data-f="name"><span>Agency name</span><input name="name" required maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="subdomain"><span>Subdomain</span><input name="subdomain" required maxlength="63" autocomplete="off" placeholder="auto from name"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="status"><span>Status</span><select name="status"><option value="active">active</option><option value="pending">pending</option></select><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="num_branches"><span>Number of branches</span><input name="num_branches" type="number" min="0" max="200" value="1"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="contact_person"><span>Contact person</span><input name="contact_person" required maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="email"><span>Email <i>(optional)</i></span><input name="email" type="email" maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="city"><span>City <i>(optional)</i></span><input name="city" maxlength="100" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="address"><span>Address <i>(optional)</i></span><input name="address" maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+            </div>
+        </fieldset>
+
+        <fieldset class="v-na-fs">
+            <legend>B · Commercial agreement</legend>
+            <div class="v-na-grid">
+                <label class="v-na-f" data-f="initial_payment"><span>Initial payment (₱)</span><input name="initial_payment" type="number" step="0.01" min="0" required><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="initial_terms"><span>Initial clears in (payments)</span><input name="initial_terms" type="number" min="1" max="120" value="1" required><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="monthly_amount"><span>Monthly amount (₱)</span><input name="monthly_amount" type="number" step="0.01" min="0" required><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="terms"><span>Number of monthly payments</span><input name="terms" type="number" min="1" max="120" value="12" required><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="starts_on"><span>Starts on</span><input name="starts_on" type="date" required value="{{ now()->toDateString() }}"><em class="v-na-msg"></em></label>
+                <label class="v-na-f v-na-wide" data-f="notes"><span>Notes <i>(optional)</i></span><input name="notes" maxlength="2000" autocomplete="off"><em class="v-na-msg"></em></label>
+            </div>
+        </fieldset>
+
+        <fieldset class="v-na-fs">
+            <legend>C · First admin account</legend>
+            <div class="v-na-grid">
+                <label class="v-na-f" data-f="admin_name"><span>Admin name</span><input name="admin_name" required maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f" data-f="admin_email"><span>Admin email</span><input name="admin_email" type="email" required maxlength="255" autocomplete="off"><em class="v-na-msg"></em></label>
+                <label class="v-na-f v-na-wide" data-f="admin_password"><span>Admin password</span>
+                    <div class="v-na-pw">
+                        <input name="admin_password" type="text" required minlength="8" autocomplete="new-password">
+                        <button type="button" class="v-na-gen" id="v-na-gen">Generate</button>
+                    </div><em class="v-na-msg"></em>
+                </label>
+            </div>
+        </fieldset>
+
+        <div class="v-na-actions">
+            <button type="button" class="v-a" data-na-close>Cancel</button>
+            <button type="submit" class="v-na-submit" id="v-na-submit">Create agency</button>
+        </div>
+    </form>
+</div>
+
 <script>
 (function () {
     var modal   = document.getElementById('v-modal');
@@ -536,6 +649,154 @@
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.getAttribute('data-open') === '1') { closeModal(); }
     });
+
+    /* ── New agency modal (card 6b07eb521243cfef572cd549) ─────────────────
+       Three rows are written in one transaction server-side; here we only
+       have to (a) not lose what the operator typed when validation fails and
+       (b) not let a double-click create two tenants. Errors come back as
+       Laravel's 422 `errors` bag and land under the field that caused them. */
+    var na        = document.getElementById('v-na');
+    var naForm    = document.getElementById('v-na-form');
+    var naErr     = document.getElementById('v-na-err');
+    var naSubmit  = document.getElementById('v-na-submit');
+    var naGen     = document.getElementById('v-na-gen');
+    var naOpenBtn = document.getElementById('v-new-agency');
+    var naSub     = naForm ? naForm.elements['subdomain'] : null;
+
+    // Auto-suggest the subdomain from the name, but stop the moment the
+    // operator types their own: an overridden value must never be rewritten.
+    var subTouched = false;
+    if (naSub) {
+        naSub.addEventListener('input', function () { subTouched = true; });
+    }
+    function slug(s) {
+        return String(s || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 63);
+    }
+
+    function naClearErrors() {
+        naErr.hidden = true;
+        naErr.textContent = '';
+        var fields = naForm.querySelectorAll('.v-na-f');
+        for (var i = 0; i < fields.length; i++) {
+            fields[i].removeAttribute('data-bad');
+            var m = fields[i].querySelector('.v-na-msg');
+            if (m) { m.textContent = ''; }
+        }
+    }
+
+    function naShowErrors(errors) {
+        naClearErrors();
+        var first = null;
+        var general = [];
+        Object.keys(errors).forEach(function (key) {
+            var el = naForm.querySelector('.v-na-f[data-f="' + key + '"]');
+            var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+            if (el) {
+                el.setAttribute('data-bad', '1');
+                var slot = el.querySelector('.v-na-msg');
+                if (slot) { slot.textContent = msg; }
+                if (!first) { first = el; }
+            } else {
+                general.push(msg);
+            }
+        });
+        if (general.length) {
+            naErr.textContent = general.join(' ');
+            naErr.hidden = false;
+        }
+        if (first) {
+            var input = first.querySelector('input,select');
+            if (input) { input.focus(); }
+        }
+    }
+
+    function naOpen() {
+        naClearErrors();
+        na.setAttribute('data-open', '1');
+        var nameInput = naForm.elements['name'];
+        if (nameInput) { nameInput.focus(); }
+    }
+
+    function naClose() {
+        na.setAttribute('data-open', '0');
+        if (naOpenBtn) { naOpenBtn.focus(); }
+    }
+
+    if (naOpenBtn) { naOpenBtn.addEventListener('click', naOpen); }
+
+    if (na) {
+        na.addEventListener('click', function (e) {
+            if (e.target.closest('[data-na-close]') || e.target === na) { naClose(); }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && na.getAttribute('data-open') === '1') { naClose(); }
+        });
+    }
+
+    var naName = naForm ? naForm.elements['name'] : null;
+    if (naName && naSub) {
+        naName.addEventListener('input', function () {
+            if (!subTouched) { naSub.value = slug(naName.value); }
+        });
+    }
+
+    if (naGen) {
+        naGen.addEventListener('click', function () {
+            // Operator-visible on purpose: they have to hand this to the client.
+            var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+            var out = '';
+            var arr = new Uint32Array(16);
+            (window.crypto || window.msCrypto).getRandomValues(arr);
+            for (var i = 0; i < arr.length; i++) { out += chars[arr[i] % chars.length]; }
+            naForm.elements['admin_password'].value = out;
+        });
+    }
+
+    if (naForm) {
+        naForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            naClearErrors();
+            naSubmit.disabled = true;
+            naSubmit.textContent = 'Creating…';
+
+            fetch(naForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': naForm.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new FormData(naForm),
+                credentials: 'same-origin'
+            }).then(function (r) {
+                return r.json().catch(function () {
+                    return { errors: { _: ['The server answered with something unexpected. Nothing was created.'] } };
+                }).then(function (data) {
+                    return { status: r.status, data: data };
+                });
+            }).then(function (res) {
+                if (res.status === 201 || (res.data && res.data.ok)) {
+                    // Full reload: the new building has to appear, and the
+                    // village is laid out server-side.
+                    window.location.reload();
+                    return;
+                }
+                naSubmit.disabled = false;
+                naSubmit.textContent = 'Create agency';
+                naShowErrors((res.data && res.data.errors) || {
+                    _: [(res.data && res.data.message) || 'Could not create the agency.']
+                });
+            }).catch(function () {
+                naSubmit.disabled = false;
+                naSubmit.textContent = 'Create agency';
+                naShowErrors({ _: ['Network error. Nothing was created — check and try again.'] });
+            });
+        });
+    }
 })();
 </script>
 

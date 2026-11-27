@@ -6,11 +6,17 @@ namespace App\Http\Controllers\GodMode;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GodMode\AgencyRequest;
+use App\Http\Requests\GodMode\VillageAgencyRequest;
 use App\Models\Agency;
+use App\Models\AgencyBillingPlan;
+use App\Models\User;
 use App\Services\GodMode\GodAgencyService;
 use App\Support\Tenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 /**
@@ -84,6 +90,78 @@ class GodAgencyController extends Controller
         return redirect()
             ->route('godmode.agencies.show', $agency)
             ->with('status', "Agency {$agency->name} created.");
+    }
+
+    /**
+     * Card 6b07eb521243cfef572cd549 — create a tenant from the village modal.
+     *
+     * Three rows, one transaction: the agency, its first billing plan and its
+     * first admin user. A half-created tenant is worse than a retry, because
+     * the subdomain is taken and the operator cannot log in to fix it.
+     *
+     * Returns JSON: the modal submits with fetch() so validation errors can be
+     * rendered field-by-field without losing what was typed. A normal form
+     * post would redirect back to the village and wipe the modal.
+     */
+    public function storeFromVillage(VillageAgencyRequest $request): JsonResponse
+    {
+        $actor = $request->user('godmode');
+
+        $created = DB::transaction(function () use ($request) {
+            // Same recorded bypass as `store()`: an operator with no agency is
+            // making a cross-tenant write, and the bypass is what makes that
+            // visible in the tenant trail.
+            $agency = Tenant::bypass(
+                fn () => Agency::create($request->identityPayload()),
+                'godmode: create an agency from the village',
+                ['subdomain' => $request->input('subdomain')]
+            );
+
+            $plan = AgencyBillingPlan::create(
+                $request->planPayload() + ['agency_id' => $agency->id]
+            );
+
+            $admin = User::create(
+                $request->adminPayload() + [
+                    'agency_id' => $agency->id,
+                    'password'  => Hash::make((string) $request->input('admin_password')),
+                ]
+            );
+
+            return [$agency, $plan, $admin];
+        });
+
+        [$agency, $plan, $admin] = $created;
+
+        // The audit `after` payload carries the commercial figures and the
+        // admin user id, so "who set this price and when" is answerable from
+        // the audit row alone.
+        $after = $this->agencies->identity($agency) + [
+            'billing_plan_id'  => $plan->id,
+            'initial_payment'  => $plan->initial_payment,
+            'initial_terms'    => $plan->initial_terms,
+            'monthly_amount'   => $plan->monthly_amount,
+            'terms'            => $plan->terms,
+            'starts_on'        => $plan->starts_on?->toDateString(),
+            'admin_user_id'    => $admin->id,
+            'admin_email'      => $admin->email,
+        ];
+
+        $this->agencies->writeAudit($agency, 'created', null, $after, $actor);
+        $this->agencies->writeActivity(
+            GodAgencyService::AUDIT_ACTION_CREATED,
+            $agency,
+            "Agency {$agency->name} was created from the village with a billing plan and an admin account.",
+            $actor
+        );
+
+        return response()->json([
+            'ok'        => true,
+            'agency_id' => $agency->id,
+            'name'      => $agency->name,
+            'subdomain' => $agency->subdomain,
+            'message'   => "Agency {$agency->name} created.",
+        ], 201);
     }
 
     public function show(Agency $agency): View

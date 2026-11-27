@@ -941,6 +941,11 @@ class GodReceivableService
         // SBX, kzuwvewwjl) and dead signups. Drawing them made a 5-client town
         // look deserted and buried the agencies that actually matter.
         //
+        // Card 6b07eb521243cfef572cd549: an agency created from the village
+        // arrives with a billing plan and nothing else, so "has a plan" is now
+        // a reason to draw it. Without this the operator creates a tenant and
+        // the village looks like nothing happened.
+        //
         // An empty agency is still COUNTED (see villageSummary), never silently
         // dropped, so the screen never claims a smaller platform than exists.
         $agencies = Agency::query()
@@ -955,7 +960,12 @@ class GodReceivableService
                     ->whereColumn('applicants.agency_id', 'agencies.id'))
                   ->orWhereExists(fn ($sub) => $sub->selectRaw('1')
                     ->from('agents')
-                    ->whereColumn('agents.agency_id', 'agencies.id'));
+                    ->whereColumn('agents.agency_id', 'agencies.id'))
+                  ->orWhereExists(fn ($sub) => $sub->selectRaw('1')
+                    ->from('agency_billing_plans')
+                    ->whereColumn('agency_billing_plans.agency_id', 'agencies.id')
+                    ->whereNull('agency_billing_plans.deleted_at')
+                    ->where('agency_billing_plans.is_active', 1));
             })
             ->orderBy('name')
             ->get();
