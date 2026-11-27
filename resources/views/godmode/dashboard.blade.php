@@ -402,6 +402,33 @@
         font-size:11.5px; color:var(--v-muted); font-style:italic;
         padding:2px 0 14px;
     }
+
+    /* Card 6b07f35c — the plan editor. Collapsed by default so a price change
+       is never a stray click while scrolling to the payment history. */
+    #v-bill .v-plan { margin:0 0 14px; }
+    #v-bill .v-plan > summary {
+        cursor:pointer; font-size:11px; font-weight:800; text-transform:uppercase;
+        letter-spacing:.08em; color:#7dd3fc; padding:6px 0; list-style:none;
+    }
+    #v-bill .v-plan > summary::-webkit-details-marker { display:none; }
+    #v-bill .v-plan > summary::before { content:'▸ '; }
+    #v-bill .v-plan[open] > summary::before { content:'▾ '; }
+    #v-bill .v-plan-warn {
+        font-size:11.5px; line-height:1.45; padding:8px 10px; margin-bottom:10px;
+        background:rgba(251,113,133,.10); border:1px solid rgba(251,113,133,.35);
+        border-radius:8px; color:#fecdd3;
+    }
+    #v-bill .v-plan-warn b { color:#fb7185; }
+    #v-bill .v-plan-per {
+        font-size:11.5px; color:var(--v-muted); margin:2px 0 10px;
+    }
+    #v-bill .v-plan-per b { color:var(--v-ink); font-variant-numeric:tabular-nums; }
+    #v-bill .v-plan-per i { font-style:normal; opacity:.6; }
+    #v-bill .v-plan-ack {
+        display:flex; align-items:flex-start; gap:8px; font-size:11.5px;
+        margin-bottom:10px; cursor:pointer; line-height:1.4;
+    }
+    #v-bill .v-plan-ack input { width:auto; margin-top:2px; accent-color:#fb7185; }
     #v-bill .v-bill-grid > div {
         background:rgba(8,15,26,.42); border:1px solid rgba(148,163,184,.2);
         border-radius:8px; padding:7px 9px; display:flex; flex-direction:column; gap:1px;
@@ -837,8 +864,12 @@
         h += '<div class="v-bill-head">Initial payment</div>';
         h += blk([
             ['Agreed', PESO(s.initial_due) + (s.initial_terms ? ' over ' + s.initial_terms + ' payments' : '')],
+            // AC2/Card 6b07f35c: the progress line is money AND count, in the
+            // card's exact wording. `initial_count` is a ROW count — a partial
+            // payment raises the money here without advancing "n of N".
             ['Paid so far', PESO(s.initial_paid) + ' of ' + PESO(s.initial_due)],
-            ['Progress', s.initial_count + ' of ' + (s.initial_terms || 0) + ' settled'],
+            ['Progress', (s.initial_progress ? PESO(s.initial_progress.paid) + ' of ' + PESO(s.initial_due) + ' paid' : '') +
+                         ' — ' + s.initial_count + ' of ' + (s.initial_terms || 0) + ' initial payments'],
             ['State', initialLabel(s.initial_state) + (s.initial_cleared_on ? ' — cleared ' + esc(fmtDate(s.initial_cleared_on)) : '')],
             ['First payment', s.anchor_on ? esc(fmtDate(s.anchor_on)) : '—'],
             ['Next instalment', s.initial_due_on ? esc(fmtDate(s.initial_due_on)) + (s.late_initial ? ' · OVERDUE' : '') : '—'],
@@ -887,7 +918,7 @@
             }
         }
 
-        return h + recordForm(s, agencyId);
+        return h + planForm(s, agencyId) + recordForm(s, agencyId);
     }
 
     function blk(rows) {
@@ -916,6 +947,57 @@
         return st === 'initial_paid' ? 'v-badge-paid'
              : st === 'initial_paying' ? 'v-badge-paying'
              : 'v-badge-none';
+    }
+
+    /* ── Edit the agreement (card 6b07f35ccd9659edc7b8438e) ──────────────
+       Collapsed by default: changing a price is a deliberate act, not
+       something to scroll past. Saving SUPERSEDES the plan server-side, so
+       the copy here says "replace", not "edit in place".
+
+       AC6: when money already exists the confirm box is shown and required.
+       It states the amount plainly rather than a vague "are you sure". */
+    function planForm(s, agencyId) {
+        var hasMoney = (s.payment_count || 0) > 0;
+        var p = s.plan || {};
+        var d = (p.starts_on || '').slice(0, 10) || today();
+
+        var h = '<details class="v-plan"' + (hasMoney ? '' : '') + '>' +
+                '<summary>Edit billing plan</summary>' +
+                '<form class="v-plan-form" data-agency="' + esc(agencyId) + '">';
+
+        if (hasMoney) {
+            h += '<div class="v-plan-warn"><b>This agency has ' + PESO(s.total_paid) +
+                 ' recorded.</b> Changing the agreement will not alter past payments. ' +
+                 'The current plan is kept and replaced by a new one.</div>';
+        }
+
+        h += '<div class="v-bill-fields">' +
+             '<label data-f="initial_payment"><span>Initial payment</span>' +
+             '<input name="initial_payment" type="number" step="0.01" min="0" required value="' + esc(p.initial_payment || '0.00') + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="initial_terms"><span>Payments to clear it</span>' +
+             '<input name="initial_terms" type="number" step="1" min="1" required value="' + esc(p.initial_terms || 1) + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="monthly_amount"><span>Monthly amount</span>' +
+             '<input name="monthly_amount" type="number" step="0.01" min="0" required value="' + esc(p.monthly_amount || '0.00') + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="terms"><span>Months</span>' +
+             '<input name="terms" type="number" step="1" min="1" required value="' + esc(p.terms || 12) + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="starts_on"><span>Starts on</span>' +
+             '<input name="starts_on" type="date" required value="' + esc(d) + '"><em class="v-bill-msg"></em></label>' +
+             '<label data-f="notes"><span>Notes <i>(optional)</i></span>' +
+             '<input name="notes" maxlength="1000" value="' + esc(p.notes || '') + '"><em class="v-bill-msg"></em></label>' +
+             '</div>';
+
+        h += '<div class="v-plan-per">Per instalment: <b id="v-plan-per">—</b> <i>(derived, never stored)</i></div>';
+
+        if (hasMoney) {
+            h += '<label class="v-plan-ack"><input type="checkbox" name="acknowledged" value="1">' +
+                 '<span>I understand past payments stay exactly as recorded.</span></label>';
+        }
+
+        h += '<div class="v-bill-err" hidden></div>' +
+             '<button type="submit" class="v-na-submit">Replace billing plan</button>' +
+             '</form></details>';
+
+        return h;
     }
 
     function recordForm(s, agencyId) {
@@ -951,7 +1033,78 @@
         return String(s).slice(0, 10);
     }
 
+    /* Card 6b07f35ccd9659edc7b8438e — per-instalment is derived for display
+       and never persisted, so it is computed here from the two live inputs
+       rather than shipped from the server. */
+    function wirePlanForm(host, agencyId) {
+        var form = host.querySelector('.v-plan-form');
+        if (!form) { return; }
+
+        var perOut = form.querySelector('#v-plan-per');
+        function recompute() {
+            var amt = parseFloat(form.elements['initial_payment'].value || 0);
+            var n = parseInt(form.elements['initial_terms'].value || 0, 10);
+            perOut.textContent = (n > 0 && amt >= 0) ? PESO(amt / n) : '—';
+        }
+        form.elements['initial_payment'].addEventListener('input', recompute);
+        form.elements['initial_terms'].addEventListener('input', recompute);
+        recompute();
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var errBox = form.querySelector('.v-bill-err');
+            errBox.hidden = true;
+            form.querySelectorAll('.v-bill-fields label').forEach(function (l) {
+                l.removeAttribute('data-bad');
+                var m = l.querySelector('.v-bill-msg'); if (m) { m.textContent = ''; }
+            });
+
+            var ack = form.querySelector('input[name="acknowledged"]');
+            // AC6: the browser asks once more, in plain words, because this
+            // changes what the client owes.
+            if (ack && !ack.checked) {
+                errBox.textContent = 'Tick the box to confirm past payments stay as recorded.';
+                errBox.hidden = false;
+                return;
+            }
+
+            var btn = form.querySelector('.v-na-submit');
+            btn.disabled = true; btn.textContent = 'Replacing…';
+
+            fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/plan', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new FormData(form),
+                credentials: 'same-origin'
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; });
+            }).then(function (res) {
+                if (res.data && res.data.ok) { replayBilling(agencyId); return; }
+                btn.disabled = false; btn.textContent = 'Replace billing plan';
+                var errs = (res.data && res.data.errors) || {};
+                var general = [];
+                Object.keys(errs).forEach(function (k) {
+                    var el = form.querySelector('[data-f="' + k + '"]');
+                    var msg = Array.isArray(errs[k]) ? errs[k][0] : errs[k];
+                    if (el) { el.setAttribute('data-bad', '1'); el.querySelector('.v-bill-msg').textContent = msg; }
+                    else { general.push(msg); }
+                });
+                if (general.length) { errBox.textContent = general.join(' '); errBox.hidden = false; }
+            }).catch(function () {
+                btn.disabled = false; btn.textContent = 'Replace billing plan';
+                errBox.textContent = 'Network error. The plan was not changed.';
+                errBox.hidden = false;
+            });
+        });
+    }
+
     function wireBilling(host, agencyId) {
+        wirePlanForm(host, agencyId);
+
         var form = host.querySelector('.v-bill-form');
         if (!form) { return; }
         var amount = form.elements['amount'];

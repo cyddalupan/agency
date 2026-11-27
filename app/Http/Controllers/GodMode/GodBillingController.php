@@ -146,6 +146,72 @@ class GodBillingController extends Controller
      * so the money state at the moment of the write is recoverable from the
      * audit row alone.
      */
+    /**
+     * Card 6b07f35ccd9659edc7b8438e — change the commercial agreement.
+     *
+     * Supersedes rather than edits (see GodBillingService::supersedePlan). The
+     * confirm step lives in the modal: when the agency already has payments the
+     * operator must tick a box acknowledging that past payments will not move,
+     * and this action re-checks that here rather than trusting the browser.
+     */
+    public function updatePlan(Request $request, Agency $agency): JsonResponse
+    {
+        $validated = $request->validate([
+            'initial_payment' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'initial_terms'   => ['required', 'integer', 'min:1', 'max:120'],
+            'monthly_amount'  => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'terms'           => ['required', 'integer', 'min:1', 'max:120'],
+            'starts_on'       => ['required', 'date'],
+            'notes'           => ['nullable', 'string', 'max:1000'],
+            // AC6: the acknowledgement is required only when money exists.
+            'acknowledged'    => ['nullable', 'boolean'],
+        ]);
+
+        $progress = $this->billing->initialProgress($agency);
+        $hasMoney = $this->billing->summary($agency)['payment_count'] > 0;
+
+        if ($hasMoney && ! ($validated['acknowledged'] ?? false)) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'This agency has payments recorded. Confirm that changing the agreement will not alter them.',
+                'errors'  => ['acknowledged' => ['Confirmation required before superseding the plan.']],
+            ], 422);
+        }
+
+        $before = $this->billing->summary($agency);
+
+        $result = $this->billing->supersedePlan($agency, $validated);
+
+        $after = $this->billing->summary($agency);
+
+        $this->audit(
+            $agency,
+            'billing_plan_superseded',
+            $request,
+            [
+                'old_plan_id'       => $result['old']?->id,
+                'new_plan_id'       => $result['new']->id,
+                'old_initial'       => $result['old']?->initial_payment,
+                'old_initial_terms' => $result['old']?->initial_terms,
+                'old_monthly'       => $result['old']?->monthly_amount,
+                'old_terms'         => $result['old']?->terms,
+                'new_initial'       => $result['new']->initial_payment,
+                'new_initial_terms' => $result['new']->initial_terms,
+                'new_monthly'       => $result['new']->monthly_amount,
+                'new_terms'         => $result['new']->terms,
+                'payments_preserved' => $before['payment_count'],
+                'initial_paid_at_change' => $progress['paid'],
+            ],
+            $after
+        );
+
+        return response()->json([
+            'ok'      => true,
+            'plan_id' => $result['new']->id,
+            'summary' => $after,
+        ]);
+    }
+
     private function audit(Agency $agency, string $action, Request $request, array $detail, array $afterTotals): void
     {
         $actor = $request->user('godmode');

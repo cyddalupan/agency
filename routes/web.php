@@ -158,6 +158,12 @@ Route::prefix('godmode')->name('godmode.')->group(function () {
         Route::post('/village/agencies/{agency}/payments/{payment}/void', [GodBillingController::class, 'void'])
             ->whereNumber('agency')->whereNumber('payment')->name('village.payments.void');
 
+        // Card 6b07f35ccd9659edc7b8438e — change the agreement. Supersedes the
+        // active plan (deactivate + insert) rather than editing it, so recorded
+        // payments keep pointing at the terms they were actually paid against.
+        Route::post('/village/agencies/{agency}/plan', [GodBillingController::class, 'updatePlan'])
+            ->whereNumber('agency')->name('village.plan.update');
+
         // Card 6b0383d516e52b9c418a9136 — Audit trail (control-plane plane
         // events + sensitive actions). READ ONLY: three GETs, no POST/PUT/
         // DELETE, ever. `['auth:godmode', 'godmode.only']` is the SOLE gate:

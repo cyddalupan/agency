@@ -51,6 +51,72 @@ class GodBillingService
     }
 
     /**
+     * Card 6b07f35ccd9659edc7b8438e — supersede the agreement.
+     *
+     * The old plan is DEACTIVATED and a NEW row is inserted; the old row is
+     * never mutated. Two reasons, both load-bearing:
+     *
+     *  1. Payments keep their `plan_id`. If the plan row were edited in place,
+     *     a ₱50,000 payment recorded under a now-₱60,000 agreement would appear
+     *     to have been paid against the new terms — a quiet rewrite of history.
+     *  2. "Who changed the price, and from what" stays answerable by reading
+     *     the rows rather than a single mutable record.
+     *
+     * There must always be exactly one active plan, so the swap happens in one
+     * transaction: the old row cannot be left deactivated with nothing to
+     * replace it if the insert fails.
+     *
+     * @param  array<string,mixed>  $input  validated: initial_payment,
+     *         initial_terms, monthly_amount, terms, starts_on, notes
+     * @return array{old:?AgencyBillingPlan,new:AgencyBillingPlan}
+     */
+    public function supersedePlan(Agency $agency, array $input): array
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($agency, $input) {
+            $old = $this->activePlan($agency);
+
+            if ($old !== null) {
+                $old->forceFill(['is_active' => false])->save();
+            }
+
+            $new = AgencyBillingPlan::create([
+                'agency_id'       => $agency->id,
+                'initial_payment' => number_format((float) $input['initial_payment'], 2, '.', ''),
+                'initial_terms'   => (int) $input['initial_terms'],
+                'monthly_amount'  => number_format((float) $input['monthly_amount'], 2, '.', ''),
+                'terms'           => (int) $input['terms'],
+                'currency'        => $old?->currency ?? 'PHP',
+                'starts_on'       => $input['starts_on'],
+                'notes'           => $input['notes'] ?? null,
+                'is_active'       => true,
+            ]);
+
+            return ['old' => $old, 'new' => $new];
+        });
+    }
+
+    /**
+     * How many initial payments are recorded, and what they add up to.
+     *
+     * AC3 of this card is explicit that the COUNT is what drives "n of N
+     * initial payments", not the money: two ₱12,500 payments against a ₱50,000
+     * initial split four ways is "2 of 4", even though it is only half the
+     * cash. A partial payment therefore does NOT advance the count.
+     */
+    public function initialProgress(Agency $agency): array
+    {
+        $rows = AgencyBillingPayment::query()
+            ->where('agency_id', $agency->id)
+            ->where('payment_type', AgencyBillingPayment::TYPE_INITIAL)
+            ->get(['amount']);
+
+        return [
+            'count' => $rows->count(),
+            'paid'  => $this->money((float) $rows->sum(fn ($r) => (float) $r->amount)),
+        ];
+    }
+
+    /**
      * The billing summary the modal shows and the amount pre-fill reads.
      *
      * `initial_outstanding` and `monthly_outstanding` are what the operator
@@ -102,6 +168,10 @@ class GodBillingService
             'balance'             => $this->money($totalContract - $totalPaid),
             'payments'            => $payments,
             'payment_count'       => $payments->count(),
+            // AC2: the progress line reads "₱X of ₱Y paid — n of N initial
+            // payments". `paid` is money, `count` is rows: a partial payment
+            // raises the money and not the count, deliberately.
+            'initial_progress'    => $this->initialProgress($agency),
         ] + $state;
     }
 
