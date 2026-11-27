@@ -268,6 +268,20 @@
         margin-top:2px; display:flex; align-items:center; justify-content:center; gap:4px;
     }
     #village-page .v-dot { width:5px; height:5px; border-radius:50%; display:inline-block; }
+
+    /* Card 6b07f35fc3903d22f1b8444f — the SECOND axis. A Delayed marker sits on
+       the building without replacing its Paid-up body, which is exactly Cyd's
+       "Delayed and Paid up at this point". */
+    #village-page .v-alert {
+        position:absolute; top:-7px; right:-7px; z-index:4;
+        width:18px; height:18px; border-radius:50%;
+        background:var(--v-rose); color:#2a0710;
+        font-size:12px; font-weight:900; line-height:18px; text-align:center;
+        box-shadow:0 0 0 2px rgba(12,20,34,.55);
+        pointer-events:none;
+    }
+    #village-page .v-plot { position:relative; }
+    #village-page .v-st-delayed { color:var(--v-rose); }
     #village-page .v-paid  { color:var(--v-mint); }
     #village-page .v-warn  { color:var(--v-gold); }
     #village-page .v-bad   { color:var(--v-rose); }
@@ -467,9 +481,29 @@
         @endforeach
         <div class="v-grid">
             @foreach ($render as $b)
-                @php $meta = $stateMeta[$b['state']]; @endphp
+                @php
+                    // Card 6b07f35fc3903d22f1b8444f — two independent axes.
+                    // The body/label still comes from the compatibility `state`
+                    // so the existing sprite mapping is untouched; the alert
+                    // marker is the SECOND axis and is what makes
+                    // "Paid up + Delayed" visible as one building.
+                    $meta = $stateMeta[$b['state']];
+                    $initialLabel = [
+                        'initial_none'   => 'No billing yet',
+                        'initial_paying' => 'Paying in',
+                        'initial_paid'   => 'Paid up',
+                    ][$b['initial_state']] ?? $meta['label'];
+                    $lateInitial = (bool) ($b['late_initial'] ?? false);
+                    $lateMonthly = (bool) ($b['late_monthly'] ?? false);
+                @endphp
                 <button type="button" class="v-plot"
                         data-state="{{ $b['state'] }}"
+                        data-initial-state="{{ $b['initial_state'] }}"
+                        data-monthly-state="{{ $b['monthly_state'] }}"
+                        data-late-initial="{{ $lateInitial ? '1' : '0' }}"
+                        data-late-monthly="{{ $lateMonthly ? '1' : '0' }}"
+                        data-due-initial="{{ $b['initial_due_on'] }}"
+                        data-due-monthly="{{ $b['monthly_due_on'] }}"
                         data-status="{{ $b['status'] }}"
                         data-agency="{{ $b['id'] }}"
                         data-name="{{ $b['name'] }}"
@@ -480,16 +514,22 @@
                         data-overdue="{{ $b['overdue_count'] }}"
                         data-label="{{ $meta['label'] }}"
                         style="transform:translate({{ $b['jx'] }}px, {{ $b['lift'] }}px)"
-                        title="{{ $b['name'] }} — {{ $meta['label'] }}"
-                        aria-label="{{ $b['name'] }} — {{ $meta['label'] }}">
+                        title="{{ $b['name'] }} — {{ $initialLabel }}{{ $lateMonthly ? ' · Delayed' : ($lateInitial ? ' · Delayed' : '') }}"
+                        aria-label="{{ $b['name'] }} — {{ $initialLabel }}{{ $lateMonthly ? ' · Delayed' : ($lateInitial ? ' · Delayed' : '') }}">
                     <div class="v-plate"></div>
                     <div class="v-sprite" style="transform:scale({{ $b['scale'] }})">
                         <img src="{{ asset('images/village/'.$b['sprite'].'.svg') }}" alt="">
                     </div>
+                    @if ($lateMonthly || $lateInitial)
+                        <span class="v-alert" title="Delayed">!</span>
+                    @endif
                     <div class="v-lbl">
                         <div class="v-n">{{ $b['name'] }}</div>
                         <div class="v-st {{ $meta['cls'] }}">
-                            <span class="v-dot" style="background:{{ $meta['dot'] }}"></span>{{ $meta['label'] }}
+                            <span class="v-dot" style="background:{{ $meta['dot'] }}"></span>{{ $initialLabel }}
+                            @if ($lateMonthly || $lateInitial)
+                                <span class="v-st-delayed">· Delayed</span>
+                            @endif
                         </div>
                     </div>
                 </button>

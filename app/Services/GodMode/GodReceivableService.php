@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\GodMode;
 
 use App\Models\Agency;
+use App\Models\AgencyBillingPayment;
+use App\Models\AgencyBillingPlan;
 use App\Models\Receivable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -999,6 +1001,26 @@ class GodReceivableService
             ->get()
             ->keyBy('agency_id');
 
+        // ── Card 6b07f35fc3903d22f1b8444f: the state now comes from plans and
+        // payments, not from `receivables`. Three extra queries in total,
+        // regardless of how many agencies are drawn — the arithmetic lives in
+        // VillageBillingState, never inside the loop.
+        $plans = AgencyBillingPlan::query()
+            ->where('is_active', true)
+            ->orderBy('starts_on')
+            ->orderBy('id')
+            ->get()
+            ->keyBy('agency_id');
+
+        $billingRows = AgencyBillingPayment::query()
+            ->select(['agency_id', 'payment_type', 'amount', 'paid_on'])
+            ->orderBy('paid_on')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('agency_id');
+
+        $today = \Carbon\CarbonImmutable::now()->startOfDay();
+
         $out = [];
 
         foreach ($agencies as $agency) {
@@ -1008,27 +1030,72 @@ class GodReceivableService
             $pending  = (int) ($row?->pending_count ?? 0);
             $overdue  = (int) ($row?->overdue_count ?? 0);
 
-            $state = match (true) {
-                $rowCount === 0 => 'none',
-                $overdue > 0    => 'overdue',
-                $pending > 0    => 'pending',
-                default         => 'settled',
-            };
+            // ── billing axes (card 6b07f35f) ──
+            $plan = $plans->get($agency->id);
+            $payments = $billingRows->get($agency->id) ?? collect();
+
+            $initialSum = 0.0; $initialCount = 0;
+            $monthlySum = 0.0; $monthlyCount = 0;
+            $payArray = [];
+            foreach ($payments as $p) {
+                $payArray[] = [
+                    'paid_on'      => (string) $p->paid_on,
+                    'amount'       => (string) $p->amount,
+                    'payment_type' => (string) $p->payment_type,
+                ];
+                if ($p->payment_type === 'initial') { $initialSum += (float) $p->amount; $initialCount++; }
+                elseif ($p->payment_type === 'monthly') { $monthlySum += (float) $p->amount; $monthlyCount++; }
+            }
+
+            $billing = (new VillageBillingState(
+                $plan ? [
+                    'initial_payment' => (string) $plan->initial_payment,
+                    'initial_terms'   => (int) $plan->initial_terms,
+                    'monthly_amount'  => (string) $plan->monthly_amount,
+                    'terms'           => (int) $plan->terms,
+                    'starts_on'       => $plan->starts_on?->toDateString(),
+                ] : null,
+                [
+                    'initial_paid'   => number_format($initialSum, 2, '.', ''),
+                    'initial_count'  => $initialCount,
+                    'monthly_paid'   => number_format($monthlySum, 2, '.', ''),
+                    'monthly_count'  => $monthlyCount,
+                ],
+                $payArray,
+                $today
+            ))->axes();
+
+            // Has a billing plan with money on it? That is now the village's
+            // own notion of "billed", independent of `receivables`.
+            $billingBilled = $initialCount > 0;
+
+            $state = $billing['state'];
 
             $out[] = [
-                'id'            => (int) $agency->id,
-                'name'          => (string) $agency->name,
-                'status'        => (string) $agency->status,
-                'subdomain'     => $agency->subdomain,
-                'state'         => $state,
+                'id'                  => (int) $agency->id,
+                'name'                => (string) $agency->name,
+                'status'              => (string) $agency->status,
+                'subdomain'           => $agency->subdomain,
+                'state'               => $state,
+                'initial_state'       => $billing['initial_state'],
+                'monthly_state'       => $billing['monthly_state'],
+                'initial_cleared'     => $billing['initial_cleared'],
+                'initial_cleared_on'  => $billing['initial_cleared_on'],
+                'initial_due_on'      => $billing['initial_due_on'],
+                'monthly_due_on'      => $billing['monthly_due_on'],
+                'late_initial'        => $billing['late_initial'],
+                'late_monthly'        => $billing['late_monthly'],
+                'billing_billed'      => $billingBilled,
+                'initial_paid'        => number_format($initialSum, 2, '.', ''),
+                'monthly_paid'        => number_format($monthlySum, 2, '.', ''),
                 // `decimal()` keeps the database's string money. A row exists
                 // only when there are live rows, so these are measured values,
                 // never `MEASURED_NOTHING`.
-                'collected'     => $this->decimal($row?->collected),
-                'outstanding'   => $this->decimal($row?->outstanding),
-                'pending_count' => $pending,
-                'overdue_count' => $overdue,
-                'last_date'     => $row?->last_date,
+                'collected'           => $this->decimal($row?->collected),
+                'outstanding'         => $this->decimal($row?->outstanding),
+                'pending_count'       => $pending,
+                'overdue_count'       => $overdue,
+                'last_date'           => $row?->last_date,
             ];
         }
 
