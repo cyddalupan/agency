@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditEvent;
 use App\Models\User;
+use App\Services\GodMode\GodBillingService;
 use App\Services\GodMode\GodReceivableService;
 use App\Services\SensitiveActionLogger;
 use App\Support\Tenant;
@@ -161,7 +162,7 @@ class GodModeAuthController extends Controller
      * methods as `/godmode/payments`, so a number on the index and a number on
      * the ledger are one computation, not two that agree today.
      */
-    public function index(Request $request, GodReceivableService $ledger): View
+    public function index(Request $request, GodReceivableService $ledger, GodBillingService $billing): View
     {
         // The village is the console. One building per agency, coloured by how
         // it is paying; every other God Mode screen hangs off a modal on it.
@@ -169,10 +170,28 @@ class GodModeAuthController extends Controller
         // the payments ledger remain one computation.
         $village = $ledger->village();
 
+        // Card 6b07f359a6a548392171d9de AC9: clicking a building must NOT fetch.
+        // The village already loaded every agency server-side, so the billing
+        // summary is computed here, in one pass, and shipped with the page. A
+        // fetch-per-click would add a spinner and a failure mode to a screen
+        // that is currently instant.
+        //
+        // `summary()` runs 4 light queries per agency (plan, payments, two
+        // counts). At the current 21 agencies that is fine; if the tenant count
+        // ever reaches the hundreds this belongs behind a single grouped query.
+        $billingByAgency = [];
+        foreach ($village as $b) {
+            $agency = \App\Models\Agency::find($b['id']);
+            if ($agency !== null) {
+                $billingByAgency[$b['id']] = $billing->summary($agency);
+            }
+        }
+
         return view('godmode.dashboard', [
             'user' => $request->user('godmode'),
             'village' => $village,
             'villageSummary' => $ledger->villageSummary($village),
+            'billingByAgency' => $billingByAgency,
         ] + $ledger->dashboard());
     }
 

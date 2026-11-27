@@ -379,7 +379,29 @@
         color:var(--v-muted); font-weight:800; margin-bottom:8px;
     }
     #v-bill .v-bill-load { font-size:12px; color:var(--v-muted); }
-    #v-bill .v-bill-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+
+    /* Card 6b07f359a6a548392171d9de — the modal is a summary now, so the
+       blocks have 3 to 6 facts each. auto-fit keeps them readable instead of
+       squeezing "Next instalment" into a fixed third of the card. */
+    #v-bill .v-bill-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:14px; }
+
+    /* Two badges, never one: "Paid up" and "Payment due" coexist here on
+       purpose — that is the whole correction this card carries. */
+    #v-bill .v-bill-badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    #v-bill .v-badge {
+        font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px;
+        border:1px solid transparent; letter-spacing:.02em;
+    }
+    #v-bill .v-badge-paid { background:rgba(110,231,183,.16); color:#6ee7b7; border-color:rgba(110,231,183,.4); }
+    #v-bill .v-badge-paying { background:rgba(255,209,102,.16); color:#ffd166; border-color:rgba(255,209,102,.4); }
+    #v-bill .v-badge-none { background:rgba(148,163,184,.16); color:#a9b6c9; border-color:rgba(148,163,184,.35); }
+    #v-bill .v-badge-due { background:rgba(251,113,133,.16); color:#fb7185; border-color:rgba(251,113,133,.45); }
+    #v-bill .v-badge-due b { font-weight:900; }
+
+    #v-bill .v-bill-note {
+        font-size:11.5px; color:var(--v-muted); font-style:italic;
+        padding:2px 0 14px;
+    }
     #v-bill .v-bill-grid > div {
         background:rgba(8,15,26,.42); border:1px solid rgba(148,163,184,.2);
         border-radius:8px; padding:7px 9px; display:flex; flex-direction:column; gap:1px;
@@ -578,6 +600,13 @@
                         </div>
                     </div>
                 </button>
+                {{-- AC9: the billing summary ships WITH the page. One script
+                     tag per building holding JSON; the modal reads it and
+                     makes no request. Rendered as application/json so it is
+                     never executed and never treated as markup. --}}
+                @if (isset($billingByAgency[$b['id']]))
+                    <script type="application/json" id="v-bill-{{ $b['id'] }}" class="v-bill-src">{!! json_encode($billingByAgency[$b['id']], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+                @endif
             @endforeach
         </div>
 
@@ -741,27 +770,16 @@
         kicker.textContent = d.status ? ('Agency · ' + d.status) : 'Agency';
         title.textContent = d.name;
 
-        var html = '';
-        html += row('Payment state', '<span class="' + stateCls(d.state) + '">' + esc(d.label) + '</span>');
-        html += row('Collected', PESO(d.collected));
-        html += row('Outstanding', PESO(d.outstanding));
-        html += row('Pending bills', esc(d.pending));
-        if (parseInt(d.overdue, 10) > 0) {
-            html += row('Overdue bills', '<span class="v-bad">' + esc(d.overdue) + '</span>');
-        }
-        if (d.subdomain) { html += row('Subdomain', esc(d.subdomain)); }
-
-        // Card 6b07eb557762396b008a7080 — the Landas billing block. Filled
-        // from the summary endpoint after the shell renders, so opening a
-        // building still feels instant.
-        html += '<div id="v-bill" data-agency="' + esc(d.agency) + '">' +
-                '<div class="v-bill-load">Loading billing…</div></div>';
-
-        body.innerHTML = html;
-
+        // Card 6b07f359a6a548392171d9de: the modal is now the Landas billing
+        // summary. The old rows here were `receivables` — the agency's own
+        // money, not what it owes Landas — which made "Outstanding ₱0" next to
+        // a red building look like a contradiction. Receivables still exist in
+        // the agency's own screens; they do not belong in this one.
+        body.innerHTML = '<div id="v-bill" data-agency="' + esc(d.agency) + '">' +
+                         '<div class="v-bill-load">Loading billing…</div></div>';
         actions.innerHTML =
-            '<a class="v-a" href="/godmode/payments/' + encodeURIComponent(d.agency) + '">Open payments →</a>' +
-            '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(d.agency) + '">Agency details →</a>';
+            '<a class="v-a" href="/godmode/payments/' + encodeURIComponent(d.agency) + '">View full ledger →</a>' +
+            '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(d.agency) + '/settings">Agency settings →</a>';
         openModal();
         loadBilling(d.agency);
     }
@@ -775,15 +793,27 @@
     function loadBilling(agencyId) {
         var host = document.getElementById('v-bill');
         if (!host) { return; }
-        fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/billing', {
-            headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
-        }).then(function (r) { return r.json(); }).then(function (s) {
-            BILL_STATE = s;
-            host.innerHTML = billingHtml(s, agencyId);
-            wireBilling(host, agencyId);
-        }).catch(function () {
-            host.innerHTML = '<div class="v-bill-load">Billing could not be loaded.</div>';
-        });
+
+        // AC9: no fetch. The summary was computed server-side and is sitting in
+        // a <script type="application/json"> next to the building. If the
+        // element is missing we say so rather than quietly hitting the API —
+        // a missing payload is a bug worth seeing, not worth papering over.
+        var src = document.getElementById('v-bill-' + agencyId);
+        if (!src) {
+            host.innerHTML = '<div class="v-bill-load">No billing data was shipped for this agency.</div>';
+            return;
+        }
+
+        var s;
+        try { s = JSON.parse(src.textContent); }
+        catch (err) {
+            host.innerHTML = '<div class="v-bill-load">Billing data could not be read.</div>';
+            return;
+        }
+
+        BILL_STATE = s;
+        host.innerHTML = billingHtml(s, agencyId);
+        wireBilling(host, agencyId);
     }
 
     function billingHtml(s, agencyId) {
@@ -794,15 +824,102 @@
                    '/settings">Set one</a></div>';
         }
 
-        var h = '<div class="v-bill-head">Landas billing</div>';
-        h += '<div class="v-bill-grid">' +
-             '<div><span>Initial</span><b>' + PESO(s.initial_paid) + ' of ' + PESO(s.initial_due) + '</b>' +
-             '<em>' + (parseFloat(s.initial_outstanding) > 0 ? PESO(s.initial_outstanding) + ' left' : 'cleared') + '</em></div>' +
-             '<div><span>Monthly</span><b>' + PESO(s.monthly_paid) + ' of ' + PESO(s.monthly_due) + '</b>' +
-             '<em>' + (parseFloat(s.monthly_outstanding) > 0 ? PESO(s.monthly_outstanding) + ' left' : 'cleared') + '</em></div>' +
-             '<div><span>Total paid</span><b>' + PESO(s.total_paid) + '</b><em>' + esc(s.payment_count) + ' payment' + (s.payment_count === 1 ? '' : 's') + '</em></div>' +
-             '</div>';
+        // ── Two badges, never one (card §Header). An agency can be Paid up
+        // AND Delayed; collapsing them to a single chip erases a real fact.
+        var h = '<div class="v-bill-badges">' +
+                '<span class="v-badge ' + badgeCls(s.initial_state) + '">' + esc(initialLabel(s.initial_state)) + '</span>';
+        if (s.late_monthly || s.late_initial) {
+            h += '<span class="v-badge v-badge-due"><b>!</b> Payment due</span>';
+        }
+        h += '</div>';
 
+        // ── Initial payment block ──
+        h += '<div class="v-bill-head">Initial payment</div>';
+        h += blk([
+            ['Agreed', PESO(s.initial_due) + (s.initial_terms ? ' over ' + s.initial_terms + ' payments' : '')],
+            ['Paid so far', PESO(s.initial_paid) + ' of ' + PESO(s.initial_due)],
+            ['Progress', s.initial_count + ' of ' + (s.initial_terms || 0) + ' settled'],
+            ['State', initialLabel(s.initial_state) + (s.initial_cleared_on ? ' — cleared ' + esc(fmtDate(s.initial_cleared_on)) : '')],
+            ['First payment', s.anchor_on ? esc(fmtDate(s.anchor_on)) : '—'],
+            ['Next instalment', s.initial_due_on ? esc(fmtDate(s.initial_due_on)) + (s.late_initial ? ' · OVERDUE' : '') : '—'],
+        ]);
+
+        // ── Monthly block: only once the initial is cleared (AC3). A monthly
+        // obligation beside an unclear initial is arithmetic the operator
+        // cannot reconcile, so it is withheld with a note rather than zeroed.
+        if (s.initial_cleared) {
+            h += '<div class="v-bill-head">Monthly retainer</div>';
+            h += blk([
+                ['Amount', PESO(s.monthly_amount) + (s.monthly_terms ? ' × ' + s.monthly_terms + ' months' : '')],
+                ['Paid so far', PESO(s.monthly_paid) + ' of ' + PESO(s.monthly_due)],
+                ['Months paid', s.monthly_count + ' of ' + (s.monthly_expected || 0) + ' due so far'],
+                ['Next due', s.monthly_due_on ? esc(fmtDate(s.monthly_due_on)) + (s.late_monthly ? ' · OVERDUE' : '') : '—'],
+            ]);
+        } else {
+            h += '<div class="v-bill-note">Monthly billing starts once the initial is cleared.</div>';
+        }
+
+        // ── Totals (AC4, AC5) ──
+        var bal = parseFloat(s.balance || 0);
+        h += '<div class="v-bill-head">Totals</div>';
+        h += blk([
+            ['Contract value', PESO(s.total_contract)],
+            ['Total paid', PESO(s.total_paid)],
+            ['Balance remaining', '<span class="' + (bal > 0 ? 'v-bad' : (bal < 0 ? 'v-paid' : '')) + '">' + PESO(s.balance) + '</span>' +
+                                 (bal < 0 ? ' <em>overpaid</em>' : '')],
+        ]);
+
+        // ── Payment history (AC6) ──
+        if (s.payments && s.payments.length) {
+            var shown = s.payments.slice(0, 10);
+            h += '<div class="v-bill-head">Payments <em>' + s.payment_count + '</em></div><div class="v-bill-list">';
+            shown.forEach(function (p) {
+                h += '<div class="v-bill-row"><span>' + esc(fmtDate(p.paid_on)) + ' · ' + esc(p.payment_type) + '</span>' +
+                     '<b>' + PESO(p.amount) + '</b>' +
+                     '<em>' + esc(p.mode || '') + (p.recorder ? ' · ' + esc(p.recorder.name) : '') +
+                     (p.reference ? ' · ' + esc(p.reference) : '') + '</em>' +
+                     '<button type="button" class="v-bill-void" data-void="' + esc(p.id) + '">Void</button></div>';
+            });
+            h += '</div>';
+            if (s.payment_count > shown.length) {
+                h += '<div class="v-bill-load">Showing ' + shown.length + ' of ' + s.payment_count +
+                     '. <a class="v-a" href="/godmode/payments/' + encodeURIComponent(agencyId) + '">View full ledger</a></div>';
+            }
+        }
+
+        return h + recordForm(s, agencyId);
+    }
+
+    function blk(rows) {
+        var h = '<div class="v-bill-grid">';
+        rows.forEach(function (r) {
+            h += '<div><span>' + esc(r[0]) + '</span><b>' + r[1] + '</b></div>';
+        });
+        return h + '</div>';
+    }
+
+    /* After any write the page's baked summary is stale. Reload it with the
+       building marked so the modal comes straight back up. */
+    function replayBilling(agencyId) {
+        var u = new URL(window.location.href);
+        u.searchParams.set('open', agencyId);
+        window.location.replace(u.toString());
+    }
+
+    function initialLabel(st) {
+        return st === 'initial_paid' ? 'Paid up'
+             : st === 'initial_paying' ? 'Paying in'
+             : 'No billing yet';
+    }
+
+    function badgeCls(st) {
+        return st === 'initial_paid' ? 'v-badge-paid'
+             : st === 'initial_paying' ? 'v-badge-paying'
+             : 'v-badge-none';
+    }
+
+    function recordForm(s, agencyId) {
+        var h = '<div class="v-bill-head">Record a payment</div>';
         h += '<form class="v-bill-form" data-agency="' + esc(agencyId) + '">' +
              '<div class="v-bill-types">' +
              '<label><input type="radio" name="payment_type" value="initial" required><span>Initial payment</span></label>' +
@@ -819,17 +936,6 @@
              '<div class="v-bill-err" hidden></div>' +
              '<button type="submit" class="v-na-submit">Record payment</button>' +
              '</form>';
-
-        if (s.payments && s.payments.length) {
-            h += '<div class="v-bill-head" style="margin-top:14px">Payments</div><div class="v-bill-list">';
-            s.payments.forEach(function (p) {
-                h += '<div class="v-bill-row"><span>' + esc(fmtDate(p.paid_on)) + ' · ' + esc(p.payment_type) + '</span>' +
-                     '<b>' + PESO(p.amount) + '</b>' +
-                     '<em>' + esc(p.mode || '') + (p.recorder ? ' · ' + esc(p.recorder.name) : '') + '</em>' +
-                     '<button type="button" class="v-bill-void" data-void="' + esc(p.id) + '">Void</button></div>';
-            });
-            h += '</div>';
-        }
         return h;
     }
 
@@ -886,7 +992,12 @@
                 return r.json().catch(function () { return {}; }).then(function (data) { return { status: r.status, data: data }; });
             }).then(function (res) {
                 if (res.status === 201 || (res.data && res.data.ok)) {
-                    loadBilling(agencyId);
+                    // The summary is baked into the page (AC9), so refreshing it
+                    // means going back to the server. Reload with the building
+                    // flagged so the modal reopens on the updated numbers —
+                    // without this the operator records a payment and stares at
+                    // the old balance. No XHR here either: this is a navigation.
+                    replayBilling(agencyId);
                     return;
                 }
                 btn.disabled = false; btn.textContent = 'Record payment';
@@ -921,7 +1032,7 @@
                     },
                     body: '_token=' + encodeURIComponent(CSRF),
                     credentials: 'same-origin'
-                }).then(function () { loadBilling(agencyId); })
+                }).then(function () { replayBilling(agencyId); })
                   .catch(function () { b.disabled = false; });
             });
         });
@@ -948,6 +1059,15 @@
             : '<a class="v-a" href="/godmode/agencies">Open agency list →</a>';
         openModal();
     }
+
+    // Reopen the building named in ?open= — set by replayBilling() after a
+    // recorded or voided payment so the modal returns with fresh numbers.
+    (function () {
+        var want = new URLSearchParams(window.location.search).get('open');
+        if (!want) { return; }
+        var el = document.querySelector('.v-plot[data-agency="' + want.replace(/[^0-9]/g, '') + '"]');
+        if (el) { agencyModal(el); }
+    })();
 
     document.addEventListener('click', function (e) {
         var plot = e.target.closest('.v-plot');

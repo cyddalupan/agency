@@ -69,6 +69,17 @@ class GodBillingService
 
         $payments = $this->payments($agency);
 
+        // ── Card 6b07f359a6a548392171d9de: the modal needs the STATUS ENGINE's
+        // answers, not a second arithmetic. VillageBillingState already owns
+        // the schedule rules (anchor = first payment, retainer starts at
+        // cleared_on + 1 month, zero grace). Re-deriving "next due" here would
+        // eventually disagree with the building's colour, and an operator
+        // reading both would stop trusting either.
+        $state = $this->state($agency, $plan, $paidInitial, $paidMonthly, $payments);
+
+        $totalContract = $plan ? (float) $plan->total_contract_value : 0.0;
+        $totalPaid = $paidInitial + $paidMonthly;
+
         return [
             'has_plan'            => $plan !== null,
             'plan_id'             => $plan?->id,
@@ -84,11 +95,89 @@ class GodBillingService
             'monthly_outstanding' => $this->money($monthlyDue - $paidMonthly),
             'monthly_terms'       => $plan ? (int) $plan->terms : 0,
             'monthly_count'       => $this->paidCount($agency, AgencyBillingPayment::TYPE_MONTHLY),
-            'total_paid'          => $this->money($paidInitial + $paidMonthly),
+            'total_paid'          => $this->money($totalPaid),
             'total_contract'      => $plan ? (string) $plan->total_contract_value : '0.00',
+            // AC5: NOT clamped. An overpaid agency has a negative balance and
+            // the operator should see that, not a friendly zero.
+            'balance'             => $this->money($totalContract - $totalPaid),
             'payments'            => $payments,
             'payment_count'       => $payments->count(),
+        ] + $state;
+    }
+
+    /**
+     * The two-axis status plus schedule dates, from VillageBillingState.
+     *
+     * @return array<string,mixed>
+     */
+    private function state(
+        Agency $agency,
+        ?AgencyBillingPlan $plan,
+        float $paidInitial,
+        float $paidMonthly,
+        \Illuminate\Support\Collection $payments
+    ): array {
+        $initialCount = 0;
+        $monthlyCount = 0;
+        $payArray = [];
+
+        foreach ($payments as $p) {
+            $payArray[] = [
+                'paid_on'      => (string) $p->paid_on,
+                'amount'       => (string) $p->amount,
+                'payment_type' => (string) $p->payment_type,
+            ];
+            if ($p->payment_type === AgencyBillingPayment::TYPE_INITIAL) { $initialCount++; }
+            elseif ($p->payment_type === AgencyBillingPayment::TYPE_MONTHLY) { $monthlyCount++; }
+        }
+
+        $axes = (new VillageBillingState(
+            $plan ? [
+                'initial_payment' => (string) $plan->initial_payment,
+                'initial_terms'   => (int) $plan->initial_terms,
+                'monthly_amount'  => (string) $plan->monthly_amount,
+                'terms'           => (int) $plan->terms,
+                'starts_on'       => $plan->starts_on?->toDateString(),
+            ] : null,
+            [
+                'initial_paid'  => number_format($paidInitial, 2, '.', ''),
+                'initial_count' => $initialCount,
+                'monthly_paid'  => number_format($paidMonthly, 2, '.', ''),
+                'monthly_count' => $monthlyCount,
+            ],
+            $payArray,
+            \Carbon\CarbonImmutable::now()->startOfDay()
+        ))->axes();
+
+        return [
+            'initial_state'        => $axes['initial_state'],
+            'monthly_state'        => $axes['monthly_state'],
+            'initial_cleared'      => $axes['initial_cleared'],
+            'initial_cleared_on'   => $axes['initial_cleared_on'],
+            'initial_due_on'       => $axes['initial_due_on'],
+            'monthly_due_on'       => $axes['monthly_due_on'],
+            'monthly_expected'     => $axes['monthly_expected'],
+            'late_initial'         => $axes['late_initial'],
+            'late_monthly'         => $axes['late_monthly'],
+            // The first payment on the plan is the schedule anchor — the
+            // operator needs to see the date the whole arithmetic hangs on.
+            'anchor_on'            => $this->firstPaymentOn($payments),
         ];
+    }
+
+    /**
+     * Earliest payment date, which is the instalment anchor. Null when the
+     * agency has never paid anything — there is no schedule yet.
+     */
+    private function firstPaymentOn(\Illuminate\Support\Collection $payments): ?string
+    {
+        $first = $payments
+            ->map(fn ($p) => $p->paid_on ? \Carbon\CarbonImmutable::parse((string) $p->paid_on) : null)
+            ->filter()
+            ->sort()
+            ->first();
+
+        return $first?->toDateString();
     }
 
     /** Live (non-voided) payments, newest first. */
