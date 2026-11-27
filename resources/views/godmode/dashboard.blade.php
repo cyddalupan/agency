@@ -845,10 +845,14 @@
 
     function billingHtml(s, agencyId) {
         if (!s.has_plan) {
+            // Card 6b07f35ccd9659edc7b8438e: this used to dead-end on a "Set
+            // one" link to the agency settings page, which has no billing
+            // fields at all — so an agency without a plan could not be given one
+            // anywhere in the console. The editor is the only place that can
+            // create a plan, so it renders here too, with the create path.
             return '<div class="v-bill-head">Landas billing</div>' +
-                   '<div class="v-bill-load">No billing plan yet. ' +
-                   '<a class="v-a" href="/godmode/agencies/' + encodeURIComponent(agencyId) +
-                   '/settings">Set one</a></div>';
+                   '<div class="v-bill-load" style="margin-bottom:12px">No billing plan yet.</div>' +
+                   planForm({ plan: {}, payment_count: 0, total_paid: '0.00' }, agencyId);
         }
 
         // ── Two badges, never one (card §Header). An agency can be Paid up
@@ -959,10 +963,11 @@
     function planForm(s, agencyId) {
         var hasMoney = (s.payment_count || 0) > 0;
         var p = s.plan || {};
+        var isCreate = !s.has_plan;
         var d = (p.starts_on || '').slice(0, 10) || today();
 
-        var h = '<details class="v-plan"' + (hasMoney ? '' : '') + '>' +
-                '<summary>Edit billing plan</summary>' +
+        var h = '<details class="v-plan"' + (isCreate ? ' open' : '') + '>' +
+                '<summary>' + (isCreate ? 'Set a billing plan' : 'Edit billing plan') + '</summary>' +
                 '<form class="v-plan-form" data-agency="' + esc(agencyId) + '">';
 
         if (hasMoney) {
@@ -994,7 +999,7 @@
         }
 
         h += '<div class="v-bill-err" hidden></div>' +
-             '<button type="submit" class="v-na-submit">Replace billing plan</button>' +
+             '<button type="submit" class="v-na-submit">' + (isCreate ? 'Set billing plan' : 'Replace billing plan') + '</button>' +
              '</form></details>';
 
         return h;
@@ -1069,7 +1074,8 @@
             }
 
             var btn = form.querySelector('.v-na-submit');
-            btn.disabled = true; btn.textContent = 'Replacing…';
+            var resetLabel = btn.textContent;
+            btn.disabled = true; btn.textContent = 'Saving…';
 
             fetch('/godmode/village/agencies/' + encodeURIComponent(agencyId) + '/plan', {
                 method: 'POST',
@@ -1084,7 +1090,7 @@
                 return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; });
             }).then(function (res) {
                 if (res.data && res.data.ok) { replayBilling(agencyId); return; }
-                btn.disabled = false; btn.textContent = 'Replace billing plan';
+                btn.disabled = false; btn.textContent = resetLabel;
                 var errs = (res.data && res.data.errors) || {};
                 var general = [];
                 Object.keys(errs).forEach(function (k) {
@@ -1095,7 +1101,7 @@
                 });
                 if (general.length) { errBox.textContent = general.join(' '); errBox.hidden = false; }
             }).catch(function () {
-                btn.disabled = false; btn.textContent = 'Replace billing plan';
+                btn.disabled = false; btn.textContent = resetLabel;
                 errBox.textContent = 'Network error. The plan was not changed.';
                 errBox.hidden = false;
             });
