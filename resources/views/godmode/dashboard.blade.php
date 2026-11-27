@@ -45,21 +45,18 @@
         $shape = $shapePool[$seed % count($shapePool)];
         $scale = 0.9 + (($seed >> 9) % 22) / 100;   // 0.90 .. 1.11
 
-        // Which sprite file. A building with no money is always the
-        // under-construction/incomplete art; money states pick 'ok' unless
-        // the money is bad.
-        $sprite = match ($b['state']) {
-            'overdue' => 'tower_delay',
-            'pending' => 'tower_initial',
-            // 'none' is an agency with real activity but no invoice yet —
-            // that is a town that has not been billed, not a building site.
-            // It gets the lively town sprite (lit windows), never the ruin.
-            'none'    => 'town_ok',
-            default   => $shape.'_ok',
+        // Which sprite file. Card 6b07f356b6b30ea65c7bc2de — the BODY now
+        // comes from the initial axis, and lateness only adds a MARKER, never
+        // swaps the body. That is what lets a Paid-up agency that missed a
+        // retainer still look like a finished building instead of a ruin.
+        $sprite = match ($b['initial_state'] ?? 'initial_none') {
+            'initial_paying' => 'tower_initial',
+            'initial_paid'   => $shape.'_ok',
+            default          => 'block_unbilled',
         };
 
         // A shape may not have an `_ok` variant on disk; fall back.
-        if (! in_array($sprite, ['tower_delay', 'tower_initial', 'tower_notstarted'], true)
+        if (! in_array($sprite, ['tower_delay', 'tower_initial', 'tower_notstarted', 'block_unbilled'], true)
             && ! file_exists(public_path('images/village/'.$sprite.'.svg'))) {
             $sprite = 'tower_ok';
         }
@@ -232,11 +229,19 @@
         box-shadow:inset 0 4px 10px rgba(8,48,34,.25);
         transition:box-shadow .2s, border-color .2s;
     }
-    #village-page .v-plot[data-state="pending"] .v-plate {
+    /* Plate glow follows the two axes (card §A layer table): the body's state
+       tints the plate, and lateness adds a rose ring on top so a paid-but-late
+       building still reads as green-with-a-warning, not as a failure. */
+    #village-page .v-plot[data-initial-state="initial_paying"] .v-plate {
         border-color:rgba(255,209,102,.34); box-shadow:inset 0 5px 12px rgba(0,0,0,.6),0 0 24px -6px rgba(255,209,102,.55);
     }
-    #village-page .v-plot[data-state="overdue"] .v-plate {
-        border-color:rgba(251,113,133,.4); box-shadow:inset 0 5px 12px rgba(0,0,0,.6),0 0 26px -6px rgba(251,113,133,.6);
+    #village-page .v-plot[data-initial-state="initial_paid"] .v-plate {
+        border-color:rgba(110,231,183,.34); box-shadow:inset 0 5px 12px rgba(0,0,0,.6),0 0 26px -6px rgba(110,231,183,.5);
+    }
+    #village-page .v-plot[data-late-monthly="1"] .v-plate,
+    #village-page .v-plot[data-late-initial="1"] .v-plate {
+        border-color:rgba(251,113,133,.55);
+        box-shadow:inset 0 5px 12px rgba(0,0,0,.6),0 0 26px -6px rgba(251,113,133,.6),0 0 0 1px rgba(251,113,133,.35);
     }
     #village-page .v-sprite {
         position:relative; z-index:1; width:158px; height:190px;
@@ -244,6 +249,31 @@
         filter:drop-shadow(0 12px 14px rgba(0,0,0,.65));
     }
     #village-page .v-sprite img { width:100%; height:100%; display:block; }
+
+    /* Card 6b07f356b6b30ea65c7bc2de — layer 1, the BODY.
+       A paid building gets a gold roofline highlight so it reads as COMPLETE
+       at a glance, not merely as "not grey". An unbilled one is desaturated
+       so it recedes. Plate glow alone was too subtle to carry that. */
+    #village-page .v-plot[data-initial-state="initial_paid"] .v-sprite::after {
+        content:''; position:absolute; left:50%; top:-4%; transform:translateX(-50%);
+        width:74%; height:22%; pointer-events:none; border-radius:50% 50% 0 0;
+        background:radial-gradient(ellipse at 50% 100%, rgba(255,214,102,.55) 0%, rgba(255,214,102,0) 70%);
+        mix-blend-mode:screen;
+    }
+    #village-page .v-plot[data-initial-state="initial_none"] .v-sprite img {
+        filter:saturate(.35) brightness(.82);
+    }
+
+    /* Motion: ONLY a building still being paid in pulses. The badge never
+       animates — a flashing warning becomes noise (card §D). */
+    @keyframes v-pulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+    #village-page .v-plot[data-initial-state="initial_paying"] .v-plate {
+        animation:v-pulse 2.6s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #village-page .v-plot[data-initial-state="initial_paying"] .v-plate { animation:none; }
+        #village-page .v-sprite, #village-page .v-plot { transition:none; }
+    }
     #village-page .v-plot[data-status="inactive"] .v-sprite,
     #village-page .v-plot[data-status="pending"]  .v-sprite { filter:drop-shadow(0 12px 14px rgba(0,0,0,.65)) grayscale(.45); }
     #village-page .v-plot[data-status="inactive"] { opacity:.62; }
@@ -272,13 +302,19 @@
     /* Card 6b07f35fc3903d22f1b8444f — the SECOND axis. A Delayed marker sits on
        the building without replacing its Paid-up body, which is exactly Cyd's
        "Delayed and Paid up at this point". */
+    /* Card 6b07f356b6b30ea65c7bc2de §C4: pinned to the BUILDING corner, not
+       the plot corner. Anchoring to the sprite puts it on the roof where the
+       eye already is, and keeps it clear of the nameplate below. */
     #village-page .v-alert {
-        position:absolute; top:-7px; right:-7px; z-index:4;
-        width:18px; height:18px; border-radius:50%;
+        position:absolute; top:6%; right:6%; z-index:4;
+        width:20px; height:20px; border-radius:50%;
         background:var(--v-rose); color:#2a0710;
-        font-size:12px; font-weight:900; line-height:18px; text-align:center;
-        box-shadow:0 0 0 2px rgba(12,20,34,.55);
+        font-size:13px; font-weight:900; line-height:20px; text-align:center;
+        box-shadow:0 0 0 2px rgba(12,20,34,.55), 0 2px 6px rgba(0,0,0,.45);
         pointer-events:none;
+        /* the sprite is scaled per building; undo it so the badge is the same
+           size on every roof and never depends on the building's scale */
+        transform:scale(var(--v-badge-inv, 1));
     }
     #village-page .v-plot { position:relative; }
     #village-page .v-st-delayed { color:var(--v-rose); }
@@ -291,6 +327,12 @@
     #village-page .v-legend {
         display:flex; gap:15px; flex-wrap:wrap; justify-content:center;
         margin-top:26px; font-size:11px; color:#a9b6c9; position:relative; z-index:2;
+    }
+    #village-page .v-legend-badge { display:flex; align-items:center; gap:5px; }
+    #village-page .v-legend-badge b {
+        display:inline-block; width:15px; height:15px; border-radius:50%;
+        background:var(--v-rose); color:#2a0710; font-size:10px; font-weight:900;
+        line-height:15px; text-align:center;
     }
     #village-page .v-legend span { display:flex; align-items:center; gap:5px; }
     #village-page .v-legend i { width:9px; height:9px; border-radius:3px; display:inline-block; }
@@ -495,6 +537,9 @@
                     ][$b['initial_state']] ?? $meta['label'];
                     $lateInitial = (bool) ($b['late_initial'] ?? false);
                     $lateMonthly = (bool) ($b['late_monthly'] ?? false);
+                    // AC7: the accessible name states BOTH axes, because the
+                    // whole point is that they are independent facts.
+                    $a11y = $b['name'].' — '.$initialLabel.($lateMonthly || $lateInitial ? ', payment overdue' : '');
                 @endphp
                 <button type="button" class="v-plot"
                         data-state="{{ $b['state'] }}"
@@ -514,15 +559,15 @@
                         data-overdue="{{ $b['overdue_count'] }}"
                         data-label="{{ $meta['label'] }}"
                         style="transform:translate({{ $b['jx'] }}px, {{ $b['lift'] }}px)"
-                        title="{{ $b['name'] }} — {{ $initialLabel }}{{ $lateMonthly ? ' · Delayed' : ($lateInitial ? ' · Delayed' : '') }}"
-                        aria-label="{{ $b['name'] }} — {{ $initialLabel }}{{ $lateMonthly ? ' · Delayed' : ($lateInitial ? ' · Delayed' : '') }}">
+                        title="{{ $a11y }}"
+                        aria-label="{{ $a11y }}">
                     <div class="v-plate"></div>
-                    <div class="v-sprite" style="transform:scale({{ $b['scale'] }})">
+                    <div class="v-sprite" style="transform:scale({{ $b['scale'] }}); --v-badge-inv:{{ round(1 / max($b['scale'], 0.01), 4) }}">
                         <img src="{{ asset('images/village/'.$b['sprite'].'.svg') }}" alt="">
+                        @if ($lateMonthly || $lateInitial)
+                            <span class="v-alert" title="Delayed">!</span>
+                        @endif
                     </div>
-                    @if ($lateMonthly || $lateInitial)
-                        <span class="v-alert" title="Delayed">!</span>
-                    @endif
                     <div class="v-lbl">
                         <div class="v-n">{{ $b['name'] }}</div>
                         <div class="v-st {{ $meta['cls'] }}">
@@ -537,10 +582,11 @@
         </div>
 
         <div class="v-legend">
-            <span><i style="background:var(--v-mint)"></i>Paid up</span>
-            <span><i style="background:var(--v-gold)"></i>Paying in</span>
-            <span><i style="background:var(--v-rose)"></i>Delayed</span>
             <span><i style="background:var(--v-muted)"></i>No billing yet</span>
+            <span><i style="background:var(--v-gold)"></i>Paying in</span>
+            <span><i style="background:var(--v-mint)"></i>Paid up</span>
+            <span><i style="background:var(--v-rose)"></i>Delayed</span>
+            <span class="v-legend-badge"><b>!</b> A red badge means a payment is due</span>
             <span style="opacity:.65">· Click a building</span>
         </div>
     </div>
